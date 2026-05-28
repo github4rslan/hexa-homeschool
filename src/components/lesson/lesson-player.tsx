@@ -1,0 +1,279 @@
+"use client";
+
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Check, ChevronRight, Lightbulb, Volume2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+
+interface Question {
+  id: string;
+  prompt: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+const DEMO_QUESTIONS: Question[] = [
+  {
+    id: "q1",
+    prompt: "Solve for x: 3x + 7 = 22",
+    options: ["x = 3", "x = 5", "x = 7", "x = 15"],
+    correctIndex: 1,
+    explanation:
+      "Subtract 7 from both sides → 3x = 15. Divide by 3 → x = 5.",
+  },
+  {
+    id: "q2",
+    prompt: "Which of the following is equivalent to 2(x + 3)?",
+    options: ["2x + 3", "2x + 6", "x + 6", "2x + 5"],
+    correctIndex: 1,
+    explanation: "Distribute the 2 across both terms: 2 × x + 2 × 3 = 2x + 6.",
+  },
+  {
+    id: "q3",
+    prompt: "If y = 4x − 1 and x = 3, what is y?",
+    options: ["7", "11", "12", "13"],
+    correctIndex: 1,
+    explanation: "Substitute x = 3 → y = 4(3) − 1 = 12 − 1 = 11.",
+  },
+];
+
+export function LessonPlayer({
+  lessonTitle = "Linear equations · Drill 1",
+  topicTag = "Algebra · Linear",
+}: {
+  lessonTitle?: string;
+  topicTag?: string;
+}) {
+  const [step, setStep] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [score, setScore] = useState(0);
+  const [showExplanation, setShowExplanation] = useState(false);
+
+  const question = DEMO_QUESTIONS[step];
+  const isLast = step === DEMO_QUESTIONS.length - 1;
+  const isCorrect = selected === question?.correctIndex;
+  const progress = ((step + (submitted ? 1 : 0)) / DEMO_QUESTIONS.length) * 100;
+
+  function handleSubmit() {
+    if (selected === null) return;
+    setSubmitted(true);
+    if (isCorrect) setScore((s) => s + 1);
+    setShowExplanation(true);
+  }
+
+  function handleNext() {
+    if (isLast) {
+      setStep(DEMO_QUESTIONS.length); // triggers complete state
+      return;
+    }
+    setStep((s) => s + 1);
+    setSelected(null);
+    setSubmitted(false);
+    setShowExplanation(false);
+  }
+
+  const complete = step >= DEMO_QUESTIONS.length;
+  const mastery = (score / DEMO_QUESTIONS.length) * 100;
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      {/* Topbar */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-1">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-fog-500">
+            {topicTag}
+          </span>
+          <h1 className="text-2xl font-semibold text-fog-50">{lessonTitle}</h1>
+        </div>
+        <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-fog-300 transition-all" aria-label="Close lesson">
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Progress rail */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between text-xs mb-2">
+          <span className="text-fog-400">
+            {complete ? "Complete" : `Question ${step + 1} of ${DEMO_QUESTIONS.length}`}
+          </span>
+          <span className="text-fog-500 font-mono">{Math.round(progress)}%</span>
+        </div>
+        <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-violet-500 to-neon-400 rounded-full"
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          />
+        </div>
+      </div>
+
+      <AnimatePresence mode="wait">
+        {complete ? (
+          <motion.div
+            key="complete"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Card variant="glass-strong" padding="xl" className="text-center">
+              <div className="flex h-20 w-20 mx-auto items-center justify-center rounded-full bg-neon-500/10 border-2 border-neon-400/40 glow-neon mb-6">
+                <Check className="h-10 w-10 text-neon-400" />
+              </div>
+              <h2 className="text-3xl font-semibold text-fog-50 mb-2">
+                Mastery check complete
+              </h2>
+              <p className="text-fog-400 mb-8">
+                You scored {score} of {DEMO_QUESTIONS.length} — {mastery.toFixed(0)}% accuracy
+              </p>
+
+              <div className="grid grid-cols-3 gap-3 mb-8">
+                <div className="p-4 rounded-xl bg-white/5">
+                  <div className="text-2xl font-semibold text-gradient-aurora">
+                    {mastery >= 80 ? "Certified" : mastery >= 50 ? "Training" : "Locked"}
+                  </div>
+                  <div className="text-xs text-fog-500 mt-1">Topic state</div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/5">
+                  <div className="text-2xl font-semibold text-fog-100">
+                    {score}/{DEMO_QUESTIONS.length}
+                  </div>
+                  <div className="text-xs text-fog-500 mt-1">Score</div>
+                </div>
+                <div className="p-4 rounded-xl bg-white/5">
+                  <div className="text-2xl font-semibold text-fog-100">+18 XP</div>
+                  <div className="text-xs text-fog-500 mt-1">Earned</div>
+                </div>
+              </div>
+
+              <Button href="/lesson" variant="primary" size="lg">
+                Continue to next lesson
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </Card>
+          </motion.div>
+        ) : (
+          <motion.div
+            key={`q-${step}`}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card variant="glass-strong" padding="xl">
+              <div className="flex items-start justify-between mb-6">
+                <Badge variant="violet" size="md">
+                  Question {step + 1}
+                </Badge>
+                <button
+                  className="flex items-center gap-1.5 text-xs text-fog-400 hover:text-fog-100 transition-colors"
+                  aria-label="Play audio"
+                >
+                  <Volume2 className="h-4 w-4" />
+                  Listen
+                </button>
+              </div>
+
+              <h2 className="text-2xl font-semibold text-fog-50 mb-8 leading-snug">
+                {question.prompt}
+              </h2>
+
+              <div className="grid gap-3 mb-6">
+                {question.options.map((option, i) => {
+                  const isSelected = selected === i;
+                  const isAnswered = submitted;
+                  const isCorrectOption = i === question.correctIndex;
+
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => !submitted && setSelected(i)}
+                      disabled={submitted}
+                      className={cn(
+                        "flex items-center justify-between p-4 rounded-xl border text-left transition-all",
+                        !isAnswered && isSelected && "border-violet-400/60 bg-violet-500/10",
+                        !isAnswered && !isSelected && "border-white/10 hover:border-white/30 hover:bg-white/5",
+                        isAnswered && isCorrectOption && "border-neon-400/60 bg-neon-500/10",
+                        isAnswered && isSelected && !isCorrectOption && "border-crimson-400/60 bg-crimson-500/10",
+                        isAnswered && !isSelected && !isCorrectOption && "border-white/5 opacity-50",
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className={cn(
+                          "flex h-6 w-6 items-center justify-center rounded-md text-xs font-mono font-medium border",
+                          isSelected && !isAnswered && "border-violet-400 text-violet-300 bg-violet-500/20",
+                          isAnswered && isCorrectOption && "border-neon-400 text-neon-400 bg-neon-500/20",
+                          isAnswered && isSelected && !isCorrectOption && "border-crimson-400 text-crimson-400",
+                          !isSelected && !isAnswered && "border-white/15 text-fog-400",
+                        )}>
+                          {String.fromCharCode(65 + i)}
+                        </span>
+                        <span className="text-base text-fog-100">{option}</span>
+                      </div>
+                      {isAnswered && isCorrectOption && (
+                        <Check className="h-5 w-5 text-neon-400" />
+                      )}
+                      {isAnswered && isSelected && !isCorrectOption && (
+                        <X className="h-5 w-5 text-crimson-400" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {showExplanation && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={cn(
+                    "p-4 rounded-xl border mb-6",
+                    isCorrect
+                      ? "border-neon-400/30 bg-neon-500/5"
+                      : "border-amber-400/30 bg-amber-500/5",
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <Lightbulb className={cn(
+                      "h-4 w-4 mt-0.5 shrink-0",
+                      isCorrect ? "text-neon-400" : "text-amber-400",
+                    )} />
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-fog-300 mb-1">
+                        {isCorrect ? "Correct" : "Not quite — Teaching Agent says:"}
+                      </p>
+                      <p className="text-sm text-fog-200 leading-relaxed">
+                        {question.explanation}
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              <div className="flex items-center justify-end gap-3">
+                {!submitted ? (
+                  <Button
+                    onClick={handleSubmit}
+                    variant="primary"
+                    size="md"
+                    disabled={selected === null}
+                  >
+                    Submit answer
+                  </Button>
+                ) : (
+                  <Button onClick={handleNext} variant="primary" size="md">
+                    {isLast ? "Finish mastery check" : "Next question"}
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
