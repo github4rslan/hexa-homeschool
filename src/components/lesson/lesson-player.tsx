@@ -42,12 +42,15 @@ export function LessonPlayer({
   topicTag = "Lesson",
   /** Curriculum topic_tag used to persist progress (matches seeded topics). */
   curriculumTopic = "maths_algebra_linear",
+  /** Where "Continue" goes after completion — the next topic, or dashboard. */
+  nextHref = "/dashboard",
 }: {
   /** Real questions for this topic (practice + mastery) from the DB. */
   questions: Question[];
   lessonTitle?: string;
   topicTag?: string;
   curriculumTopic?: string;
+  nextHref?: string;
 }) {
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -74,7 +77,12 @@ export function LessonPlayer({
   const question = questions[step];
   const isLast = step === questions.length - 1;
   const isCorrect = selected === question?.correctIndex;
-  const progress = ((step + (submitted ? 1 : 0)) / questions.length) * 100;
+  const progress = Math.min(
+    100,
+    ((Math.min(step, questions.length) + (submitted ? 1 : 0)) /
+      questions.length) *
+      100,
+  );
 
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
@@ -306,8 +314,10 @@ export function LessonPlayer({
                 </div>
               </div>
 
-              <Button href="/lesson" variant="primary" size="lg">
-                Continue to next lesson
+              <Button href={nextHref} variant="primary" size="lg">
+                {nextHref === "/dashboard"
+                  ? "Back to dashboard"
+                  : "Continue to next lesson"}
                 <ChevronRight className="h-4 w-4" />
               </Button>
 
