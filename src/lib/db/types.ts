@@ -5,6 +5,8 @@ import type { ObjectId } from "mongodb";
  * Each maps 1:1 to a collection in src/lib/mongodb.ts → Collections.
  */
 
+export type Subject = "mathematics" | "english" | "science";
+
 export interface ParentDoc {
   _id?: ObjectId;
   email: string;
@@ -30,6 +32,8 @@ export interface ChildDoc {
 export interface EvaluationDoc {
   _id?: ObjectId;
   child_id: ObjectId;
+  /** Which subject this result is for (was previously dropped on write). */
+  subject: Subject | null;
   raw_score: number | null;
   model_predicted_grade: string | null;
   confidence_interval: number | null;
@@ -65,4 +69,39 @@ export interface DossierDoc {
   reporting_period: string;
   secure_hash: string;
   generated_at: Date;
+}
+
+// ── Stage 1: Curriculum + question bank ──────────────────────
+
+export interface CurriculumTopicDoc {
+  _id?: ObjectId;
+  subject: Subject;
+  /** Stable unique key used across questions, logs, competence. */
+  topic_tag: string;
+  title: string;
+  summary: string;
+  /** UK key stage (e.g. 3 or 4). */
+  key_stage: number;
+  /** GCSE working-grade band this topic sits in, e.g. "Grade 4–5". */
+  working_grade_band: string;
+  /** Ordering within the subject sequence. */
+  order: number;
+  /** topic_tags that should be mastered first. */
+  prerequisite_tags: string[];
+  created_at: Date;
+}
+
+export interface QuestionDoc {
+  _id?: ObjectId;
+  topic_tag: string;
+  subject: Subject;
+  /** 1 (easiest) … 5 (hardest); loosely maps to working grade. */
+  tier: number;
+  kind: "diagnostic" | "practice" | "mastery";
+  prompt: string;
+  options: string[];
+  correct_index: number;
+  /** Human-authored canonical explanation (also the offline fallback). */
+  explanation: string;
+  created_at: Date;
 }

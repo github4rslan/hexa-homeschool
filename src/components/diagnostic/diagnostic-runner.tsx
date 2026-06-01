@@ -31,7 +31,7 @@ interface SubjectProgress {
 
 type Phase = "intro" | "running" | "results";
 
-export function DiagnosticRunner() {
+export function DiagnosticRunner({ pool }: { pool: DiagnosticItem[] }) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [subjectIndex, setSubjectIndex] = useState(0);
   const [current, setCurrent] = useState<DiagnosticItem | null>(null);
@@ -55,7 +55,7 @@ export function DiagnosticRunner() {
 
   function startDiagnostic() {
     const first = DIAGNOSTIC_SUBJECTS[0].id;
-    const item = pickNextItem(first, progress[first].tier, progress[first].seen);
+    const item = pickNextItem(pool, first, progress[first].tier, progress[first].seen);
     setCurrent(item);
     setSubjectIndex(0);
     setSelected(null);
@@ -79,7 +79,7 @@ export function DiagnosticRunner() {
     setSelected(null);
 
     if (updated.answered < ITEMS_PER_SUBJECT) {
-      const next = pickNextItem(subject, updated.tier, updated.seen);
+      const next = pickNextItem(pool, subject, updated.tier, updated.seen);
       if (next) {
         setCurrent(next);
         return;
@@ -89,7 +89,7 @@ export function DiagnosticRunner() {
     const nextSubjectIndex = subjectIndex + 1;
     if (nextSubjectIndex < DIAGNOSTIC_SUBJECTS.length) {
       const ns = DIAGNOSTIC_SUBJECTS[nextSubjectIndex].id;
-      const next = pickNextItem(ns, nextProgress[ns].tier, nextProgress[ns].seen);
+      const next = pickNextItem(pool, ns, nextProgress[ns].tier, nextProgress[ns].seen);
       setSubjectIndex(nextSubjectIndex);
       setCurrent(next);
       return;
@@ -98,7 +98,7 @@ export function DiagnosticRunner() {
     setCurrent(null);
     setPhase("results");
 
-    // Persist to Supabase (evaluation_records) for the parent's child.
+    // Persist to evaluation_records for the parent's active child.
     // No-ops gracefully if not signed in or no child yet — the UI still
     // shows results regardless.
     const outcomes = DIAGNOSTIC_SUBJECTS.map((s) => {

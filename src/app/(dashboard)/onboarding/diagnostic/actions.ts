@@ -33,6 +33,7 @@ export async function saveDiagnosticResults(
     parentId,
     child._id,
     outcomes.map((o) => ({
+      subject: o.subject,
       raw_score: o.readiness,
       model_predicted_grade: gradeFromBand(o.workingGrade),
       confidence_interval: Math.min(0.99, Math.max(0.5, o.readiness / 100)),

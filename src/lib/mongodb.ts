@@ -71,4 +71,9 @@ export const Collections = {
   lessonLogs: "instructional_logs",
   competence: "competence_matrix",
   dossiers: "compliance_dossiers",
+  // Stage 1 — real curriculum + question bank
+  topics: "curriculum_topics",
+  questions: "questions",
+  // Stage 4 — media registry (registered here so the seed script owns all indexes)
+  media: "media",
 } as const;
