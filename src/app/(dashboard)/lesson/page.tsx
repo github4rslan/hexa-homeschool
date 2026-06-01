@@ -1,5 +1,10 @@
 import { LessonPlayer, type Question } from "@/components/lesson/lesson-player";
-import { getQuestions, getTopic, firstTopic } from "@/lib/db/repo";
+import {
+  getQuestions,
+  getTopic,
+  firstTopic,
+  nextTopicAfter,
+} from "@/lib/db/repo";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +34,11 @@ export default async function LessonPage({
       explanation: q.explanation,
     }));
 
+  // Where "Continue" goes: the next topic in this subject's sequence, or the
+  // dashboard if this is the last one.
+  const next = topicDoc ? await nextTopicAfter(topicDoc.topic_tag) : null;
+  const nextHref = next ? `/lesson?topic=${next.topic_tag}` : "/dashboard";
+
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 bg-void -z-20" />
@@ -37,6 +47,7 @@ export default async function LessonPage({
         <LessonPlayer
           questions={questions}
           curriculumTopic={topicTag}
+          nextHref={nextHref}
           lessonTitle={topicDoc?.title ?? "Lesson"}
           topicTag={topicDoc ? `${subjectLabel(topicDoc.subject)} · ${topicDoc.title}` : "Lesson"}
         />
