@@ -15,6 +15,8 @@ import {
   listMedia,
 } from "@/lib/db/repo";
 import { UploadButton } from "@/components/media/upload-button";
+import { ExamDecisionCard } from "@/components/dashboard/exam-decision-card";
+import { computeExamDecision } from "@/lib/engine/exam-decision";
 import { saveChildProfile } from "./actions";
 
 export const metadata: Metadata = { title: "Child profile" };
@@ -44,6 +46,14 @@ export default async function ChildProfilePage({
   const standings = await latestEvaluationsBySubject(child._id);
   const certified = await countCertified(child._id);
   const work = await listMedia({ useCase: "child_work", childId, limit: 12 });
+  const decision = computeExamDecision(
+    child.date_of_birth,
+    standings.map((s) => ({
+      subject: s.subject,
+      readiness: s.readiness,
+      grade: s.grade,
+    })),
+  );
   const save = saveChildProfile.bind(null, childId);
 
   return (
@@ -113,6 +123,13 @@ export default async function ChildProfilePage({
             {certified} topic{certified === 1 ? "" : "s"} certified so far.
           </p>
         </Card>
+
+        {/* Exam decision (age 13+) */}
+        {decision.eligible && (
+          <div className="mb-6">
+            <ExamDecisionCard decision={decision} childName={child.full_name} />
+          </div>
+        )}
 
         {/* Work evidence (Cloudinary, private) */}
         <Card variant="glass" padding="xl" className="mb-6">

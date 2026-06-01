@@ -143,3 +143,43 @@ export interface QuestionDoc {
   explanation: string;
   created_at: Date;
 }
+
+// ── Stage 5: Parent control loops + safety ───────────────────
+
+export interface ScheduleItemDoc {
+  day: number; // 0 (Mon) … 6 (Sun)
+  subject: Subject;
+  topic_tag: string;
+  topic_title: string;
+  status: "planned" | "done";
+}
+
+export interface WeeklyScheduleDoc {
+  _id?: ObjectId;
+  child_id: ObjectId;
+  week_start: string; // ISO date (Monday)
+  items: ScheduleItemDoc[];
+  approved_by_parent: boolean;
+  generated_at: Date;
+}
+
+export interface TutorBookingDoc {
+  _id?: ObjectId;
+  parent_id: ObjectId;
+  child_id: ObjectId;
+  subject: Subject | null;
+  note: string;
+  requested_slot: string; // free-text preferred time for Phase 1
+  status: "requested" | "scheduled" | "completed" | "cancelled";
+  created_at: Date;
+}
+
+export interface EscalationDoc {
+  _id?: ObjectId;
+  child_id: ObjectId;
+  trigger: string;
+  severity: "immediate" | "critical" | "high" | "medium" | "low";
+  matched_text: string;
+  status: "open" | "acknowledged" | "resolved";
+  created_at: Date;
+}

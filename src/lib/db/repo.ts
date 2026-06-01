@@ -14,6 +14,10 @@ import type {
   CheckinDoc,
   MediaDoc,
   MediaUseCase,
+  WeeklyScheduleDoc,
+  ScheduleItemDoc,
+  TutorBookingDoc,
+  EscalationDoc,
   Subject,
 } from "./types";
 
@@ -506,6 +510,186 @@ export async function parentOwnsChild(
   const childOid = toObjectId(childId);
   if (!childOid) return false;
   return assertOwnsChild(parentId, childOid);
+}
+
+// ── Weekly schedule (Stage 5) ────────────────────────────
+/** Monday (local) of the current week as an ISO date string. */
+export function currentWeekStart(): string {
+  const d = new Date();
+  const day = (d.getDay() + 6) % 7; // 0 = Monday
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+}
+
+export async function getOrCreateWeeklySchedule(
+  parentId: string,
+  childId: ObjectId,
+): Promise<WeeklyScheduleDoc | null> {
+  if (!(await assertOwnsChild(parentId, childId))) return null;
+  const col = await getCollection<WeeklyScheduleDoc>(Collections.schedules);
+  const weekStart = currentWeekStart();
+  const existing = await col.findOne({ child_id: childId, week_start: weekStart });
+  if (existing) return existing;
+
+  // Generate from curriculum gaps: topics NOT yet certified, in order, one per
+  // weekday across the three subjects (Mon–Fri).
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const certified = await compCol
+    .find({ child_id: childId, state: "certified" })
+    .toArray();
+  const certifiedTags = new Set(certified.map((c) => c.topic_tag));
+
+  const subjects: Subject[] = ["mathematics", "english", "science"];
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const nextBySubject: Record<Subject, CurriculumTopicDoc | null> = {
+    mathematics: null,
+    english: null,
+    science: null,
+  };
+  for (const subj of subjects) {
+    const topics = await topicsCol.find({ subject: subj }).sort({ order: 1 }).toArray();
+    nextBySubject[subj] = topics.find((t) => !certifiedTags.has(t.topic_tag)) ?? topics[0] ?? null;
+  }
+
+  const items: ScheduleItemDoc[] = [];
+  // Mon=Maths, Tue=English, Wed=Science, Thu=Maths, Fri=English (gap-driven).
+  const plan: { day: number; subject: Subject }[] = [
+    { day: 0, subject: "mathematics" },
+    { day: 1, subject: "english" },
+    { day: 2, subject: "science" },
+    { day: 3, subject: "mathematics" },
+    { day: 4, subject: "english" },
+  ];
+  for (const { day, subject } of plan) {
+    const t = nextBySubject[subject];
+    if (t) {
+      items.push({
+        day,
+        subject,
+        topic_tag: t.topic_tag,
+        topic_title: t.title,
+        status: "planned",
+      });
+    }
+  }
+
+  const doc: WeeklyScheduleDoc = {
+    child_id: childId,
+    week_start: weekStart,
+    items,
+    approved_by_parent: false,
+    generated_at: new Date(),
+  };
+  const res = await col.insertOne(doc as WeeklyScheduleDoc);
+  return { ...doc, _id: res.insertedId };
+}
+
+export async function approveWeeklySchedule(
+  parentId: string,
+  childId: ObjectId,
+): Promise<boolean> {
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+  const col = await getCollection<WeeklyScheduleDoc>(Collections.schedules);
+  await col.updateOne(
+    { child_id: childId, week_start: currentWeekStart() },
+    { $set: { approved_by_parent: true } },
+  );
+  return true;
+}
+
+// ── Tutor bookings (Stage 5) ─────────────────────────────
+const TIER_TUTOR_QUOTA: Record<ParentDoc["subscription_tier"], number> = {
+  diagnostic: 0,
+  standard: 1, // HEXA Complete: 1/mo
+  family: 3, // HEXA Partner: 3/mo
+};
+
+export async function tutorBookingsThisMonth(parentId: string): Promise<number> {
+  const oid = toObjectId(parentId);
+  if (!oid) return 0;
+  const start = new Date();
+  start.setDate(1);
+  start.setHours(0, 0, 0, 0);
+  const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
+  return col.countDocuments({ parent_id: oid, created_at: { $gte: start } });
+}
+
+export async function tutorQuota(parentId: string): Promise<{ used: number; limit: number }> {
+  const parent = await findParentById(parentId);
+  const limit = parent ? TIER_TUTOR_QUOTA[parent.subscription_tier] : 0;
+  const used = await tutorBookingsThisMonth(parentId);
+  return { used, limit };
+}
+
+export async function createTutorBooking(
+  parentId: string,
+  childId: ObjectId,
+  input: { subject: Subject | null; note: string; requestedSlot: string },
+): Promise<{ ok: boolean; reason?: string }> {
+  if (!(await assertOwnsChild(parentId, childId))) {
+    return { ok: false, reason: "Child not found." };
+  }
+  const { used, limit } = await tutorQuota(parentId);
+  if (used >= limit) {
+    return {
+      ok: false,
+      reason:
+        limit === 0
+          ? "Tutor sessions aren't included on your current plan."
+          : `You've used all ${limit} tutor session(s) this month.`,
+    };
+  }
+  const oid = toObjectId(parentId)!;
+  const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
+  await col.insertOne({
+    parent_id: oid,
+    child_id: childId,
+    subject: input.subject,
+    note: input.note,
+    requested_slot: input.requestedSlot,
+    status: "requested",
+    created_at: new Date(),
+  } as TutorBookingDoc);
+  return { ok: true };
+}
+
+export async function listTutorBookings(
+  parentId: string,
+): Promise<TutorBookingDoc[]> {
+  const oid = toObjectId(parentId);
+  if (!oid) return [];
+  const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
+  return col.find({ parent_id: oid }).sort({ created_at: -1 }).limit(20).toArray();
+}
+
+// ── Escalations (Stage 5 safety) ─────────────────────────
+export async function recordEscalation(
+  childId: ObjectId,
+  input: { trigger: string; severity: EscalationDoc["severity"]; matchedText: string },
+): Promise<void> {
+  const col = await getCollection<EscalationDoc>(Collections.escalations);
+  await col.insertOne({
+    child_id: childId,
+    trigger: input.trigger,
+    severity: input.severity,
+    matched_text: input.matchedText.slice(0, 280),
+    status: "open",
+    created_at: new Date(),
+  } as EscalationDoc);
+}
+
+/** Open escalations across a parent's children (for the dashboard alert). */
+export async function openEscalations(
+  childIds: ObjectId[],
+): Promise<EscalationDoc[]> {
+  if (childIds.length === 0) return [];
+  const col = await getCollection<EscalationDoc>(Collections.escalations);
+  return col
+    .find({ child_id: { $in: childIds }, status: "open" })
+    .sort({ created_at: -1 })
+    .limit(10)
+    .toArray();
 }
 
 function escapeRegex(s: string): string {

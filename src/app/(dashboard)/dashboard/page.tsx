@@ -26,8 +26,10 @@ import {
   recentLogs,
   countCertifiedSince,
   hasDossierForPeriod,
+  openEscalations,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
+import { ShieldAlert } from "lucide-react";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -160,6 +162,9 @@ export default async function DashboardPage() {
     : 0;
   const certifiedThisWeek = await countCertifiedSince(childIds, weekAgoMs);
 
+  // Safety: open escalations across the family (Brief: parent alerts).
+  const escalations = await openEscalations(childIds);
+
   const nameById = new Map(kids.map((k) => [k._id!.toHexString(), k.full_name]));
   const activity: ActivityItem[] = logs.slice(0, 6).map((l) => ({
     time: relativeTime(l.timestamp_start),
@@ -179,6 +184,25 @@ export default async function DashboardPage() {
       <DashboardTopbar greeting={greeting} />
 
       <div className="flex-1 p-6 lg:p-10 max-w-7xl">
+        {escalations.length > 0 && (
+          <div className="mb-6 rounded-xl border border-crimson-400/40 bg-crimson-500/10 px-4 py-3">
+            <div className="flex items-start gap-3">
+              <ShieldAlert className="h-5 w-5 text-crimson-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-crimson-300">
+                  A learning session was paused for {nameById.get(escalations[0].child_id.toHexString()) ?? "your child"}.
+                </p>
+                <p className="text-xs text-fog-300 mt-1">
+                  HEXA detected your child may have been feeling stuck or upset and
+                  paused the session. Please check in with them when you can. This
+                  is an educational safeguard only — for any welfare concern, contact
+                  your GP or relevant services.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <section className="mb-10">
           <div className="flex items-center justify-between mb-6">
             <div>

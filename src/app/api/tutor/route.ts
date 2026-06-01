@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { runTeachingAgent, type TutorRequest } from "@/lib/ai/teaching-agent";
 import { AiConfigError } from "@/lib/ai/config";
+import { checkDistress } from "@/lib/safety/escalation";
+import {
+  currentParentId,
+  getActiveChild,
+  recordEscalation,
+} from "@/lib/db/repo";
+import { readActiveChildId } from "@/lib/active-child";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -39,11 +46,46 @@ export async function POST(request: Request) {
     );
   }
 
+  const studentAnswer = asString(body.studentAnswer) || undefined;
+
+  // ── Safety gate (Brief: Escalation Matrix) ──
+  // Scan child-entered text for distress BEFORE any AI call. On a match,
+  // freeze the session, log an escalation against the active child, and surface
+  // a calm pause screen. Fail-safe: this runs first and short-circuits.
+  if (studentAnswer) {
+    const distress = checkDistress(studentAnswer);
+    if (distress.matched) {
+      try {
+        const parentId = await currentParentId();
+        if (parentId) {
+          const child = await getActiveChild(parentId, await readActiveChildId());
+          if (child?._id) {
+            await recordEscalation(child._id, {
+              trigger: distress.trigger,
+              severity: distress.severity,
+              matchedText: studentAnswer,
+            });
+          }
+        }
+      } catch (err) {
+        console.error("[/api/tutor] escalation log failed (still freezing):", err);
+      }
+      return NextResponse.json(
+        {
+          frozen: true,
+          message:
+            "Let's take a pause. It's completely okay to feel stuck — a grown-up has been let know, and they can help you carry on whenever you're ready.",
+        },
+        { status: 200, headers: { "Cache-Control": "no-store" } },
+      );
+    }
+  }
+
   const req: TutorRequest = {
     prompt,
     correctAnswer,
     topic: asString(body.topic) || undefined,
-    studentAnswer: asString(body.studentAnswer) || undefined,
+    studentAnswer,
     wasCorrect: body.wasCorrect === true,
   };
 
