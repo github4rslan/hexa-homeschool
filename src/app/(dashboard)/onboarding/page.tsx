@@ -15,24 +15,24 @@ const STEPS = [
     icon: User,
     title: "Tell us about your child",
     description:
-      "Name, age, any documented SEND designations, and current academic year. Takes 2 minutes.",
-    href: "/onboarding/child",
+      "Name, date of birth, any documented SEND designations, and an optional target exam window. Takes 2 minutes.",
+    href: "/dashboard/children/new",
   },
   {
     number: "02",
-    icon: Calendar,
-    title: "Choose your target window",
-    description:
-      "Pick your GCSE entry season. We'll build a plan that hits it without compromising depth.",
-    href: "/onboarding/target",
-  },
-  {
-    number: "03",
     icon: Activity,
     title: "Run the diagnostic",
     description:
-      "A 60-minute adaptive assessment establishes your child's baseline across all three subjects.",
+      "An adaptive assessment establishes your child's baseline across Maths, English and Science.",
     href: "/onboarding/diagnostic",
+  },
+  {
+    number: "03",
+    icon: Calendar,
+    title: "Review & approve the plan",
+    description:
+      "The Planning Agent proposes a two-year syllabus. You review, adjust, and approve before lessons begin.",
+    href: "/dashboard",
   },
 ];
 
@@ -52,14 +52,14 @@ export default function OnboardingPage() {
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 rounded-full border border-violet-400/30 bg-violet-500/5 px-4 py-1.5 text-xs font-medium text-violet-300 mb-6">
             <Sparkles className="h-3.5 w-3.5" />
-            Three quick steps to your child's GCSE plan
+            Three quick steps to your child's learning plan
           </div>
           <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-fog-50 mb-4">
             Welcome to <span className="text-gradient-aurora">HEXA</span>
           </h1>
           <p className="text-lg text-fog-300 max-w-xl mx-auto">
-            Set up takes about 8 minutes. Then HEXA does the rest — daily lessons,
-            monthly mocks, and Local Authority paperwork on autopilot.
+            Setup takes about 10 minutes. Then HEXA does the rest — daily lessons,
+            monthly mocks, and Local Authority paperwork on autopilot. Sit when ready.
           </p>
         </div>
 
@@ -88,7 +88,7 @@ export default function OnboardingPage() {
         </div>
 
         <div className="mt-12 flex justify-center">
-          <Button href="/onboarding/child" variant="primary" size="lg">
+          <Button href="/dashboard/children/new" variant="primary" size="lg">
             Get started
             <ArrowRight className="h-4 w-4" />
           </Button>

@@ -64,5 +64,6 @@ export async function createChild(formData: FormData) {
   }
 
   revalidatePath("/dashboard");
-  redirect("/dashboard");
+  // Flow straight into the diagnostic — the natural next step after adding a child.
+  redirect("/onboarding/diagnostic");
 }

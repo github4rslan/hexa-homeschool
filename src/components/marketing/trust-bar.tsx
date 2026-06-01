@@ -7,14 +7,13 @@ import { Container } from "@/components/ui/container";
  * Builds credibility without leaning on partner logos we don't have.
  */
 const BADGES = [
-  "Pearson Edexcel · GCSE specification",
-  "AQA · GCSE specification",
-  "OCR · GCSE specification",
-  "UK GDPR · ICO Registered",
-  "Children's Code · Age-Appropriate Design",
-  "AWS London · eu-west-2",
-  "ISO 27001 · in progress",
-  "Cyber Essentials Plus",
+  "Pearson Edexcel",
+  "AQA",
+  "OCR",
+  "UK GDPR",
+  "Children's Code",
+  "AWS London",
+  "ICO Registered",
 ];
 
 export function TrustBar() {

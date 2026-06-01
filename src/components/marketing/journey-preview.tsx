@@ -16,12 +16,12 @@ export function JourneyPreview() {
         eyebrow="The Journey"
         title={
           <>
-            From Day 1 diagnostic
+            Understand. Plan. Learn.
             <br />
-            to <span className="text-gradient-aurora">GCSE entry at 14</span>
+            Assess. Prove. <span className="text-gradient-aurora">Decide.</span>
           </>
         }
-        description="A precisely sequenced six-stage path that compresses the traditional GCSE journey into 24 months — without skipping a single specification point."
+        description="Six clear steps — from the Day 1 diagnostic to sitting the exam when your child is genuinely ready. Not rushed. Not forced."
       />
 
       <div className="mt-20 grid md:grid-cols-2 lg:grid-cols-3 gap-5">

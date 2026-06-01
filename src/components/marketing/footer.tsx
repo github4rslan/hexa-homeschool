@@ -13,8 +13,8 @@ export function MarketingFooter() {
           <div className="col-span-2 md:col-span-2 flex flex-col gap-5">
             <HexaLogo size={36} withText />
             <p className="text-sm leading-relaxed text-fog-400 max-w-xs">
-              An AI-powered homeschooling platform preparing UK students for
-              GCSE Mathematics, English and Science by age 14.
+              The AI assistant built for UK homeschooling families who want
+              structure, freedom, and protection. Maths, English and Science.
             </p>
             <div className="flex flex-col gap-1.5 text-xs text-fog-500">
               <span>Hosted in the UK · AWS London (eu-west-2)</span>
@@ -93,7 +93,7 @@ export function MarketingFooter() {
             ))}
           </div>
           <p className="text-xs text-fog-500 italic">
-            "HEXA gets your child GCSE-ready at 14. Not someday. Not hopefully. At 14. With proof."
+            "Teach with confidence. Prove with evidence. Sit when ready."
           </p>
         </div>
       </Container>

@@ -23,21 +23,21 @@ export const metadata: Metadata = {
 
 const STATUTORY_CATEGORIES = [
   {
-    title: "Breadth",
+    title: "Intent",
     description:
-      "Demonstrates that the curriculum covers a sufficient range of subjects and topics.",
+      "The documented curriculum plan: what the child is set to learn, mapped to GCSE specifications.",
     icon: FileSearch,
   },
   {
-    title: "Balance",
+    title: "Implementation",
     description:
-      "Shows appropriate weighting across subjects and learning modalities.",
+      "Verified lesson logs and tracking trends evidencing how the plan was actually delivered.",
     icon: Scale,
   },
   {
-    title: "Progression",
+    title: "Impact",
     description:
-      "Evidences a coherent, age-appropriate developmental trajectory.",
+      "Assessment results and predictive grading showing a coherent, age-appropriate progression.",
     icon: Verified,
   },
 ];
@@ -68,14 +68,14 @@ export default function LocalAuthoritiesPage() {
           eyebrow="For Local Authorities"
           title={
             <>
-              Built to make
+              Evidence that
               <br />
               <span className="text-gradient-aurora">
-                your job easier.
+                speaks for itself.
               </span>
             </>
           }
-          description="If a child registered with your authority is on HEXA, here's exactly what you can expect — and how to verify it."
+          description="Local Authorities don't accept screenshots. They accept proof. Every byte of a child's progress on HEXA is cryptographically signed and statutorily defensible — generated in the format you need: Intent, Implementation, Impact, Next Steps."
         />
       </Section>
 
@@ -89,7 +89,7 @@ export default function LocalAuthoritiesPage() {
                     <c.icon className="h-5 w-5 text-violet-300" />
                   </div>
                   <Badge variant="violet" size="sm">
-                    Statutory category
+                    Statutory format
                   </Badge>
                 </div>
                 <h3 className="text-xl font-semibold text-fog-50 mb-2">
@@ -102,6 +102,32 @@ export default function LocalAuthoritiesPage() {
             </Reveal>
           ))}
         </div>
+      </Section>
+
+      {/* Security specifications strip */}
+      <Section padded={false} className="pb-20">
+        <Container size="md">
+          <Card variant="glass" padding="lg">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-center">
+              {[
+                "AES-256 at rest",
+                "TLS 1.3 in transit",
+                "UK data residency",
+                "SHA-256 portfolio verification",
+                "Children's Code compliant",
+                "Immutable audit trails",
+              ].map((spec, i) => (
+                <span
+                  key={spec}
+                  className="flex items-center gap-3 text-xs font-mono uppercase tracking-wider text-fog-300"
+                >
+                  {i > 0 && <span className="text-fog-700">·</span>}
+                  {spec}
+                </span>
+              ))}
+            </div>
+          </Card>
+        </Container>
       </Section>
 
       <Section>

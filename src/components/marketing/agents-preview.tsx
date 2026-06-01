@@ -111,7 +111,10 @@ export function AgentsPreview() {
                   <h3 className="text-xl font-semibold tracking-tight text-fog-50 mb-2">
                     {agent.name}
                   </h3>
-                  <p className="text-sm leading-relaxed text-fog-300 mb-6">
+                  <p className="text-sm font-medium leading-relaxed text-fog-100 mb-1">
+                    {agent.plainSummary}
+                  </p>
+                  <p className="text-xs leading-relaxed text-fog-400 mb-6">
                     {agent.tagline}.
                   </p>
 

@@ -6,7 +6,7 @@ import { CTA } from "@/components/marketing/cta";
 export const metadata: Metadata = {
   title: "How HEXA works",
   description:
-    "From the Day 1 diagnostic to GCSE entry at 14 — the six-stage end-to-end student journey.",
+    "From the Day 1 diagnostic to sitting the exam when ready — the six-step end-to-end student journey.",
 };
 
 export default function HowItWorksPage() {
@@ -14,15 +14,15 @@ export default function HowItWorksPage() {
     <>
       <Section padded className="pt-16">
         <SectionHeader
-          eyebrow="The Journey"
+          eyebrow="How it works"
           title={
             <>
-              Six stages. <span className="text-gradient-aurora">Twenty-four months.</span>
+              Six steps. <span className="text-gradient-aurora">One clear path.</span>
               <br />
-              One GCSE result that compounds.
+              Sit when ready.
             </>
           }
-          description="A precisely sequenced path that compresses the traditional GCSE journey by two academic years — without skipping a single specification point."
+          description="A precisely sequenced journey from the Day 1 diagnostic to a verified GCSE result — at your child's pace, with full visibility on where they stand at every step."
         />
       </Section>
       <JourneyTimeline />
