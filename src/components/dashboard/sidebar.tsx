@@ -8,9 +8,11 @@ import {
   Activity,
   GraduationCap,
   FileCheck,
+  Settings,
   LogOut,
 } from "lucide-react";
 import { HexaLogo } from "@/components/ui/hexa-logo";
+import { ChildSwitcher, type SwitcherChild } from "./child-switcher";
 import { cn } from "@/lib/utils";
 
 // Only routes that actually exist — every link here resolves to a real page.
@@ -20,9 +22,16 @@ const NAV = [
   { label: "Diagnostic", href: "/onboarding/diagnostic", icon: Activity },
   { label: "Lesson", href: "/lesson", icon: GraduationCap },
   { label: "Portfolio", href: "/portfolio", icon: FileCheck },
+  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-export function DashboardSidebar() {
+export function DashboardSidebar({
+  childList = [],
+  activeChildId = null,
+}: {
+  childList?: SwitcherChild[];
+  activeChildId?: string | null;
+}) {
   const pathname = usePathname();
 
   return (
@@ -32,6 +41,15 @@ export function DashboardSidebar() {
           <HexaLogo size={28} withText />
         </Link>
       </div>
+
+      {childList.length > 1 && (
+        <div className="pt-4">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-fog-500 px-5 mb-2 block">
+            Active child
+          </span>
+          <ChildSwitcher items={childList} activeId={activeChildId} />
+        </div>
+      )}
 
       <nav className="flex-1 p-4 flex flex-col gap-1">
         <span className="text-[10px] font-mono uppercase tracking-widest text-fog-500 px-3 mb-2 mt-2">

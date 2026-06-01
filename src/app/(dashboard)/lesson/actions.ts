@@ -2,10 +2,11 @@
 
 import {
   currentParentId,
-  latestChild,
+  getActiveChild,
   insertLessonLog,
   upsertCompetence,
 } from "@/lib/db/repo";
+import { readActiveChildId } from "@/lib/active-child";
 
 export interface LessonLogInput {
   topicTag: string;
@@ -35,7 +36,7 @@ export async function logLessonCompletion(
   const parentId = await currentParentId();
   if (!parentId) return { persisted: false, reason: "Not signed in." };
 
-  const child = await latestChild(parentId);
+  const child = await getActiveChild(parentId, await readActiveChildId());
   if (!child?._id) return { persisted: false, reason: "No child profile yet." };
 
   const endedAt = new Date();

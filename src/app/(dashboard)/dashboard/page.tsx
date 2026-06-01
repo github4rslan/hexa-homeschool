@@ -8,6 +8,7 @@ import {
   Plus,
   Sparkles,
   TrendingUp,
+  UserPlus,
 } from "lucide-react";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
 import { StatCard } from "@/components/dashboard/stat-card";
@@ -19,20 +20,19 @@ import {
   currentParentId,
   findParentById,
   listChildren,
+  getActiveChild,
   countCertified,
-  latestEvaluationGrade,
+  latestEvaluationsBySubject,
   recentLogs,
   countCertifiedSince,
+  hasDossierForPeriod,
 } from "@/lib/db/repo";
+import { readActiveChildId } from "@/lib/active-child";
 
-export const metadata: Metadata = {
-  title: "Dashboard",
-};
-
+export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
 
-// Total curriculum topics — denominator for the mastery bar (seeded topics).
-const TOTAL_TOPICS = 10;
+const TOTAL_TOPICS = 30; // seeded curriculum size (10 per subject × 3)
 
 interface ChildView {
   id: string;
@@ -41,7 +41,6 @@ interface ChildView {
   predictedGrade?: string;
   competenceCertified: number;
   competenceTotal: number;
-  nextLesson?: string;
   status: "on_track" | "behind" | "ahead" | "needs_review";
 }
 
@@ -51,42 +50,6 @@ interface ActivityItem {
   event: string;
   detail: string;
 }
-
-interface WeekStats {
-  lessonsCompleted: number;
-  topicsCertified: number;
-  avgSessionLabel: string;
-  avgSessionHint: string;
-}
-
-const DEMO_CHILDREN: ChildView[] = [
-  {
-    id: "demo-1",
-    name: "Aisha",
-    age: 12,
-    predictedGrade: "8",
-    competenceCertified: 47,
-    competenceTotal: 92,
-    nextLesson: "Quadratic equations",
-    status: "ahead",
-  },
-  {
-    id: "demo-2",
-    name: "Theo",
-    age: 11,
-    predictedGrade: "6",
-    competenceCertified: 28,
-    competenceTotal: 92,
-    nextLesson: "Cell division",
-    status: "on_track",
-  },
-];
-
-const DEMO_ACTIVITY: ActivityItem[] = [
-  { time: "12 min ago", child: "Aisha", event: "Completed Mathematics lesson", detail: "Linear equations · 94% accuracy" },
-  { time: "1 hr ago", child: "Theo", event: "Started English session", detail: "Reading comprehension drill" },
-  { time: "Yesterday", child: "Aisha", event: "Monthly mock exam complete", detail: "Predicted grade updated to 8" },
-];
 
 function ageFromDob(dob: string): number {
   const birth = new Date(dob);
@@ -107,116 +70,115 @@ function relativeTime(d: Date): string {
   return diffDay === 1 ? "Yesterday" : `${diffDay} days ago`;
 }
 
+function currentQuarter(): string {
+  const now = new Date();
+  return `Q${Math.floor(now.getMonth() / 3) + 1} ${now.getFullYear()}`;
+}
+
 export default async function DashboardPage() {
-  let parentName: string | null = null;
-  let children: ChildView[] = [];
-  let activity: ActivityItem[] = [];
-  let stats: WeekStats = {
-    lessonsCompleted: 0,
-    topicsCertified: 0,
-    avgSessionLabel: "—",
-    avgSessionHint: "no sessions yet",
-  };
-  let usingDemo = false;
-
   const parentId = await currentParentId();
-
-  if (parentId) {
-    const parent = await findParentById(parentId);
-    parentName = parent?.full_name ?? null;
-
-    const kids = await listChildren(parentId);
-
-    if (kids.length > 0) {
-      children = await Promise.all(
-        kids.map(async (kid): Promise<ChildView> => {
-          const childId = kid._id!;
-          const certifiedCount = await countCertified(childId);
-          const predictedGrade = await latestEvaluationGrade(childId);
-          const pct = certifiedCount / (TOTAL_TOPICS || 1);
-          const status: ChildView["status"] =
-            pct >= 0.6 ? "ahead" : pct >= 0.3 ? "on_track" : "needs_review";
-          return {
-            id: childId.toHexString(),
-            name: kid.full_name,
-            age: ageFromDob(kid.date_of_birth),
-            predictedGrade: predictedGrade ?? undefined,
-            competenceCertified: certifiedCount,
-            competenceTotal: TOTAL_TOPICS,
-            status,
-          };
-        }),
-      );
-
-      const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
-      const childIds = kids.map((k) => k._id!);
-      const logs = await recentLogs(childIds, weekAgoMs, 50);
-
-      const completed = logs.filter((l) => l.status === "completed");
-      const durations = completed
-        .filter((l) => l.timestamp_end)
-        .map(
-          (l) =>
-            ((l.timestamp_end as Date).getTime() -
-              l.timestamp_start.getTime()) /
-            1000,
-        )
-        .filter((s) => s > 0);
-      const avgSec = durations.length
-        ? durations.reduce((a, b) => a + b, 0) / durations.length
-        : 0;
-
-      const certifiedThisWeek = await countCertifiedSince(childIds, weekAgoMs);
-
-      stats = {
-        lessonsCompleted: completed.length,
-        topicsCertified: certifiedThisWeek,
-        avgSessionLabel: avgSec ? `${Math.round(avgSec / 60)}m` : "—",
-        avgSessionHint: avgSec ? "within 45–60 min target" : "no sessions yet",
-      };
-
-      const nameById = new Map(
-        kids.map((k) => [k._id!.toHexString(), k.full_name]),
-      );
-      activity = logs.slice(0, 6).map((l) => ({
-        time: relativeTime(l.timestamp_start),
-        child: nameById.get(l.child_id.toHexString()) ?? "Child",
-        event:
-          l.status === "completed" ? "Completed a lesson" : "Started a lesson",
-        detail: `${l.topic_tag.replace(/_/g, " ")} session`,
-      }));
-    }
-  }
-
-  if (children.length === 0) {
-    usingDemo = true;
-    children = DEMO_CHILDREN;
-    activity = DEMO_ACTIVITY;
-    stats = {
-      lessonsCompleted: 34,
-      topicsCertified: 9,
-      avgSessionLabel: "52m",
-      avgSessionHint: "within 45–60 min target",
-    };
-  }
-
-  const greeting = parentName
-    ? `Good to see you, ${parentName.split(" ")[0]}`
+  const parent = parentId ? await findParentById(parentId) : null;
+  const greeting = parent?.full_name
+    ? `Good to see you, ${parent.full_name.split(" ")[0]}`
     : "Welcome to HEXA";
+
+  const kids = parentId ? await listChildren(parentId) : [];
+
+  // ── Empty state: a real onboarding nudge, never fake rows ──
+  if (kids.length === 0) {
+    return (
+      <>
+        <DashboardTopbar greeting={greeting} />
+        <div className="flex-1 p-6 lg:p-10 max-w-3xl">
+          <Card variant="glass-strong" padding="xl" className="text-center">
+            <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-violet-500/10 border border-violet-400/30 mb-6">
+              <UserPlus className="h-7 w-7 text-violet-300" />
+            </div>
+            <h1 className="text-2xl font-semibold text-fog-50 mb-2">
+              Let&apos;s set up your first child
+            </h1>
+            <p className="text-fog-400 leading-relaxed mb-8 max-w-md mx-auto">
+              Add your child&apos;s profile, then run the 60-minute diagnostic.
+              From there, HEXA plans daily lessons and tracks real progress —
+              everything you see here will be your family&apos;s own data.
+            </p>
+            <Button href="/dashboard/children/new" variant="primary" size="lg">
+              <Plus className="h-4 w-4" />
+              Add your first child
+            </Button>
+          </Card>
+        </div>
+      </>
+    );
+  }
+
+  const activeChild = await getActiveChild(parentId!, await readActiveChildId());
+  const activeId = activeChild?._id?.toHexString();
+
+  // Build per-child views with real certified counts + predicted grade.
+  const children: ChildView[] = await Promise.all(
+    kids.map(async (kid): Promise<ChildView> => {
+      const childId = kid._id!;
+      const certifiedCount = await countCertified(childId);
+      const standings = await latestEvaluationsBySubject(childId);
+      const graded = standings.filter((s) => s.grade);
+      const predictedGrade = graded.length
+        ? `${Math.round(
+            graded.reduce((sum, s) => sum + Number(s.grade), 0) / graded.length,
+          )}`
+        : undefined;
+      const pct = certifiedCount / (TOTAL_TOPICS || 1);
+      const status: ChildView["status"] =
+        pct >= 0.6 ? "ahead" : pct >= 0.3 ? "on_track" : "needs_review";
+      return {
+        id: childId.toHexString(),
+        name: kid.full_name,
+        age: ageFromDob(kid.date_of_birth),
+        predictedGrade,
+        competenceCertified: certifiedCount,
+        competenceTotal: TOTAL_TOPICS,
+        status,
+      };
+    }),
+  );
+
+  // Week stats across all children.
+  const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const childIds = kids.map((k) => k._id!);
+  const logs = await recentLogs(childIds, weekAgoMs, 50);
+  const completed = logs.filter((l) => l.status === "completed");
+  const durations = completed
+    .filter((l) => l.timestamp_end)
+    .map(
+      (l) =>
+        ((l.timestamp_end as Date).getTime() - l.timestamp_start.getTime()) /
+        1000,
+    )
+    .filter((s) => s > 0);
+  const avgSec = durations.length
+    ? durations.reduce((a, b) => a + b, 0) / durations.length
+    : 0;
+  const certifiedThisWeek = await countCertifiedSince(childIds, weekAgoMs);
+
+  const nameById = new Map(kids.map((k) => [k._id!.toHexString(), k.full_name]));
+  const activity: ActivityItem[] = logs.slice(0, 6).map((l) => ({
+    time: relativeTime(l.timestamp_start),
+    child: nameById.get(l.child_id.toHexString()) ?? "Child",
+    event: l.status === "completed" ? "Completed a lesson" : "Started a lesson",
+    detail: `${l.topic_tag.replace(/_/g, " ")} session`,
+  }));
+
+  // Compliance: real check for a dossier this quarter (active child).
+  const quarter = currentQuarter();
+  const complianceReady = activeChild?._id
+    ? await hasDossierForPeriod(activeChild._id, quarter)
+    : false;
 
   return (
     <>
       <DashboardTopbar greeting={greeting} />
 
       <div className="flex-1 p-6 lg:p-10 max-w-7xl">
-        {usingDemo && (
-          <div className="mb-6 rounded-xl border border-violet-400/20 bg-violet-500/5 px-4 py-3 text-sm text-fog-300">
-            <span className="font-medium text-fog-100">Sample data shown.</span>{" "}
-            Add a child and run the diagnostic to see your family&apos;s real
-            progress here.
-          </div>
-        )}
-
         <section className="mb-10">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -234,30 +196,30 @@ export default async function DashboardPage() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               label="Lessons completed"
-              value={stats.lessonsCompleted}
+              value={completed.length}
               hint="this week, across all children"
               accent="violet"
               icon={<Activity className="h-4 w-4" />}
             />
             <StatCard
               label="Topics certified"
-              value={stats.topicsCertified}
+              value={certifiedThisWeek}
               hint="this week"
               accent="neon"
               icon={<Award className="h-4 w-4" />}
             />
             <StatCard
               label="Avg session time"
-              value={stats.avgSessionLabel}
-              hint={stats.avgSessionHint}
+              value={avgSec ? `${Math.round(avgSec / 60)}m` : "—"}
+              hint={avgSec ? "within 45–60 min target" : "no sessions yet"}
               accent="cyan"
               icon={<Clock className="h-4 w-4" />}
             />
             <StatCard
               label="Compliance"
-              value="Ready"
-              hint="quarterly portfolio available"
-              accent="neon"
+              value={complianceReady ? "Filed" : "Due"}
+              hint={complianceReady ? `${quarter} portfolio generated` : `${quarter} portfolio not yet generated`}
+              accent={complianceReady ? "neon" : "amber"}
               icon={<FileCheck className="h-4 w-4" />}
             />
           </div>
@@ -276,7 +238,11 @@ export default async function DashboardPage() {
 
           <div className="grid lg:grid-cols-2 gap-5">
             {children.map((child) => (
-              <ChildCard key={child.id} {...child} />
+              <ChildCard
+                key={child.id}
+                {...child}
+                highlighted={child.id === activeId}
+              />
             ))}
           </div>
         </section>
@@ -288,7 +254,7 @@ export default async function DashboardPage() {
                 Recent activity
               </h3>
               <Badge variant="outline" size="sm">
-                {usingDemo ? "Sample" : "Live feed"}
+                Live feed
               </Badge>
             </div>
             {activity.length > 0 ? (
@@ -308,7 +274,9 @@ export default async function DashboardPage() {
                         </span>
                         <span className="text-xs text-fog-500">· {a.child}</span>
                       </div>
-                      <span className="text-xs text-fog-400">{a.detail}</span>
+                      <span className="text-xs text-fog-400 capitalize">
+                        {a.detail}
+                      </span>
                     </div>
                     <span className="text-xs text-fog-500 whitespace-nowrap">
                       {a.time}
@@ -317,9 +285,15 @@ export default async function DashboardPage() {
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-fog-400 py-8 text-center">
-                No activity yet. Run the diagnostic or a lesson to get started.
-              </p>
+              <div className="py-8 text-center">
+                <p className="text-sm text-fog-400 mb-4">
+                  No lessons yet. Start the diagnostic to map where your child
+                  stands, then begin daily lessons.
+                </p>
+                <Button href="/onboarding/diagnostic" variant="secondary" size="md">
+                  Start the diagnostic
+                </Button>
+              </div>
             )}
           </Card>
 
@@ -332,14 +306,15 @@ export default async function DashboardPage() {
             </div>
             <div className="flex-1">
               <span className="text-[10px] font-mono uppercase tracking-widest text-fog-500">
-                Compliance
+                Compliance · {quarter}
               </span>
               <h4 className="text-xl font-semibold text-fog-50 mt-1 mb-2">
                 Quarterly LA portfolio
               </h4>
               <p className="text-sm text-fog-400 leading-relaxed">
-                Compile your term evidence into a verified, tamper-evident
-                portfolio — generated in one click, ready to send.
+                {complianceReady
+                  ? "This quarter's verified portfolio has been generated and is ready to send."
+                  : "Compile your term evidence into a verified, tamper-evident portfolio — one click, ready to send."}
               </p>
             </div>
             <div className="mt-6 pt-6 border-t border-white/5 flex items-center justify-between text-xs">
@@ -348,7 +323,7 @@ export default async function DashboardPage() {
                 href="/portfolio"
                 className="text-violet-300 hover:text-violet-200 font-medium"
               >
-                Generate portfolio
+                {complianceReady ? "View portfolio" : "Generate portfolio"}
               </Link>
             </div>
           </Card>
