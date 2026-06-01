@@ -12,6 +12,8 @@ interface ChildCardProps {
   competenceTotal: number;
   nextLesson?: string;
   status: "on_track" | "behind" | "ahead" | "needs_review";
+  /** Visually mark the currently active child. */
+  highlighted?: boolean;
 }
 
 const statusMap = {
@@ -30,12 +32,19 @@ export function ChildCard({
   competenceTotal,
   nextLesson,
   status,
+  highlighted = false,
 }: ChildCardProps) {
   const percent = competenceTotal > 0 ? (competenceCertified / competenceTotal) * 100 : 0;
   const statusInfo = statusMap[status];
 
   return (
-    <Card variant="glass" padding="lg" interactive glow="violet">
+    <Card
+      variant="glass"
+      padding="lg"
+      interactive
+      glow="violet"
+      className={highlighted ? "border-violet-400/40 ring-1 ring-violet-400/30" : undefined}
+    >
       <Link href={`/dashboard/children/${id}`} className="block">
         <div className="flex items-start justify-between mb-4">
           <div className="flex items-center gap-3">

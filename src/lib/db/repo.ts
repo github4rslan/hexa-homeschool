@@ -119,6 +119,50 @@ export async function findChildByName(
   });
 }
 
+export async function getChildById(
+  parentId: string,
+  childId: string,
+): Promise<ChildDoc | null> {
+  const childOid = toObjectId(childId);
+  const parentOid = toObjectId(parentId);
+  if (!childOid || !parentOid) return null;
+  const col = await getCollection<ChildDoc>(Collections.children);
+  return col.findOne({ _id: childOid, parent_id: parentOid });
+}
+
+/**
+ * Resolve the parent's "active" child: the cookie-selected id if it's valid +
+ * owned, otherwise the most-recently-added child. Used so lessons/diagnostics
+ * target the child the parent is currently viewing.
+ */
+export async function getActiveChild(
+  parentId: string,
+  preferredChildId?: string,
+): Promise<ChildDoc | null> {
+  if (preferredChildId) {
+    const preferred = await getChildById(parentId, preferredChildId);
+    if (preferred) return preferred;
+  }
+  return latestChild(parentId);
+}
+
+export async function updateChild(
+  parentId: string,
+  childId: string,
+  patch: Partial<
+    Pick<ChildDoc, "full_name" | "date_of_birth" | "send_indicators" | "target_exam_window">
+  >,
+): Promise<boolean> {
+  const childOid = toObjectId(childId);
+  if (!childOid || !(await assertOwnsChild(parentId, childOid))) return false;
+  const col = await getCollection<ChildDoc>(Collections.children);
+  await col.updateOne(
+    { _id: childOid },
+    { $set: { ...patch, updated_at: new Date() } },
+  );
+  return true;
+}
+
 /** Ownership guard — returns the child ObjectId only if owned by this parent. */
 async function assertOwnsChild(
   parentId: string,
@@ -155,6 +199,51 @@ export async function latestEvaluationGrade(
     { sort: { created_at: -1 } },
   );
   return doc?.model_predicted_grade ?? null;
+}
+
+export interface SubjectStanding {
+  subject: Subject;
+  /** readiness 0–100 derived from raw_score, or null if not assessed. */
+  readiness: number | null;
+  grade: string | null;
+}
+
+/**
+ * Latest evaluation per subject for a child — powers the parent dashboard's
+ * working-grade + readiness audit. Returns the most recent row for each of the
+ * three core subjects.
+ */
+export async function latestEvaluationsBySubject(
+  childId: ObjectId,
+): Promise<SubjectStanding[]> {
+  const col = await getCollection<EvaluationDoc>(Collections.evaluations);
+  const subjects: Subject[] = ["mathematics", "english", "science"];
+  return Promise.all(
+    subjects.map(async (subject): Promise<SubjectStanding> => {
+      const doc = await col.findOne(
+        { child_id: childId, subject },
+        { sort: { created_at: -1 } },
+      );
+      return {
+        subject,
+        readiness: typeof doc?.raw_score === "number" ? doc.raw_score : null,
+        grade: doc?.model_predicted_grade ?? null,
+      };
+    }),
+  );
+}
+
+/** Has a compliance dossier been generated for this child in the given period? */
+export async function hasDossierForPeriod(
+  childId: ObjectId,
+  reportingPeriod: string,
+): Promise<boolean> {
+  const col = await getCollection<DossierDoc>(Collections.dossiers);
+  const doc = await col.findOne({
+    child_id: childId,
+    reporting_period: reportingPeriod,
+  });
+  return !!doc;
 }
 
 // ── Lesson logs + competence ─────────────────────────────

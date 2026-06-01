@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowLeft, Calendar, GraduationCap, User } from "lucide-react";
+import { Calendar, GraduationCap, User } from "lucide-react";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
+import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,24 +23,17 @@ export default async function NewChildPage({
       <DashboardTopbar greeting="Add a child" />
 
       <main className="flex-1 p-6 lg:p-10 max-w-3xl">
-        <Link
-          href="/dashboard"
-          className="mb-6 inline-flex items-center gap-2 text-sm text-fog-400 hover:text-fog-100"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to dashboard
-        </Link>
+        <PageHeader
+          title="Add a child"
+          description="Create your child's profile to begin. Next, you'll run the diagnostic."
+          breadcrumbs={[
+            { label: "Dashboard", href: "/dashboard" },
+            { label: "Add child" },
+          ]}
+          backFallback="/dashboard"
+        />
 
         <Card variant="glass-strong" padding="xl">
-          <div className="mb-8">
-            <h1 className="text-2xl font-semibold text-fog-50">
-              Child profile
-            </h1>
-            <p className="mt-2 text-sm text-fog-400">
-              This creates the first real child row for your parent account in
-              Supabase.
-            </p>
-          </div>
 
           {params.error && (
             <div className="mb-6 rounded-xl border border-crimson-400/30 bg-crimson-500/10 px-4 py-3 text-sm text-crimson-300">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { HexaLogo } from "@/components/ui/hexa-logo";
+import { BackButton } from "@/components/ui/back-button";
 import { DiagnosticRunner } from "@/components/diagnostic/diagnostic-runner";
 import { getDiagnosticPool } from "@/lib/db/repo";
 import { DIAGNOSTIC_SUBJECTS, type DiagnosticItem } from "@/lib/data/diagnostic";
@@ -33,10 +34,11 @@ export default async function DiagnosticPage() {
       <div className="fixed inset-0 bg-void -z-20" />
       <div className="fixed inset-0 bg-mesh-hero opacity-50 -z-10 pointer-events-none" />
 
-      <header className="p-6 lg:p-10">
+      <header className="p-6 lg:p-10 flex items-center justify-between">
         <Link href="/dashboard" className="inline-flex items-center gap-2.5">
           <HexaLogo size={28} withText />
         </Link>
+        <BackButton fallback="/dashboard" label="Exit" />
       </header>
 
       <main className="px-6 py-8 lg:py-16">

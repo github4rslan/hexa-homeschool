@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PortfolioGenerator } from "@/components/compliance/portfolio-generator";
+import { BackButton } from "@/components/ui/back-button";
 
 export const metadata: Metadata = {
   title: "Compliance portfolio",
@@ -13,6 +14,9 @@ export default function PortfolioPage() {
       <div className="fixed inset-0 bg-void -z-20" />
       <div className="fixed inset-0 bg-mesh-violet opacity-20 -z-10 pointer-events-none" />
       <div className="px-6 py-10 lg:px-10 lg:py-16">
+        <div className="max-w-3xl mx-auto mb-4 print:hidden">
+          <BackButton fallback="/dashboard" label="Back to dashboard" className="-ml-3" />
+        </div>
         <PortfolioGenerator />
       </div>
     </div>
