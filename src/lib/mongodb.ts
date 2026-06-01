@@ -82,4 +82,6 @@ export const Collections = {
   schedules: "weekly_schedules",
   tutorBookings: "tutor_bookings",
   escalations: "escalations",
+  // Stage 6 — public lead capture
+  newsletter: "newsletter_subscribers",
 } as const;

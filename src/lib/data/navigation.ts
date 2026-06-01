@@ -19,6 +19,8 @@ export const FOOTER_NAV = {
     { label: "The AI agents", href: "/agents" },
     { label: "Live demo", href: "/demo" },
     { label: "Pricing", href: "/pricing" },
+    { label: "Gallery", href: "/gallery" },
+    { label: "Resources", href: "/resources" },
     { label: "Roadmap", href: "/roadmap" },
   ],
   trust: [
