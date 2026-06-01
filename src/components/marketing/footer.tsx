@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { HexaLogo } from "@/components/ui/hexa-logo";
 import { Container } from "@/components/ui/container";
+import { Newsletter } from "@/components/marketing/newsletter";
 import { FOOTER_NAV } from "@/lib/data/navigation";
 
 export function MarketingFooter() {
@@ -16,6 +17,12 @@ export function MarketingFooter() {
               The AI assistant built for UK homeschooling families who want
               structure, freedom, and protection. Maths, English and Science.
             </p>
+            <div className="max-w-xs">
+              <p className="text-xs font-semibold uppercase tracking-wider text-fog-200 mb-2">
+                Join 2,000+ UK homeschooling parents
+              </p>
+              <Newsletter source="footer" />
+            </div>
             <div className="flex flex-col gap-1.5 text-xs text-fog-500">
               <span>Hosted in the UK · AWS London (eu-west-2)</span>
               <span>AES-256 encrypted · UK GDPR compliant</span>
