@@ -459,6 +459,58 @@ export async function getDiagnosticPool(subject: Subject): Promise<QuestionDoc[]
     .toArray();
 }
 
+// ── Admin aggregates (real counts, no fabricated metrics) ─
+export interface AdminStats {
+  parents: number;
+  children: number;
+  lessonsThisWeek: number;
+  openEscalations: number;
+  newsletterSubscribers: number;
+  dossiers: number;
+}
+
+export async function getAdminStats(): Promise<AdminStats> {
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const [
+    parents,
+    children,
+    lessonsThisWeek,
+    openEscalationsCount,
+    newsletterSubscribers,
+    dossiers,
+  ] = await Promise.all([
+    (await getCollection(Collections.parents)).countDocuments(),
+    (await getCollection(Collections.children)).countDocuments(),
+    (await getCollection(Collections.lessonLogs)).countDocuments({
+      status: "completed",
+      timestamp_start: { $gte: weekAgo },
+    }),
+    (await getCollection(Collections.escalations)).countDocuments({ status: "open" }),
+    (await getCollection(Collections.newsletter)).countDocuments(),
+    (await getCollection(Collections.dossiers)).countDocuments(),
+  ]);
+  return {
+    parents,
+    children,
+    lessonsThisWeek,
+    openEscalations: openEscalationsCount,
+    newsletterSubscribers,
+    dossiers,
+  };
+}
+
+/** Recent lesson activity across all children (admin live feed). */
+export async function adminRecentLogs(limit = 8): Promise<LessonLogDoc[]> {
+  const col = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+  return col.find({}).sort({ timestamp_start: -1 }).limit(limit).toArray();
+}
+
+/** All open escalations across the platform (admin triage). */
+export async function adminOpenEscalations(limit = 50): Promise<EscalationDoc[]> {
+  const col = await getCollection<EscalationDoc>(Collections.escalations);
+  return col.find({ status: "open" }).sort({ created_at: -1 }).limit(limit).toArray();
+}
+
 // ── Media registry (Stage 4) ─────────────────────────────
 export async function recordMedia(
   doc: Omit<MediaDoc, "_id" | "created_at">,
