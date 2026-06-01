@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { logLessonCompletion } from "@/app/(dashboard)/lesson/actions";
 
-interface Question {
+export interface Question {
   id: string;
   prompt: string;
   options: string[];
@@ -27,31 +27,6 @@ interface Question {
   /** Human-authored canonical explanation — ground truth + offline fallback. */
   explanation: string;
 }
-
-const DEMO_QUESTIONS: Question[] = [
-  {
-    id: "q1",
-    prompt: "Solve for x: 3x + 7 = 22",
-    options: ["x = 3", "x = 5", "x = 7", "x = 15"],
-    correctIndex: 1,
-    explanation:
-      "Subtract 7 from both sides → 3x = 15. Divide by 3 → x = 5.",
-  },
-  {
-    id: "q2",
-    prompt: "Which of the following is equivalent to 2(x + 3)?",
-    options: ["2x + 3", "2x + 6", "x + 6", "2x + 5"],
-    correctIndex: 1,
-    explanation: "Distribute the 2 across both terms: 2 × x + 2 × 3 = 2x + 6.",
-  },
-  {
-    id: "q3",
-    prompt: "If y = 4x − 1 and x = 3, what is y?",
-    options: ["7", "11", "12", "13"],
-    correctIndex: 1,
-    explanation: "Substitute x = 3 → y = 4(3) − 1 = 12 − 1 = 11.",
-  },
-];
 
 /** Result shape returned by /api/tutor (Teaching Agent + Checker). */
 interface TutorResponse {
@@ -62,11 +37,14 @@ interface TutorResponse {
 }
 
 export function LessonPlayer({
-  lessonTitle = "Linear equations · Drill 1",
-  topicTag = "Algebra · Linear",
+  questions,
+  lessonTitle = "Lesson",
+  topicTag = "Lesson",
   /** Curriculum topic_tag used to persist progress (matches seeded topics). */
-  curriculumTopic = "algebra_linear",
+  curriculumTopic = "maths_algebra_linear",
 }: {
+  /** Real questions for this topic (practice + mastery) from the DB. */
+  questions: Question[];
   lessonTitle?: string;
   topicTag?: string;
   curriculumTopic?: string;
@@ -93,10 +71,10 @@ export function LessonPlayer({
     "idle" | "saving" | "saved" | "local"
   >("idle");
 
-  const question = DEMO_QUESTIONS[step];
-  const isLast = step === DEMO_QUESTIONS.length - 1;
+  const question = questions[step];
+  const isLast = step === questions.length - 1;
   const isCorrect = selected === question?.correctIndex;
-  const progress = ((step + (submitted ? 1 : 0)) / DEMO_QUESTIONS.length) * 100;
+  const progress = ((step + (submitted ? 1 : 0)) / questions.length) * 100;
 
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
@@ -112,7 +90,7 @@ export function LessonPlayer({
   // Revoke any object URL on unmount to avoid memory leaks.
   useEffect(() => cleanupAudio, [cleanupAudio]);
 
-  const complete = step >= DEMO_QUESTIONS.length;
+  const complete = step >= questions.length;
 
   // On completion, persist the lesson to instructional_logs + competence_matrix.
   // Runs exactly once per lesson; no-ops gracefully if unauthenticated.
@@ -127,13 +105,13 @@ export function LessonPlayer({
     void logLessonCompletion({
       topicTag: curriculumTopic,
       score,
-      total: DEMO_QUESTIONS.length,
+      total: questions.length,
       timeSpentSeconds,
       hintsUsed: 0,
     })
       .then((r) => setSaveState(r.persisted ? "saved" : "local"))
       .catch(() => setSaveState("local"));
-  }, [complete, curriculumTopic, score]);
+  }, [complete, curriculumTopic, score, questions.length]);
 
   async function handleSubmit() {
     if (selected === null || question === undefined) return;
@@ -174,7 +152,7 @@ export function LessonPlayer({
     setAudioError(null);
     setTutor(null);
     if (isLast) {
-      setStep(DEMO_QUESTIONS.length);
+      setStep(questions.length);
       return;
     }
     setStep((s) => s + 1);
@@ -226,7 +204,27 @@ export function LessonPlayer({
     }
   }
 
-  const mastery = (score / DEMO_QUESTIONS.length) * 100;
+  const mastery = (score / questions.length) * 100;
+
+  // Empty state: a topic with no authored questions yet.
+  if (questions.length === 0) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <Card variant="glass-strong" padding="xl" className="text-center">
+          <h1 className="text-2xl font-semibold text-fog-50 mb-2">
+            Lesson coming soon
+          </h1>
+          <p className="text-fog-400 mb-6">
+            Questions for this topic are being prepared. Try the diagnostic or
+            another subject in the meantime.
+          </p>
+          <Button href="/dashboard" variant="primary" size="md">
+            Back to dashboard
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -252,7 +250,7 @@ export function LessonPlayer({
           <span className="text-fog-400">
             {complete
               ? "Complete"
-              : `Question ${step + 1} of ${DEMO_QUESTIONS.length}`}
+              : `Question ${step + 1} of ${questions.length}`}
           </span>
           <span className="text-fog-500 font-mono">{Math.round(progress)}%</span>
         </div>
@@ -281,7 +279,7 @@ export function LessonPlayer({
                 Mastery check complete
               </h2>
               <p className="text-fog-400 mb-8">
-                You scored {score} of {DEMO_QUESTIONS.length} —{" "}
+                You scored {score} of {questions.length} —{" "}
                 {mastery.toFixed(0)}% accuracy
               </p>
 
@@ -298,7 +296,7 @@ export function LessonPlayer({
                 </div>
                 <div className="p-4 rounded-xl bg-white/5">
                   <div className="text-2xl font-semibold text-fog-100">
-                    {score}/{DEMO_QUESTIONS.length}
+                    {score}/{questions.length}
                   </div>
                   <div className="text-xs text-fog-500 mt-1">Score</div>
                 </div>

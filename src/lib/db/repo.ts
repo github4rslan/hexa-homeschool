@@ -9,6 +9,9 @@ import type {
   LessonLogDoc,
   CompetenceDoc,
   DossierDoc,
+  CurriculumTopicDoc,
+  QuestionDoc,
+  Subject,
 } from "./types";
 
 /**
@@ -244,6 +247,63 @@ export async function countCertifiedSince(
     state: "certified",
     updated_at: { $gte: new Date(sinceMs) },
   });
+}
+
+// ── Curriculum + questions (global reference content, no ownership) ──
+export async function listTopics(subject?: Subject): Promise<CurriculumTopicDoc[]> {
+  const col = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const filter = subject ? { subject } : {};
+  return col.find(filter).sort({ subject: 1, order: 1 }).toArray();
+}
+
+export async function getTopic(topicTag: string): Promise<CurriculumTopicDoc | null> {
+  const col = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  return col.findOne({ topic_tag: topicTag });
+}
+
+export async function firstTopic(subject: Subject): Promise<CurriculumTopicDoc | null> {
+  const col = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  return col.findOne({ subject }, { sort: { order: 1 } });
+}
+
+/** Next topic in the subject's order after the given tag (for "continue"). */
+export async function nextTopicAfter(
+  topicTag: string,
+): Promise<CurriculumTopicDoc | null> {
+  const current = await getTopic(topicTag);
+  if (!current) return null;
+  const col = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  return col.findOne(
+    { subject: current.subject, order: { $gt: current.order } },
+    { sort: { order: 1 } },
+  );
+}
+
+export async function getQuestions(
+  filter: {
+    topicTag?: string;
+    subject?: Subject;
+    kind?: QuestionDoc["kind"];
+    tier?: number;
+  },
+  limit = 50,
+): Promise<QuestionDoc[]> {
+  const col = await getCollection<QuestionDoc>(Collections.questions);
+  const query: Record<string, unknown> = {};
+  if (filter.topicTag) query.topic_tag = filter.topicTag;
+  if (filter.subject) query.subject = filter.subject;
+  if (filter.kind) query.kind = filter.kind;
+  if (typeof filter.tier === "number") query.tier = filter.tier;
+  return col.find(query).limit(limit).toArray();
+}
+
+/** The diagnostic item pool for a subject (kind=diagnostic), tier-ordered. */
+export async function getDiagnosticPool(subject: Subject): Promise<QuestionDoc[]> {
+  const col = await getCollection<QuestionDoc>(Collections.questions);
+  return col
+    .find({ subject, kind: "diagnostic" })
+    .sort({ tier: 1 })
+    .toArray();
 }
 
 function escapeRegex(s: string): string {

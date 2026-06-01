@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { HexaLogo } from "@/components/ui/hexa-logo";
 import { DiagnosticRunner } from "@/components/diagnostic/diagnostic-runner";
+import { getDiagnosticPool } from "@/lib/db/repo";
+import { DIAGNOSTIC_SUBJECTS, type DiagnosticItem } from "@/lib/data/diagnostic";
 
 export const metadata: Metadata = {
   title: "Diagnostic",
@@ -9,7 +11,23 @@ export const metadata: Metadata = {
     "The HEXA adaptive diagnostic — map your child's current level against GCSE standards.",
 };
 
-export default function DiagnosticPage() {
+export const dynamic = "force-dynamic";
+
+export default async function DiagnosticPage() {
+  // Load the diagnostic item pool from the real question bank (kind=diagnostic).
+  const pools = await Promise.all(
+    DIAGNOSTIC_SUBJECTS.map((s) => getDiagnosticPool(s.id)),
+  );
+  const pool: DiagnosticItem[] = pools.flat().map((q) => ({
+    id: q._id!.toHexString(),
+    subject: q.subject,
+    tier: q.tier,
+    prompt: q.prompt,
+    options: q.options,
+    correctIndex: q.correct_index,
+    topic: q.topic_tag,
+  }));
+
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 bg-void -z-20" />
@@ -22,7 +40,7 @@ export default function DiagnosticPage() {
       </header>
 
       <main className="px-6 py-8 lg:py-16">
-        <DiagnosticRunner />
+        <DiagnosticRunner pool={pool} />
       </main>
     </div>
   );
