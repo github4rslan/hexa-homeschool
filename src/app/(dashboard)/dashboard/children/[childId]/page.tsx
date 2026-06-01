@@ -12,7 +12,9 @@ import {
   getChildById,
   latestEvaluationsBySubject,
   countCertified,
+  listMedia,
 } from "@/lib/db/repo";
+import { UploadButton } from "@/components/media/upload-button";
 import { saveChildProfile } from "./actions";
 
 export const metadata: Metadata = { title: "Child profile" };
@@ -41,6 +43,7 @@ export default async function ChildProfilePage({
 
   const standings = await latestEvaluationsBySubject(child._id);
   const certified = await countCertified(child._id);
+  const work = await listMedia({ useCase: "child_work", childId, limit: 12 });
   const save = saveChildProfile.bind(null, childId);
 
   return (
@@ -109,6 +112,45 @@ export default async function ChildProfilePage({
           <p className="mt-4 text-xs text-fog-500">
             {certified} topic{certified === 1 ? "" : "s"} certified so far.
           </p>
+        </Card>
+
+        {/* Work evidence (Cloudinary, private) */}
+        <Card variant="glass" padding="xl" className="mb-6">
+          <div className="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <h2 className="text-lg font-semibold text-fog-50">Work evidence</h2>
+              <p className="text-sm text-fog-400 mt-1">
+                Upload photos of {child.full_name.split(" ")[0]}&apos;s written
+                work. These attach to your Local Authority portfolio as evidence
+                and stay private to your family.
+              </p>
+            </div>
+            <UploadButton useCase="child_work" childId={childId} label="Add work" />
+          </div>
+          {work.length > 0 ? (
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+              {work.map((m) => (
+                <a
+                  key={m._id?.toHexString()}
+                  href={m.secure_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={m.secure_url}
+                    alt="Uploaded work"
+                    className="h-full w-full object-cover"
+                  />
+                </a>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-fog-500">
+              No work uploaded yet.
+            </p>
+          )}
         </Card>
 
         {/* Edit profile */}

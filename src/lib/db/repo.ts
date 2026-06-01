@@ -12,6 +12,8 @@ import type {
   CurriculumTopicDoc,
   QuestionDoc,
   CheckinDoc,
+  MediaDoc,
+  MediaUseCase,
   Subject,
 } from "./types";
 
@@ -451,6 +453,59 @@ export async function getDiagnosticPool(subject: Subject): Promise<QuestionDoc[]
     .find({ subject, kind: "diagnostic" })
     .sort({ tier: 1 })
     .toArray();
+}
+
+// ── Media registry (Stage 4) ─────────────────────────────
+export async function recordMedia(
+  doc: Omit<MediaDoc, "_id" | "created_at">,
+): Promise<string> {
+  const col = await getCollection<MediaDoc>(Collections.media);
+  const res = await col.insertOne({ ...doc, created_at: new Date() } as MediaDoc);
+  return res.insertedId.toHexString();
+}
+
+export async function listMedia(filter: {
+  useCase: MediaUseCase;
+  ownerId?: string;
+  childId?: string;
+  publicOnly?: boolean;
+  limit?: number;
+}): Promise<MediaDoc[]> {
+  const col = await getCollection<MediaDoc>(Collections.media);
+  const query: Record<string, unknown> = { use_case: filter.useCase };
+  if (filter.publicOnly) query.is_public = true;
+  if (filter.ownerId) {
+    const oid = toObjectId(filter.ownerId);
+    if (oid) query.owner_id = oid;
+  }
+  if (filter.childId) {
+    const cid = toObjectId(filter.childId);
+    if (cid) query.child_id = cid;
+  }
+  return col
+    .find(query)
+    .sort({ created_at: -1 })
+    .limit(filter.limit ?? 60)
+    .toArray();
+}
+
+/** Look up a cached media asset by content hash (e.g. TTS audio). */
+export async function findMediaByHash(
+  useCase: MediaUseCase,
+  contentHash: string,
+): Promise<MediaDoc | null> {
+  const col = await getCollection<MediaDoc>(Collections.media);
+  return col.findOne({ use_case: useCase, content_hash: contentHash });
+}
+
+/** Ownership check exposed for media routes that operate on a child. */
+export async function parentOwnsChild(
+  parentId: string,
+  childId: string,
+): Promise<boolean> {
+  const childOid = toObjectId(childId);
+  if (!childOid) return false;
+  return assertOwnsChild(parentId, childOid);
 }
 
 function escapeRegex(s: string): string {
