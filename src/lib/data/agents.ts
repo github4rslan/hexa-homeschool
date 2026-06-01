@@ -1,6 +1,7 @@
 /**
  * The six HEXA AI agents.
- * Source of truth: HEXA Technical Brief v1.0, Section 3.
+ * Source of truth: HEXA Technical Brief v2.0, "Agent Infrastructure Specifications".
+ * Plain summaries: HEXA Web Content, "The AI System".
  */
 
 export type AgentId =
@@ -17,6 +18,8 @@ export interface Agent {
   name: string;
   shortName: string;
   tagline: string;
+  /** Plain-English, parent-facing one-liner (source: HEXA Web Content). */
+  plainSummary: string;
   purpose: string;
   ingests: string[];
   logic: string;
@@ -37,6 +40,7 @@ export const AGENTS: Agent[] = [
     name: "Diagnostic Agent",
     shortName: "Diagnostic",
     tagline: "Maps real-time comprehension margins against GCSE milestones",
+    plainSummary: "Finds exactly where your child stands.",
     purpose:
       "Identifies underlying informational topologies and specific structural deficiencies on entry.",
     ingests: [
@@ -68,6 +72,7 @@ export const AGENTS: Agent[] = [
     name: "Teaching Agent",
     shortName: "Teaching",
     tagline: "Translates curriculum into personalised modules in real time",
+    plainSummary: "Explains concepts matched to how they learn.",
     purpose:
       "Dynamically modifies instructional approaches when friction is detected, with multi-path fallback routines.",
     ingests: [
@@ -92,6 +97,7 @@ export const AGENTS: Agent[] = [
     name: "Assessment Agent",
     shortName: "Assessment",
     tagline: "Evaluates output, predicts grades, detects regression risk",
+    plainSummary: "Marks work and predicts grades fairly.",
     purpose:
       "Structures automated long-term grading approximations and uncovers non-linear regression risks.",
     ingests: [
@@ -115,7 +121,8 @@ export const AGENTS: Agent[] = [
     number: "04",
     name: "Planning Agent",
     shortName: "Planning",
-    tagline: "Optimises the 24-month academic timeline dynamically",
+    tagline: "Optimises the two-year academic timeline dynamically",
+    plainSummary: "Builds and adjusts the learning path.",
     purpose:
       "Automatically adjusts system velocity based on student mastery levels, balancing content against exam deadlines.",
     ingests: [
@@ -140,6 +147,7 @@ export const AGENTS: Agent[] = [
     name: "Compliance Agent",
     shortName: "Compliance",
     tagline: "Builds defensible Local Authority portfolios automatically",
+    plainSummary: "Prepares council-ready evidence.",
     purpose:
       "Processes session data into professional compliance portfolios for Local Authority evaluations.",
     ingests: [
@@ -164,6 +172,7 @@ export const AGENTS: Agent[] = [
     name: "Meta Checker Agent",
     shortName: "Meta Checker",
     tagline: "System-wide supervisor catching drift and bias",
+    plainSummary: "Watches the system for any issues.",
     purpose:
       "Monitors the entire multi-agent environment to catch systemic model drift, bias patterns, or proxy alignment failures.",
     ingests: [

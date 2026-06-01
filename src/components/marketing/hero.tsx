@@ -15,8 +15,8 @@ import { Magnetic } from "@/components/fx/magnetic";
 import { AgentConstellation } from "./agent-constellation";
 
 const HEADLINE_PARTS = [
-  { text: "GCSE-ready", className: "" },
-  { text: "at 14.", className: "text-gradient-aurora" },
+  { text: "Teach with confidence.", className: "" },
+  { text: "Prove with evidence.", className: "text-gradient-aurora" },
 ];
 
 const wordVariants: Variants = {
@@ -76,7 +76,7 @@ export function Hero() {
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-violet-400" />
               </span>
               <Sparkles className="h-3.5 w-3.5" />
-              <span>Built for UK homeschooling families</span>
+              <span>The AI assistant built for UK homeschooling families</span>
             </motion.div>
 
             <motion.h1
@@ -98,7 +98,7 @@ export function Hero() {
                 variants={wordVariants}
                 className="block text-fog-300 text-3xl md:text-4xl lg:text-5xl font-normal mt-2 tracking-tight"
               >
-                With proof.
+                Sit when ready.
               </motion.span>
             </motion.h1>
 
@@ -108,11 +108,10 @@ export function Hero() {
               transition={{ duration: 0.7, delay: 0.7 }}
               className="text-lg md:text-xl text-fog-300 max-w-xl leading-relaxed"
             >
-              An AI-powered homeschooling platform that prepares your child for
-              GCSE Mathematics, English and Science
-              <span className="text-fog-100"> two years ahead </span>
-              of the traditional UK timeline. Six specialised AI agents. Full
-              Local Authority compliance. Built in the UK.
+              HEXA plans your child's learning, teaches daily lessons in Maths,
+              English and Science, tracks every step, and generates the
+              <span className="text-fog-100"> evidence Local Authorities need </span>
+              — all in one place. Not rushed. Not forced. Built in the UK.
             </motion.p>
 
             <motion.div

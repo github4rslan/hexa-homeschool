@@ -2,6 +2,8 @@ import { Hero } from "@/components/marketing/hero";
 import { TrustBar } from "@/components/marketing/trust-bar";
 import { StructuredData } from "@/components/seo/structured-data";
 import { StatsStrip } from "@/components/marketing/stats-strip";
+import { Problem } from "@/components/marketing/problem";
+import { Solution } from "@/components/marketing/solution";
 import { JourneyPreview } from "@/components/marketing/journey-preview";
 import { AgentsPreview } from "@/components/marketing/agents-preview";
 import { FeatureGrid } from "@/components/marketing/feature-grid";
@@ -17,6 +19,8 @@ export default function HomePage() {
       <Hero />
       <TrustBar />
       <StatsStrip />
+      <Problem />
+      <Solution />
       <JourneyPreview />
       <AgentsPreview />
       <FeatureGrid />

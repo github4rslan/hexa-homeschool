@@ -6,11 +6,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: {
-    default: "HEXA — GCSE-ready at 14. With proof.",
+    default: "HEXA — Teach with confidence. Prove with evidence. Sit when ready.",
     template: "%s · HEXA",
   },
   description:
-    "HEXA is an AI-powered homeschooling platform preparing UK students for GCSE Mathematics, English and Science by age 14 — two years ahead of the traditional academic timeline. Six specialised AI agents. Full Local Authority compliance. Built in the UK.",
+    "HEXA is the AI assistant built for UK homeschooling families. It plans your child's learning, teaches daily lessons in Maths, English and Science, tracks every step, and generates the Local Authority-compliant evidence you need — all in one place. Not rushed. Not forced. Sit when ready.",
   applicationName: "HEXA",
   keywords: [
     "GCSE",
@@ -33,23 +33,23 @@ export const metadata: Metadata = {
     locale: "en_GB",
     url: "https://hexa.education",
     siteName: "HEXA",
-    title: "HEXA — GCSE-ready at 14. With proof.",
+    title: "HEXA — Teach with confidence. Prove with evidence. Sit when ready.",
     description:
-      "Six specialised AI agents preparing UK students for GCSEs two years early. Full Local Authority compliance.",
+      "The AI assistant built for UK homeschooling families. Daily lessons, transparent progress tracking, and Local Authority-compliant portfolios. Full Local Authority compliance.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "HEXA — GCSE-ready at 14. With proof.",
+        alt: "HEXA — Teach with confidence. Prove with evidence. Sit when ready.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "HEXA — GCSE-ready at 14. With proof.",
+    title: "HEXA — Teach with confidence. Prove with evidence. Sit when ready.",
     description:
-      "Six specialised AI agents preparing UK students for GCSEs two years early.",
+      "The AI assistant built for UK homeschooling families. Daily lessons, progress tracking, and council-ready evidence.",
     images: ["/og-image.png"],
   },
   robots: {

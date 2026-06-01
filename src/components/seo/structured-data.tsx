@@ -13,7 +13,7 @@ export function StructuredData() {
         url: "https://hexa.education",
         logo: "https://hexa.education/favicon.svg",
         description:
-          "AI-powered homeschooling platform preparing UK students for GCSEs by age 14.",
+          "The AI assistant built for UK homeschooling families — daily lessons, transparent progress tracking, and Local Authority-compliant portfolios for Maths, English and Science.",
         foundingDate: "2026",
         address: { "@type": "PostalAddress", addressCountry: "GB" },
         contactPoint: [
@@ -38,20 +38,14 @@ export function StructuredData() {
         "@type": "Product",
         name: "HEXA Platform",
         description:
-          "Six specialised AI agents preparing UK students for GCSE Mathematics, English and Science by age 14.",
+          "Six specialised AI agents that plan, teach, track and protect — preparing UK students for GCSE Maths, English and Science at their own pace.",
         brand: { "@id": "https://hexa.education/#organization" },
         offers: {
           "@type": "AggregateOffer",
           priceCurrency: "GBP",
-          lowPrice: "0",
-          highPrice: "149",
-          offerCount: "3",
-        },
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue: "4.9",
-          reviewCount: "127",
-          bestRating: "5",
+          lowPrice: "49",
+          highPrice: "99",
+          offerCount: "2",
         },
       },
     ],

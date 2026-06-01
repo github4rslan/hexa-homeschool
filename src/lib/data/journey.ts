@@ -16,68 +16,68 @@ export interface JourneyStep {
 export const JOURNEY: JourneyStep[] = [
   {
     step: 1,
-    title: "Diagnostic Assessment",
+    title: "Understand",
     timing: "Day 1",
     description:
-      "A comprehensive 60-minute dynamic entry model mapped to standard examination specifications.",
+      "A 60-minute diagnostic maps your child's current level against GCSE standards. No guesswork. Just facts.",
     detail:
-      "Establishes baseline competencies and identifies precise informational gaps using Item Response Theory.",
+      "Establishes baseline competencies and identifies precise gaps using Item Response Theory.",
     icon: "Activity",
     agentIds: ["diagnostic"],
   },
   {
     step: 2,
-    title: "Automated Curricular Planning",
+    title: "Plan",
     timing: "Week 1",
     description:
-      "A programmatic, two-year macro-syllabus generated instantly and presented to parents.",
+      "A personalised two-year syllabus is built. You review, adjust, and approve. This is your roadmap.",
     detail:
-      "Parents retain granular control or can structurally validate the AI's plan before lessons begin.",
+      "Parents retain granular control and authorise the plan before any lessons begin.",
     icon: "Map",
     agentIds: ["planning"],
   },
   {
     step: 3,
-    title: "Iterative Daily Learning",
-    timing: "Ongoing",
+    title: "Learn",
+    timing: "Every day",
     description:
-      "Micro-targeted instructional intervals lasting 45–60 minutes with multi-modal video, drilling and mastery.",
+      "Daily lessons delivered: explainer video, adaptive practice, mastery check. AI adapts to how your child learns best.",
     detail:
-      "The Teaching Agent dynamically modifies instructional approaches when friction is detected.",
+      "The Teaching Agent dynamically modifies its approach when friction is detected — with a checker on every output.",
     icon: "Sparkles",
     agentIds: ["teaching"],
   },
   {
     step: 4,
-    title: "High-Fidelity Evaluation",
-    timing: "Monthly",
+    title: "Assess",
+    timing: "Every month",
     description:
-      "Regular simulated examination cycles matching historical mock distributions.",
+      "Mock exams under timed conditions. Grade predictions. Trend analysis. You see progress, not just activity.",
     detail:
-      "Automatically parsed with associated grade estimations and regression risk analysis.",
+      "Automatically parsed with grade estimations cross-referenced against historical UK national datasets.",
     icon: "ClipboardCheck",
     agentIds: ["assessment"],
   },
   {
     step: 5,
-    title: "Standardised Examination Entry",
-    timing: "Age 14",
+    title: "Prove",
+    timing: "Every term",
     description:
-      "Direct routing strategies guiding parents through independent candidate entry configurations.",
+      "One button generates your Local Authority portfolio. Verified. Professional. Ready to send.",
     detail:
-      "Across verified regional assessment nodes — Mathematics, English, Science.",
-    icon: "GraduationCap",
-    agentIds: ["planning", "compliance"],
+      "Compiled into a tamper-evident PDF with an SHA-256 verifiable signature.",
+    icon: "FileCheck",
+    agentIds: ["compliance"],
   },
   {
     step: 6,
-    title: "Compliance Portfolio Compilation",
-    timing: "Ongoing",
+    title: "Decide",
+    timing: "When ready",
     description:
-      "Algorithmic log transformations compiled into authoritative progress dossiers.",
+      "When your child reaches the standard, you choose whether to sit the exam at 14, 15, or 16. HEXA supports you either way.",
     detail:
-      "Tailored for unprompted Local Authority presentation with SHA-256 verifiable signatures.",
-    icon: "FileCheck",
-    agentIds: ["compliance"],
+      "No artificial deadlines. The decision is data-driven and entirely yours.",
+    icon: "GraduationCap",
+    agentIds: ["planning", "assessment"],
   },
 ];

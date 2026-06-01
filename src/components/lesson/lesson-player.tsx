@@ -1,18 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, ChevronRight, Lightbulb, Volume2, X } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  CloudUpload,
+  Lightbulb,
+  Loader2,
+  ShieldCheck,
+  ShieldAlert,
+  Volume2,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { logLessonCompletion } from "@/app/(dashboard)/lesson/actions";
 
 interface Question {
   id: string;
   prompt: string;
   options: string[];
   correctIndex: number;
+  /** Human-authored canonical explanation — ground truth + offline fallback. */
   explanation: string;
 }
 
@@ -41,43 +53,179 @@ const DEMO_QUESTIONS: Question[] = [
   },
 ];
 
+/** Result shape returned by /api/tutor (Teaching Agent + Checker). */
+interface TutorResponse {
+  explanation: string;
+  aiVerified: boolean;
+  usedFallback: boolean;
+  checker: { confidence: number };
+}
+
 export function LessonPlayer({
   lessonTitle = "Linear equations · Drill 1",
   topicTag = "Algebra · Linear",
+  /** Curriculum topic_tag used to persist progress (matches seeded topics). */
+  curriculumTopic = "algebra_linear",
 }: {
   lessonTitle?: string;
   topicTag?: string;
+  curriculumTopic?: string;
 }) {
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [score, setScore] = useState(0);
-  const [showExplanation, setShowExplanation] = useState(false);
+
+  // Teaching Agent state
+  const [tutor, setTutor] = useState<TutorResponse | null>(null);
+  const [tutorLoading, setTutorLoading] = useState(false);
+
+  // TTS state
+  const [audioLoading, setAudioLoading] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+
+  // Progress persistence
+  const startedAtRef = useRef<number>(Date.now());
+  const loggedRef = useRef(false);
+  const [saveState, setSaveState] = useState<
+    "idle" | "saving" | "saved" | "local"
+  >("idle");
 
   const question = DEMO_QUESTIONS[step];
   const isLast = step === DEMO_QUESTIONS.length - 1;
   const isCorrect = selected === question?.correctIndex;
   const progress = ((step + (submitted ? 1 : 0)) / DEMO_QUESTIONS.length) * 100;
 
-  function handleSubmit() {
-    if (selected === null) return;
+  const cleanupAudio = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (audioUrlRef.current) {
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+  }, []);
+
+  // Revoke any object URL on unmount to avoid memory leaks.
+  useEffect(() => cleanupAudio, [cleanupAudio]);
+
+  const complete = step >= DEMO_QUESTIONS.length;
+
+  // On completion, persist the lesson to instructional_logs + competence_matrix.
+  // Runs exactly once per lesson; no-ops gracefully if unauthenticated.
+  useEffect(() => {
+    if (!complete || loggedRef.current) return;
+    loggedRef.current = true;
+    setSaveState("saving");
+    const timeSpentSeconds = Math.max(
+      1,
+      Math.round((Date.now() - startedAtRef.current) / 1000),
+    );
+    void logLessonCompletion({
+      topicTag: curriculumTopic,
+      score,
+      total: DEMO_QUESTIONS.length,
+      timeSpentSeconds,
+      hintsUsed: 0,
+    })
+      .then((r) => setSaveState(r.persisted ? "saved" : "local"))
+      .catch(() => setSaveState("local"));
+  }, [complete, curriculumTopic, score]);
+
+  async function handleSubmit() {
+    if (selected === null || question === undefined) return;
     setSubmitted(true);
-    if (isCorrect) setScore((s) => s + 1);
-    setShowExplanation(true);
+    const correct = selected === question.correctIndex;
+    if (correct) setScore((s) => s + 1);
+
+    // Fire the Teaching Agent. We always have the human-authored explanation
+    // as a guaranteed fallback if the network/agent is unavailable.
+    setTutorLoading(true);
+    setTutor(null);
+    try {
+      const res = await fetch("/api/tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: question.prompt,
+          correctAnswer: question.explanation,
+          topic: topicTag,
+          studentAnswer: question.options[selected],
+          wasCorrect: correct,
+        }),
+      });
+      if (res.ok) {
+        setTutor((await res.json()) as TutorResponse);
+      } else {
+        setTutor(offlineTutor(question.explanation));
+      }
+    } catch {
+      setTutor(offlineTutor(question.explanation));
+    } finally {
+      setTutorLoading(false);
+    }
   }
 
   function handleNext() {
+    cleanupAudio();
+    setAudioError(null);
+    setTutor(null);
     if (isLast) {
-      setStep(DEMO_QUESTIONS.length); // triggers complete state
+      setStep(DEMO_QUESTIONS.length);
       return;
     }
     setStep((s) => s + 1);
     setSelected(null);
     setSubmitted(false);
-    setShowExplanation(false);
   }
 
-  const complete = step >= DEMO_QUESTIONS.length;
+  async function handleListen() {
+    if (question === undefined) return;
+    setAudioError(null);
+
+    // Toggle: if already playing, stop.
+    if (audioRef.current && !audioRef.current.paused) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      return;
+    }
+    // Replay if we already have audio.
+    if (audioRef.current) {
+      void audioRef.current.play();
+      return;
+    }
+
+    setAudioLoading(true);
+    try {
+      const narration = tutor?.explanation ?? question.prompt;
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: narration }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? "Narration unavailable.");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      audioUrlRef.current = url;
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        // keep the element so a second click replays without re-fetching
+      };
+      await audio.play();
+    } catch (err) {
+      setAudioError(err instanceof Error ? err.message : "Narration unavailable.");
+    } finally {
+      setAudioLoading(false);
+    }
+  }
+
   const mastery = (score / DEMO_QUESTIONS.length) * 100;
 
   return (
@@ -90,7 +238,10 @@ export function LessonPlayer({
           </span>
           <h1 className="text-2xl font-semibold text-fog-50">{lessonTitle}</h1>
         </div>
-        <button className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-fog-300 transition-all" aria-label="Close lesson">
+        <button
+          className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-fog-300 transition-all"
+          aria-label="Close lesson"
+        >
           <X className="h-5 w-5" />
         </button>
       </div>
@@ -99,7 +250,9 @@ export function LessonPlayer({
       <div className="mb-8">
         <div className="flex items-center justify-between text-xs mb-2">
           <span className="text-fog-400">
-            {complete ? "Complete" : `Question ${step + 1} of ${DEMO_QUESTIONS.length}`}
+            {complete
+              ? "Complete"
+              : `Question ${step + 1} of ${DEMO_QUESTIONS.length}`}
           </span>
           <span className="text-fog-500 font-mono">{Math.round(progress)}%</span>
         </div>
@@ -128,13 +281,18 @@ export function LessonPlayer({
                 Mastery check complete
               </h2>
               <p className="text-fog-400 mb-8">
-                You scored {score} of {DEMO_QUESTIONS.length} — {mastery.toFixed(0)}% accuracy
+                You scored {score} of {DEMO_QUESTIONS.length} —{" "}
+                {mastery.toFixed(0)}% accuracy
               </p>
 
               <div className="grid grid-cols-3 gap-3 mb-8">
                 <div className="p-4 rounded-xl bg-white/5">
                   <div className="text-2xl font-semibold text-gradient-aurora">
-                    {mastery >= 80 ? "Certified" : mastery >= 50 ? "Training" : "Locked"}
+                    {mastery >= 80
+                      ? "Certified"
+                      : mastery >= 50
+                        ? "Training"
+                        : "Locked"}
                   </div>
                   <div className="text-xs text-fog-500 mt-1">Topic state</div>
                 </div>
@@ -154,6 +312,21 @@ export function LessonPlayer({
                 Continue to next lesson
                 <ChevronRight className="h-4 w-4" />
               </Button>
+
+              {saveState !== "idle" && (
+                <p className="mt-6 flex items-center justify-center gap-1.5 text-xs text-fog-500">
+                  {saveState === "saving" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <CloudUpload className="h-3.5 w-3.5" />
+                  )}
+                  {saveState === "saving"
+                    ? "Saving progress…"
+                    : saveState === "saved"
+                      ? "Progress saved to your child's record."
+                      : "Progress shown locally — sign in and add a child to save it."}
+                </p>
+              )}
             </Card>
           </motion.div>
         ) : (
@@ -170,10 +343,16 @@ export function LessonPlayer({
                   Question {step + 1}
                 </Badge>
                 <button
-                  className="flex items-center gap-1.5 text-xs text-fog-400 hover:text-fog-100 transition-colors"
-                  aria-label="Play audio"
+                  onClick={handleListen}
+                  disabled={audioLoading}
+                  className="flex items-center gap-1.5 text-xs text-fog-400 hover:text-fog-100 transition-colors disabled:opacity-50"
+                  aria-label="Listen to this question"
                 >
-                  <Volume2 className="h-4 w-4" />
+                  {audioLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Volume2 className="h-4 w-4" />
+                  )}
                   Listen
                 </button>
               </div>
@@ -181,6 +360,10 @@ export function LessonPlayer({
               <h2 className="text-2xl font-semibold text-fog-50 mb-8 leading-snug">
                 {question.prompt}
               </h2>
+
+              {audioError && (
+                <p className="-mt-4 mb-6 text-xs text-amber-400">{audioError}</p>
+              )}
 
               <div className="grid gap-3 mb-6">
                 {question.options.map((option, i) => {
@@ -195,21 +378,44 @@ export function LessonPlayer({
                       disabled={submitted}
                       className={cn(
                         "flex items-center justify-between p-4 rounded-xl border text-left transition-all",
-                        !isAnswered && isSelected && "border-violet-400/60 bg-violet-500/10",
-                        !isAnswered && !isSelected && "border-white/10 hover:border-white/30 hover:bg-white/5",
-                        isAnswered && isCorrectOption && "border-neon-400/60 bg-neon-500/10",
-                        isAnswered && isSelected && !isCorrectOption && "border-crimson-400/60 bg-crimson-500/10",
-                        isAnswered && !isSelected && !isCorrectOption && "border-white/5 opacity-50",
+                        !isAnswered &&
+                          isSelected &&
+                          "border-violet-400/60 bg-violet-500/10",
+                        !isAnswered &&
+                          !isSelected &&
+                          "border-white/10 hover:border-white/30 hover:bg-white/5",
+                        isAnswered &&
+                          isCorrectOption &&
+                          "border-neon-400/60 bg-neon-500/10",
+                        isAnswered &&
+                          isSelected &&
+                          !isCorrectOption &&
+                          "border-crimson-400/60 bg-crimson-500/10",
+                        isAnswered &&
+                          !isSelected &&
+                          !isCorrectOption &&
+                          "border-white/5 opacity-50",
                       )}
                     >
                       <div className="flex items-center gap-3">
-                        <span className={cn(
-                          "flex h-6 w-6 items-center justify-center rounded-md text-xs font-mono font-medium border",
-                          isSelected && !isAnswered && "border-violet-400 text-violet-300 bg-violet-500/20",
-                          isAnswered && isCorrectOption && "border-neon-400 text-neon-400 bg-neon-500/20",
-                          isAnswered && isSelected && !isCorrectOption && "border-crimson-400 text-crimson-400",
-                          !isSelected && !isAnswered && "border-white/15 text-fog-400",
-                        )}>
+                        <span
+                          className={cn(
+                            "flex h-6 w-6 items-center justify-center rounded-md text-xs font-mono font-medium border",
+                            isSelected &&
+                              !isAnswered &&
+                              "border-violet-400 text-violet-300 bg-violet-500/20",
+                            isAnswered &&
+                              isCorrectOption &&
+                              "border-neon-400 text-neon-400 bg-neon-500/20",
+                            isAnswered &&
+                              isSelected &&
+                              !isCorrectOption &&
+                              "border-crimson-400 text-crimson-400",
+                            !isSelected &&
+                              !isAnswered &&
+                              "border-white/15 text-fog-400",
+                          )}
+                        >
                           {String.fromCharCode(65 + i)}
                         </span>
                         <span className="text-base text-fog-100">{option}</span>
@@ -225,7 +431,8 @@ export function LessonPlayer({
                 })}
               </div>
 
-              {showExplanation && (
+              {/* Teaching Agent explanation with visible checker status */}
+              {submitted && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -237,16 +444,30 @@ export function LessonPlayer({
                   )}
                 >
                   <div className="flex items-start gap-3">
-                    <Lightbulb className={cn(
-                      "h-4 w-4 mt-0.5 shrink-0",
-                      isCorrect ? "text-neon-400" : "text-amber-400",
-                    )} />
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-wider text-fog-300 mb-1">
-                        {isCorrect ? "Correct" : "Not quite — Teaching Agent says:"}
-                      </p>
-                      <p className="text-sm text-fog-200 leading-relaxed">
-                        {question.explanation}
+                    <Lightbulb
+                      className={cn(
+                        "h-4 w-4 mt-0.5 shrink-0",
+                        isCorrect ? "text-neon-400" : "text-amber-400",
+                      )}
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-fog-300">
+                          {isCorrect
+                            ? "Correct"
+                            : "Not quite — Teaching Agent says:"}
+                        </p>
+                        <CheckerBadge loading={tutorLoading} tutor={tutor} />
+                      </div>
+                      <p className="text-sm text-fog-200 leading-relaxed min-h-[1.25rem]">
+                        {tutorLoading ? (
+                          <span className="inline-flex items-center gap-2 text-fog-400">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            The Teaching Agent is preparing your explanation…
+                          </span>
+                        ) : (
+                          (tutor?.explanation ?? question.explanation)
+                        )}
                       </p>
                     </div>
                   </div>
@@ -276,4 +497,41 @@ export function LessonPlayer({
       </AnimatePresence>
     </div>
   );
+}
+
+/** Small status chip showing whether the explanation is AI-verified or human fallback. */
+function CheckerBadge({
+  loading,
+  tutor,
+}: {
+  loading: boolean;
+  tutor: TutorResponse | null;
+}) {
+  if (loading || !tutor) return null;
+
+  if (tutor.aiVerified) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-neon-400">
+        <ShieldCheck className="h-3 w-3" />
+        Checker verified · {Math.round(tutor.checker.confidence * 100)}%
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-amber-400">
+      <ShieldAlert className="h-3 w-3" />
+      Human-authored fallback
+    </span>
+  );
+}
+
+/** Used when the network/agent is unavailable — guarantees a serveable result. */
+function offlineTutor(explanation: string): TutorResponse {
+  return {
+    explanation,
+    aiVerified: false,
+    usedFallback: true,
+    checker: { confidence: 0 },
+  };
 }

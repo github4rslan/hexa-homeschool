@@ -13,7 +13,7 @@ interface Stat {
 }
 
 const STATS: Stat[] = [
-  { value: 2, suffix: " yrs", label: "Ahead of traditional GCSE timeline" },
+  { value: 3, label: "Core subjects — Maths, English & Science" },
   { value: 6, label: "Specialised AI agents working in concert" },
   { value: 5, suffix: "%", label: "Continuous Meta Checker audit coverage" },
   { value: 24, suffix: "/7", label: "Automated Local Authority compliance" },

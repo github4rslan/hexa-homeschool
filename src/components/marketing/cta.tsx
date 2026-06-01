@@ -20,16 +20,16 @@ export function CTA() {
           className="relative flex flex-col items-center text-center gap-8"
         >
           <h2 className="text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-fog-50 leading-[1.05]">
-            Not someday.
+            Don't wait
             <br />
-            Not hopefully.
+            for the letter.
             <br />
-            <span className="text-gradient-aurora">At 14. With proof.</span>
+            <span className="text-gradient-aurora">Be ready now.</span>
           </h2>
 
           <p className="max-w-xl text-lg text-fog-300 leading-relaxed">
             Start with a free 60-minute diagnostic. See exactly where your child
-            stands against GCSE standards — and what the next 24 months will look like.
+            stands against GCSE standards — then learn at their pace and sit when ready.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 mt-4">

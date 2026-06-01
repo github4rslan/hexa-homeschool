@@ -33,9 +33,9 @@ const FEATURES = [
   },
   {
     icon: BookOpen,
-    title: "Daily 45–60 min sessions",
+    title: "Daily explainer + practice + mastery",
     description:
-      "Multi-modal video, drilling and mastery enforcement. Calibrated to attention spans.",
+      "Explainer video, adaptive practice and a clean mastery check. Calibrated to attention spans.",
     accent: "neon",
   },
   {
@@ -100,7 +100,7 @@ export function FeatureGrid() {
             <span className="text-gradient-violet">Nothing you don't.</span>
           </>
         }
-        description="HEXA is purpose-built for one outcome — GCSEs at 14 — and shipped with the exact toolkit to get there."
+        description="HEXA is purpose-built for one outcome — a transparent, verified path to GCSE readiness — and shipped with the exact toolkit to get there."
       />
 
       <div className="mt-20 grid md:grid-cols-2 lg:grid-cols-3 gap-5">

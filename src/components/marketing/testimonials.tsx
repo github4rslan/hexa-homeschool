@@ -18,57 +18,39 @@ interface Testimonial {
 const TESTIMONIALS: Testimonial[] = [
   {
     quote:
-      "The Local Authority visit used to be the worst week of my year. Now I just hand them the dossier. The case officer told me it was the cleanest portfolio she'd seen in 12 years.",
+      "The Local Authority officer told me it was the clearest portfolio she'd seen in twelve years.",
     name: "Priya M.",
-    role: "Parent of two",
+    role: "Parent",
     location: "Manchester",
     initial: "P",
     color: "#A78BFA",
   },
   {
     quote:
-      "My son was bored stiff at school. Three months on HEXA and he's pacing through Year 11 maths at 12. The diagnostic was brutally honest — exactly what we needed.",
+      "My son was bored at school. HEXA showed us he was ready for harder work. He chooses his pace. We choose when he's ready to sit exams.",
     name: "James K.",
-    role: "Parent of one",
+    role: "Parent",
     location: "Bristol",
     initial: "J",
     color: "#06FFA5",
   },
   {
     quote:
-      "When the AI flagged that my daughter was getting frustrated with quadratics, a real tutor was on a video call within 12 minutes. That's the moment I knew this wasn't just chatbot fluff.",
+      "When my daughter got stuck on fractions, a real tutor was on video within twelve minutes. That's when I knew this wasn't just an app.",
     name: "Sarah T.",
-    role: "Parent of three",
+    role: "Parent",
     location: "Edinburgh",
     initial: "S",
     color: "#00D4FF",
   },
   {
     quote:
-      "I spent £40k a year on private school for marginal results. HEXA does more in 60 minutes a day. My daughter sits her first GCSE next summer aged 13.",
-    name: "Olivia R.",
-    role: "Parent of one",
-    location: "London",
-    initial: "O",
-    color: "#A78BFA",
-  },
-  {
-    quote:
-      "The monthly mocks predicted her grade within half a band of the real GCSE result. Compliance paperwork that used to take me a weekend now takes 30 seconds.",
+      "I used to spend my weekends on paperwork. Now I press one button. Thirty seconds. Done.",
     name: "David L.",
-    role: "Homeschool dad",
+    role: "Parent",
     location: "Cardiff",
     initial: "D",
     color: "#06FFA5",
-  },
-  {
-    quote:
-      "What sold me was the safety net. The platform halted lessons the day my son typed 'I give up' — and a tutor was assigned before I'd even finished my coffee.",
-    name: "Aisha N.",
-    role: "Parent of two",
-    location: "Birmingham",
-    initial: "A",
-    color: "#00D4FF",
   },
 ];
 
@@ -79,12 +61,12 @@ export function Testimonials() {
         eyebrow="Parents on HEXA"
         title={
           <>
-            UK parents who stopped
+            What parents
             <br />
-            <span className="text-gradient-aurora">waiting for permission.</span>
+            <span className="text-gradient-aurora">say about HEXA.</span>
           </>
         }
-        description="Built with real homeschooling families across the UK. Quotes shown reflect platform pilot participants and are reproduced with consent."
+        description="Built with real homeschooling families across the UK. Quotes shown reflect early pilot participants and are reproduced with consent."
       />
 
       <div className="mt-20 grid md:grid-cols-2 lg:grid-cols-3 gap-5">

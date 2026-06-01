@@ -4,23 +4,22 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Users,
-  BookOpen,
-  ClipboardCheck,
+  UserPlus,
+  Activity,
+  GraduationCap,
   FileCheck,
-  Settings,
   LogOut,
 } from "lucide-react";
 import { HexaLogo } from "@/components/ui/hexa-logo";
 import { cn } from "@/lib/utils";
 
+// Only routes that actually exist — every link here resolves to a real page.
 const NAV = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Children", href: "/dashboard/children", icon: Users },
-  { label: "Curriculum", href: "/dashboard/curriculum", icon: BookOpen },
-  { label: "Assessments", href: "/dashboard/assessments", icon: ClipboardCheck },
-  { label: "Compliance", href: "/dashboard/compliance", icon: FileCheck },
-  { label: "Settings", href: "/dashboard/settings", icon: Settings },
+  { label: "Add child", href: "/dashboard/children/new", icon: UserPlus },
+  { label: "Diagnostic", href: "/onboarding/diagnostic", icon: Activity },
+  { label: "Lesson", href: "/lesson", icon: GraduationCap },
+  { label: "Portfolio", href: "/portfolio", icon: FileCheck },
 ];
 
 export function DashboardSidebar() {

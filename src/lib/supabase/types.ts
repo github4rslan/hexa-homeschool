@@ -223,6 +223,114 @@ export interface Database {
         };
         Relationships: [];
       };
+      // Progress domain (brief's lesson_log)
+      instructional_logs: {
+        Row: {
+          id: string;
+          child_id: string;
+          lesson_id: string;
+          status: "in_progress" | "completed" | "abandoned" | "escalated";
+          timestamp_start: string;
+          timestamp_end: string | null;
+          count_attempts: number;
+          hints_counter: number;
+          mastery_score: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          child_id: string;
+          lesson_id: string;
+          status?: "in_progress" | "completed" | "abandoned" | "escalated";
+          timestamp_start?: string;
+          timestamp_end?: string | null;
+          count_attempts?: number;
+          hints_counter?: number;
+          mastery_score?: number | null;
+        };
+        Update: {
+          status?: "in_progress" | "completed" | "abandoned" | "escalated";
+          timestamp_end?: string | null;
+          count_attempts?: number;
+          hints_counter?: number;
+          mastery_score?: number | null;
+        };
+        Relationships: [];
+      };
+      // Progress domain (brief's assessment_result)
+      evaluation_records: {
+        Row: {
+          id: string;
+          child_id: string;
+          test_id: string | null;
+          raw_score: number | null;
+          model_predicted_grade: string | null;
+          confidence_interval: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          child_id: string;
+          test_id?: string | null;
+          raw_score?: number | null;
+          model_predicted_grade?: string | null;
+          confidence_interval?: number | null;
+        };
+        Update: {
+          raw_score?: number | null;
+          model_predicted_grade?: string | null;
+          confidence_interval?: number | null;
+        };
+        Relationships: [];
+      };
+      // Progress domain (brief's gap_map)
+      competence_matrix: {
+        Row: {
+          id: string;
+          child_id: string;
+          topic_id: string;
+          state: "locked" | "training" | "certified";
+          certified_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          child_id: string;
+          topic_id: string;
+          state?: "locked" | "training" | "certified";
+          certified_at?: string | null;
+        };
+        Update: {
+          state?: "locked" | "training" | "certified";
+          certified_at?: string | null;
+        };
+        Relationships: [];
+      };
+      // Compliance domain (brief's portfolio)
+      compliance_dossiers: {
+        Row: {
+          id: string;
+          child_id: string;
+          reporting_period: string;
+          generated_at: string;
+          secure_hash: string;
+          statutory_dispatch_logs: Json;
+          pdf_storage_path: string | null;
+        };
+        Insert: {
+          id?: string;
+          child_id: string;
+          reporting_period: string;
+          secure_hash: string;
+          statutory_dispatch_logs?: Json;
+          pdf_storage_path?: string | null;
+        };
+        Update: {
+          statutory_dispatch_logs?: Json;
+          pdf_storage_path?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
