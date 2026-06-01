@@ -1,4 +1,5 @@
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
+import { MobileNav } from "@/components/dashboard/mobile-nav";
 import { currentParentId, listChildren, getActiveChild } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import type { SwitcherChild } from "@/components/dashboard/child-switcher";
@@ -27,6 +28,12 @@ export default async function DashboardLayout({
       <div className="fixed inset-0 bg-grid bg-grid-fade opacity-30 -z-10 pointer-events-none" />
 
       <DashboardSidebar childList={childList} activeChildId={activeChildId} />
+
+      {/* Mobile-only menu trigger — floats top-right where no sidebar exists. */}
+      <div className="lg:hidden fixed top-3 right-3 z-40">
+        <MobileNav childList={childList} activeChildId={activeChildId} />
+      </div>
+
       <div className="flex-1 flex flex-col min-w-0">{children}</div>
     </div>
   );

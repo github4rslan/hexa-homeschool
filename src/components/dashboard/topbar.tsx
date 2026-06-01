@@ -15,7 +15,9 @@ export function DashboardTopbar({ greeting }: { greeting?: string }) {
           <h1 className="text-base font-semibold text-fog-50">{greeting}</h1>
         )}
       </div>
-      <div className="flex items-center gap-3">
+      {/* Placeholder utilities hidden on mobile so the floating menu trigger
+          (top-right) has room and nothing overlaps. */}
+      <div className="hidden lg:flex items-center gap-3">
         <button
           className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-fog-300 hover:text-fog-50 transition-all"
           aria-label="Search"
