@@ -452,3 +452,41 @@
   from { transform: rotate(0deg) translateX(var(--orbit-radius, 120px)) rotate(0deg); }
   to { transform: rotate(360deg) translateX(var(--orbit-radius, 120px)) rotate(-360deg); }
 }
+
+/* ──────────────────────────────────────────────────────────
+   Child mode — Children's Code: bigger, simpler, calmer.
+   Scoped to .theme-child (applied on the (child) layout wrapper).
+   Larger type + 64px touch targets + generous spacing. No engagement
+   loops, no streak pressure — just clear, friendly learning.
+   ────────────────────────────────────────────────────────── */
+@layer utilities {
+  .theme-child {
+    --child-touch: 64px;
+    font-size: 1.125rem; /* 18px base */
+    line-height: 1.6;
+  }
+  /* Minimum comfortable hit area for any interactive element in child mode. */
+  .theme-child .child-touch {
+    min-height: var(--child-touch);
+  }
+  /* A soft, friendly card surface for child surfaces. */
+  .child-panel {
+    border-radius: var(--radius-3xl);
+    background: linear-gradient(
+      150deg,
+      rgba(255, 255, 255, 0.06),
+      rgba(255, 255, 255, 0.02)
+    );
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(28px);
+  }
+  /* Gentle celebratory pop, respects reduced-motion via the base reset. */
+  @keyframes child-pop {
+    0% { transform: scale(0.8); opacity: 0; }
+    60% { transform: scale(1.08); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .animate-child-pop {
+    animation: child-pop 0.5s var(--ease-spring) both;
+  }
+}

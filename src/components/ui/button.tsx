@@ -37,6 +37,12 @@ const buttonVariants = cva(
           "shadow-[0_0_30px_-10px_rgba(6,255,165,0.5)]",
           "hover:bg-neon-500/15 hover:border-neon-400/60 hover:shadow-[0_0_50px_-10px_rgba(6,255,165,0.8)]",
         ],
+        // Child mode: high-contrast, friendly, big radius (Children's Code).
+        child: [
+          "bg-gradient-to-br from-violet-500 via-violet-600 to-cyan-500 text-white",
+          "shadow-[0_0_50px_-12px_rgba(124,58,237,0.7)]",
+          "hover:scale-[1.03] active:scale-[0.97] transition-transform",
+        ],
       },
       size: {
         sm: "h-9 px-4 text-sm rounded-lg",
@@ -44,6 +50,8 @@ const buttonVariants = cva(
         lg: "h-14 px-8 text-base rounded-2xl",
         xl: "h-16 px-10 text-lg rounded-2xl",
         icon: "h-11 w-11 rounded-xl",
+        // Child mode: 80px tall, large text, big rounded corners.
+        child: "h-20 px-10 text-2xl rounded-3xl",
       },
     },
     defaultVariants: {

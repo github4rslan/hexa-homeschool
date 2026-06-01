@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   UserPlus,
   Activity,
+  Sparkles,
   GraduationCap,
   FileCheck,
   Settings,
@@ -18,6 +19,7 @@ import { cn } from "@/lib/utils";
 // Only routes that actually exist — every link here resolves to a real page.
 const NAV = [
   { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Child mode", href: "/learn", icon: Sparkles },
   { label: "Add child", href: "/dashboard/children/new", icon: UserPlus },
   { label: "Diagnostic", href: "/onboarding/diagnostic", icon: Activity },
   { label: "Lesson", href: "/lesson", icon: GraduationCap },
