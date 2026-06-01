@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateVerifiedPortfolio } from "@/lib/compliance/portfolio";
 import { createClient } from "@/lib/supabase/server";
+import { ensureParentId } from "@/lib/supabase/parent";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,18 +24,14 @@ async function persistDossier(
     } = await supabase.auth.getUser();
     if (!user) return false;
 
-    const { data: parent } = await supabase
-      .from("parents")
-      .select("id")
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
-    if (!parent) return false;
+    const parentId = await ensureParentId(supabase, user);
+    if (!parentId) return false;
 
     // Match the named child for this parent (case-insensitive).
     const { data: child } = await supabase
       .from("children")
       .select("id")
-      .eq("parent_id", (parent as { id: string }).id)
+      .eq("parent_id", parentId)
       .ilike("full_name", childName)
       .limit(1)
       .maybeSingle();
