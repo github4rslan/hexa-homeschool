@@ -18,6 +18,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { logLessonCompletion } from "@/app/(dashboard)/lesson/actions";
+import { fetchJsonWithRetry } from "@/lib/fetch-with-retry";
 
 export interface Question {
   id: string;
@@ -127,27 +128,24 @@ export function LessonPlayer({
     const correct = selected === question.correctIndex;
     if (correct) setScore((s) => s + 1);
 
-    // Fire the Teaching Agent. We always have the human-authored explanation
-    // as a guaranteed fallback if the network/agent is unavailable.
+    // Fire the Teaching Agent. Tolerate serverless cold starts (timeout+retry)
+    // so a slow first call doesn't look like a failure. The human-authored
+    // explanation remains a guaranteed fallback if the agent is truly down.
     setTutorLoading(true);
     setTutor(null);
     try {
-      const res = await fetch("/api/tutor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const data = await fetchJsonWithRetry<TutorResponse>(
+        "/api/tutor",
+        {
           prompt: question.prompt,
           correctAnswer: question.explanation,
           topic: topicTag,
           studentAnswer: question.options[selected],
           wasCorrect: correct,
-        }),
-      });
-      if (res.ok) {
-        setTutor((await res.json()) as TutorResponse);
-      } else {
-        setTutor(offlineTutor(question.explanation));
-      }
+        },
+        { timeoutMs: 25000, retries: 1 },
+      );
+      setTutor(data);
     } catch {
       setTutor(offlineTutor(question.explanation));
     } finally {
