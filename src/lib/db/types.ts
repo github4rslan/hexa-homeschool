@@ -12,6 +12,8 @@ export interface ParentDoc {
   email: string;
   full_name: string | null;
   password_hash: string;
+  /** Email verification (Resend). Undefined on legacy rows = treat as verified. */
+  email_verified?: boolean;
   subscription_tier: "diagnostic" | "standard" | "family";
   billing_status: "trialing" | "active" | "past_due" | "canceled" | "paused";
   created_at: Date;

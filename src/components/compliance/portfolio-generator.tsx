@@ -9,6 +9,7 @@ import {
   FileCheck,
   Fingerprint,
   Loader2,
+  Mail,
   Printer,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import type { VerifiedPortfolio } from "@/lib/compliance/portfolio";
+import { emailPortfolio } from "@/app/(dashboard)/portfolio/actions";
 
 type PortfolioResponse = VerifiedPortfolio & { persisted?: boolean };
 
@@ -32,6 +34,30 @@ export function PortfolioGenerator() {
   const [error, setError] = useState<string | null>(null);
   const [portfolio, setPortfolio] = useState<PortfolioResponse | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Email-to-LA state
+  const [laEmail, setLaEmail] = useState("");
+  const [emailState, setEmailState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [emailMsg, setEmailMsg] = useState<string | null>(null);
+
+  async function sendToLa() {
+    if (!portfolio) return;
+    setEmailState("sending");
+    setEmailMsg(null);
+    const res = await emailPortfolio({
+      toEmail: laEmail,
+      childName: portfolio.childName,
+      term: portfolio.term,
+      verificationHash: portfolio.verificationHash,
+    });
+    if (res.ok) {
+      setEmailState("sent");
+      setLaEmail("");
+    } else {
+      setEmailState("error");
+      setEmailMsg(res.reason ?? "Could not send.");
+    }
+  }
 
   async function generate(e: React.FormEvent) {
     e.preventDefault();
@@ -215,6 +241,54 @@ export function PortfolioGenerator() {
                 <Printer className="h-4 w-4" />
                 Print / Save as PDF
               </Button>
+            </div>
+
+            {/* Email to Local Authority */}
+            <div className="mt-6 pt-6 border-t border-white/10 print:hidden">
+              <div className="flex items-center gap-2 mb-3">
+                <Mail className="h-4 w-4 text-violet-300" />
+                <span className="text-sm font-semibold text-fog-100">
+                  Send to your Local Authority
+                </span>
+              </div>
+              {emailState === "sent" ? (
+                <p className="flex items-center gap-2 text-sm text-neon-400">
+                  <Check className="h-4 w-4" /> Sent — the LA officer will receive
+                  the portfolio details and verification hash.
+                </p>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    name="la_email"
+                    type="email"
+                    placeholder="officer@council.gov.uk"
+                    value={laEmail}
+                    onChange={(e) => setLaEmail(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={sendToLa}
+                    variant="primary"
+                    size="md"
+                    disabled={emailState === "sending" || !laEmail}
+                  >
+                    {emailState === "sending" ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" /> Sending…
+                      </>
+                    ) : (
+                      "Email portfolio"
+                    )}
+                  </Button>
+                </div>
+              )}
+              {emailMsg && (
+                <p className="mt-2 text-xs text-amber-400">{emailMsg}</p>
+              )}
+              <p className="mt-2 text-xs text-fog-500">
+                You control what&apos;s shared — HEXA never sends anything
+                automatically.
+              </p>
             </div>
           </Card>
         </motion.div>
