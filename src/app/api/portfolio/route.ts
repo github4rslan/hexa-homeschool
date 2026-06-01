@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
 import { generateVerifiedPortfolio } from "@/lib/compliance/portfolio";
-import { createClient } from "@/lib/supabase/server";
-import { ensureParentId } from "@/lib/supabase/parent";
+import { currentParentId, findChildByName, insertDossier } from "@/lib/db/repo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Best-effort persistence to compliance_dossiers (brief's "portfolio").
- * Returns true if a row was written. Never throws — a generated portfolio is
- * still returned to the caller even if persistence is skipped (e.g. no session,
- * no matching child). RLS guarantees a parent only writes to their own child.
+ * Best-effort persistence to the dossiers collection (brief's "portfolio").
+ * Returns true if a doc was written. Never throws — a generated portfolio is
+ * still returned even if persistence is skipped (no session / no matching
+ * child). Ownership is enforced in the repo layer.
  */
 async function persistDossier(
   childName: string,
@@ -18,32 +17,13 @@ async function persistDossier(
   verificationHash: string,
 ): Promise<boolean> {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return false;
-
-    const parentId = await ensureParentId(supabase, user);
+    const parentId = await currentParentId();
     if (!parentId) return false;
 
-    // Match the named child for this parent (case-insensitive).
-    const { data: child } = await supabase
-      .from("children")
-      .select("id")
-      .eq("parent_id", parentId)
-      .ilike("full_name", childName)
-      .limit(1)
-      .maybeSingle();
-    if (!child) return false;
+    const child = await findChildByName(parentId, childName);
+    if (!child?._id) return false;
 
-    const { error } = await supabase.from("compliance_dossiers").insert({
-      child_id: (child as { id: string }).id,
-      reporting_period: term,
-      secure_hash: verificationHash,
-    } as never);
-
-    return !error;
+    return insertDossier(parentId, child._id, term, verificationHash);
   } catch {
     return false;
   }

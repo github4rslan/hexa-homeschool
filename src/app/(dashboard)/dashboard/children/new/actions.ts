@@ -2,13 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
-import { ensureParentId } from "@/lib/supabase/parent";
-import type { Database } from "@/lib/supabase/types";
+import { currentParentId, createChild } from "@/lib/db/repo";
 
-type ChildInsert = Database["public"]["Tables"]["children"]["Insert"];
-
-export async function createChild(formData: FormData) {
+export async function createChild_action(formData: FormData) {
   const fullName = String(formData.get("full_name") || "").trim();
   const dateOfBirth = String(formData.get("date_of_birth") || "");
   const targetExamWindow = String(formData.get("target_exam_window") || "").trim();
@@ -20,43 +16,30 @@ export async function createChild(formData: FormData) {
     );
   }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
+  const parentId = await currentParentId();
+  if (!parentId) {
     redirect("/login?redirect=/dashboard/children/new");
   }
 
-  const parentId = await ensureParentId(supabase, user);
+  const childId = await createChild({
+    parentId,
+    fullName,
+    dateOfBirth,
+    targetExamWindow: targetExamWindow || null,
+    sendIndicators: sendIndicatorsRaw
+      ? sendIndicatorsRaw.split(",").map((s) => s.trim()).filter(Boolean)
+      : [],
+  });
 
-  if (!parentId) {
+  if (!childId) {
     redirect(
-      `/dashboard/children/new?error=${encodeURIComponent("Could not load or create your parent profile. Please try signing out and back in.")}`,
+      `/dashboard/children/new?error=${encodeURIComponent("Could not save the child profile. Please try again.")}`,
     );
   }
 
-  const child: ChildInsert = {
-    parent_id: parentId,
-    full_name: fullName,
-    date_of_birth: dateOfBirth,
-    target_exam_window: targetExamWindow || null,
-    send_indicators: sendIndicatorsRaw
-      ? sendIndicatorsRaw
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [],
-  };
-
-  const { error } = await supabase.from("children").insert(child as never);
-
-  if (error) {
-    redirect(`/dashboard/children/new?error=${encodeURIComponent(error.message)}`);
-  }
-
   revalidatePath("/dashboard");
-  // Flow straight into the diagnostic — the natural next step after adding a child.
   redirect("/onboarding/diagnostic");
 }
+
+// Backwards-compatible export name used by the page form.
+export { createChild_action as createChild };

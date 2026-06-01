@@ -1,20 +1,31 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { findParentByEmail } from "@/lib/db/repo";
+import { verifyPassword } from "@/lib/auth/password";
+import { createSession } from "@/lib/auth/session";
 
 export async function login(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const password = String(formData.get("password") || "");
 
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+  if (!email || !password) {
+    redirect(`/login?error=${encodeURIComponent("Email and password are required.")}`);
   }
 
-  revalidatePath("/", "layout");
+  const parent = await findParentByEmail(email);
+  // Generic message either way — don't reveal whether the email exists.
+  const invalid = `/login?error=${encodeURIComponent("Invalid email or password.")}`;
+
+  if (!parent || !parent._id) {
+    redirect(invalid);
+  }
+
+  const ok = await verifyPassword(password, parent.password_hash);
+  if (!ok) {
+    redirect(invalid);
+  }
+
+  await createSession({ id: parent._id.toHexString(), email: parent.email });
   redirect("/dashboard");
 }
