@@ -74,6 +74,8 @@ export const Collections = {
   // Stage 1 — real curriculum + question bank
   topics: "curriculum_topics",
   questions: "questions",
+  // Stage 3 — daily check-in mood log
+  checkins: "checkins",
   // Stage 4 — media registry (registered here so the seed script owns all indexes)
   media: "media",
 } as const;

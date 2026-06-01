@@ -11,6 +11,7 @@ import type {
   DossierDoc,
   CurriculumTopicDoc,
   QuestionDoc,
+  CheckinDoc,
   Subject,
 } from "./types";
 
@@ -287,6 +288,63 @@ export async function upsertCompetence(
 export async function countCertified(childId: ObjectId): Promise<number> {
   const col = await getCollection<CompetenceDoc>(Collections.competence);
   return col.countDocuments({ child_id: childId, state: "certified" });
+}
+
+/** Certified-topic counts per subject for a child (powers the child hub rings). */
+export async function certifiedBySubject(
+  childId: ObjectId,
+): Promise<Record<Subject, number>> {
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const certified = await compCol
+    .find({ child_id: childId, state: "certified" })
+    .toArray();
+  const tags = certified.map((c) => c.topic_tag);
+  const result: Record<Subject, number> = {
+    mathematics: 0,
+    english: 0,
+    science: 0,
+  };
+  if (tags.length === 0) return result;
+  const topics = await topicsCol
+    .find({ topic_tag: { $in: tags } })
+    .toArray();
+  for (const t of topics) result[t.subject] += 1;
+  return result;
+}
+
+// ── Daily check-in (Stage 3) ─────────────────────────────
+export async function recordCheckin(
+  parentId: string,
+  childId: ObjectId,
+  mood: number,
+): Promise<{ ok: boolean; difficultyDelta: number }> {
+  if (!(await assertOwnsChild(parentId, childId))) {
+    return { ok: false, difficultyDelta: 0 };
+  }
+  // Map mood 1–5 → starting-tier nudge: low mood eases in, high mood stretches.
+  const difficultyDelta = mood <= 2 ? -1 : mood >= 5 ? 1 : 0;
+  const col = await getCollection<CheckinDoc>(Collections.checkins);
+  await col.insertOne({
+    child_id: childId,
+    mood,
+    difficulty_delta: difficultyDelta,
+    created_at: new Date(),
+  } as CheckinDoc);
+  return { ok: true, difficultyDelta };
+}
+
+/** Today's check-in for a child (local-day boundary), or null. */
+export async function todaysCheckin(
+  childId: ObjectId,
+): Promise<CheckinDoc | null> {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const col = await getCollection<CheckinDoc>(Collections.checkins);
+  return col.findOne(
+    { child_id: childId, created_at: { $gte: start } },
+    { sort: { created_at: -1 } },
+  );
 }
 
 export async function recentLogs(

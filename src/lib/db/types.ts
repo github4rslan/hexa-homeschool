@@ -46,6 +46,8 @@ export interface LessonLogDoc {
   child_id: ObjectId;
   topic_tag: string;
   status: "in_progress" | "completed" | "abandoned" | "escalated";
+  /** Which part of the daily flow this log is for (Stage 3). */
+  phase?: "explainer" | "practice" | "mastery";
   timestamp_start: Date;
   timestamp_end: Date | null;
   count_attempts: number;
@@ -61,6 +63,16 @@ export interface CompetenceDoc {
   state: "locked" | "training" | "certified";
   certified_at: Date | null;
   updated_at: Date;
+}
+
+export interface CheckinDoc {
+  _id?: ObjectId;
+  child_id: ObjectId;
+  /** 1 (low) … 5 (great) — drives a small difficulty throttle for the day. */
+  mood: number;
+  /** -1 | 0 | +1 starting-tier nudge derived from mood. */
+  difficulty_delta: number;
+  created_at: Date;
 }
 
 export interface DossierDoc {
