@@ -122,12 +122,11 @@ export default function PrivacyPage() {
         We use the following processors, all UK GDPR compliant:
       </p>
       <ul>
-        <li><strong>Supabase (AWS London):</strong> primary database and authentication.</li>
-        <li><strong>Stripe:</strong> payment processing.</li>
+        <li><strong>MongoDB Atlas:</strong> primary database.</li>
+        <li><strong>Cloudinary:</strong> media storage (lesson audio, uploaded work).</li>
         <li><strong>OpenAI:</strong> language model inference (no training on customer data).</li>
         <li><strong>ElevenLabs:</strong> voice synthesis (no training on customer data).</li>
-        <li><strong>Resend:</strong> transactional email.</li>
-        <li><strong>Vercel (EU region):</strong> application hosting.</li>
+        <li><strong>Vercel:</strong> application hosting.</li>
       </ul>
 
       <h2 id="contact">Contact</h2>

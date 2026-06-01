@@ -17,8 +17,8 @@ export default function CookiesPage() {
 
       <h3>Strictly necessary (always on)</h3>
       <ul>
-        <li><strong>sb-access-token, sb-refresh-token</strong> — Supabase authentication. Required to keep you signed in.</li>
-        <li><strong>__Host-session</strong> — CSRF protection on authenticated requests.</li>
+        <li><strong>hexa_session</strong> — secure sign-in session (httpOnly). Required to keep you signed in.</li>
+        <li><strong>hexa_active_child</strong> — remembers which child you&apos;re currently viewing.</li>
       </ul>
 
       <h3>Functional (optional)</h3>
