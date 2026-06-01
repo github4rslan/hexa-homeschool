@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { ensureParentId } from "@/lib/supabase/parent";
 import type { Database } from "@/lib/supabase/types";
 
 type EvaluationInsert =
@@ -37,18 +38,14 @@ export async function saveDiagnosticResults(
   } = await supabase.auth.getUser();
   if (!user) return { persisted: false, reason: "Not signed in." };
 
-  const { data: parent } = await supabase
-    .from("parents")
-    .select("id")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
-  if (!parent) return { persisted: false, reason: "No parent profile." };
+  const parentId = await ensureParentId(supabase, user);
+  if (!parentId) return { persisted: false, reason: "No parent profile." };
 
   // Most-recently-added child for this parent.
   const { data: child } = await supabase
     .from("children")
     .select("id")
-    .eq("parent_id", (parent as { id: string }).id)
+    .eq("parent_id", parentId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

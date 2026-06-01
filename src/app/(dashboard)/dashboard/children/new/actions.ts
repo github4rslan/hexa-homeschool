@@ -3,12 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { ensureParentId } from "@/lib/supabase/parent";
 import type { Database } from "@/lib/supabase/types";
 
 type ChildInsert = Database["public"]["Tables"]["children"]["Insert"];
-type ParentLookup = {
-  id: string;
-};
 
 export async function createChild(formData: FormData) {
   const fullName = String(formData.get("full_name") || "").trim();
@@ -31,21 +29,16 @@ export async function createChild(formData: FormData) {
     redirect("/login?redirect=/dashboard/children/new");
   }
 
-  const { data } = await supabase
-    .from("parents")
-    .select("id")
-    .eq("auth_user_id", user.id)
-    .maybeSingle();
-  const parent = data as ParentLookup | null;
+  const parentId = await ensureParentId(supabase, user);
 
-  if (!parent) {
+  if (!parentId) {
     redirect(
-      `/dashboard/children/new?error=${encodeURIComponent("Your parent profile was not found. Try signing out and back in.")}`,
+      `/dashboard/children/new?error=${encodeURIComponent("Could not load or create your parent profile. Please try signing out and back in.")}`,
     );
   }
 
   const child: ChildInsert = {
-    parent_id: parent.id,
+    parent_id: parentId,
     full_name: fullName,
     date_of_birth: dateOfBirth,
     target_exam_window: targetExamWindow || null,
