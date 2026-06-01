@@ -78,4 +78,8 @@ export const Collections = {
   checkins: "checkins",
   // Stage 4 — media registry (registered here so the seed script owns all indexes)
   media: "media",
+  // Stage 5 — parent control loops + safety
+  schedules: "weekly_schedules",
+  tutorBookings: "tutor_bookings",
+  escalations: "escalations",
 } as const;

@@ -8,6 +8,8 @@ import {
   Activity,
   Sparkles,
   GraduationCap,
+  CalendarDays,
+  Users,
   FileCheck,
   Settings,
   LogOut,
@@ -23,6 +25,8 @@ const NAV = [
   { label: "Add child", href: "/dashboard/children/new", icon: UserPlus },
   { label: "Diagnostic", href: "/onboarding/diagnostic", icon: Activity },
   { label: "Lesson", href: "/lesson", icon: GraduationCap },
+  { label: "Weekly plan", href: "/schedule", icon: CalendarDays },
+  { label: "Tutoring", href: "/tutoring", icon: Users },
   { label: "Portfolio", href: "/portfolio", icon: FileCheck },
   { label: "Settings", href: "/settings", icon: Settings },
 ];

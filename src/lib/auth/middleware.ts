@@ -27,7 +27,9 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/lesson") ||
     path.startsWith("/portfolio") ||
     path.startsWith("/settings") ||
-    path.startsWith("/learn");
+    path.startsWith("/learn") ||
+    path.startsWith("/schedule") ||
+    path.startsWith("/tutoring");
 
   if (!userId && isProtectedRoute) {
     const url = request.nextUrl.clone();

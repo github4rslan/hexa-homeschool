@@ -97,6 +97,12 @@ async function main() {
     await db.collection("media").createIndex({ use_case: 1, is_public: 1 });
     await db.collection("media").createIndex({ content_hash: 1 });
 
+    // Stage 3 check-ins + Stage 5 control loops + safety.
+    await db.collection("checkins").createIndex({ child_id: 1, created_at: -1 });
+    await db.collection("weekly_schedules").createIndex({ child_id: 1, week_start: 1 }, { unique: true });
+    await db.collection("tutor_bookings").createIndex({ parent_id: 1, created_at: -1 });
+    await db.collection("escalations").createIndex({ child_id: 1, status: 1, created_at: -1 });
+
     console.log("✓ Indexes ensured.");
     console.log("\n✅ Seed complete.");
   } finally {
