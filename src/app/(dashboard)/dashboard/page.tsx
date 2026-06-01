@@ -15,7 +15,15 @@ import { ChildCard } from "@/components/dashboard/child-card";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/lib/supabase/server";
+import {
+  currentParentId,
+  findParentById,
+  listChildren,
+  countCertified,
+  latestEvaluationGrade,
+  recentLogs,
+  countCertifiedSince,
+} from "@/lib/db/repo";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -23,7 +31,9 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-// ── Types for the assembled view model ──────────────────────────
+// Total curriculum topics — denominator for the mastery bar (seeded topics).
+const TOTAL_TOPICS = 10;
+
 interface ChildView {
   id: string;
   name: string;
@@ -49,8 +59,6 @@ interface WeekStats {
   avgSessionHint: string;
 }
 
-// Demo fallback — shown only when the signed-in parent has no children yet,
-// so the dashboard never looks broken for a brand-new or unauthenticated view.
 const DEMO_CHILDREN: ChildView[] = [
   {
     id: "demo-1",
@@ -89,9 +97,8 @@ function ageFromDob(dob: string): number {
   return Math.max(0, age);
 }
 
-function relativeTime(iso: string): string {
-  const then = new Date(iso).getTime();
-  const diffMin = Math.round((Date.now() - then) / 60000);
+function relativeTime(d: Date): string {
+  const diffMin = Math.round((Date.now() - d.getTime()) / 60000);
   if (diffMin < 1) return "just now";
   if (diffMin < 60) return `${diffMin} min ago`;
   const diffHr = Math.round(diffMin / 60);
@@ -100,23 +107,7 @@ function relativeTime(iso: string): string {
   return diffDay === 1 ? "Yesterday" : `${diffDay} days ago`;
 }
 
-/** Total curriculum topics, used as the mastery denominator per child. */
-async function topicCount(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-): Promise<number> {
-  const { count } = await supabase
-    .from("topics")
-    .select("id", { count: "exact", head: true });
-  return count ?? 0;
-}
-
 export default async function DashboardPage() {
-  const supabase = await createClient();
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   let parentName: string | null = null;
   let children: ChildView[] = [];
   let activity: ActivityItem[] = [];
@@ -128,137 +119,75 @@ export default async function DashboardPage() {
   };
   let usingDemo = false;
 
-  if (user) {
-    const { data: parent } = await supabase
-      .from("parents")
-      .select("id, full_name")
-      .eq("auth_user_id", user.id)
-      .maybeSingle();
-    parentName = (parent as { full_name: string | null } | null)?.full_name ?? null;
+  const parentId = await currentParentId();
 
-    if (parent) {
-      const parentId = (parent as { id: string }).id;
-      const totalTopics = await topicCount(supabase);
+  if (parentId) {
+    const parent = await findParentById(parentId);
+    parentName = parent?.full_name ?? null;
 
-      const { data: childRows } = await supabase
-        .from("children")
-        .select("id, full_name, date_of_birth")
-        .eq("parent_id", parentId)
-        .order("created_at", { ascending: true });
+    const kids = await listChildren(parentId);
 
-      const kids =
-        (childRows as
-          | { id: string; full_name: string; date_of_birth: string }[]
-          | null) ?? [];
+    if (kids.length > 0) {
+      children = await Promise.all(
+        kids.map(async (kid): Promise<ChildView> => {
+          const childId = kid._id!;
+          const certifiedCount = await countCertified(childId);
+          const predictedGrade = await latestEvaluationGrade(childId);
+          const pct = certifiedCount / (TOTAL_TOPICS || 1);
+          const status: ChildView["status"] =
+            pct >= 0.6 ? "ahead" : pct >= 0.3 ? "on_track" : "needs_review";
+          return {
+            id: childId.toHexString(),
+            name: kid.full_name,
+            age: ageFromDob(kid.date_of_birth),
+            predictedGrade: predictedGrade ?? undefined,
+            competenceCertified: certifiedCount,
+            competenceTotal: TOTAL_TOPICS,
+            status,
+          };
+        }),
+      );
 
-      if (kids.length > 0) {
-        children = await Promise.all(
-          kids.map(async (kid): Promise<ChildView> => {
-            const { count: certified } = await supabase
-              .from("competence_matrix")
-              .select("id", { count: "exact", head: true })
-              .eq("child_id", kid.id)
-              .eq("state", "certified");
+      const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      const childIds = kids.map((k) => k._id!);
+      const logs = await recentLogs(childIds, weekAgoMs, 50);
 
-            const { data: latestEval } = await supabase
-              .from("evaluation_records")
-              .select("model_predicted_grade")
-              .eq("child_id", kid.id)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
+      const completed = logs.filter((l) => l.status === "completed");
+      const durations = completed
+        .filter((l) => l.timestamp_end)
+        .map(
+          (l) =>
+            ((l.timestamp_end as Date).getTime() -
+              l.timestamp_start.getTime()) /
+            1000,
+        )
+        .filter((s) => s > 0);
+      const avgSec = durations.length
+        ? durations.reduce((a, b) => a + b, 0) / durations.length
+        : 0;
 
-            const certifiedCount = certified ?? 0;
-            const denom = totalTopics || 1;
-            const pct = certifiedCount / denom;
-            const status: ChildView["status"] =
-              pct >= 0.6 ? "ahead" : pct >= 0.3 ? "on_track" : "needs_review";
+      const certifiedThisWeek = await countCertifiedSince(childIds, weekAgoMs);
 
-            return {
-              id: kid.id,
-              name: kid.full_name,
-              age: ageFromDob(kid.date_of_birth),
-              predictedGrade:
-                (latestEval as { model_predicted_grade: string | null } | null)
-                  ?.model_predicted_grade ?? undefined,
-              competenceCertified: certifiedCount,
-              competenceTotal: totalTopics,
-              status,
-            };
-          }),
-        );
+      stats = {
+        lessonsCompleted: completed.length,
+        topicsCertified: certifiedThisWeek,
+        avgSessionLabel: avgSec ? `${Math.round(avgSec / 60)}m` : "—",
+        avgSessionHint: avgSec ? "within 45–60 min target" : "no sessions yet",
+      };
 
-        // Week stats: lessons completed + topics certified in last 7 days.
-        const weekAgo = new Date(
-          Date.now() - 7 * 24 * 60 * 60 * 1000,
-        ).toISOString();
-        const childIds = kids.map((k) => k.id);
-
-        const { data: weekLogs } = await supabase
-          .from("instructional_logs")
-          .select("child_id, timestamp_start, timestamp_end, status")
-          .in("child_id", childIds)
-          .gte("timestamp_start", weekAgo)
-          .order("timestamp_start", { ascending: false });
-
-        const logs =
-          (weekLogs as
-            | {
-                child_id: string;
-                timestamp_start: string;
-                timestamp_end: string | null;
-                status: string;
-              }[]
-            | null) ?? [];
-
-        const completed = logs.filter((l) => l.status === "completed");
-        const durations = completed
-          .filter((l) => l.timestamp_end)
-          .map(
-            (l) =>
-              (new Date(l.timestamp_end as string).getTime() -
-                new Date(l.timestamp_start).getTime()) /
-              1000,
-          )
-          .filter((s) => s > 0);
-        const avgSec = durations.length
-          ? durations.reduce((a, b) => a + b, 0) / durations.length
-          : 0;
-
-        const { count: certifiedThisWeek } = await supabase
-          .from("competence_matrix")
-          .select("id", { count: "exact", head: true })
-          .in("child_id", childIds)
-          .eq("state", "certified")
-          .gte("updated_at", weekAgo);
-
-        stats = {
-          lessonsCompleted: completed.length,
-          topicsCertified: certifiedThisWeek ?? 0,
-          avgSessionLabel: avgSec
-            ? `${Math.round(avgSec / 60)}m`
-            : "—",
-          avgSessionHint: avgSec
-            ? "within 45–60 min target"
-            : "no sessions yet",
-        };
-
-        // Recent activity feed from real logs.
-        const nameById = new Map(kids.map((k) => [k.id, k.full_name]));
-        activity = logs.slice(0, 6).map((l) => ({
-          time: relativeTime(l.timestamp_start),
-          child: nameById.get(l.child_id) ?? "Child",
-          event:
-            l.status === "completed"
-              ? "Completed a lesson"
-              : "Started a lesson",
-          detail: "Curriculum session logged",
-        }));
-      }
+      const nameById = new Map(
+        kids.map((k) => [k._id!.toHexString(), k.full_name]),
+      );
+      activity = logs.slice(0, 6).map((l) => ({
+        time: relativeTime(l.timestamp_start),
+        child: nameById.get(l.child_id.toHexString()) ?? "Child",
+        event:
+          l.status === "completed" ? "Completed a lesson" : "Started a lesson",
+        detail: `${l.topic_tag.replace(/_/g, " ")} session`,
+      }));
     }
   }
 
-  // Fall back to the illustrative demo only when there's nothing real to show.
   if (children.length === 0) {
     usingDemo = true;
     children = DEMO_CHILDREN;
@@ -288,7 +217,6 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* Top stats */}
         <section className="mb-10">
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -335,7 +263,6 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {/* Children grid */}
         <section className="mb-10">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold text-fog-50">Children</h2>
@@ -354,7 +281,6 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {/* Activity feed + compliance */}
         <section className="grid lg:grid-cols-3 gap-5">
           <Card variant="glass" padding="lg" className="lg:col-span-2">
             <div className="flex items-center justify-between mb-6">

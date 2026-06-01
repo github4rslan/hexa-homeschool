@@ -1,48 +1,40 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import type { Database } from "@/lib/supabase/types";
-
-type ParentInsert = Database["public"]["Tables"]["parents"]["Insert"];
+import { findParentByEmail, createParent } from "@/lib/db/repo";
+import { hashPassword } from "@/lib/auth/password";
+import { createSession } from "@/lib/auth/session";
 
 export async function signup(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const fullName = formData.get("full_name") as string;
+  const email = String(formData.get("email") || "").trim().toLowerCase();
+  const password = String(formData.get("password") || "");
+  const fullName = String(formData.get("full_name") || "").trim();
 
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { full_name: fullName },
-    },
-  });
-
-  if (error) {
-    redirect(`/signup?error=${encodeURIComponent(error.message)}`);
-  }
-
-  // Provision parent row
-  if (data.user) {
-    const parentRow: ParentInsert = {
-      auth_user_id: data.user.id,
-      email,
-      full_name: fullName,
-    };
-    // Cast required: @supabase/ssr generics don't always propagate Database type.
-    await supabase.from("parents").insert(parentRow as never);
-  }
-
-  revalidatePath("/", "layout");
-
-  if (data.user && !data.session) {
+  if (!email || !password) {
     redirect(
-      `/signup?success=${encodeURIComponent("Check your email to confirm your account.")}`,
+      `/signup?error=${encodeURIComponent("Email and password are required.")}`,
+    );
+  }
+  if (password.length < 8) {
+    redirect(
+      `/signup?error=${encodeURIComponent("Password must be at least 8 characters.")}`,
     );
   }
 
+  const existing = await findParentByEmail(email);
+  if (existing) {
+    redirect(
+      `/signup?error=${encodeURIComponent("An account with this email already exists.")}`,
+    );
+  }
+
+  const passwordHash = await hashPassword(password);
+  const parentId = await createParent({
+    email,
+    fullName: fullName || null,
+    passwordHash,
+  });
+
+  await createSession({ id: parentId, email });
   redirect("/onboarding");
 }
