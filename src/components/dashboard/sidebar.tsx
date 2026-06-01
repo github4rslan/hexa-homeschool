@@ -2,34 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  UserPlus,
-  Activity,
-  Sparkles,
-  GraduationCap,
-  CalendarDays,
-  Users,
-  FileCheck,
-  Settings,
-  LogOut,
-} from "lucide-react";
+import { LogOut } from "lucide-react";
 import { HexaLogo } from "@/components/ui/hexa-logo";
 import { ChildSwitcher, type SwitcherChild } from "./child-switcher";
+import { DASHBOARD_NAV, isNavActive } from "./nav-items";
 import { cn } from "@/lib/utils";
-
-// Only routes that actually exist — every link here resolves to a real page.
-const NAV = [
-  { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Child mode", href: "/learn", icon: Sparkles },
-  { label: "Add child", href: "/dashboard/children/new", icon: UserPlus },
-  { label: "Diagnostic", href: "/onboarding/diagnostic", icon: Activity },
-  { label: "Lesson", href: "/lesson", icon: GraduationCap },
-  { label: "Weekly plan", href: "/schedule", icon: CalendarDays },
-  { label: "Tutoring", href: "/tutoring", icon: Users },
-  { label: "Portfolio", href: "/portfolio", icon: FileCheck },
-  { label: "Settings", href: "/settings", icon: Settings },
-];
 
 export function DashboardSidebar({
   childList = [],
@@ -61,11 +38,9 @@ export function DashboardSidebar({
         <span className="text-[10px] font-mono uppercase tracking-widest text-fog-500 px-3 mb-2 mt-2">
           Workspace
         </span>
-        {NAV.map((item) => {
+        {DASHBOARD_NAV.map((item) => {
           const Icon = item.icon;
-          const active =
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href));
+          const active = isNavActive(pathname, item.href);
           return (
             <Link
               key={item.href}
