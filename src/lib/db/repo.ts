@@ -54,6 +54,7 @@ export async function createParent(input: {
   email: string;
   fullName: string | null;
   passwordHash: string;
+  emailVerified?: boolean;
 }): Promise<string> {
   const col = await getCollection<ParentDoc>(Collections.parents);
   const now = new Date();
@@ -61,12 +62,24 @@ export async function createParent(input: {
     email: input.email.toLowerCase(),
     full_name: input.fullName,
     password_hash: input.passwordHash,
+    email_verified: input.emailVerified ?? false,
     subscription_tier: "diagnostic",
     billing_status: "trialing",
     created_at: now,
     updated_at: now,
   } as ParentDoc);
   return res.insertedId.toHexString();
+}
+
+export async function markEmailVerified(parentId: string): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  await col.updateOne(
+    { _id: oid },
+    { $set: { email_verified: true, updated_at: new Date() } },
+  );
+  return true;
 }
 
 /** The signed-in parent's id, or null. Replaces Supabase getUser()+ensureParentId. */
