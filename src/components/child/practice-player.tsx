@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, X, Volume2, Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logLessonCompletion } from "@/app/(dashboard)/lesson/actions";
+import { fetchJsonWithRetry } from "@/lib/fetch-with-retry";
 import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
 
@@ -95,26 +96,25 @@ export function PracticePlayer({
       return;
     }
 
-    // Wrong: fetch an encouraging hint from the Teaching Agent.
+    // Wrong: fetch an encouraging hint from the Teaching Agent (cold-start tolerant).
     setHintLoading(true);
     try {
-      const res = await fetch("/api/tutor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const data = await fetchJsonWithRetry<{
+        explanation: string;
+        frozen?: boolean;
+        message?: string;
+      }>(
+        "/api/tutor",
+        {
           prompt: question.prompt,
           correctAnswer: question.explanation,
           topic: lessonTitle,
           studentAnswer: question.options[selected],
           wasCorrect: false,
-        }),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as { explanation: string };
-        setHint(data.explanation);
-      } else {
-        setHint(question.explanation);
-      }
+        },
+        { timeoutMs: 25000, retries: 1 },
+      );
+      setHint(data.frozen ? data.message ?? question.explanation : data.explanation);
     } catch {
       setHint(question.explanation);
     } finally {
