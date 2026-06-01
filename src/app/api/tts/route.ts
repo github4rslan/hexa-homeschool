@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import {
   ELEVENLABS_API_BASE,
@@ -6,12 +7,39 @@ import {
   getElevenLabsKey,
   AiConfigError,
 } from "@/lib/ai/config";
+import { findMediaByHash, recordMedia } from "@/lib/db/repo";
+import {
+  uploadBytes,
+  getCloudinaryConfig,
+  MediaConfigError,
+} from "@/lib/media/cloudinary";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /** ElevenLabs charges per character; keep narration bounded to lesson-sized text. */
 const MAX_TTS_CHARS = 1200;
+
+/** Is Cloudinary configured? If not, we just stream bytes (no caching). */
+function cloudinaryAvailable(): boolean {
+  try {
+    getCloudinaryConfig();
+    return true;
+  } catch (err) {
+    if (err instanceof MediaConfigError) return false;
+    throw err;
+  }
+}
+
+async function audioResponse(bytes: ArrayBuffer): Promise<NextResponse> {
+  return new NextResponse(bytes, {
+    status: 200,
+    headers: {
+      "Content-Type": "audio/mpeg",
+      "Cache-Control": "private, max-age=3600",
+    },
+  });
+}
 
 export async function POST(request: Request) {
   let body: { text?: unknown; voiceId?: unknown };
@@ -37,6 +65,28 @@ export async function POST(request: Request) {
       ? body.voiceId.trim()
       : ELEVENLABS_DEFAULT_VOICE_ID;
 
+  // Cache key: identical text + voice + model → identical audio.
+  const contentHash = createHash("sha256")
+    .update(`${ELEVENLABS_MODEL}:${voiceId}:${text}`)
+    .digest("hex");
+
+  const useCloud = cloudinaryAvailable();
+
+  // 1) Cache hit → fetch the stored Cloudinary MP3 and return its bytes
+  //    (keeps the client contract: it always receives audio/mpeg bytes).
+  if (useCloud) {
+    try {
+      const cached = await findMediaByHash("lesson_audio", contentHash);
+      if (cached) {
+        const hit = await fetch(cached.secure_url);
+        if (hit.ok) return audioResponse(await hit.arrayBuffer());
+        // stale URL — fall through and regenerate
+      }
+    } catch (err) {
+      console.error("[/api/tts] cache lookup failed (continuing):", err);
+    }
+  }
+
   let key: string;
   try {
     key = getElevenLabsKey();
@@ -48,22 +98,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const res = await fetch(
-      `${ELEVENLABS_API_BASE}/text-to-speech/${voiceId}`,
-      {
-        method: "POST",
-        headers: {
-          "xi-api-key": key,
-          "Content-Type": "application/json",
-          Accept: "audio/mpeg",
-        },
-        body: JSON.stringify({
-          text,
-          model_id: ELEVENLABS_MODEL,
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-        }),
+    const res = await fetch(`${ELEVENLABS_API_BASE}/text-to-speech/${voiceId}`, {
+      method: "POST",
+      headers: {
+        "xi-api-key": key,
+        "Content-Type": "application/json",
+        Accept: "audio/mpeg",
       },
-    );
+      body: JSON.stringify({
+        text,
+        model_id: ELEVENLABS_MODEL,
+        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+      }),
+    });
 
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
@@ -75,14 +122,35 @@ export async function POST(request: Request) {
     }
 
     const audio = await res.arrayBuffer();
-    return new NextResponse(audio, {
-      status: 200,
-      headers: {
-        "Content-Type": "audio/mpeg",
-        // Identical text+voice yields identical audio — safe to cache briefly.
-        "Cache-Control": "private, max-age=3600",
-      },
-    });
+
+    // 2) Cache miss → store to Cloudinary for reuse (best-effort, non-blocking
+    //    on the response path). Never fail the request if upload fails.
+    if (useCloud) {
+      void uploadBytes({
+        bytes: audio.slice(0),
+        useCase: "lesson_audio",
+        resourceType: "video", // audio is delivered as a video resource type
+        authenticated: true,
+        publicIdHint: contentHash.slice(0, 32),
+      })
+        .then((up) =>
+          recordMedia({
+            owner_id: null,
+            use_case: "lesson_audio",
+            folder: "hexa/audio",
+            public_id: up.publicId,
+            secure_url: up.secureUrl,
+            resource_type: "video",
+            is_public: false,
+            content_hash: contentHash,
+          }),
+        )
+        .catch((err) =>
+          console.error("[/api/tts] cache store failed (ignored):", err),
+        );
+    }
+
+    return audioResponse(audio);
   } catch (err) {
     console.error("[/api/tts] request failed:", err);
     return NextResponse.json(

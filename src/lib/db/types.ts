@@ -81,6 +81,32 @@ export interface DossierDoc {
   reporting_period: string;
   secure_hash: string;
   generated_at: Date;
+  /** Cloudinary media ids attached as evidence (Stage 4). */
+  evidence_media_ids?: ObjectId[];
+}
+
+// ── Stage 4: Cloudinary media registry ───────────────────────
+
+export type MediaUseCase =
+  | "marketing"
+  | "child_work"
+  | "lesson_audio"
+  | "resource";
+
+export interface MediaDoc {
+  _id?: ObjectId;
+  owner_id: ObjectId | null; // parent who uploaded (null for system/admin)
+  child_id?: ObjectId | null;
+  use_case: MediaUseCase;
+  folder: string;
+  public_id: string;
+  secure_url: string;
+  resource_type: "image" | "video" | "raw";
+  is_public: boolean;
+  /** For dedupe/caching (e.g. TTS text+voice hash). */
+  content_hash?: string;
+  meta?: Record<string, string>;
+  created_at: Date;
 }
 
 // ── Stage 1: Curriculum + question bank ──────────────────────
