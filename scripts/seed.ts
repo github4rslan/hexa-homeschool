@@ -16,6 +16,9 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { MongoClient } from "mongodb";
 import { SEED_TOPICS, SEED_QUESTIONS } from "../src/lib/data/curriculum.seed";
+import { SEED_QUESTIONS_EXTRA } from "../src/lib/data/curriculum.seed.extra";
+
+const ALL_QUESTIONS = [...SEED_QUESTIONS, ...SEED_QUESTIONS_EXTRA];
 
 function loadEnv(): Record<string, string> {
   try {
@@ -66,7 +69,7 @@ async function main() {
     // Natural key = topic_tag + prompt (prompts are unique within a topic).
     const questionsCol = db.collection("questions");
     let qUpserts = 0;
-    for (const q of SEED_QUESTIONS) {
+    for (const q of ALL_QUESTIONS) {
       const res = await questionsCol.updateOne(
         { topic_tag: q.topic_tag, prompt: q.prompt },
         { $set: { ...q }, $setOnInsert: { created_at: now } },
@@ -74,7 +77,7 @@ async function main() {
       );
       if (res.upsertedCount || res.modifiedCount) qUpserts++;
     }
-    console.log(`✓ Questions: ${SEED_QUESTIONS.length} processed (${qUpserts} written).`);
+    console.log(`✓ Questions: ${ALL_QUESTIONS.length} processed (${qUpserts} written).`);
 
     // ── Indexes ──
     console.log("→ Ensuring indexes…");
