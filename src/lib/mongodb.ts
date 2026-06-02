@@ -84,4 +84,6 @@ export const Collections = {
   escalations: "escalations",
   // Stage 6 — public lead capture
   newsletter: "newsletter_subscribers",
+  // AI telemetry — one row per real agent invocation (powers admin console)
+  aiInvocations: "ai_invocations",
 } as const;

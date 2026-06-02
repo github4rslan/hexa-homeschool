@@ -18,6 +18,7 @@ import type {
   ScheduleItemDoc,
   TutorBookingDoc,
   EscalationDoc,
+  AiInvocationDoc,
   Subject,
 } from "./types";
 
@@ -522,6 +523,133 @@ export async function adminRecentLogs(limit = 8): Promise<LessonLogDoc[]> {
 export async function adminOpenEscalations(limit = 50): Promise<EscalationDoc[]> {
   const col = await getCollection<EscalationDoc>(Collections.escalations);
   return col.find({ status: "open" }).sort({ created_at: -1 }).limit(limit).toArray();
+}
+
+// ── AI telemetry (real agent invocations) ─────────────────
+
+export interface InvocationInput {
+  agent: string;
+  model: string;
+  tokens: number;
+  latencyMs: number;
+  blocked: boolean;
+  reason?: string;
+}
+
+/**
+ * Record one or more real agent invocations. Best-effort: telemetry must never
+ * break a tutoring response, so all errors are swallowed (logged, not thrown).
+ */
+export async function logInvocation(
+  inputs: InvocationInput | InvocationInput[],
+): Promise<void> {
+  try {
+    const list = Array.isArray(inputs) ? inputs : [inputs];
+    if (list.length === 0) return;
+    const col = await getCollection<AiInvocationDoc>(Collections.aiInvocations);
+    const now = new Date();
+    await col.insertMany(
+      list.map((i) => ({
+        agent: i.agent,
+        model: i.model,
+        tokens: Math.max(0, Math.round(i.tokens)),
+        latency_ms: Math.max(0, Math.round(i.latencyMs)),
+        blocked: i.blocked,
+        ...(i.reason ? { reason: i.reason.slice(0, 200) } : {}),
+        created_at: now,
+      })),
+    );
+  } catch (err) {
+    console.error("[telemetry] logInvocation failed (non-fatal):", err);
+  }
+}
+
+/** Per-agent telemetry row aggregated from real invocations. */
+export interface AgentTelemetryRow {
+  agent: string;
+  calls: number;
+  blocked: number;
+  blockRate: number; // %
+  avgLatency: number; // ms
+  tokens: number;
+}
+
+export interface AgentTelemetry {
+  windowHours: number;
+  totalCalls: number;
+  totalTokens: number;
+  avgBlockRate: number; // %
+  agents: AgentTelemetryRow[];
+  recentBlocks: {
+    agent: string;
+    reason: string;
+    created_at: Date;
+  }[];
+}
+
+/**
+ * Aggregate real agent telemetry over the last `windowHours`. Returns genuine
+ * counts (zeroes when nothing has run yet) — never fabricated figures.
+ */
+export async function getAgentTelemetry(
+  windowHours = 24,
+): Promise<AgentTelemetry> {
+  const since = new Date(Date.now() - windowHours * 60 * 60 * 1000);
+  const col = await getCollection<AiInvocationDoc>(Collections.aiInvocations);
+
+  const grouped = (await col
+    .aggregate([
+      { $match: { created_at: { $gte: since } } },
+      {
+        $group: {
+          _id: "$agent",
+          calls: { $sum: 1 },
+          blocked: { $sum: { $cond: ["$blocked", 1, 0] } },
+          latencySum: { $sum: "$latency_ms" },
+          tokens: { $sum: "$tokens" },
+        },
+      },
+      { $sort: { calls: -1 } },
+    ])
+    .toArray()) as {
+    _id: string;
+    calls: number;
+    blocked: number;
+    latencySum: number;
+    tokens: number;
+  }[];
+
+  const agents: AgentTelemetryRow[] = grouped.map((g) => ({
+    agent: g._id,
+    calls: g.calls,
+    blocked: g.blocked,
+    blockRate: g.calls > 0 ? (g.blocked / g.calls) * 100 : 0,
+    avgLatency: g.calls > 0 ? Math.round(g.latencySum / g.calls) : 0,
+    tokens: g.tokens,
+  }));
+
+  const totalCalls = agents.reduce((s, a) => s + a.calls, 0);
+  const totalTokens = agents.reduce((s, a) => s + a.tokens, 0);
+  const totalBlocked = agents.reduce((s, a) => s + a.blocked, 0);
+
+  const recentBlocks = (await col
+    .find({ created_at: { $gte: since }, blocked: true })
+    .sort({ created_at: -1 })
+    .limit(8)
+    .toArray()).map((d) => ({
+    agent: d.agent,
+    reason: d.reason ?? "Output rejected by checker.",
+    created_at: d.created_at,
+  }));
+
+  return {
+    windowHours,
+    totalCalls,
+    totalTokens,
+    avgBlockRate: totalCalls > 0 ? (totalBlocked / totalCalls) * 100 : 0,
+    agents,
+    recentBlocks,
+  };
 }
 
 // ── Media registry (Stage 4) ─────────────────────────────
