@@ -18,6 +18,7 @@ import {
   TEACHING_CONFIDENCE_THRESHOLD,
   getOpenAIKey,
 } from "./config";
+import { logInvocation } from "@/lib/db/repo";
 
 export interface TutorRequest {
   /** The question prompt shown to the student (human-authored). */
@@ -54,11 +55,19 @@ interface ChatMessage {
   content: string;
 }
 
+/** Provider response plus the telemetry we record per invocation. */
+interface ChatResult {
+  content: string;
+  tokens: number;
+  latencyMs: number;
+}
+
 async function chat(
   messages: ChatMessage[],
   options: { temperature?: number; maxTokens?: number; json?: boolean } = {},
-): Promise<string> {
+): Promise<ChatResult> {
   const key = getOpenAIKey();
+  const start = Date.now();
   const res = await fetch(`${OPENAI_API_BASE}/chat/completions`, {
     method: "POST",
     headers: {
@@ -75,6 +84,7 @@ async function chat(
         : {}),
     }),
   });
+  const latencyMs = Date.now() - start;
 
   if (!res.ok) {
     const detail = await res.text().catch(() => "");
@@ -85,14 +95,15 @@ async function chat(
 
   const data = (await res.json()) as {
     choices?: { message?: { content?: string } }[];
+    usage?: { total_tokens?: number };
   };
   const content = data.choices?.[0]?.message?.content?.trim();
   if (!content) throw new Error("OpenAI returned an empty response.");
-  return content;
+  return { content, tokens: data.usage?.total_tokens ?? 0, latencyMs };
 }
 
 /** Step 1 — generate the explanation, grounded in the canonical answer. */
-async function generateExplanation(req: TutorRequest): Promise<string> {
+async function generateExplanation(req: TutorRequest): Promise<ChatResult> {
   const framing = req.wasCorrect
     ? "The student answered correctly. Affirm briefly, then reinforce WHY it is correct."
     : "The student answered incorrectly or is stuck. Gently explain the correct method without shaming.";
@@ -124,11 +135,18 @@ async function generateExplanation(req: TutorRequest): Promise<string> {
   );
 }
 
+/** Checker outcome plus the telemetry of the checker's own model call. */
+interface CheckerRun {
+  result: CheckerResult;
+  tokens: number;
+  latencyMs: number;
+}
+
 /** Step 2 — independent checker validates the explanation. */
 async function runChecker(
   req: TutorRequest,
   explanation: string,
-): Promise<CheckerResult> {
+): Promise<CheckerRun> {
   const system = [
     "You are HEXA's Teaching Checker — an independent safety validator.",
     "You verify a tutor explanation BEFORE it reaches a child.",
@@ -148,7 +166,7 @@ async function runChecker(
     .filter(Boolean)
     .join("\n");
 
-  const raw = await chat(
+  const { content: raw, tokens, latencyMs } = await chat(
     [
       { role: "system", content: system },
       { role: "user", content: user },
@@ -162,24 +180,33 @@ async function runChecker(
   } catch {
     // A checker we can't parse is a checker we don't trust → fail closed.
     return {
-      confidence: 0,
-      factuallyConsistent: false,
-      toneAppropriate: false,
-      reason: "Checker response could not be parsed; failing closed for safety.",
+      result: {
+        confidence: 0,
+        factuallyConsistent: false,
+        toneAppropriate: false,
+        reason:
+          "Checker response could not be parsed; failing closed for safety.",
+      },
+      tokens,
+      latencyMs,
     };
   }
 
   return {
-    confidence:
-      typeof parsed.confidence === "number"
-        ? Math.max(0, Math.min(1, parsed.confidence))
-        : 0,
-    factuallyConsistent: parsed.factuallyConsistent === true,
-    toneAppropriate: parsed.toneAppropriate === true,
-    reason:
-      typeof parsed.reason === "string"
-        ? parsed.reason
-        : "No reason supplied.",
+    result: {
+      confidence:
+        typeof parsed.confidence === "number"
+          ? Math.max(0, Math.min(1, parsed.confidence))
+          : 0,
+      factuallyConsistent: parsed.factuallyConsistent === true,
+      toneAppropriate: parsed.toneAppropriate === true,
+      reason:
+        typeof parsed.reason === "string"
+          ? parsed.reason
+          : "No reason supplied.",
+    },
+    tokens,
+    latencyMs,
   };
 }
 
@@ -198,17 +225,41 @@ function fallbackExplanation(req: TutorRequest): string {
 export async function runTeachingAgent(
   req: TutorRequest,
 ): Promise<TutorResult> {
-  const explanation = await generateExplanation(req);
-  const checker = await runChecker(req, explanation);
+  const gen = await generateExplanation(req);
+  const check = await runChecker(req, gen.content);
+  const checker = check.result;
 
   const passed =
     checker.confidence >= TEACHING_CONFIDENCE_THRESHOLD &&
     checker.factuallyConsistent &&
     checker.toneAppropriate;
 
+  // Record real telemetry for both model calls (best-effort, never throws).
+  // The Teaching call is "blocked" when the checker ultimately rejected it.
+  void logInvocation([
+    {
+      agent: "Teaching",
+      model: TEACHING_MODEL,
+      tokens: gen.tokens,
+      latencyMs: gen.latencyMs,
+      blocked: !passed,
+      reason: passed ? undefined : checker.reason,
+    },
+    {
+      agent: "Meta Checker",
+      model: TEACHING_MODEL,
+      tokens: check.tokens,
+      latencyMs: check.latencyMs,
+      // The checker itself succeeds whenever it returns a verdict; "blocked"
+      // here marks that its verdict was a rejection of the Teaching output.
+      blocked: !passed,
+      reason: passed ? undefined : checker.reason,
+    },
+  ]);
+
   if (passed) {
     return {
-      explanation,
+      explanation: gen.content,
       aiVerified: true,
       usedFallback: false,
       checker,

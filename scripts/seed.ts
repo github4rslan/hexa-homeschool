@@ -109,6 +109,10 @@ async function main() {
     // Stage 6 newsletter (unique email).
     await db.collection("newsletter_subscribers").createIndex({ email: 1 }, { unique: true });
 
+    // AI telemetry — queried by time window + grouped by agent.
+    await db.collection("ai_invocations").createIndex({ created_at: -1 });
+    await db.collection("ai_invocations").createIndex({ agent: 1, created_at: -1 });
+
     console.log("✓ Indexes ensured.");
     console.log("\n✅ Seed complete.");
   } finally {

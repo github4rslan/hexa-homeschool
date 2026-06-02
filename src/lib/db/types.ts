@@ -176,6 +176,27 @@ export interface TutorBookingDoc {
   created_at: Date;
 }
 
+/**
+ * One row per real AI agent invocation. Powers the admin Agent Telemetry
+ * console with genuine counts/cost/latency (no fabricated figures).
+ * Written best-effort — logging must never break a tutoring response.
+ */
+export interface AiInvocationDoc {
+  _id?: ObjectId;
+  /** Which agent ran: "Teaching" | "Meta Checker" | future agents. */
+  agent: string;
+  model: string;
+  /** Tokens consumed (prompt + completion) as reported by the provider. */
+  tokens: number;
+  /** Wall-clock latency of the provider call, milliseconds. */
+  latency_ms: number;
+  /** True when the checker rejected output (the call was "blocked"). */
+  blocked: boolean;
+  /** Short machine reason, e.g. checker reject reason. Never child PII. */
+  reason?: string;
+  created_at: Date;
+}
+
 export interface EscalationDoc {
   _id?: ObjectId;
   child_id: ObjectId;
