@@ -35,7 +35,7 @@ export function LegalLayout({
           )}
         </div>
 
-        <div className="prose prose-invert prose-violet max-w-none
+        <div className="prose prose-stone max-w-none
           [&_h2]:text-2xl [&_h2]:font-semibold [&_h2]:tracking-tight [&_h2]:text-fog-50 [&_h2]:mt-16 [&_h2]:mb-4 [&_h2]:scroll-mt-32
           [&_h3]:text-lg [&_h3]:font-semibold [&_h3]:text-fog-100 [&_h3]:mt-8 [&_h3]:mb-3
           [&_p]:text-base [&_p]:leading-relaxed [&_p]:text-fog-300 [&_p]:mb-4
