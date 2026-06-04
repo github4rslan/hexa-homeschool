@@ -1,93 +1,66 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Database, FileCheck, KeyRound, Lock, MapPin, Shield } from "lucide-react";
-import { Section, SectionHeader } from "@/components/ui/section";
-import { Card } from "@/components/ui/card";
+import { ArrowRight, FileCheck, FilePlus2, ShieldCheck, Landmark } from "lucide-react";
+import { Section } from "@/components/ui/section";
+import { Button } from "@/components/ui/button";
 
-const TRUST_PILLARS = [
-  {
-    icon: Lock,
-    title: "AES-256 at rest",
-    description: "All data payloads encrypted with AES-256. TLS 1.3 enforced for all transit.",
-    accent: "violet",
-  },
-  {
-    icon: MapPin,
-    title: "UK data residency",
-    description: "All storage localised to AWS London (eu-west-2). No data leaves UK soil.",
-    accent: "cyan",
-  },
-  {
-    icon: KeyRound,
-    title: "SHA-256 portfolios",
-    description: "Every Local Authority dossier carries a verifiable cryptographic signature.",
-    accent: "neon",
-  },
-  {
-    icon: Shield,
-    title: "Children's Code",
-    description: "Strict data minimisation. No behavioural tracking. No engagement loops.",
-    accent: "violet",
-  },
-  {
-    icon: FileCheck,
-    title: "24-month destruction",
-    description: "Full record destruction routines auto-initiate 24 months post account closure.",
-    accent: "cyan",
-  },
-  {
-    icon: Database,
-    title: "Immutable audit",
-    description: "Every compliance claim is backed by an immutable database reference.",
-    accent: "neon",
-  },
+const FEATURES = [
+  { icon: FilePlus2, label: "Registration form pre-fill" },
+  { icon: FileCheck, label: "Quarterly compliance reports" },
+  { icon: ShieldCheck, label: "Verified tamper-evident portfolios" },
+  { icon: Landmark, label: "Direct Local Authority portal launching 2027" },
 ];
-
-const accentClasses = {
-  violet: "text-violet-300 bg-violet-500/10 border-violet-400/30",
-  cyan: "text-cyan-400 bg-cyan-500/10 border-cyan-400/30",
-  neon: "text-neon-400 bg-neon-500/10 border-neon-400/30",
-};
 
 export function CompliancePreview() {
   return (
-    <Section>
-      <SectionHeader
-        eyebrow="Trust & Compliance"
-        title={
-          <>
-            Built for the
-            <br />
-            <span className="text-gradient-violet">UK regulatory frontier</span>
-          </>
-        }
-        description="Local Authorities don't accept screenshots. They accept evidence. Every byte of your child's progress is cryptographically signed and statutorily defensible."
-      />
+    <Section containerSize="lg">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-60px" }}
+        transition={{ duration: 0.7 }}
+        className="card-amber rounded-3xl p-8 md:p-12 max-w-4xl mx-auto"
+      >
+        <span className="inline-flex items-center gap-2 rounded-full border border-clay-300 bg-linen-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-clay-700">
+          The Children&apos;s Wellbeing and Schools Act 2026
+        </span>
 
-      <div className="mt-20 grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {TRUST_PILLARS.map((pillar, i) => (
-          <motion.div
-            key={pillar.title}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-50px" }}
-            transition={{ duration: 0.5, delay: i * 0.07 }}
-          >
-            <Card variant="glass" padding="lg" interactive className="h-full">
-              <div className={`inline-flex h-11 w-11 items-center justify-center rounded-xl border ${accentClasses[pillar.accent as keyof typeof accentClasses]}`}>
-                <pillar.icon className="h-5 w-5" />
-              </div>
-              <h3 className="mt-5 text-base font-semibold tracking-tight text-fog-50">
-                {pillar.title}
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-fog-400">
-                {pillar.description}
-              </p>
-            </Card>
-          </motion.div>
-        ))}
-      </div>
+        <h2 className="mt-6 font-editorial text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-forest-900">
+          Built for the New Law
+        </h2>
+
+        <p className="mt-5 text-lg leading-relaxed text-ink-700 max-w-2xl">
+          The Children&apos;s Wellbeing and Schools Act 2026 will soon require all
+          home-educated children to be registered with Local Authorities. Evidence
+          of suitable education will be mandatory.{" "}
+          <span className="font-semibold text-forest-900">HEXA is ready.</span>
+        </p>
+
+        <div className="mt-8 grid sm:grid-cols-2 gap-3">
+          {FEATURES.map((f) => (
+            <div
+              key={f.label}
+              className="flex items-center gap-3 rounded-xl bg-linen-50/70 border border-clay-200/60 px-4 py-3"
+            >
+              <f.icon className="h-5 w-5 text-clay-600 shrink-0" />
+              <span className="text-sm font-medium text-forest-900">
+                {f.label}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
+          <p className="font-editorial text-xl md:text-2xl font-semibold text-forest-900">
+            Do not wait for the letter. Be ready now.
+          </p>
+          <Button href="/signup" variant="forest" size="lg">
+            Start your free assessment
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </motion.div>
     </Section>
   );
 }

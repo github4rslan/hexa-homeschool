@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { Check, Plus, Sparkles } from "lucide-react";
+import { Check, Plus, Star } from "lucide-react";
 import { Section, SectionHeader } from "@/components/ui/section";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
 import { CTA } from "@/components/marketing/cta";
 
@@ -15,10 +13,8 @@ export const metadata: Metadata = {
 
 interface Tier {
   name: string;
-  description: string;
-  price: { monthly: number; annual: number }; // annual = total billed per year
+  price: number;
   features: string[];
-  cta: string;
   highlighted?: boolean;
   badge?: string;
 }
@@ -26,36 +22,24 @@ interface Tier {
 const TIERS: Tier[] = [
   {
     name: "HEXA Complete",
-    description:
-      "For homeschooling families who want robust educational structure and compliance protection.",
-    price: { monthly: 49, annual: 490 },
+    price: 49,
     features: [
-      "Core subjects: Maths, English & Science",
-      "60-minute adaptive GCSE-mapped diagnostic",
-      "Personalised, adjustable two-year syllabus",
-      "Daily flow: explainer + practice + mastery check",
-      "Monthly mock examinations with predictive grading",
-      "Quarterly Local Authority portfolio engine (PDF)",
-      "Registration form pre-fill for CNIS readiness",
-      "1 complimentary on-demand tutor session / month",
+      "Maths. English. Science.",
+      "Full diagnostic and syllabus.",
+      "Daily lessons and monthly mocks.",
+      "Quarterly Local Authority portfolio.",
+      "One tutor session per month.",
     ],
-    cta: "Start free trial",
   },
   {
     name: "HEXA Partner",
-    description:
-      "For families managing SEND requirements, navigating LA disputes, or seeking teacher validation.",
-    price: { monthly: 99, annual: 990 },
+    price: 99,
     features: [
-      "Everything in HEXA Complete",
-      "3 dedicated live human tutor sessions / month",
-      "Monthly written review by a qualified British teacher",
-      "Quarterly strategy alignment: parent, child & teacher",
-      "LA Defence Framework: vetted response templates",
-      "Professional solicitor guidance routing",
-      "Priority engineering & support (same-day SLA)",
+      "Everything in Complete.",
+      "Three tutor sessions per month.",
+      "Monthly teacher review.",
+      "Local Authority defence support.",
     ],
-    cta: "Start free trial",
     highlighted: true,
     badge: "Most support",
   },
@@ -70,11 +54,6 @@ const ADDITIONAL_SUBJECTS = [
   "Art",
 ];
 
-/** Annual saving as a whole percentage vs. paying monthly for 12 months. */
-function annualSaving(monthly: number, annual: number): number {
-  return Math.round(((monthly * 12 - annual) / (monthly * 12)) * 100);
-}
-
 export default function PricingPage() {
   return (
     <>
@@ -83,72 +62,64 @@ export default function PricingPage() {
           eyebrow="Pricing"
           title={
             <>
-              Honest pricing.
-              <br />
-              <span className="text-gradient-violet">No surprises.</span>
+              Honest pricing.{" "}
+              <span className="text-gradient-forest">No surprises.</span>
             </>
           }
-          description="14-day free trial — no card required. Cancel anytime. Annual payment saves 17%. All prices in GBP and include UK VAT."
+          description="Annual payment saves 17%. 14-day free trial. Cancel anytime. All prices in GBP and include UK VAT."
         />
 
-        <div className="mt-20 grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <div className="mt-16 grid md:grid-cols-2 gap-6 max-w-4xl mx-auto items-start">
           {TIERS.map((tier) => (
-            <Card
+            <div
               key={tier.name}
-              variant={tier.highlighted ? "glass-strong" : "glass"}
-              padding="xl"
-              className={
+              className={`relative rounded-3xl p-8 md:p-10 ${
                 tier.highlighted
-                  ? "relative border-violet-400/40 glow-violet"
-                  : "relative"
-              }
+                  ? "card-warm-tint ring-forest border-2 border-forest-600/30"
+                  : "card-warm"
+              }`}
             >
               {tier.badge && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <Badge variant="violet" size="md">
-                    <Sparkles className="h-3 w-3" />
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-clay-500 px-3 py-1 text-xs font-semibold text-linen-50">
+                    <Star className="h-3 w-3 fill-linen-50" />
                     {tier.badge}
-                  </Badge>
+                  </span>
                 </div>
               )}
 
-              <h3 className="text-2xl font-semibold tracking-tight text-fog-50">
+              <h3 className="font-editorial text-2xl font-semibold tracking-tight text-forest-900">
                 {tier.name}
               </h3>
-              <p className="mt-2 text-sm text-fog-400">{tier.description}</p>
 
-              <div className="mt-6 flex items-baseline gap-1">
-                <span className="text-5xl font-semibold tracking-tight text-fog-50">
-                  £{tier.price.monthly}
+              <div className="mt-5 flex items-baseline gap-1">
+                <span className="font-editorial text-5xl font-semibold tracking-tight text-forest-900">
+                  £{tier.price}
                 </span>
-                <span className="text-sm text-fog-400">/ month</span>
+                <span className="text-sm text-ink-600">/ month</span>
               </div>
-              <p className="mt-1 text-xs text-fog-500">
-                or £{tier.price.annual}/year (save{" "}
-                {annualSaving(tier.price.monthly, tier.price.annual)}%)
-              </p>
 
               <Button
                 href="/signup"
-                variant={tier.highlighted ? "primary" : "secondary"}
+                variant={tier.highlighted ? "forest" : "warm-outline"}
                 size="md"
-                className="mt-8 w-full"
+                className="mt-7 w-full"
               >
-                {tier.cta}
+                Start free trial
               </Button>
 
               <ul className="mt-8 flex flex-col gap-3">
                 {tier.features.map((f) => (
                   <li
                     key={f}
-                    className="flex items-start gap-2 text-sm text-fog-200"
+                    className="flex items-start gap-2.5 text-sm text-ink-700"
                   >
-                    <Check className="h-4 w-4 text-neon-400 mt-0.5 shrink-0" />
+                    <Check className="h-4 w-4 text-forest-600 mt-0.5 shrink-0" />
                     <span>{f}</span>
                   </li>
                 ))}
               </ul>
-            </Card>
+            </div>
           ))}
         </div>
       </Section>
@@ -156,44 +127,46 @@ export default function PricingPage() {
       {/* Additional subjects */}
       <Section padded={false} className="pb-8">
         <Container size="md">
-          <Card variant="glass" padding="xl">
+          <div className="card-warm rounded-3xl p-8 md:p-10">
             <div className="flex flex-col md:flex-row md:items-center gap-6 md:justify-between">
               <div className="max-w-md">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-cyan-500/10 border border-cyan-400/30">
-                    <Plus className="h-4 w-4 text-cyan-400" />
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-clay-50 border border-clay-200">
+                    <Plus className="h-4 w-4 text-clay-600" />
                   </div>
-                  <h3 className="text-lg font-semibold tracking-tight text-fog-50">
-                    Additional subjects
+                  <h3 className="text-lg font-semibold tracking-tight text-forest-900">
+                    Additional Subjects
                   </h3>
                 </div>
-                <p className="text-sm leading-relaxed text-fog-400">
-                  Optional non-core modules that leverage the same infrastructure,
-                  separated from the core compliance engine metrics.
+                <p className="text-sm leading-relaxed text-ink-600">
+                  History. Geography. French. Spanish. Computer Science. Art.
                 </p>
               </div>
               <div className="flex flex-col items-start md:items-end gap-3">
                 <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-semibold tracking-tight text-fog-50">
+                  <span className="font-editorial text-3xl font-semibold tracking-tight text-forest-900">
                     £15
                   </span>
-                  <span className="text-sm text-fog-400">/ month each</span>
+                  <span className="text-sm text-ink-600">/ month each</span>
                 </div>
                 <div className="flex flex-wrap gap-2 md:justify-end">
                   {ADDITIONAL_SUBJECTS.map((s) => (
-                    <Badge key={s} variant="outline" size="sm">
+                    <span
+                      key={s}
+                      className="rounded-full border border-forest-600/20 bg-linen-50 px-3 py-1 text-xs font-medium text-forest-800"
+                    >
                       {s}
-                    </Badge>
+                    </span>
                   ))}
                 </div>
               </div>
             </div>
-          </Card>
+          </div>
         </Container>
       </Section>
 
-      <p className="mt-4 text-center text-xs text-fog-500 px-6">
-        14-day free trial · No card required · Cancel anytime · Invoices available for record-keeping
+      <p className="mt-4 text-center text-sm text-ink-600 px-6">
+        Annual payment saves 17%. 14-day free trial. Cancel anytime.
       </p>
 
       <CTA />
