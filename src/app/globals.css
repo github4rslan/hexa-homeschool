@@ -56,9 +56,49 @@
   --color-fog-700: #383A55;
   --color-fog-800: #24263D;
 
+  /* ──────────────────────────────────────────────────────────
+     HEXA Warm Palette — Marketing site (heritage / editorial)
+     Deep forest greens, warm amber, soft linen. Scoped via .theme-warm.
+     ────────────────────────────────────────────────────────── */
+
+  /* Forest greens (primary) */
+  --color-forest-50: #F0F4F1;
+  --color-forest-100: #DCE7DF;
+  --color-forest-200: #B6CDBD;
+  --color-forest-300: #88AC93;
+  --color-forest-400: #5C886B;
+  --color-forest-500: #3E6B4F;
+  --color-forest-600: #2F543E;
+  --color-forest-700: #234231;
+  --color-forest-800: #1A3325;
+  --color-forest-900: #12251B;
+  --color-forest-950: #0C1A13;
+
+  /* Warm amber (accent) */
+  --color-clay-50: #FBF3E7;
+  --color-clay-100: #F6E5CB;
+  --color-clay-200: #EFD0A0;
+  --color-clay-300: #E6B56F;
+  --color-clay-400: #D99A45;
+  --color-clay-500: #C57F2A;
+  --color-clay-600: #A6651F;
+  --color-clay-700: #834E1C;
+
+  /* Linen / paper backdrops + warm ink text */
+  --color-linen-50: #FCFAF5;
+  --color-linen-100: #F8F4EB;
+  --color-linen-200: #F1EADB;
+  --color-linen-300: #E7DBC4;
+  --color-ink-900: #221E16;
+  --color-ink-800: #343027;
+  --color-ink-700: #4A4334;
+  --color-ink-600: #6B6451;
+  --color-ink-500: #8C846E;
+
   /* Typography */
   --font-sans: var(--font-geist-sans), "Inter", system-ui, -apple-system, sans-serif;
   --font-display: var(--font-geist-sans), "Inter", system-ui, sans-serif;
+  --font-editorial: var(--font-editorial), "Fraunces", Georgia, "Times New Roman", serif;
   --font-mono: var(--font-geist-mono), "JetBrains Mono", ui-monospace, monospace;
 
   /* Radii */
@@ -488,5 +528,194 @@
   }
   .animate-child-pop {
     animation: child-pop 0.5s var(--ease-spring) both;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────
+   Warm marketing theme — heritage / editorial / high-trust.
+   Scoped to .theme-warm (applied on the (marketing) layout wrapper) so the
+   logged-in app, child mode and admin keep the dark system untouched.
+   Deep forest green + warm amber on soft linen, with an editorial serif.
+   ────────────────────────────────────────────────────────── */
+@layer base {
+  .theme-warm {
+    color-scheme: light;
+    background-color: var(--color-linen-100);
+    color: var(--color-ink-800);
+  }
+  .theme-warm ::selection {
+    background-color: var(--color-forest-600);
+    color: var(--color-linen-50);
+  }
+  .theme-warm :focus-visible {
+    outline-color: var(--color-forest-500);
+  }
+  /* Editorial display headings; tracking opens up for a heritage feel. */
+  .theme-warm h1,
+  .theme-warm h2,
+  .theme-warm h3 {
+    font-family: var(--font-editorial);
+    letter-spacing: -0.02em;
+    color: var(--color-forest-900);
+  }
+  .theme-warm h4,
+  .theme-warm h5,
+  .theme-warm h6 {
+    color: var(--color-forest-900);
+  }
+}
+
+@layer utilities {
+  /* Linen paper backdrop with a faint warm grain. */
+  .bg-linen {
+    background-color: var(--color-linen-100);
+  }
+  .bg-linen-paper {
+    background-color: var(--color-linen-100);
+    background-image:
+      radial-gradient(at 0% 0%, rgba(62, 107, 79, 0.05) 0px, transparent 55%),
+      radial-gradient(at 100% 0%, rgba(197, 127, 42, 0.05) 0px, transparent 55%);
+  }
+  /* Warm hero wash — subtle, not the dark mesh. */
+  .bg-warm-hero {
+    background-image:
+      radial-gradient(at 15% 5%, rgba(62, 107, 79, 0.10) 0px, transparent 50%),
+      radial-gradient(at 85% 0%, rgba(230, 181, 111, 0.14) 0px, transparent 50%),
+      radial-gradient(at 50% 100%, rgba(62, 107, 79, 0.06) 0px, transparent 60%);
+  }
+
+  /* Warm card surfaces — soft cream panels with a hairline forest border. */
+  .card-warm {
+    background-color: var(--color-linen-50);
+    border: 1px solid rgba(35, 66, 49, 0.10);
+    box-shadow:
+      0 1px 2px rgba(35, 66, 49, 0.04),
+      0 12px 32px -16px rgba(35, 66, 49, 0.18);
+  }
+  .card-warm-tint {
+    background: linear-gradient(150deg, var(--color-forest-50), var(--color-linen-50));
+    border: 1px solid rgba(35, 66, 49, 0.12);
+  }
+  .card-amber {
+    background: linear-gradient(150deg, var(--color-clay-50), var(--color-linen-50));
+    border: 1px solid rgba(197, 127, 42, 0.28);
+  }
+  /* Institutional / B2G surface — crisp white, thin structural lines. */
+  .card-institutional {
+    background-color: #ffffff;
+    border: 1px solid rgba(35, 66, 49, 0.14);
+  }
+
+  /* Forest ring/glow for primary emphasis — gentle, not neon. */
+  .ring-forest {
+    box-shadow:
+      0 0 0 1px rgba(35, 66, 49, 0.08),
+      0 18px 50px -22px rgba(35, 66, 49, 0.45);
+  }
+
+  /* Warm text accent (no transparent-fill neon gradient). */
+  .text-gradient-forest {
+    background: linear-gradient(120deg, var(--color-forest-600), var(--color-forest-400));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
+
+  /* Hairline grid for institutional sections. */
+  .bg-grid-warm {
+    background-image:
+      linear-gradient(rgba(35, 66, 49, 0.05) 1px, transparent 1px),
+      linear-gradient(to right, rgba(35, 66, 49, 0.05) 1px, transparent 1px);
+    background-size: 56px 56px;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────
+   Warm-theme remaps for SHARED utility classes.
+   Several shared components (SectionHeader, etc.) hardcode the dark
+   palette (text-fog-*, text-violet-*, glass). Rather than fork every
+   component, remap those tokens to warm equivalents ONLY inside
+   .theme-warm so the dark app is untouched. Scoped + !important so they
+   reliably win over the Tailwind utility regardless of source order.
+   ────────────────────────────────────────────────────────── */
+@layer utilities {
+  .theme-warm .text-fog-50,
+  .theme-warm .text-fog-100 { color: var(--color-forest-900) !important; }
+  .theme-warm .text-fog-200 { color: var(--color-ink-800) !important; }
+  .theme-warm .text-fog-300,
+  .theme-warm .text-fog-400 { color: var(--color-ink-600) !important; }
+  .theme-warm .text-fog-500,
+  .theme-warm .text-fog-600,
+  .theme-warm .text-fog-700 { color: var(--color-ink-500) !important; }
+
+  /* Violet eyebrow/accent → forest/clay accent. */
+  .theme-warm .text-violet-300,
+  .theme-warm .text-violet-400 { color: var(--color-clay-600) !important; }
+  .theme-warm .text-neon-400,
+  .theme-warm .text-neon-500 { color: var(--color-forest-500) !important; }
+
+  /* Accent-chip backgrounds/borders (violet/neon/cyan/amber glass tints) →
+     consistent warm forest/clay so icon tiles read on linen. */
+  .theme-warm .border-violet-400\/20,
+  .theme-warm .border-violet-400\/30,
+  .theme-warm .border-violet-400\/40,
+  .theme-warm .border-cyan-400\/30,
+  .theme-warm .border-cyan-400\/40,
+  .theme-warm .border-neon-400\/30,
+  .theme-warm .border-neon-400\/40 { border-color: rgba(35, 66, 49, 0.18) !important; }
+  .theme-warm .bg-violet-500\/5,
+  .theme-warm .bg-violet-500\/10,
+  .theme-warm .bg-cyan-500\/10,
+  .theme-warm .bg-neon-500\/10 { background-color: var(--color-forest-50) !important; }
+  .theme-warm .border-amber-400\/30,
+  .theme-warm .border-amber-400\/40 { border-color: rgba(197, 127, 42, 0.30) !important; }
+  .theme-warm .bg-amber-500\/10,
+  .theme-warm .bg-amber-500\/15 { background-color: var(--color-clay-50) !important; }
+  .theme-warm .text-amber-400,
+  .theme-warm .text-amber-500 { color: var(--color-clay-600) !important; }
+  .theme-warm .text-cyan-400,
+  .theme-warm .text-cyan-300 { color: var(--color-forest-500) !important; }
+
+  /* Dark surface/glow utilities → neutralised on warm pages so any page that
+     still uses them doesn't punch a dark hole through the linen theme. */
+  .theme-warm .bg-void,
+  .theme-warm .bg-abyss,
+  .theme-warm .bg-nebula,
+  .theme-warm .bg-cosmos,
+  .theme-warm .bg-surface { background-color: transparent !important; }
+  .theme-warm .bg-mesh-violet,
+  .theme-warm .bg-mesh-hero,
+  .theme-warm .bg-aurora::before { background-image: none !important; }
+  .theme-warm .glow-violet,
+  .theme-warm .glow-neon,
+  .theme-warm .glow-cyan { box-shadow: none !important; }
+  .theme-warm .noise::before { opacity: 0 !important; }
+  .theme-warm .border-white\/5,
+  .theme-warm .border-white\/10 { border-color: rgba(35, 66, 49, 0.10) !important; }
+  .theme-warm .bg-white\/5,
+  .theme-warm .bg-white\/\[0\.02\],
+  .theme-warm .bg-white\/\[0\.03\] { background-color: var(--color-linen-200) !important; }
+
+  /* Neon text gradients → solid forest on warm pages (kills transparent fill). */
+  .theme-warm .text-gradient-violet,
+  .theme-warm .text-gradient-aurora,
+  .theme-warm .text-gradient-shimmer {
+    background: none !important;
+    -webkit-text-fill-color: var(--color-forest-700) !important;
+    color: var(--color-forest-700) !important;
+    animation: none !important;
+  }
+
+  /* Glass panels on warm pages → cream cards. */
+  .theme-warm .glass,
+  .theme-warm .glass-strong {
+    background: var(--color-linen-50) !important;
+    border-color: rgba(35, 66, 49, 0.10) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow:
+      0 1px 2px rgba(35, 66, 49, 0.04),
+      0 12px 32px -16px rgba(35, 66, 49, 0.18);
   }
 }

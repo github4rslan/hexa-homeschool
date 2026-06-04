@@ -1,6 +1,5 @@
 import { MarketingNav } from "@/components/marketing/nav";
 import { MarketingFooter } from "@/components/marketing/footer";
-import { CursorGlow } from "@/components/fx/cursor-glow";
 import { ScrollProgress } from "@/components/fx/scroll-progress";
 import { PageTransition } from "@/components/fx/page-transition";
 import { SkipLink } from "@/components/ui/skip-link";
@@ -12,15 +11,12 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen overflow-x-clip">
-      {/* Ambient background layers */}
-      <div className="fixed inset-0 bg-void -z-20" />
-      <div className="fixed inset-0 bg-grid bg-grid-fade opacity-50 -z-10 pointer-events-none" />
-      <div className="fixed inset-0 noise -z-10" />
+    <div className="theme-warm relative min-h-screen overflow-x-clip bg-linen-100 text-ink-800">
+      {/* Warm, editorial ambient backdrop — soft linen paper, no neon. */}
+      <div className="fixed inset-0 bg-linen-paper -z-20" />
 
       <SkipLink />
       <ScrollProgress />
-      <CursorGlow />
 
       <MarketingNav />
       <main id="main-content" className="pt-24">

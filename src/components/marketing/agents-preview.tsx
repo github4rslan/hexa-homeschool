@@ -2,148 +2,66 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Section, SectionHeader } from "@/components/ui/section";
-import { Card } from "@/components/ui/card";
-import { Spotlight } from "@/components/fx/spotlight";
 import { AGENTS } from "@/lib/data/agents";
-import { cn } from "@/lib/utils";
-
-const colorClasses = {
-  violet: {
-    dot: "bg-violet-400",
-    text: "text-violet-300",
-    border: "border-violet-400/30",
-    spotlight: "rgba(167, 139, 250, 0.18)",
-  },
-  neon: {
-    dot: "bg-neon-400",
-    text: "text-neon-400",
-    border: "border-neon-400/30",
-    spotlight: "rgba(6, 255, 165, 0.18)",
-  },
-  cyan: {
-    dot: "bg-cyan-400",
-    text: "text-cyan-400",
-    border: "border-cyan-400/30",
-    spotlight: "rgba(0, 212, 255, 0.18)",
-  },
-  amber: {
-    dot: "bg-amber-400",
-    text: "text-amber-400",
-    border: "border-amber-400/30",
-    spotlight: "rgba(251, 191, 36, 0.18)",
-  },
-  crimson: {
-    dot: "bg-crimson-400",
-    text: "text-crimson-400",
-    border: "border-crimson-400/30",
-    spotlight: "rgba(248, 113, 113, 0.18)",
-  },
-  fog: {
-    dot: "bg-fog-300",
-    text: "text-fog-200",
-    border: "border-fog-400/30",
-    spotlight: "rgba(184, 186, 208, 0.18)",
-  },
-};
 
 export function AgentsPreview() {
   return (
-    <Section id="agents" className="relative">
-      <div className="absolute inset-0 bg-mesh-violet opacity-20 pointer-events-none" />
-
+    <Section id="agents" className="relative bg-forest-50/40 border-y border-forest-900/5">
       <SectionHeader
-        eyebrow="The AI Architecture"
+        eyebrow="The AI system"
         title={
           <>
-            Six specialised agents.
-            <br />
-            <span className="text-gradient-violet">One coherent system.</span>
+            Six experts. One purpose.{" "}
+            <span className="text-gradient-forest">Your child&apos;s success.</span>
           </>
         }
-        description="Each agent runs with its own checker validator. A Meta Checker audits 5% of all transactions. Human operators intervene only when SLA-bound triggers fire."
+        description="Each agent handles a specific task. Diagnosis. Teaching. Assessment. Planning. Compliance. Quality control. Every output is checked before it reaches your child. Humans step in only when needed."
       />
 
       <motion.div
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-50px" }}
-        transition={{ staggerChildren: 0.08 }}
-        className="mt-20 grid md:grid-cols-2 lg:grid-cols-3 gap-5"
+        transition={{ staggerChildren: 0.07 }}
+        className="mt-16 grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto"
       >
-        {AGENTS.map((agent) => {
-          const colors = colorClasses[agent.color];
-          return (
-            <motion.div
-              key={agent.id}
-              variants={{
-                hidden: { opacity: 0, y: 30 },
-                visible: {
-                  opacity: 1,
-                  y: 0,
-                  transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] },
-                },
-              }}
-            >
-              <Spotlight color={colors.spotlight} className="rounded-2xl">
-                <Card
-                  variant="glass"
-                  padding="lg"
-                  interactive
-                  className="h-full"
-                >
-                  <div className="flex items-center justify-between mb-5">
-                    <span
-                      className={cn(
-                        "font-mono text-xs uppercase tracking-widest px-3 py-1 rounded-full border",
-                        colors.text,
-                        colors.border,
-                      )}
-                    >
-                      Agent {agent.number}
-                    </span>
-                    <span
-                      className={cn("h-2 w-2 rounded-full animate-pulse", colors.dot)}
-                    />
-                  </div>
-
-                  <h3 className="text-xl font-semibold tracking-tight text-fog-50 mb-2">
-                    {agent.name}
-                  </h3>
-                  <p className="text-sm font-medium leading-relaxed text-fog-100 mb-1">
-                    {agent.plainSummary}
-                  </p>
-                  <p className="text-xs leading-relaxed text-fog-400 mb-6">
-                    {agent.tagline}.
-                  </p>
-
-                  <div className="border-t border-white/5 pt-4 mt-auto">
-                    <div className="flex items-start gap-2">
-                      <ShieldCheck className="h-4 w-4 text-fog-400 mt-0.5 shrink-0" />
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs font-medium text-fog-200">
-                          {agent.checker.name}
-                        </span>
-                        <span className="text-xs text-fog-500 leading-relaxed line-clamp-2">
-                          {agent.checker.role}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </Spotlight>
-            </motion.div>
-          );
-        })}
+        {AGENTS.map((agent) => (
+          <motion.div
+            key={agent.id}
+            variants={{
+              hidden: { opacity: 0, y: 24 },
+              visible: {
+                opacity: 1,
+                y: 0,
+                transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
+              },
+            }}
+            className="card-warm rounded-2xl p-6 h-full"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <span className="font-mono text-xs uppercase tracking-widest text-clay-600">
+                {agent.number}
+              </span>
+              <span className="h-px flex-1 bg-forest-900/10" />
+            </div>
+            <h3 className="text-lg font-semibold tracking-tight text-forest-900">
+              {agent.name}
+            </h3>
+            <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
+              {agent.plainSummary}
+            </p>
+          </motion.div>
+        ))}
       </motion.div>
 
       <div className="mt-12 text-center">
         <Link
-          href="/agents"
-          className="inline-flex items-center gap-2 text-sm font-medium text-violet-300 hover:text-violet-200 transition-colors group"
+          href="/safety"
+          className="inline-flex items-center gap-2 text-sm font-medium text-forest-700 hover:text-forest-900 transition-colors group"
         >
-          Explore each agent in depth
+          Learn more about our safety architecture
           <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
         </Link>
       </div>

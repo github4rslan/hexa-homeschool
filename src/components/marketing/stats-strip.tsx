@@ -23,7 +23,7 @@ export function StatsStrip() {
   return (
     <section
       id="stats"
-      className="relative py-16 border-y border-white/5 bg-abyss/40 backdrop-blur-sm"
+      className="relative py-16 border-y border-forest-900/10 bg-linen-50/60"
     >
       <Container>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">

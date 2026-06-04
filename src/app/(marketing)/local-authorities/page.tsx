@@ -2,26 +2,23 @@ import type { Metadata } from "next";
 import {
   Building2,
   FileSearch,
-  Fingerprint,
-  Mail,
   Scale,
-  Shield,
   Verified,
+  ArrowRight,
+  ListChecks,
 } from "lucide-react";
-import { Section, SectionHeader } from "@/components/ui/section";
-import { Card } from "@/components/ui/card";
+import { Section } from "@/components/ui/section";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/fx/reveal";
 
 export const metadata: Metadata = {
   title: "For Local Authorities",
   description:
-    "Information for UK Local Authority EHE officers reviewing children registered on HEXA.",
+    "Information for UK Local Authority EHE officers reviewing children registered on HEXA. Cryptographically signed, statutorily defensible portfolios.",
 };
 
-const STATUTORY_CATEGORIES = [
+const STATUTORY = [
   {
     title: "Intent",
     description:
@@ -40,146 +37,121 @@ const STATUTORY_CATEGORIES = [
       "Assessment results and predictive grading showing a coherent, age-appropriate progression.",
     icon: Verified,
   },
-];
-
-const FEATURES = [
   {
-    icon: Fingerprint,
-    title: "Cryptographic signatures",
-    body: "Every dossier carries a SHA-256 signature computed from the underlying immutable database records. Tampering is mathematically detectable.",
-  },
-  {
-    icon: Shield,
-    title: "Read-only audit access",
-    body: "On parent consent, we provide LA officers with a unique read-only verification URL. Access is logged. Downloads are tracked.",
-  },
-  {
-    icon: Mail,
-    title: "Direct case officer channel",
-    body: "Dedicated email line for LA officers with formal queries. Average response time under 24 hours.",
+    title: "Next Steps",
+    description:
+      "A forward plan for the coming term — the trajectory toward exam readiness, on the child's timeline.",
+    icon: ListChecks,
   },
 ];
 
+const SECURITY_TAGS = [
+  "AES-256 at Rest",
+  "TLS 1.3 in Transit",
+  "UK Data Residency",
+  "SHA-256 Verification",
+  "Children's Code Compliant",
+  "Immutable Audit Trails",
+];
+
+/**
+ * Section K — Local Authority Gateway (B2G). Brief: a completely distinct,
+ * institutional appearance — white background, thin structural lines, technical
+ * architecture tags. We force a crisp white surface here (over the warm linen
+ * theme) to read as an audit interface for council officers.
+ */
 export default function LocalAuthoritiesPage() {
   return (
-    <>
-      <Section padded className="pt-16">
-        <SectionHeader
-          eyebrow="For Local Authorities"
-          title={
-            <>
-              Evidence that
-              <br />
-              <span className="text-gradient-aurora">
-                speaks for itself.
-              </span>
-            </>
-          }
-          description="Local Authorities don't accept screenshots. They accept proof. Every byte of a child's progress on HEXA is cryptographically signed and statutorily defensible — generated in the format you need: Intent, Implementation, Impact, Next Steps."
-        />
-      </Section>
+    <div className="bg-white">
+      {/* Institutional masthead */}
+      <header className="relative border-b border-forest-900/12 bg-white">
+        <div className="absolute inset-0 bg-grid-warm pointer-events-none opacity-60" />
+        <Container size="lg" className="relative py-16 md:py-20">
+          <span className="font-mono text-xs uppercase tracking-[0.2em] text-forest-600">
+            B2G · Local Authority audit interface
+          </span>
+          <h1 className="mt-4 font-editorial text-4xl md:text-5xl font-semibold tracking-tight text-forest-900 max-w-3xl leading-tight">
+            Evidence That Speaks for Itself
+          </h1>
+          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-ink-700">
+            Local Authorities do not accept screenshots. They accept proof. Every
+            byte of your child&apos;s progress is cryptographically signed and
+            statutorily defensible.
+          </p>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink-600">
+            HEXA generates portfolios in statutory format: Intent, Implementation,
+            Impact, Next Steps. Professional. Thorough. Ready for inspection.
+          </p>
+          <div className="mt-8">
+            <Button href="/contact" variant="forest" size="lg">
+              Request a pilot partnership
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </Container>
+      </header>
 
-      <Section padded={false} className="pb-20">
-        <div className="grid lg:grid-cols-3 gap-5">
-          {STATUTORY_CATEGORIES.map((c, i) => (
-            <Reveal key={c.title} delay={i * 0.1}>
-              <Card variant="glass-strong" padding="xl" className="h-full">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/10 border border-violet-400/30">
-                    <c.icon className="h-5 w-5 text-violet-300" />
-                  </div>
-                  <Badge variant="violet" size="sm">
-                    Statutory format
-                  </Badge>
-                </div>
-                <h3 className="text-xl font-semibold text-fog-50 mb-2">
+      {/* Statutory format grid */}
+      <Section containerSize="lg" className="bg-white">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-px bg-forest-900/10 rounded-2xl overflow-hidden border border-forest-900/10">
+          {STATUTORY.map((c, i) => (
+            <Reveal key={c.title} delay={i * 0.08}>
+              <div className="card-institutional h-full p-7 !border-0">
+                <c.icon className="h-6 w-6 text-forest-600 mb-4" />
+                <h3 className="text-lg font-semibold text-forest-900 mb-2">
                   {c.title}
                 </h3>
-                <p className="text-sm leading-relaxed text-fog-400">
+                <p className="text-sm leading-relaxed text-ink-600">
                   {c.description}
                 </p>
-              </Card>
+              </div>
             </Reveal>
           ))}
         </div>
       </Section>
 
-      {/* Security specifications strip */}
-      <Section padded={false} className="pb-20">
-        <Container size="md">
-          <Card variant="glass" padding="lg">
-            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-center">
-              {[
-                "AES-256 at rest",
-                "TLS 1.3 in transit",
-                "UK data residency",
-                "SHA-256 portfolio verification",
-                "Children's Code compliant",
-                "Immutable audit trails",
-              ].map((spec, i) => (
-                <span
-                  key={spec}
-                  className="flex items-center gap-3 text-xs font-mono uppercase tracking-wider text-fog-300"
-                >
-                  {i > 0 && <span className="text-fog-700">·</span>}
-                  {spec}
-                </span>
-              ))}
-            </div>
-          </Card>
-        </Container>
-      </Section>
-
-      <Section>
-        <SectionHeader
-          eyebrow="Verification"
-          title="Trust, but verify"
-          description="HEXA portfolios are designed to be independently verifiable. You don't have to take our word for anything."
-          align="left"
-        />
-        <div className="mt-12 grid md:grid-cols-3 gap-5">
-          {FEATURES.map((f, i) => (
-            <Reveal key={f.title} delay={i * 0.1}>
-              <Card variant="glass" padding="lg" className="h-full">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-neon-500/10 border border-neon-400/30 mb-5">
-                  <f.icon className="h-5 w-5 text-neon-400" />
-                </div>
-                <h3 className="text-base font-semibold tracking-tight text-fog-50 mb-2">
-                  {f.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-fog-400">{f.body}</p>
-              </Card>
-            </Reveal>
-          ))}
+      {/* Security architecture tags */}
+      <Section padded={false} containerSize="lg" className="pb-16 bg-white">
+        <div className="rounded-2xl border border-forest-900/12 bg-linen-50 p-6">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {SECURITY_TAGS.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-md border border-forest-900/12 bg-white px-3 py-1.5 text-xs font-mono text-ink-700"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
         </div>
       </Section>
 
-      <section className="py-32">
+      {/* LA liaison CTA */}
+      <section className="py-24 bg-white border-t border-forest-900/10">
         <Container size="md">
-          <Card variant="glass-strong" padding="xl" className="text-center">
-            <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-violet-500/10 border border-violet-400/30 mb-6">
-              <Building2 className="h-6 w-6 text-violet-300" />
+          <div className="card-institutional rounded-3xl p-10 text-center">
+            <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-forest-700 text-linen-50 mb-6">
+              <Building2 className="h-6 w-6" />
             </div>
-            <h2 className="text-3xl md:text-4xl font-semibold tracking-tight text-fog-50 mb-4">
+            <h2 className="font-editorial text-3xl md:text-4xl font-semibold tracking-tight text-forest-900 mb-4">
               Talk to our LA liaison
             </h2>
-            <p className="text-base text-fog-300 leading-relaxed max-w-xl mx-auto mb-8">
+            <p className="text-base text-ink-700 leading-relaxed max-w-xl mx-auto mb-8">
               We retain a UK education law specialist who liaises directly with
-              EHE officers. We can provide platform documentation, sample dossiers,
-              and verification keys on request.
+              EHE officers. We can provide platform documentation, sample
+              dossiers, and verification keys on request.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button href="mailto:la@hexa.education" variant="primary" size="lg">
-                <Mail className="h-4 w-4" />
-                la@hexa.education
+              <Button href="/contact" variant="forest" size="lg">
+                Request a pilot partnership
               </Button>
-              <Button href="/contact" variant="secondary" size="lg">
-                General contact
+              <Button href="/compliance" variant="warm-outline" size="lg">
+                Review the compliance model
               </Button>
             </div>
-          </Card>
+          </div>
         </Container>
       </section>
-    </>
+    </div>
   );
 }

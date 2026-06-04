@@ -17,9 +17,9 @@ export const JOURNEY: JourneyStep[] = [
   {
     step: 1,
     title: "Understand",
-    timing: "Day 1",
+    timing: "Day One",
     description:
-      "A 60-minute diagnostic maps your child's current level against GCSE standards. No guesswork. Just facts.",
+      "A sixty-minute assessment maps your child's current level against GCSE standards. No guesswork. Just facts.",
     detail:
       "Establishes baseline competencies and identifies precise gaps using Item Response Theory.",
     icon: "Activity",
@@ -39,9 +39,9 @@ export const JOURNEY: JourneyStep[] = [
   {
     step: 3,
     title: "Learn",
-    timing: "Every day",
+    timing: "Every Day",
     description:
-      "Daily lessons delivered: explainer video, adaptive practice, mastery check. AI adapts to how your child learns best.",
+      "Daily lessons delivered. Explainer video. Adaptive practice. Mastery check. The AI adapts to how your child learns best.",
     detail:
       "The Teaching Agent dynamically modifies its approach when friction is detected — with a checker on every output.",
     icon: "Sparkles",
@@ -50,7 +50,7 @@ export const JOURNEY: JourneyStep[] = [
   {
     step: 4,
     title: "Assess",
-    timing: "Every month",
+    timing: "Every Month",
     description:
       "Mock exams under timed conditions. Grade predictions. Trend analysis. You see progress, not just activity.",
     detail:
@@ -61,7 +61,7 @@ export const JOURNEY: JourneyStep[] = [
   {
     step: 5,
     title: "Prove",
-    timing: "Every term",
+    timing: "Every Term",
     description:
       "One button generates your Local Authority portfolio. Verified. Professional. Ready to send.",
     detail:
@@ -72,9 +72,9 @@ export const JOURNEY: JourneyStep[] = [
   {
     step: 6,
     title: "Decide",
-    timing: "When ready",
+    timing: "When Ready",
     description:
-      "When your child reaches the standard, you choose whether to sit the exam at 14, 15, or 16. HEXA supports you either way.",
+      "When your child reaches the standard, you choose when to sit the exam. At fourteen, fifteen, or sixteen. HEXA supports you either way.",
     detail:
       "No artificial deadlines. The decision is data-driven and entirely yours.",
     icon: "GraduationCap",

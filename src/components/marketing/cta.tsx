@@ -7,43 +7,41 @@ import { Button } from "@/components/ui/button";
 
 export function CTA() {
   return (
-    <section className="relative py-32 overflow-hidden">
-      <div className="absolute inset-0 bg-mesh-hero pointer-events-none" />
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[800px] rounded-full bg-violet-600/20 blur-[120px] pointer-events-none" />
+    <section className="relative py-28 overflow-hidden">
+      <div className="absolute inset-0 bg-warm-hero pointer-events-none" />
 
       <Container size="md">
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 36 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
-          className="relative flex flex-col items-center text-center gap-8"
+          className="relative flex flex-col items-center text-center gap-7"
         >
-          <h2 className="text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-fog-50 leading-[1.05]">
-            Don't wait
+          <h2 className="font-editorial text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-forest-900 leading-[1.05]">
+            Teach with confidence.
             <br />
-            for the letter.
-            <br />
-            <span className="text-gradient-aurora">Be ready now.</span>
+            Prove with evidence.{" "}
+            <span className="text-gradient-forest">Sit when ready.</span>
           </h2>
 
-          <p className="max-w-xl text-lg text-fog-300 leading-relaxed">
-            Start with a free 60-minute diagnostic. See exactly where your child
-            stands against GCSE standards — then learn at their pace and sit when ready.
+          <p className="max-w-xl text-lg text-ink-700 leading-relaxed">
+            Start with a free assessment. See exactly where your child stands
+            against GCSE standards — then learn at their pace and sit when ready.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 mt-4">
-            <Button href="/signup" variant="primary" size="xl">
-              Start free diagnostic
+          <div className="flex flex-col sm:flex-row gap-3 mt-2">
+            <Button href="/signup" variant="forest" size="xl">
+              Start your free assessment
               <ArrowRight className="h-5 w-5" />
             </Button>
-            <Button href="/contact" variant="secondary" size="xl">
+            <Button href="/contact" variant="warm-outline" size="xl">
               Talk to the team
             </Button>
           </div>
 
-          <p className="text-xs text-fog-500 mt-2">
-            No card required · 14-day trial · Cancel anytime
+          <p className="text-xs text-ink-500 mt-1">
+            14-day trial. No card required. Cancel anytime.
           </p>
         </motion.div>
       </Container>

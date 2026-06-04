@@ -43,6 +43,29 @@ const buttonVariants = cva(
           "shadow-[0_0_50px_-12px_rgba(124,58,237,0.7)]",
           "hover:scale-[1.03] active:scale-[0.97] transition-transform",
         ],
+        // ── Warm marketing theme (heritage / editorial) ──
+        forest: [
+          "bg-forest-700 text-linen-50",
+          "shadow-[0_10px_30px_-12px_rgba(35,66,49,0.6),inset_0_1px_0_0_rgba(255,255,255,0.10)]",
+          "hover:bg-forest-800 hover:shadow-[0_14px_40px_-12px_rgba(35,66,49,0.75)]",
+          "hover:scale-[1.02] active:scale-[0.98]",
+          "focus-visible:ring-forest-500 focus-visible:ring-offset-linen-100",
+        ],
+        amber: [
+          "bg-clay-500 text-linen-50",
+          "shadow-[0_10px_30px_-12px_rgba(197,127,42,0.6)]",
+          "hover:bg-clay-600 hover:scale-[1.02] active:scale-[0.98]",
+          "focus-visible:ring-clay-500 focus-visible:ring-offset-linen-100",
+        ],
+        "warm-outline": [
+          "border border-forest-600/30 text-forest-800 bg-transparent",
+          "hover:border-forest-600/60 hover:bg-forest-50",
+          "focus-visible:ring-forest-500 focus-visible:ring-offset-linen-100",
+        ],
+        "warm-ghost": [
+          "text-forest-700 hover:text-forest-900 hover:bg-forest-50",
+          "focus-visible:ring-forest-500 focus-visible:ring-offset-linen-100",
+        ],
       },
       size: {
         sm: "h-9 px-4 text-sm rounded-lg",
