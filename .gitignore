@@ -50,3 +50,5 @@ next-env.d.ts
 
 # Claude Code local artifacts
 .claude/
+dev-verify.log
+dev-*.log
