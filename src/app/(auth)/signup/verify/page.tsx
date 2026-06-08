@@ -21,9 +21,14 @@ export default async function VerifyCodePage({
           <KeyRound className="h-7 w-7 text-violet-300" />
         </div>
         <h1 className="text-2xl font-semibold text-fog-50 mb-2">Enter your code</h1>
-        <p className="text-fog-400 leading-relaxed mb-6">
+        <p className="text-fog-400 leading-relaxed mb-3">
           We&apos;ve sent a 6-digit code{email ? ` to ${email}` : ""}. Enter it
           below to activate your account.
+        </p>
+        <p className="text-xs text-amber-400/90 leading-relaxed mb-6">
+          Can&apos;t find it? Please check your <strong>Spam</strong>,{" "}
+          <strong>Promotions</strong> and other inbox folders — the code can
+          sometimes land there.
         </p>
 
         {resent && (
