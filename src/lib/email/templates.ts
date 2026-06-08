@@ -38,6 +38,25 @@ export function verifyEmailTemplate(opts: {
   };
 }
 
+export function verifyCodeTemplate(opts: {
+  name: string | null;
+  code: string;
+}): { subject: string; html: string } {
+  const greeting = opts.name ? `Hi ${opts.name.split(" ")[0]},` : "Welcome,";
+  const spaced = opts.code.split("").join("&nbsp;");
+  return {
+    subject: `${opts.code} is your HEXA verification code`,
+    html: WRAP(`
+      <h1 style="color:#FAFAFC;font-size:22px;margin:0 0 16px;">${greeting}</h1>
+      <p style="margin:0 0 20px;">Thanks for joining HEXA. Enter this code to confirm your email and start your child&rsquo;s diagnostic:</p>
+      <div style="text-align:center;margin:0 0 24px;">
+        <div style="display:inline-block;background:rgba(139,92,246,0.12);border:1px solid rgba(167,139,250,0.35);border-radius:12px;padding:16px 28px;font-size:32px;font-weight:700;letter-spacing:8px;color:#FAFAFC;font-family:ui-monospace,Menlo,Consolas,monospace;">${spaced}</div>
+      </div>
+      <p style="margin:0;color:#8A8DAB;font-size:13px;">This code expires in 15 minutes. If you didn&rsquo;t create a HEXA account, you can ignore this email.</p>
+    `),
+  };
+}
+
 export function portfolioShareTemplate(opts: {
   childName: string;
   term: string;
