@@ -113,7 +113,7 @@ export function LessonPlayer({
     );
     void logLessonCompletion({
       topicTag: curriculumTopic,
-      score,
+      score: Math.min(score, questions.length),
       total: questions.length,
       timeSpentSeconds,
       hintsUsed: 0,
@@ -123,10 +123,13 @@ export function LessonPlayer({
   }, [complete, curriculumTopic, score, questions.length]);
 
   async function handleSubmit() {
-    if (selected === null || question === undefined) return;
+    // Guard against double-submission (rapid double-click, re-entry): a second
+    // call before `submitted` flips would otherwise score the same question
+    // twice and push the total above the number of questions (e.g. 8/7).
+    if (selected === null || question === undefined || submitted) return;
     setSubmitted(true);
     const correct = selected === question.correctIndex;
-    if (correct) setScore((s) => s + 1);
+    if (correct) setScore((s) => Math.min(questions.length, s + 1));
 
     // Fire the Teaching Agent. Tolerate serverless cold starts (timeout+retry)
     // so a slow first call doesn't look like a failure. The human-authored
@@ -210,7 +213,11 @@ export function LessonPlayer({
     }
   }
 
-  const mastery = (score / questions.length) * 100;
+  // Clamp defensively so the summary can never read >100% or score > total.
+  const cappedScore = Math.min(score, questions.length);
+  const mastery = questions.length
+    ? Math.min(100, (cappedScore / questions.length) * 100)
+    : 0;
 
   // Empty state: a topic with no authored questions yet.
   if (questions.length === 0) {
@@ -242,12 +249,13 @@ export function LessonPlayer({
           </span>
           <h1 className="text-2xl font-semibold text-fog-50">{lessonTitle}</h1>
         </div>
-        <button
+        <a
+          href="/dashboard"
           className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-fog-300 transition-all"
-          aria-label="Close lesson"
+          aria-label="Close lesson and return to dashboard"
         >
           <X className="h-5 w-5" />
-        </button>
+        </a>
       </div>
 
       {/* Progress rail */}
@@ -285,7 +293,7 @@ export function LessonPlayer({
                 Mastery check complete
               </h2>
               <p className="text-fog-400 mb-8">
-                You scored {score} of {questions.length} —{" "}
+                You scored {cappedScore} of {questions.length} —{" "}
                 {mastery.toFixed(0)}% accuracy
               </p>
 
@@ -302,7 +310,7 @@ export function LessonPlayer({
                 </div>
                 <div className="p-4 rounded-xl bg-white/5">
                   <div className="text-2xl font-semibold text-fog-100">
-                    {score}/{questions.length}
+                    {cappedScore}/{questions.length}
                   </div>
                   <div className="text-xs text-fog-500 mt-1">Score</div>
                 </div>

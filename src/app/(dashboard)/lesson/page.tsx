@@ -45,6 +45,7 @@ export default async function LessonPage({
       <div className="fixed inset-0 bg-mesh-violet opacity-20 -z-10 pointer-events-none" />
       <div className="px-6 py-10 lg:px-10 lg:py-16">
         <LessonPlayer
+          key={topicTag}
           questions={questions}
           curriculumTopic={topicTag}
           nextHref={nextHref}
