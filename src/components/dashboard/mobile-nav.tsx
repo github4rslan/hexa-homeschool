@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -8,6 +8,7 @@ import { Menu, X, LogOut } from "lucide-react";
 import { HexaLogo } from "@/components/ui/hexa-logo";
 import { ChildSwitcher, type SwitcherChild } from "./child-switcher";
 import { DASHBOARD_NAV, isNavActive } from "./nav-items";
+import { useFocusTrap } from "@/lib/use-focus-trap";
 import { cn } from "@/lib/utils";
 
 /**
@@ -24,6 +25,10 @@ export function MobileNav({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const drawerRef = useRef<HTMLElement>(null);
+  const close = useCallback(() => setOpen(false), []);
+
+  useFocusTrap(drawerRef, open, close);
 
   // Close whenever the route changes (e.g. user taps a link).
   useEffect(() => {
@@ -35,13 +40,8 @@ export function MobileNav({
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onKey);
     };
   }, [open]);
 
@@ -65,16 +65,19 @@ export function MobileNav({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={() => setOpen(false)}
+              onClick={close}
               className="absolute inset-0 bg-void/80 backdrop-blur-sm"
             />
             <motion.aside
+              ref={drawerRef}
+              tabIndex={-1}
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 320, damping: 34 }}
-              className="absolute inset-y-0 left-0 w-[82%] max-w-xs flex flex-col border-r border-white/10 bg-abyss"
+              className="absolute inset-y-0 left-0 w-[82%] max-w-xs flex flex-col border-r border-white/10 bg-abyss outline-none"
               role="dialog"
+              aria-modal="true"
               aria-label="Navigation"
             >
               <div className="p-5 border-b border-white/5 flex items-center justify-between">
@@ -86,7 +89,7 @@ export function MobileNav({
                 </Link>
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
+                  onClick={close}
                   className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-fog-300 transition-all"
                   aria-label="Close menu"
                 >

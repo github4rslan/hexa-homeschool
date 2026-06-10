@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Volume2, Loader2, Sparkles, ArrowRight } from "lucide-react";
+import { Check, X, Volume2, Mic, Square, Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { logLessonCompletion } from "@/app/(dashboard)/lesson/actions";
 import { fetchJsonWithRetry } from "@/lib/fetch-with-retry";
@@ -18,6 +18,39 @@ import type { Question } from "@/components/lesson/lesson-player";
 
 const MAX_ATTEMPTS = 3;
 const PRAISE = ["Brilliant! 🎉", "You nailed it! ⭐", "Amazing work! 🚀", "Yes! 💪"];
+
+/** Hard stop for spoken answers — they are sentences, not speeches. */
+const MAX_RECORDING_MS = 15_000;
+
+/**
+ * Match a transcript to one of the options: "option b"/"b" picks by letter,
+ * otherwise the longest option whose normalized text contains (or is
+ * contained by) the transcript wins. Null = let the child tap instead.
+ */
+function matchSpokenOption(transcript: string, options: string[]): number | null {
+  const norm = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const t = norm(transcript);
+  if (!t) return null;
+
+  const letter = t.match(/^(?:option\s+)?([a-d])$/);
+  if (letter) {
+    const i = letter[1].charCodeAt(0) - 97;
+    return i < options.length ? i : null;
+  }
+
+  let best: number | null = null;
+  let bestLen = 0;
+  options.forEach((option, i) => {
+    const o = norm(option);
+    if (o.length < 2) return;
+    if ((t.includes(o) || o.includes(t)) && o.length > bestLen) {
+      best = i;
+      bestLen = o.length;
+    }
+  });
+  return best;
+}
 
 export function PracticePlayer({
   questions,
@@ -42,6 +75,16 @@ export function PracticePlayer({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
+  // ── Speak-your-answer (STT) ──
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [sttLoading, setSttLoading] = useState(false);
+  /** What the child said, shown back and sent to /api/tutor as studentAnswer. */
+  const [spoken, setSpoken] = useState<string | null>(null);
+  const [sttNotice, setSttNotice] = useState<string | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const startedAtRef = useRef<number>(Date.now());
   const loggedRef = useRef(false);
   const [saved, setSaved] = useState(false);
@@ -61,6 +104,92 @@ export function PracticePlayer({
     }
   }, []);
   useEffect(() => cleanupAudio, [cleanupAudio]);
+
+  const stopRecorder = useCallback(() => {
+    if (recordTimerRef.current) {
+      clearTimeout(recordTimerRef.current);
+      recordTimerRef.current = null;
+    }
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") rec.stop();
+    recorderRef.current = null;
+    setRecording(false);
+  }, []);
+  useEffect(() => stopRecorder, [stopRecorder]);
+
+  // Mic support is browser-only; decide after mount to avoid hydration drift.
+  useEffect(() => {
+    setSpeechSupported(
+      typeof MediaRecorder !== "undefined" &&
+        !!navigator.mediaDevices?.getUserMedia,
+    );
+  }, []);
+
+  async function transcribe(blob: Blob) {
+    setSttLoading(true);
+    setSttNotice(null);
+    try {
+      const form = new FormData();
+      form.append("audio", blob, "answer.webm");
+      const res = await fetch("/api/stt", { method: "POST", body: form });
+      const data = (await res.json()) as {
+        text?: string;
+        frozen?: boolean;
+        message?: string;
+        error?: string;
+      };
+      if (data.frozen) {
+        // Same calm pause the tutor route uses — show it in the hint area.
+        setHint(data.message ?? null);
+        return;
+      }
+      if (!res.ok || typeof data.text !== "string" || !data.text) {
+        setSttNotice("I couldn't hear that — have another go, or tap your answer.");
+        return;
+      }
+      setSpoken(data.text);
+      const match = matchSpokenOption(data.text, question?.options ?? []);
+      if (match !== null) {
+        setSelected(match);
+        setSttNotice(null);
+      } else {
+        setSttNotice("Tap the answer that matches what you said.");
+      }
+    } catch {
+      setSttNotice("I couldn't hear that — have another go, or tap your answer.");
+    } finally {
+      setSttLoading(false);
+    }
+  }
+
+  async function toggleSpeak() {
+    if (recording) {
+      stopRecorder();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const rec = new MediaRecorder(stream);
+      const chunks: BlobPart[] = [];
+      rec.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+      rec.onstop = () => {
+        // The mic is released the moment recording ends; audio only ever
+        // lives in this blob until /api/stt has answered.
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+        if (blob.size > 0) void transcribe(blob);
+      };
+      recorderRef.current = rec;
+      rec.start();
+      setRecording(true);
+      setSttNotice(null);
+      recordTimerRef.current = setTimeout(stopRecorder, MAX_RECORDING_MS);
+    } catch {
+      setSttNotice("I couldn't reach your microphone — tap your answer instead.");
+    }
+  }
 
   // Persist once on completion.
   useEffect(() => {
@@ -109,7 +238,9 @@ export function PracticePlayer({
           prompt: question.prompt,
           correctAnswer: question.explanation,
           topic: lessonTitle,
-          studentAnswer: question.options[selected],
+          // Prefer the child's own words: the distress gate in /api/tutor
+          // must scan what they actually said, not the option label.
+          studentAnswer: spoken ?? question.options[selected],
           wasCorrect: false,
         },
         { timeoutMs: 25000, retries: 1 },
@@ -127,12 +258,15 @@ export function PracticePlayer({
 
   function next() {
     cleanupAudio();
+    stopRecorder();
     setStep((s) => s + 1);
     setSelected(null);
     setAttempts(0);
     setRevealed(false);
     setHint(null);
     setScoredThis(false);
+    setSpoken(null);
+    setSttNotice(null);
   }
 
   async function listen() {
@@ -217,18 +351,41 @@ export function PracticePlayer({
         <span className="text-lg font-semibold text-fog-300">
           Question {step + 1} of {questions.length}
         </span>
-        <button
-          onClick={listen}
-          disabled={audioLoading}
-          className="child-touch inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base text-fog-200 hover:border-white/30 disabled:opacity-50"
-        >
-          {audioLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Volume2 className="h-5 w-5" />
+        <div className="flex items-center gap-3">
+          {speechSupported && (
+            <button
+              onClick={toggleSpeak}
+              disabled={sttLoading || revealed}
+              className={cn(
+                "child-touch inline-flex items-center gap-2 rounded-2xl border px-4 text-base disabled:opacity-50",
+                recording
+                  ? "border-crimson-400/60 bg-crimson-500/10 text-crimson-300 animate-pulse"
+                  : "border-white/10 bg-white/[0.03] text-fog-200 hover:border-white/30",
+              )}
+            >
+              {sttLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : recording ? (
+                <Square className="h-5 w-5" />
+              ) : (
+                <Mic className="h-5 w-5" />
+              )}
+              {recording ? "Done" : "Speak"}
+            </button>
           )}
-          Listen
-        </button>
+          <button
+            onClick={listen}
+            disabled={audioLoading}
+            className="child-touch inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base text-fog-200 hover:border-white/30 disabled:opacity-50"
+          >
+            {audioLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Volume2 className="h-5 w-5" />
+            )}
+            Listen
+          </button>
+        </div>
       </div>
 
       <div className="child-panel p-6 sm:p-8">
@@ -263,6 +420,19 @@ export function PracticePlayer({
             );
           })}
         </div>
+
+        {/* Spoken-answer feedback */}
+        {(spoken || sttNotice) && !revealed && (
+          <p className="mt-5 text-base text-fog-400">
+            {spoken && (
+              <>
+                I heard: <span className="text-fog-200">&ldquo;{spoken}&rdquo;</span>
+                {sttNotice && " — "}
+              </>
+            )}
+            {sttNotice}
+          </p>
+        )}
 
         {/* Feedback */}
         <AnimatePresence>

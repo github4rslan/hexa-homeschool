@@ -94,6 +94,11 @@ async function main() {
     await db.collection("compliance_dossiers").createIndex({ child_id: 1, generated_at: -1 });
     await db.collection("children").createIndex({ parent_id: 1, created_at: -1 });
     await db.collection("parents").createIndex({ email: 1 }, { unique: true });
+    // Stripe webhook lookups; partial so parents who never checked out are excluded.
+    await db.collection("parents").createIndex(
+      { stripe_customer_id: 1 },
+      { unique: true, partialFilterExpression: { stripe_customer_id: { $type: "string" } } },
+    );
 
     // Stage 4 media registry (owner + use-case lookups).
     await db.collection("media").createIndex({ owner_id: 1, use_case: 1 });

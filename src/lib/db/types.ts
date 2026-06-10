@@ -14,8 +14,15 @@ export interface ParentDoc {
   password_hash: string;
   /** Email verification (Resend). Undefined on legacy rows = treat as verified. */
   email_verified?: boolean;
+  /** Weekly progress digest opt-out. Undefined/false = receives the digest. */
+  weekly_digest_opt_out?: boolean;
+  /** Bcrypt hash of the 4-digit parent gate PIN used to exit child mode. */
+  parent_pin_hash?: string | null;
   subscription_tier: "diagnostic" | "standard" | "family";
   billing_status: "trialing" | "active" | "past_due" | "canceled" | "paused";
+  /** Stripe linkage — absent until the parent first goes through Checkout. */
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
   created_at: Date;
   updated_at: Date;
 }

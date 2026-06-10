@@ -15,7 +15,7 @@ import { MongoClient, type Db, type Collection, type Document } from "mongodb";
  */
 
 const uri = process.env.MONGODB_URI;
-const dbName = process.env.MONGODB_DB || "humora";
+const dbName = process.env.MONGODB_DB || "hexa";
 
 if (!uri) {
   // Defer throwing until first use so build/SSG of static pages doesn't fail.

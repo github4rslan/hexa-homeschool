@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { CreditCard, ShieldCheck, Check } from "lucide-react";
+import { CreditCard, ShieldCheck, Check, Mail } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { currentParentId, findParentById } from "@/lib/db/repo";
-import { updateAccount, changePassword } from "./actions";
+import { updateAccount, changePassword, updateEmailPreferences, updateParentPin } from "./actions";
 
 export const metadata: Metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
@@ -21,7 +21,7 @@ const TIER_LABEL: Record<string, string> = {
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; error?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string; checkout?: string }>;
 }) {
   const params = await searchParams;
   const parentId = await currentParentId();
@@ -42,6 +42,12 @@ export default async function SettingsPage({
           backFallback="/dashboard"
         />
 
+        {params.checkout === "success" && (
+          <div className="mb-6 flex items-center gap-2 rounded-xl border border-neon-400/30 bg-neon-500/10 px-4 py-3 text-sm text-neon-400">
+            <Check className="h-4 w-4" /> Subscription started — your plan will
+            appear below once payment is confirmed.
+          </div>
+        )}
         {params.saved && (
           <div className="mb-6 flex items-center gap-2 rounded-xl border border-neon-400/30 bg-neon-500/10 px-4 py-3 text-sm text-neon-400">
             <Check className="h-4 w-4" /> Changes saved.
@@ -106,6 +112,82 @@ export default async function SettingsPage({
             </form>
           </Card>
 
+          {/* Parent gate PIN */}
+          <Card variant="glass-strong" padding="xl">
+            <div className="flex items-center gap-2 mb-1">
+              <ShieldCheck className="h-4 w-4 text-neon-300" />
+              <h2 className="text-lg font-semibold text-fog-50">Parent gate</h2>
+            </div>
+            <p className="text-sm text-fog-400 mb-6">
+              Require a 4-digit PIN before exiting child-mode lessons back to
+              the parent dashboard.
+            </p>
+            <form action={updateParentPin} className="flex flex-col gap-4">
+              <Input
+                name="current_password"
+                type="password"
+                label="Current password"
+                required
+              />
+              <Input
+                name="parent_pin"
+                type="password"
+                label="4-digit PIN"
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                minLength={4}
+                maxLength={4}
+                hint={parent.parent_pin_hash ? "A parent PIN is set. Enter a new PIN to replace it." : "Used only for exiting child mode."}
+                required
+              />
+              <Input
+                name="confirm_parent_pin"
+                type="password"
+                label="Confirm PIN"
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                minLength={4}
+                maxLength={4}
+                required
+              />
+              <Button type="submit" variant="secondary" size="md" className="self-start">
+                {parent.parent_pin_hash ? "Update parent PIN" : "Set parent PIN"}
+              </Button>
+            </form>
+          </Card>
+
+          {/* Email preferences */}
+          <Card variant="glass-strong" padding="xl">
+            <div className="flex items-center gap-2 mb-1">
+              <Mail className="h-4 w-4 text-amber-300" />
+              <h2 className="text-lg font-semibold text-fog-50">Email preferences</h2>
+            </div>
+            <p className="text-sm text-fog-400 mb-6">
+              Choose which emails we send you. Account and safety emails are
+              always delivered.
+            </p>
+            <form action={updateEmailPreferences} className="flex flex-col gap-4">
+              <label className="flex items-start gap-3 text-sm text-fog-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="weekly_digest"
+                  defaultChecked={!parent.weekly_digest_opt_out}
+                  className="mt-0.5 rounded border-white/10 bg-white/5"
+                />
+                <span>
+                  Weekly progress digest
+                  <span className="block text-xs text-fog-500 mt-0.5">
+                    A summary every week of each child&apos;s lessons completed,
+                    topics certified and anything that needs your attention.
+                  </span>
+                </span>
+              </label>
+              <Button type="submit" variant="secondary" size="md" className="self-start">
+                Save preferences
+              </Button>
+            </form>
+          </Card>
+
           {/* Subscription */}
           <Card variant="glass" padding="xl">
             <div className="flex items-center gap-2 mb-1">
@@ -128,10 +210,28 @@ export default async function SettingsPage({
                 {parent.billing_status === "trialing" ? "Free trial" : parent.billing_status}
               </Badge>
             </div>
-            <p className="mt-4 text-xs text-fog-500">
-              Billing management is handled by our team during the pilot. Email
-              hello@hexa.education to change your plan.
-            </p>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              {parent.stripe_customer_id ? (
+                <>
+                  <Button href="/api/billing/portal" variant="secondary" size="md">
+                    Manage billing
+                  </Button>
+                  <span className="text-xs text-fog-500">
+                    Change plan, update card, view invoices or cancel — via our
+                    secure Stripe portal.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Button href="/pricing" variant="primary" size="md">
+                    Choose a plan
+                  </Button>
+                  <span className="text-xs text-fog-500">
+                    14-day free trial. Cancel anytime.
+                  </span>
+                </>
+              )}
+            </div>
           </Card>
 
           {/* Data rights */}

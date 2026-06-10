@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { HexaLogo } from "@/components/ui/hexa-logo";
 import { BackButton } from "@/components/ui/back-button";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { DiagnosticRunner } from "@/components/diagnostic/diagnostic-runner";
 import { getDiagnosticPool } from "@/lib/db/repo";
 import { DIAGNOSTIC_SUBJECTS, type DiagnosticItem } from "@/lib/data/diagnostic";
@@ -42,6 +43,15 @@ export default async function DiagnosticPage() {
       </header>
 
       <main className="px-6 py-8 lg:py-16">
+        <div className="mx-auto mb-6 max-w-5xl">
+          <Breadcrumbs
+            items={[
+              { label: "Dashboard", href: "/dashboard" },
+              { label: "Onboarding", href: "/onboarding" },
+              { label: "Diagnostic" },
+            ]}
+          />
+        </div>
         <DiagnosticRunner pool={pool} />
       </main>
     </div>

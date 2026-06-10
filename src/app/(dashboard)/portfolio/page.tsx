@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PortfolioGenerator } from "@/components/compliance/portfolio-generator";
 import { BackButton } from "@/components/ui/back-button";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 
 export const metadata: Metadata = {
   title: "Compliance portfolio",
@@ -22,6 +23,14 @@ export default function PortfolioPage() {
           >
             Registration pre-fill →
           </a>
+        </div>
+        <div className="max-w-3xl mx-auto mb-4 print:hidden">
+          <Breadcrumbs
+            items={[
+              { label: "Dashboard", href: "/dashboard" },
+              { label: "Portfolio" },
+            ]}
+          />
         </div>
         <PortfolioGenerator />
       </div>

@@ -7,7 +7,8 @@ import {
   getElevenLabsKey,
   AiConfigError,
 } from "@/lib/ai/config";
-import { findMediaByHash, recordMedia } from "@/lib/db/repo";
+import { currentParentId, findMediaByHash, recordMedia } from "@/lib/db/repo";
+import { rateLimit } from "@/lib/rate-limit";
 import {
   uploadBytes,
   getCloudinaryConfig,
@@ -19,6 +20,10 @@ export const dynamic = "force-dynamic";
 
 /** ElevenLabs charges per character; keep narration bounded to lesson-sized text. */
 const MAX_TTS_CHARS = 1200;
+
+/** Per-user budget — generous enough to narrate a lesson block by block. */
+const RATE_LIMIT_REQUESTS = 30;
+const RATE_LIMIT_WINDOW_MS = 60_000;
 
 /** Is Cloudinary configured? If not, we just stream bytes (no caching). */
 function cloudinaryAvailable(): boolean {
@@ -42,6 +47,11 @@ async function audioResponse(bytes: ArrayBuffer): Promise<NextResponse> {
 }
 
 export async function POST(request: Request) {
+  const parentId = await currentParentId();
+  if (!parentId) {
+    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+
   let body: { text?: unknown; voiceId?: unknown };
   try {
     body = (await request.json()) as { text?: unknown; voiceId?: unknown };
@@ -57,6 +67,21 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: `Text exceeds ${MAX_TTS_CHARS} characters.` },
       { status: 413 },
+    );
+  }
+
+  const limited = rateLimit(
+    `tts:${parentId}`,
+    RATE_LIMIT_REQUESTS,
+    RATE_LIMIT_WINDOW_MS,
+  );
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment and try again." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSeconds) },
+      },
     );
   }
 

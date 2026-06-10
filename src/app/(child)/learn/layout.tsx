@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { HexaLogo } from "@/components/ui/hexa-logo";
-import { BackButton } from "@/components/ui/back-button";
+import { ParentGateExit } from "@/components/child/parent-gate-exit";
 
 /**
  * Child-mode layout. Applies the `.theme-child` scope (bigger type, 64px touch
@@ -21,7 +21,7 @@ export default function LearnLayout({
         <Link href="/learn" className="inline-flex items-center gap-2.5">
           <HexaLogo size={32} withText />
         </Link>
-        <BackButton fallback="/dashboard" label="Exit" className="child-touch text-base" />
+        <ParentGateExit className="child-touch text-base" />
       </header>
 
       <main className="px-5 pb-16 lg:px-8">{children}</main>

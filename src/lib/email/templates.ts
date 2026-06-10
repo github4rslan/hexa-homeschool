@@ -117,6 +117,78 @@ export function verifyEmailTemplate(opts: {
   };
 }
 
+/** Kept structurally identical to repo.ts → ChildWeekSummary (no server-only import here). */
+export interface DigestChild {
+  childName: string;
+  lessonsCompleted: number;
+  topicsCertified: string[];
+  escalations: number;
+}
+
+export function weeklyDigestTemplate(opts: {
+  parentName: string | null;
+  /** e.g. "2 – 8 June" */
+  weekLabel: string;
+  children: DigestChild[];
+  dashboardUrl: string;
+  settingsUrl: string;
+}): { subject: string; html: string } {
+  const greeting = opts.parentName
+    ? `Hi ${opts.parentName.split(" ")[0]},`
+    : "Hello,";
+
+  const sections = opts.children
+    .map((child) => {
+      const topics =
+        child.topicsCertified.length > 0
+          ? child.topicsCertified
+              .map(
+                (t) =>
+                  `<li style="margin:0 0 4px;color:${COLORS.ink};font-size:14px;">${t}</li>`,
+              )
+              .join("")
+          : "";
+
+      const quietWeek =
+        child.lessonsCompleted === 0 && child.topicsCertified.length === 0;
+
+      return `
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;background:${COLORS.linenAlt};border:1px solid ${COLORS.line};border-radius:12px;">
+        <tr><td style="padding:18px 20px;">
+          <p style="margin:0 0 10px;font-family:${SERIF};color:${COLORS.forestDeep};font-size:18px;font-weight:600;">${child.childName}</p>
+          <p style="margin:0 0 6px;font-size:14px;color:${COLORS.ink};">
+            <strong style="color:${COLORS.forest};">${child.lessonsCompleted}</strong> lesson${child.lessonsCompleted === 1 ? "" : "s"} completed
+            &nbsp;·&nbsp;
+            <strong style="color:${COLORS.forest};">${child.topicsCertified.length}</strong> topic${child.topicsCertified.length === 1 ? "" : "s"} certified
+          </p>
+          ${topics ? `<ul style="margin:8px 0 0;padding-left:18px;">${topics}</ul>` : ""}
+          ${
+            quietWeek
+              ? `<p style="margin:8px 0 0;color:${COLORS.inkSoft};font-size:13px;">A quiet week — a gentle nudge can help get back into the rhythm.</p>`
+              : ""
+          }
+          ${
+            child.escalations > 0
+              ? `<p style="margin:12px 0 0;padding:10px 12px;background:rgba(197,127,42,0.12);border:1px solid rgba(197,127,42,0.35);border-radius:8px;color:${COLORS.clayDeep};font-size:13px;line-height:1.5;"><strong>${child.escalations} wellbeing alert${child.escalations === 1 ? "" : "s"}</strong> raised this week. Please review the details in your dashboard.</p>`
+              : ""
+          }
+        </td></tr>
+      </table>`;
+    })
+    .join("");
+
+  return {
+    subject: `Your HEXA week — ${opts.weekLabel}`,
+    html: WRAP(`
+      ${heading(greeting)}
+      <p style="margin:0 0 22px;">Here&rsquo;s how learning went at home this week (${opts.weekLabel}).</p>
+      ${sections}
+      <p style="margin:6px 0 24px;text-align:center;">${amberButton(opts.dashboardUrl, "Open my dashboard")}</p>
+      <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">Prefer not to get this weekly summary? You can turn it off in <a href="${opts.settingsUrl}" style="color:${COLORS.clayDeep};">Settings &rarr; Email preferences</a>.</p>
+    `),
+  };
+}
+
 export function portfolioShareTemplate(opts: {
   childName: string;
   term: string;

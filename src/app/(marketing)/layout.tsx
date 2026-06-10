@@ -4,6 +4,7 @@ import { ScrollProgress } from "@/components/fx/scroll-progress";
 import { PageTransition } from "@/components/fx/page-transition";
 import { SkipLink } from "@/components/ui/skip-link";
 import { CookieBanner } from "@/components/fx/cookie-banner";
+import { NextStepFunnel } from "@/components/marketing/next-step-funnel";
 
 export default function MarketingLayout({
   children,
@@ -22,6 +23,7 @@ export default function MarketingLayout({
       <main id="main-content" className="pt-24">
         <PageTransition>{children}</PageTransition>
       </main>
+      <NextStepFunnel />
       <MarketingFooter />
       <CookieBanner />
     </div>
