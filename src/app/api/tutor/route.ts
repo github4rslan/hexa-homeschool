@@ -8,6 +8,7 @@ import {
   recordEscalation,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,11 +16,20 @@ export const dynamic = "force-dynamic";
 /** Reject absurd payloads early — these are short tutoring prompts, not essays. */
 const MAX_FIELD_LENGTH = 2000;
 
+/** Per-user budget on the paid OpenAI call. */
+const RATE_LIMIT_REQUESTS = 20;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+
 function asString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
 export async function POST(request: Request) {
+  const parentId = await currentParentId();
+  if (!parentId) {
+    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
@@ -56,16 +66,13 @@ export async function POST(request: Request) {
     const distress = checkDistress(studentAnswer);
     if (distress.matched) {
       try {
-        const parentId = await currentParentId();
-        if (parentId) {
-          const child = await getActiveChild(parentId, await readActiveChildId());
-          if (child?._id) {
-            await recordEscalation(child._id, {
-              trigger: distress.trigger,
-              severity: distress.severity,
-              matchedText: studentAnswer,
-            });
-          }
+        const child = await getActiveChild(parentId, await readActiveChildId());
+        if (child?._id) {
+          await recordEscalation(child._id, {
+            trigger: distress.trigger,
+            severity: distress.severity,
+            matchedText: studentAnswer,
+          });
         }
       } catch (err) {
         console.error("[/api/tutor] escalation log failed (still freezing):", err);
@@ -79,6 +86,23 @@ export async function POST(request: Request) {
         { status: 200, headers: { "Cache-Control": "no-store" } },
       );
     }
+  }
+
+  // Rate limit AFTER the distress gate (a distress message must never be
+  // blocked by a 429) but before the paid OpenAI call it exists to protect.
+  const limited = rateLimit(
+    `tutor:${parentId}`,
+    RATE_LIMIT_REQUESTS,
+    RATE_LIMIT_WINDOW_MS,
+  );
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment and try again." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSeconds) },
+      },
+    );
   }
 
   const req: TutorRequest = {

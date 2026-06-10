@@ -13,6 +13,8 @@ export const metadata: Metadata = {
 
 interface Tier {
   name: string;
+  /** ParentDoc.subscription_tier value this plan checks out as. */
+  tier: "standard" | "family";
   price: number;
   features: string[];
   highlighted?: boolean;
@@ -22,6 +24,7 @@ interface Tier {
 const TIERS: Tier[] = [
   {
     name: "HEXA Complete",
+    tier: "standard",
     price: 49,
     features: [
       "Maths. English. Science.",
@@ -33,6 +36,7 @@ const TIERS: Tier[] = [
   },
   {
     name: "HEXA Partner",
+    tier: "family",
     price: 99,
     features: [
       "Everything in Complete.",
@@ -99,8 +103,10 @@ export default function PricingPage() {
                 <span className="text-sm text-ink-600">/ month</span>
               </div>
 
+              {/* Signed-in parents go straight to Stripe Checkout; visitors
+                  are bounced to /signup by the route. */}
               <Button
-                href="/signup"
+                href={`/api/billing/checkout?tier=${tier.tier}`}
                 variant={tier.highlighted ? "forest" : "warm-outline"}
                 size="md"
                 className="mt-7 w-full"

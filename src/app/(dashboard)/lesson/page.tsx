@@ -5,6 +5,7 @@ import {
   firstTopic,
   nextTopicAfter,
 } from "@/lib/db/repo";
+import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,14 @@ export default async function LessonPage({
       <div className="fixed inset-0 bg-void -z-20" />
       <div className="fixed inset-0 bg-mesh-violet opacity-20 -z-10 pointer-events-none" />
       <div className="px-6 py-10 lg:px-10 lg:py-16">
+        <div className="mx-auto mb-4 max-w-4xl">
+          <Breadcrumbs
+            items={[
+              { label: "Dashboard", href: "/dashboard" },
+              { label: "Lesson" },
+            ]}
+          />
+        </div>
         <LessonPlayer
           key={topicTag}
           questions={questions}

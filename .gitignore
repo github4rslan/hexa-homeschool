@@ -50,5 +50,9 @@ next-env.d.ts
 
 # Claude Code local artifacts
 .claude/
+CLAUDE.md
 dev-verify.log
 dev-*.log
+
+# Private project briefs / source material (root-level PDFs)
+/*.pdf

@@ -1,5 +1,6 @@
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { MobileNav } from "@/components/dashboard/mobile-nav";
+import { SkipLink } from "@/components/ui/skip-link";
 import { currentParentId, listChildren, getActiveChild } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import type { SwitcherChild } from "@/components/dashboard/child-switcher";
@@ -27,6 +28,7 @@ export default async function DashboardLayout({
       <div className="fixed inset-0 bg-void -z-20" />
       <div className="fixed inset-0 bg-grid bg-grid-fade opacity-30 -z-10 pointer-events-none" />
 
+      <SkipLink />
       <DashboardSidebar childList={childList} activeChildId={activeChildId} />
 
       {/* Mobile-only menu trigger — floats top-right where no sidebar exists. */}
@@ -34,7 +36,9 @@ export default async function DashboardLayout({
         <MobileNav childList={childList} activeChildId={activeChildId} />
       </div>
 
-      <div className="flex-1 flex flex-col min-w-0">{children}</div>
+      <div id="main-content" className="flex-1 flex flex-col min-w-0" tabIndex={-1}>
+        {children}
+      </div>
     </div>
   );
 }

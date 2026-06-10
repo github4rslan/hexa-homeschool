@@ -22,6 +22,8 @@ export const TEACHING_CONFIDENCE_THRESHOLD = 0.95;
 /** ElevenLabs configuration for lesson narration. */
 export const ELEVENLABS_API_BASE = "https://api.elevenlabs.io/v1";
 export const ELEVENLABS_MODEL = "eleven_multilingual_v2";
+/** ElevenLabs Scribe — speech-to-text for spoken answers. */
+export const ELEVENLABS_STT_MODEL = "scribe_v1";
 /** "Sarah — Mature, Reassuring, Confident": an age-appropriate teaching voice. */
 export const ELEVENLABS_DEFAULT_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
 

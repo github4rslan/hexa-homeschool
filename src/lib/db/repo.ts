@@ -89,6 +89,51 @@ export async function currentParentId(): Promise<string | null> {
   return session?.id ?? null;
 }
 
+// ── Parents: billing (Stripe) ────────────────────────────
+
+export interface BillingUpdate {
+  tier?: ParentDoc["subscription_tier"];
+  status?: ParentDoc["billing_status"];
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string | null;
+}
+
+function billingSet(update: BillingUpdate): Partial<ParentDoc> {
+  const set: Partial<ParentDoc> = { updated_at: new Date() };
+  if (update.tier) set.subscription_tier = update.tier;
+  if (update.status) set.billing_status = update.status;
+  if (update.stripeCustomerId) set.stripe_customer_id = update.stripeCustomerId;
+  if (update.stripeSubscriptionId !== undefined) {
+    set.stripe_subscription_id = update.stripeSubscriptionId;
+  }
+  return set;
+}
+
+/** Sync billing state by parent id (webhook path: checkout.session.completed). */
+export async function updateParentBillingById(
+  parentId: string,
+  update: BillingUpdate,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne({ _id: oid }, { $set: billingSet(update) });
+  return res.matchedCount > 0;
+}
+
+/** Sync billing state by Stripe customer id (webhook path: subscription events). */
+export async function updateParentBillingByCustomerId(
+  customerId: string,
+  update: BillingUpdate,
+): Promise<boolean> {
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne(
+    { stripe_customer_id: customerId },
+    { $set: billingSet(update) },
+  );
+  return res.matchedCount > 0;
+}
+
 // ── Children ─────────────────────────────────────────────
 export async function createChild(input: {
   parentId: string;
@@ -854,6 +899,131 @@ export async function listTutorBookings(
   if (!oid) return [];
   const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
   return col.find({ parent_id: oid }).sort({ created_at: -1 }).limit(20).toArray();
+}
+
+// ── Weekly parent progress digest ────────────────────────
+export interface ChildWeekSummary {
+  childName: string;
+  lessonsCompleted: number;
+  /** Human topic titles certified this week. */
+  topicsCertified: string[];
+  /** Escalations raised this week (count only — details stay in the dashboard). */
+  escalations: number;
+}
+
+/**
+ * Parents eligible for the weekly digest: verified email, not opted out.
+ * Legacy rows without email_verified are treated as verified (matches login).
+ */
+export async function listDigestRecipients(): Promise<ParentDoc[]> {
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  return col
+    .find({
+      email_verified: { $ne: false },
+      weekly_digest_opt_out: { $ne: true },
+    })
+    .toArray();
+}
+
+/**
+ * Per-child summary of the last week for one parent. The data-silo holds by
+ * construction: every query is filtered to child ids owned by this parent.
+ * Returns [] when the parent has no children.
+ */
+export async function weeklyDigestForParent(
+  parentId: string,
+  since: Date,
+): Promise<ChildWeekSummary[]> {
+  const children = await listChildren(parentId);
+  if (children.length === 0) return [];
+  const childIds = children.map((c) => c._id!).filter(Boolean);
+
+  const logsCol = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const escCol = await getCollection<EscalationDoc>(Collections.escalations);
+
+  const [lessonGroups, certRows, escGroups] = await Promise.all([
+    logsCol
+      .aggregate<{ _id: ObjectId; count: number }>([
+        {
+          $match: {
+            child_id: { $in: childIds },
+            status: "completed",
+            timestamp_start: { $gte: since },
+          },
+        },
+        { $group: { _id: "$child_id", count: { $sum: 1 } } },
+      ])
+      .toArray(),
+    compCol
+      .find({
+        child_id: { $in: childIds },
+        state: "certified",
+        certified_at: { $gte: since },
+      })
+      .toArray(),
+    escCol
+      .aggregate<{ _id: ObjectId; count: number }>([
+        { $match: { child_id: { $in: childIds }, created_at: { $gte: since } } },
+        { $group: { _id: "$child_id", count: { $sum: 1 } } },
+      ])
+      .toArray(),
+  ]);
+
+  // Resolve certified topic tags to human titles (global reference content).
+  const tags = [...new Set(certRows.map((r) => r.topic_tag))];
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const topics = tags.length
+    ? await topicsCol.find({ topic_tag: { $in: tags } }).toArray()
+    : [];
+  const titleByTag = new Map(topics.map((t) => [t.topic_tag, t.title]));
+
+  const lessonsByChild = new Map(
+    lessonGroups.map((g) => [g._id.toHexString(), g.count]),
+  );
+  const escalationsByChild = new Map(
+    escGroups.map((g) => [g._id.toHexString(), g.count]),
+  );
+
+  return children.map((child) => {
+    const id = child._id!.toHexString();
+    return {
+      childName: child.full_name,
+      lessonsCompleted: lessonsByChild.get(id) ?? 0,
+      topicsCertified: certRows
+        .filter((r) => r.child_id.toHexString() === id)
+        .map((r) => titleByTag.get(r.topic_tag) ?? r.topic_tag),
+      escalations: escalationsByChild.get(id) ?? 0,
+    };
+  });
+}
+
+export async function setWeeklyDigestOptOut(
+  parentId: string,
+  optOut: boolean,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  await col.updateOne(
+    { _id: oid },
+    { $set: { weekly_digest_opt_out: optOut, updated_at: new Date() } },
+  );
+  return true;
+}
+
+export async function setParentPinHash(
+  parentId: string,
+  pinHash: string,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne(
+    { _id: oid },
+    { $set: { parent_pin_hash: pinHash, updated_at: new Date() } },
+  );
+  return res.matchedCount > 0;
 }
 
 // ── Escalations (Stage 5 safety) ─────────────────────────
