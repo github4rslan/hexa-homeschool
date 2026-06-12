@@ -17,6 +17,7 @@ import {
   type DiagnosticSubject,
   type SubjectResult,
 } from "@/lib/data/diagnostic";
+import { buildAssessmentNarrative } from "@/lib/engine/assessment-narrative";
 import { saveDiagnosticResults } from "@/app/(dashboard)/onboarding/diagnostic/actions";
 
 /** How many adaptive items to ask per subject in this Phase-1 diagnostic. */
@@ -132,6 +133,19 @@ export function DiagnosticRunner({ pool }: { pool: DiagnosticItem[] }) {
         };
       }),
     [progress],
+  );
+
+  // Deterministic plain-English explanation of the results (no AI involved).
+  const narrative = useMemo(
+    () =>
+      buildAssessmentNarrative(
+        results.map((r) => ({
+          subject: r.subject,
+          readiness: r.readiness,
+          grade: r.workingGrade,
+        })),
+      ),
+    [results],
   );
 
   return (
@@ -295,6 +309,31 @@ export function DiagnosticRunner({ pool }: { pool: DiagnosticItem[] }) {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Understanding these results — deterministic, parent-facing */}
+              <div className="rounded-xl bg-white/[0.03] border border-white/5 p-5 mb-8">
+                <h2 className="text-sm font-semibold text-fog-50 mb-2">
+                  Understanding these results
+                </h2>
+                <p className="text-xs leading-relaxed text-fog-400 mb-4">
+                  {narrative.intro}
+                </p>
+                <div className="flex flex-col gap-3">
+                  {narrative.subjects.map((s) => (
+                    <div key={s.subject}>
+                      <div className="text-xs font-semibold text-fog-200 mb-0.5">
+                        {s.label}
+                      </div>
+                      <p className="text-xs leading-relaxed text-fog-400">
+                        {s.text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-xs leading-relaxed text-fog-400">
+                  {narrative.planNote}
+                </p>
               </div>
 
               <div className="rounded-xl border border-violet-400/20 bg-violet-500/5 p-4 mb-8">

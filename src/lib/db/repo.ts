@@ -787,6 +787,16 @@ function scheduleItemReason(input: {
   return `${input.topicTitle} is the next step in the ${subject} sequence — it builds the foundations later topics rely on.`;
 }
 
+/** This week's schedule if it already exists — read-only, never generates. */
+export async function getWeeklySchedule(
+  parentId: string,
+  childId: ObjectId,
+): Promise<WeeklyScheduleDoc | null> {
+  if (!(await assertOwnsChild(parentId, childId))) return null;
+  const col = await getCollection<WeeklyScheduleDoc>(Collections.schedules);
+  return col.findOne({ child_id: childId, week_start: currentWeekStart() });
+}
+
 /**
  * Returns this week's schedule, generating it on first access. `created` tells
  * the caller whether generation just happened (drives the one-time plan email).

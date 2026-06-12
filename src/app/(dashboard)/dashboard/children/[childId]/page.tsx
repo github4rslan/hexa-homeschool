@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Check, GraduationCap, Activity } from "lucide-react";
+import { Check, GraduationCap, Activity, BookOpen } from "lucide-react";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
@@ -13,7 +13,9 @@ import {
   latestEvaluationsBySubject,
   countCertified,
   listMedia,
+  getWeeklySchedule,
 } from "@/lib/db/repo";
+import { buildAssessmentNarrative } from "@/lib/engine/assessment-narrative";
 import { UploadButton } from "@/components/media/upload-button";
 import { ExamDecisionCard } from "@/components/dashboard/exam-decision-card";
 import { computeExamDecision } from "@/lib/engine/exam-decision";
@@ -55,6 +57,18 @@ export default async function ChildProfilePage({
     })),
   );
   const save = saveChildProfile.bind(null, childId);
+
+  // Plain-English narrative grounded in the same standings + this week's plan
+  // (read-only — visiting the profile never generates a schedule).
+  const schedule = await getWeeklySchedule(parentId, child._id);
+  const planCounts = schedule
+    ? schedule.items.reduce<Partial<Record<typeof standings[number]["subject"], number>>>(
+        (acc, item) => ({ ...acc, [item.subject]: (acc[item.subject] ?? 0) + 1 }),
+        {},
+      )
+    : null;
+  const narrative = buildAssessmentNarrative(standings, planCounts);
+  const assessed = standings.some((s) => s.readiness !== null || s.grade !== null);
 
   return (
     <>
@@ -123,6 +137,35 @@ export default async function ChildProfilePage({
             {certified} topic{certified === 1 ? "" : "s"} certified so far.
           </p>
         </Card>
+
+        {/* Understanding these results — deterministic plain-English narrative */}
+        {assessed && (
+          <Card variant="glass" padding="xl" className="mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <BookOpen className="h-4 w-4 text-amber-300" />
+              <h2 className="text-lg font-semibold text-fog-50">
+                Understanding these results
+              </h2>
+            </div>
+            <p className="text-sm text-fog-400 mb-5">{narrative.intro}</p>
+            <div className="flex flex-col gap-3">
+              {narrative.subjects.map((s) => (
+                <div
+                  key={s.subject}
+                  className="rounded-xl bg-white/[0.03] border border-white/5 p-4"
+                >
+                  <div className="text-sm font-semibold text-fog-50 mb-1">
+                    {s.label}
+                  </div>
+                  <p className="text-sm leading-relaxed text-fog-300">{s.text}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mt-5 text-sm leading-relaxed text-fog-400">
+              {narrative.planNote}
+            </p>
+          </Card>
+        )}
 
         {/* Exam decision (age 13+) */}
         {decision.eligible && (
