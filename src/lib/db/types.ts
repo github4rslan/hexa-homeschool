@@ -161,6 +161,11 @@ export interface ScheduleItemDoc {
   topic_tag: string;
   topic_title: string;
   status: "planned" | "done";
+  /**
+   * Parent-facing, data-grounded explanation of why this topic was picked
+   * (competence state + latest evaluation). Absent on legacy schedule docs.
+   */
+  reason?: string;
 }
 
 export interface WeeklyScheduleDoc {
