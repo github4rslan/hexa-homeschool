@@ -182,6 +182,21 @@ export default async function SettingsPage({
                   </span>
                 </span>
               </label>
+              <label className="flex items-start gap-3 text-sm text-fog-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="weekly_plan_email"
+                  defaultChecked={!parent.weekly_plan_email_opt_out}
+                  className="mt-0.5 rounded border-white/10 bg-white/5"
+                />
+                <span>
+                  Weekly plan email
+                  <span className="block text-xs text-fog-500 mt-0.5">
+                    A copy of each week&apos;s proposed plan with the reason every
+                    topic was picked, so you can review before approving.
+                  </span>
+                </span>
+              </label>
               <Button type="submit" variant="secondary" size="md" className="self-start">
                 Save preferences
               </Button>

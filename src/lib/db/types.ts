@@ -16,6 +16,8 @@ export interface ParentDoc {
   email_verified?: boolean;
   /** Weekly progress digest opt-out. Undefined/false = receives the digest. */
   weekly_digest_opt_out?: boolean;
+  /** Weekly plan email opt-out. Undefined/false = receives the plan email. */
+  weekly_plan_email_opt_out?: boolean;
   /** Bcrypt hash of the 4-digit parent gate PIN used to exit child mode. */
   parent_pin_hash?: string | null;
   subscription_tier: "diagnostic" | "standard" | "family";

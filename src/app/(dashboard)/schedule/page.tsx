@@ -12,6 +12,7 @@ import {
   getOrCreateWeeklySchedule,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
+import { sendWeeklyPlanEmail } from "@/lib/email/weekly-plan";
 import { approveSchedule } from "./actions";
 
 export const metadata: Metadata = { title: "Weekly schedule" };
@@ -51,7 +52,13 @@ export default async function SchedulePage() {
     );
   }
 
-  const schedule = await getOrCreateWeeklySchedule(parentId, child._id);
+  const result = await getOrCreateWeeklySchedule(parentId, child._id);
+  const schedule = result?.schedule ?? null;
+  // First visit of the week just generated the plan — send the parent a copy
+  // (best-effort; opt-out and missing Brevo key are silent no-ops).
+  if (result?.created) {
+    await sendWeeklyPlanEmail(parentId, child.full_name, result.schedule);
+  }
   const firstName = child.full_name.split(" ")[0];
 
   return (

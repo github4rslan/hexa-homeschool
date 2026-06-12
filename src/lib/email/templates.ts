@@ -189,6 +189,68 @@ export function weeklyDigestTemplate(opts: {
   };
 }
 
+const PLAN_DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const PLAN_SUBJECTS: Record<string, string> = {
+  mathematics: "Maths",
+  english: "English",
+  science: "Science",
+};
+
+/** Kept structurally compatible with repo.ts → ScheduleItemDoc. */
+export interface PlanEmailItem {
+  day: number; // 0 (Mon) … 6 (Sun)
+  subject: string;
+  topic_title: string;
+  reason?: string;
+}
+
+export function weeklyPlanTemplate(opts: {
+  parentName: string | null;
+  childFirstName: string;
+  weekStart: string; // ISO date (Monday)
+  items: PlanEmailItem[];
+  scheduleUrl: string;
+  settingsUrl: string;
+}): { subject: string; html: string } {
+  const greeting = opts.parentName
+    ? `Hi ${opts.parentName.split(" ")[0]},`
+    : "Hello,";
+
+  const rows = opts.items
+    .map(
+      (item) => `
+      <tr>
+        <td style="padding:12px 14px;border-top:1px solid ${COLORS.line};vertical-align:top;white-space:nowrap;font-size:13px;color:${COLORS.inkSoft};">${PLAN_DAYS[item.day] ?? ""}</td>
+        <td style="padding:12px 14px;border-top:1px solid ${COLORS.line};vertical-align:top;white-space:nowrap;font-size:13px;color:${COLORS.forest};font-weight:600;">${PLAN_SUBJECTS[item.subject] ?? item.subject}</td>
+        <td style="padding:12px 14px;border-top:1px solid ${COLORS.line};vertical-align:top;">
+          <span style="font-size:14px;color:${COLORS.ink};font-weight:600;">${item.topic_title}</span>
+          ${item.reason ? `<span style="display:block;margin-top:4px;font-size:12.5px;line-height:1.5;color:${COLORS.inkSoft};">${item.reason}</span>` : ""}
+        </td>
+      </tr>`,
+    )
+    .join("");
+
+  return {
+    subject: `This week's plan for ${opts.childFirstName}`,
+    html: WRAP(`
+      ${heading(greeting)}
+      <p style="margin:0 0 22px;">The Planning Agent has proposed ${opts.childFirstName}&rsquo;s week (starting ${opts.weekStart}). Each topic comes with the reason it was picked — review and approve when you&rsquo;re ready. Nothing is forced.</p>
+
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;background:${COLORS.linenAlt};border:1px solid ${COLORS.line};border-radius:12px;border-collapse:separate;overflow:hidden;">
+        <tr>
+          <td style="padding:10px 14px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:${COLORS.inkSoft};">Day</td>
+          <td style="padding:10px 14px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:${COLORS.inkSoft};">Subject</td>
+          <td style="padding:10px 14px;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:${COLORS.inkSoft};">Topic &amp; why</td>
+        </tr>
+        ${rows}
+      </table>
+
+      <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.scheduleUrl, "Review & approve the week")}</p>
+      <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">Prefer not to get the plan by email? Turn it off in <a href="${opts.settingsUrl}" style="color:${COLORS.clayDeep};">Settings &rarr; Email preferences</a>.</p>
+    `),
+  };
+}
+
 export function portfolioShareTemplate(opts: {
   childName: string;
   term: string;

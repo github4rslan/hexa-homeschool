@@ -787,15 +787,19 @@ function scheduleItemReason(input: {
   return `${input.topicTitle} is the next step in the ${subject} sequence — it builds the foundations later topics rely on.`;
 }
 
+/**
+ * Returns this week's schedule, generating it on first access. `created` tells
+ * the caller whether generation just happened (drives the one-time plan email).
+ */
 export async function getOrCreateWeeklySchedule(
   parentId: string,
   childId: ObjectId,
-): Promise<WeeklyScheduleDoc | null> {
+): Promise<{ schedule: WeeklyScheduleDoc; created: boolean } | null> {
   if (!(await assertOwnsChild(parentId, childId))) return null;
   const col = await getCollection<WeeklyScheduleDoc>(Collections.schedules);
   const weekStart = currentWeekStart();
   const existing = await col.findOne({ child_id: childId, week_start: weekStart });
-  if (existing) return existing;
+  if (existing) return { schedule: existing, created: false };
 
   // Generate from curriculum gaps: topics NOT yet certified, in order, one per
   // weekday across the three subjects (Mon–Fri).
@@ -858,7 +862,7 @@ export async function getOrCreateWeeklySchedule(
     generated_at: new Date(),
   };
   const res = await col.insertOne(doc as WeeklyScheduleDoc);
-  return { ...doc, _id: res.insertedId };
+  return { schedule: { ...doc, _id: res.insertedId }, created: true };
 }
 
 export async function approveWeeklySchedule(
@@ -1046,6 +1050,20 @@ export async function setWeeklyDigestOptOut(
   await col.updateOne(
     { _id: oid },
     { $set: { weekly_digest_opt_out: optOut, updated_at: new Date() } },
+  );
+  return true;
+}
+
+export async function setWeeklyPlanEmailOptOut(
+  parentId: string,
+  optOut: boolean,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  await col.updateOne(
+    { _id: oid },
+    { $set: { weekly_plan_email_opt_out: optOut, updated_at: new Date() } },
   );
   return true;
 }
