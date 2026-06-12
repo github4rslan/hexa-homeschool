@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { CalmPause } from "@/components/child/calm-pause";
 import { logLessonCompletion } from "@/app/(dashboard)/lesson/actions";
 import { fetchJsonWithRetry } from "@/lib/fetch-with-retry";
 
@@ -35,6 +36,9 @@ interface TutorResponse {
   aiVerified: boolean;
   usedFallback: boolean;
   checker: { confidence: number };
+  /** Set when the safety gate froze the session instead of answering. */
+  frozen?: boolean;
+  message?: string;
 }
 
 export function LessonPlayer({
@@ -61,6 +65,9 @@ export function LessonPlayer({
   // Teaching Agent state
   const [tutor, setTutor] = useState<TutorResponse | null>(null);
   const [tutorLoading, setTutorLoading] = useState(false);
+
+  /** Safety freeze (child-safety rule 2) — terminal; replaces the lesson UI. */
+  const [frozen, setFrozen] = useState<string | null>(null);
 
   // TTS state
   const [audioLoading, setAudioLoading] = useState(false);
@@ -148,6 +155,11 @@ export function LessonPlayer({
         },
         { timeoutMs: 25000, retries: 1 },
       );
+      if (data.frozen) {
+        cleanupAudio();
+        setFrozen(data.message ?? "");
+        return;
+      }
       setTutor(data);
     } catch {
       setTutor(offlineTutor(question.explanation));
@@ -218,6 +230,17 @@ export function LessonPlayer({
   const mastery = questions.length
     ? Math.min(100, (cappedScore / questions.length) * 100)
     : 0;
+
+  // Safety freeze: replaces the entire lesson UI, checked before anything.
+  if (frozen !== null) {
+    return (
+      <CalmPause
+        message={frozen}
+        exitHref="/dashboard"
+        exitLabel="Back to dashboard"
+      />
+    );
+  }
 
   // Empty state: a topic with no authored questions yet.
   if (questions.length === 0) {

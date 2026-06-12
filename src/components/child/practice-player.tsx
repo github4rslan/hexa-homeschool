@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check, X, Volume2, Mic, Square, Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CalmPause } from "@/components/child/calm-pause";
 import { logLessonCompletion } from "@/app/(dashboard)/lesson/actions";
 import { fetchJsonWithRetry } from "@/lib/fetch-with-retry";
 import { cn } from "@/lib/utils";
@@ -70,6 +71,13 @@ export function PracticePlayer({
 
   const [hint, setHint] = useState<string | null>(null);
   const [hintLoading, setHintLoading] = useState(false);
+
+  /**
+   * Safety freeze (child-safety rule 2): once /api/tutor or /api/stt returns
+   * frozen, the session is over — the calm-pause screen replaces the lesson
+   * and nothing below can un-set this.
+   */
+  const [frozen, setFrozen] = useState<string | null>(null);
 
   const [audioLoading, setAudioLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -139,8 +147,9 @@ export function PracticePlayer({
         error?: string;
       };
       if (data.frozen) {
-        // Same calm pause the tutor route uses — show it in the hint area.
-        setHint(data.message ?? null);
+        stopRecorder();
+        cleanupAudio();
+        setFrozen(data.message ?? "");
         return;
       }
       if (!res.ok || typeof data.text !== "string" || !data.text) {
@@ -245,7 +254,13 @@ export function PracticePlayer({
         },
         { timeoutMs: 25000, retries: 1 },
       );
-      setHint(data.frozen ? data.message ?? question.explanation : data.explanation);
+      if (data.frozen) {
+        stopRecorder();
+        cleanupAudio();
+        setFrozen(data.message ?? "");
+        return;
+      }
+      setHint(data.explanation);
     } catch {
       setHint(question.explanation);
     } finally {
@@ -293,6 +308,17 @@ export function PracticePlayer({
     } finally {
       setAudioLoading(false);
     }
+  }
+
+  // ── Safety freeze: replaces the entire lesson UI, checked before anything ──
+  if (frozen !== null) {
+    return (
+      <CalmPause
+        message={frozen}
+        exitHref="/learn"
+        exitLabel="Back to my subjects"
+      />
+    );
   }
 
   // ── Completion / mastery ──
