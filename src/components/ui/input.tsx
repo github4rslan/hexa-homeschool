@@ -34,7 +34,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             className={cn(
               "w-full h-12 rounded-xl bg-white/[0.03] border border-white/10",
-              "px-4 py-3 text-sm text-fog-50 placeholder:text-fog-500",
+              // 16px on touch screens so iOS doesn't zoom-on-focus; 14px from sm: up.
+              "px-4 py-3 text-base sm:text-sm text-fog-50 placeholder:text-fog-500",
               "transition-all duration-200",
               "focus:bg-white/[0.05] focus:border-violet-400/60",
               "focus:outline-none focus:ring-2 focus:ring-violet-400/20",

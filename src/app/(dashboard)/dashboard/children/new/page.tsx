@@ -3,6 +3,7 @@ import { Calendar, GraduationCap, User } from "lucide-react";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { createChild } from "./actions";
@@ -87,9 +88,9 @@ export default async function NewChildPage({
             </div>
 
             <div className="flex items-center gap-3 pt-3">
-              <Button type="submit" variant="primary" size="md">
+              <SubmitButton variant="primary" size="md" pendingLabel="Saving…">
                 Save child
-              </Button>
+              </SubmitButton>
               <Button href="/dashboard" variant="ghost" size="md">
                 Cancel
               </Button>
