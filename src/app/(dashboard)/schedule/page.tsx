@@ -96,23 +96,30 @@ export default async function SchedulePage() {
               {schedule.items.map((item, i) => (
                 <div
                   key={i}
-                  className="flex items-center gap-4 rounded-xl bg-white/[0.03] border border-white/5 p-4"
+                  className="rounded-xl bg-white/[0.03] border border-white/5 p-4"
                 >
-                  <span className="w-24 shrink-0 text-sm font-medium text-fog-300">
-                    {DAYS[item.day]}
-                  </span>
-                  <Badge variant="violet" size="sm">
-                    {SUBJECT_LABEL[item.subject]}
-                  </Badge>
-                  <span className="flex-1 text-sm text-fog-100">
-                    {item.topic_title}
-                  </span>
-                  <Link
-                    href={`/learn/lesson?topic=${item.topic_tag}`}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-300 hover:text-violet-200"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" /> Start
-                  </Link>
+                  <div className="flex items-center gap-4">
+                    <span className="w-24 shrink-0 text-sm font-medium text-fog-300">
+                      {DAYS[item.day]}
+                    </span>
+                    <Badge variant="violet" size="sm">
+                      {SUBJECT_LABEL[item.subject]}
+                    </Badge>
+                    <span className="flex-1 text-sm text-fog-100">
+                      {item.topic_title}
+                    </span>
+                    <Link
+                      href={`/learn/lesson?topic=${item.topic_tag}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-300 hover:text-violet-200"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" /> Start
+                    </Link>
+                  </div>
+                  {item.reason && (
+                    <p className="mt-2 pl-[7rem] text-xs leading-relaxed text-fog-500">
+                      Why: {item.reason}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

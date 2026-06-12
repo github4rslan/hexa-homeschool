@@ -760,6 +760,33 @@ export function currentWeekStart(): string {
   return d.toISOString().slice(0, 10);
 }
 
+const SUBJECT_DISPLAY: Record<Subject, string> = {
+  mathematics: "Maths",
+  english: "English",
+  science: "Science",
+};
+
+/**
+ * Parent-facing reason a topic was picked, derived from the data that drove
+ * the choice: the child's competence state for the topic and their latest
+ * evaluation for the subject. Plain English, encouraging, no jargon.
+ */
+function scheduleItemReason(input: {
+  subject: Subject;
+  topicTitle: string;
+  topicState: CompetenceDoc["state"] | undefined;
+  predictedGrade: string | null;
+}): string {
+  const subject = SUBJECT_DISPLAY[input.subject];
+  if (input.topicState === "training") {
+    return `${input.topicTitle} is already in training — this session continues it toward certification.`;
+  }
+  if (input.predictedGrade) {
+    return `The diagnostic predicted grade ${input.predictedGrade} in ${subject}; ${input.topicTitle} is the next uncertified topic on the GCSE path.`;
+  }
+  return `${input.topicTitle} is the next step in the ${subject} sequence — it builds the foundations later topics rely on.`;
+}
+
 export async function getOrCreateWeeklySchedule(
   parentId: string,
   childId: ObjectId,
@@ -773,10 +800,15 @@ export async function getOrCreateWeeklySchedule(
   // Generate from curriculum gaps: topics NOT yet certified, in order, one per
   // weekday across the three subjects (Mon–Fri).
   const compCol = await getCollection<CompetenceDoc>(Collections.competence);
-  const certified = await compCol
-    .find({ child_id: childId, state: "certified" })
-    .toArray();
-  const certifiedTags = new Set(certified.map((c) => c.topic_tag));
+  const competence = await compCol.find({ child_id: childId }).toArray();
+  const certifiedTags = new Set(
+    competence.filter((c) => c.state === "certified").map((c) => c.topic_tag),
+  );
+  const stateByTag = new Map(competence.map((c) => [c.topic_tag, c.state]));
+
+  // Latest evaluation per subject — grounds the per-item reasons in real data.
+  const standings = await latestEvaluationsBySubject(childId);
+  const gradeBySubject = new Map(standings.map((s) => [s.subject, s.grade]));
 
   const subjects: Subject[] = ["mathematics", "english", "science"];
   const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
@@ -808,6 +840,12 @@ export async function getOrCreateWeeklySchedule(
         topic_tag: t.topic_tag,
         topic_title: t.title,
         status: "planned",
+        reason: scheduleItemReason({
+          subject,
+          topicTitle: t.title,
+          topicState: stateByTag.get(t.topic_tag),
+          predictedGrade: gradeBySubject.get(subject) ?? null,
+        }),
       });
     }
   }

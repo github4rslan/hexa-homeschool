@@ -59,7 +59,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 | `curriculum_topics` / `questions` | — | Human-authored curriculum + question bank |
 | `checkins` | CheckinDoc | Daily mood → difficulty throttle |
 | `media` | MediaDoc | Cloudinary registry (dedupe via content hash) |
-| `weekly_schedules` | WeeklyScheduleDoc | Parent-set weekly plan |
+| `weekly_schedules` | WeeklyScheduleDoc | Parent-set weekly plan; each item carries a data-grounded `reason` (competence state + latest evaluation) shown on `/schedule` — optional on legacy docs |
 | `tutor_bookings` / `escalations` | — | Human safety net |
 | `newsletter_subscribers` | — | Public lead capture |
 | `ai_invocations` | AiInvocationDoc | Per-call AI telemetry (powers admin console) |
