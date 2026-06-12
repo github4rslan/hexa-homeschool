@@ -9,9 +9,9 @@ import { verifyToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
  * unauthenticated users away from protected routes. Authenticated users are
  * bounced off the login/signup pages.
  *
- * NOTE: admin role enforcement (previously a Supabase `admins` lookup) is not
- * yet reimplemented on MongoDB — /admin is gated as a normal protected route
- * for now. Re-add a role check when an admins collection exists.
+ * NOTE: this middleware only checks "signed in" (Edge runtime — no DB access).
+ * The admin ROLE check (ParentDoc.is_admin) lives in the (admin) layout, which
+ * redirects non-staff parents to /dashboard.
  */
 export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;

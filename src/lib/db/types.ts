@@ -18,6 +18,11 @@ export interface ParentDoc {
   weekly_digest_opt_out?: boolean;
   /** Weekly plan email opt-out. Undefined/false = receives the plan email. */
   weekly_plan_email_opt_out?: boolean;
+  /**
+   * Staff flag gating the (admin) routes. No self-serve path sets this —
+   * granted manually in Atlas. Undefined/false = regular parent.
+   */
+  is_admin?: boolean;
   /** Bcrypt hash of the 4-digit parent gate PIN used to exit child mode. */
   parent_pin_hash?: string | null;
   subscription_tier: "diagnostic" | "standard" | "family";
