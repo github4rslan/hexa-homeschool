@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: AI_ENTITLEMENT_ERROR }, { status: 403 });
   }
 
-  const limited = rateLimit(
+  const limited = await rateLimit(
     `tts:${parentId}`,
     RATE_LIMIT_REQUESTS,
     RATE_LIMIT_WINDOW_MS,

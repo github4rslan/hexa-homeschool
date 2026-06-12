@@ -100,7 +100,7 @@ export async function POST(request: Request) {
 
   // Rate limit AFTER the distress gate (a distress message must never be
   // blocked by a 429) but before the paid OpenAI call it exists to protect.
-  const limited = rateLimit(
+  const limited = await rateLimit(
     `tutor:${parentId}`,
     RATE_LIMIT_REQUESTS,
     RATE_LIMIT_WINDOW_MS,
