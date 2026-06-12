@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Container } from "@/components/ui/container";
 import { CTA } from "@/components/marketing/cta";
+import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 
 export const metadata: Metadata = {
   title: "About HEXA",
@@ -68,6 +69,7 @@ const STORY: { lead: string; paragraphs: string[] }[] = [
 export default function AboutPage() {
   return (
     <>
+      <BreadcrumbJsonLd items={[{ name: "About", path: "/about" }]} />
       {/* Editorial masthead */}
       <header className="relative pt-16 pb-12 overflow-hidden">
         <div className="absolute inset-0 bg-warm-hero pointer-events-none" />

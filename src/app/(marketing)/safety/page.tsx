@@ -4,6 +4,7 @@ import { SafetyPreview } from "@/components/marketing/safety-preview";
 import { Card } from "@/components/ui/card";
 import { ShieldAlert, Users, Activity, GitBranch } from "lucide-react";
 import { CTA } from "@/components/marketing/cta";
+import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 
 export const metadata: Metadata = {
   title: "Safety & escalation",
@@ -41,6 +42,7 @@ const PRINCIPLES = [
 export default function SafetyPage() {
   return (
     <>
+      <BreadcrumbJsonLd items={[{ name: "Safety", path: "/safety" }]} />
       <Section padded className="pt-16">
         <SectionHeader
           eyebrow="The Safety Net"

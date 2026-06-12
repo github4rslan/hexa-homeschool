@@ -4,6 +4,7 @@ import { Section, SectionHeader } from "@/components/ui/section";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { CTA } from "@/components/marketing/cta";
+import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -61,6 +62,7 @@ const ADDITIONAL_SUBJECTS = [
 export default function PricingPage() {
   return (
     <>
+      <BreadcrumbJsonLd items={[{ name: "Pricing", path: "/pricing" }]} />
       <Section padded className="pt-16">
         <SectionHeader
           eyebrow="Pricing"

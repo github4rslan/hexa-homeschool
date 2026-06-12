@@ -3,6 +3,7 @@ import { Section, SectionHeader } from "@/components/ui/section";
 import { Card } from "@/components/ui/card";
 import { CTA } from "@/components/marketing/cta";
 import { CheckCircle2, MessageCircle, FileText, Calendar, Lightbulb } from "lucide-react";
+import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 
 export const metadata: Metadata = {
   title: "For UK homeschooling parents",
@@ -69,6 +70,7 @@ const FAQ = [
 export default function ForParentsPage() {
   return (
     <>
+      <BreadcrumbJsonLd items={[{ name: "For parents", path: "/for-parents" }]} />
       <Section padded className="pt-16">
         <SectionHeader
           eyebrow="For UK Parents"
