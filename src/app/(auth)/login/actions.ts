@@ -52,6 +52,10 @@ export async function login(formData: FormData) {
     redirect(`/signup/verify?email=${encodeURIComponent(parent.email)}`);
   }
 
-  await createSession({ id: parent._id.toHexString(), email: parent.email });
+  await createSession({
+    id: parent._id.toHexString(),
+    email: parent.email,
+    tokenVersion: parent.token_version ?? 0,
+  });
   redirect("/dashboard");
 }

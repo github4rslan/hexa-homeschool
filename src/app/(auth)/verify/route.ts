@@ -21,7 +21,11 @@ export async function GET(request: Request) {
   await markEmailVerified(parentId);
   const parent = await findParentById(parentId);
   if (parent?._id) {
-    await createSession({ id: parent._id.toHexString(), email: parent.email });
+    await createSession({
+      id: parent._id.toHexString(),
+      email: parent.email,
+      tokenVersion: parent.token_version ?? 0,
+    });
     return NextResponse.redirect(new URL("/onboarding", request.url));
   }
   return NextResponse.redirect(new URL("/login", request.url));

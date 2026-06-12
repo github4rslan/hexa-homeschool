@@ -26,11 +26,17 @@ function getSecret(): Uint8Array {
 export interface SessionUser {
   id: string; // parent _id as hex string
   email: string;
+  /**
+   * Parent's token_version at issue time. "Sign out everywhere" bumps the
+   * version in ParentDoc; repo.currentParentId() rejects sessions whose tv
+   * no longer matches. Absent on legacy tokens = 0.
+   */
+  tokenVersion?: number;
 }
 
 /** Issue a signed session cookie for the given user. */
 export async function createSession(user: SessionUser): Promise<void> {
-  const token = await new SignJWT({ email: user.email })
+  const token = await new SignJWT({ email: user.email, tv: user.tokenVersion ?? 0 })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.id)
     .setIssuedAt()
@@ -56,7 +62,11 @@ export async function getSession(): Promise<SessionUser | null> {
   try {
     const { payload } = await jwtVerify(token, getSecret());
     if (!payload.sub) return null;
-    return { id: payload.sub, email: String(payload.email ?? "") };
+    return {
+      id: payload.sub,
+      email: String(payload.email ?? ""),
+      tokenVersion: typeof payload.tv === "number" ? payload.tv : 0,
+    };
   } catch {
     return null; // expired or tampered
   }

@@ -10,8 +10,13 @@ import {
   setParentPinHash,
   setWeeklyDigestOptOut,
   setWeeklyPlanEmailOptOut,
+  setEscalationAlertOptOut,
+  bumpTokenVersion,
+  deleteFamilyData,
 } from "@/lib/db/repo";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { createSession, destroySession } from "@/lib/auth/session";
+import { getStripe } from "@/lib/billing/stripe";
 import type { ParentDoc } from "@/lib/db/types";
 
 export async function updateAccount(formData: FormData) {
@@ -35,8 +40,10 @@ export async function updateEmailPreferences(formData: FormData) {
   // Checkbox present = email on; absent = opted out.
   const digestOn = formData.get("weekly_digest") === "on";
   const planOn = formData.get("weekly_plan_email") === "on";
+  const alertsOn = formData.get("escalation_alerts") === "on";
   await setWeeklyDigestOptOut(parentId, !digestOn);
   await setWeeklyPlanEmailOptOut(parentId, !planOn);
+  await setEscalationAlertOptOut(parentId, !alertsOn);
   revalidatePath("/settings");
   redirect("/settings?saved=1");
 }
@@ -66,7 +73,72 @@ export async function changePassword(formData: FormData) {
     { _id: new ObjectId(parentId) },
     { $set: { password_hash: hash, updated_at: new Date() } },
   );
+
+  // A changed password invalidates every existing session, then re-issues
+  // this one so the parent stays signed in here.
+  const newVersion = await bumpTokenVersion(parentId);
+  await createSession({
+    id: parentId!,
+    email: parent!.email,
+    tokenVersion: newVersion ?? 0,
+  });
   redirect("/settings?saved=1");
+}
+
+/** Sign out everywhere: kill all sessions, keep only this one alive. */
+export async function signOutEverywhere() {
+  const parentId = await currentParentId();
+  if (!parentId) redirect("/login?redirect=/settings");
+
+  const parent = await findParentById(parentId!);
+  if (!parent) redirect("/login?redirect=/settings");
+
+  const newVersion = await bumpTokenVersion(parentId!);
+  await createSession({
+    id: parentId!,
+    email: parent!.email,
+    tokenVersion: newVersion ?? 0,
+  });
+  revalidatePath("/settings");
+  redirect("/settings?saved=1");
+}
+
+/**
+ * Right to erasure. Type-to-confirm guards against slips; the cascade itself
+ * lives in repo.deleteFamilyData (parent-scoped end to end). Cancels the
+ * Stripe subscription first when one exists, best-effort.
+ */
+export async function deleteAccount(formData: FormData) {
+  const parentId = await currentParentId();
+  if (!parentId) redirect("/login?redirect=/settings");
+
+  const confirmation = String(formData.get("confirm_delete") || "").trim();
+  if (confirmation !== "DELETE") {
+    redirect(
+      `/settings?error=${encodeURIComponent('Type DELETE (in capitals) to confirm account deletion.')}`,
+    );
+  }
+
+  const parent = await findParentById(parentId!);
+  if (!parent) redirect("/login?redirect=/settings");
+
+  if (parent!.stripe_subscription_id) {
+    try {
+      await getStripe().subscriptions.cancel(parent!.stripe_subscription_id);
+    } catch (err) {
+      // Billing unconfigured or already-canceled must not block erasure.
+      console.error("[delete account] Stripe cancel failed (continuing):", err);
+    }
+  }
+
+  const deleted = await deleteFamilyData(parentId!);
+  if (!deleted) {
+    redirect(`/settings?error=${encodeURIComponent("Deletion failed. Please contact support.")}`);
+  }
+  console.log("[delete account] erased family", parentId, deleted);
+
+  await destroySession();
+  redirect("/?deleted=1");
 }
 
 export async function updateParentPin(formData: FormData) {

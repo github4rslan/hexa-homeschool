@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { findParentByEmail, markEmailVerified } from "@/lib/db/repo";
+import { findParentByEmail, findParentById, markEmailVerified } from "@/lib/db/repo";
 import { createSession } from "@/lib/auth/session";
 import { sendEmail } from "@/lib/email/send";
 import {
@@ -36,7 +36,12 @@ export async function verifyCode(formData: FormData) {
 
   await markEmailVerified(parentId!);
   jar.delete(CODE_COOKIE);
-  await createSession({ id: parentId!, email });
+  const verified = await findParentById(parentId!);
+  await createSession({
+    id: parentId!,
+    email,
+    tokenVersion: verified?.token_version ?? 0,
+  });
   redirect("/onboarding");
 }
 

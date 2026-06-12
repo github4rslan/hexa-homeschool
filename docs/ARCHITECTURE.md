@@ -50,7 +50,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 
 | Collection | Doc | Purpose |
 |---|---|---|
-| `parents` | ParentDoc | Account, password hash, subscription tier, billing status, Stripe customer/subscription ids (synced by `/api/billing/webhook` only), email prefs (`weekly_digest_opt_out`, `weekly_plan_email_opt_out` — toggles in `/settings`) |
+| `parents` | ParentDoc | Account, password hash, subscription tier, billing status, Stripe customer/subscription ids (synced by `/api/billing/webhook` only), email prefs (`weekly_digest_opt_out`, `weekly_plan_email_opt_out`, `escalation_alert_opt_out` — toggles in `/settings`), `is_admin` staff flag, `token_version` (session invalidation — "sign out everywhere" / password change) |
 | `children` | ChildDoc | Profile, DOB, SEND indicators, target exam window |
 | `evaluation_records` | EvaluationDoc | Diagnostic/mock results, predicted grades |
 | `instructional_logs` | LessonLogDoc | Per-lesson logs (phase, attempts, hints, mastery) |

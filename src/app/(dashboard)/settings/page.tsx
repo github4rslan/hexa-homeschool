@@ -1,13 +1,32 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { CreditCard, ShieldCheck, Check, Mail } from "lucide-react";
+import Link from "next/link";
+import {
+  CreditCard,
+  ShieldCheck,
+  Check,
+  Mail,
+  Users,
+  Download,
+  Trash2,
+  UserRound,
+  LogOut,
+} from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { currentParentId, findParentById } from "@/lib/db/repo";
-import { updateAccount, changePassword, updateEmailPreferences, updateParentPin } from "./actions";
+import { currentParentId, findParentById, listChildren } from "@/lib/db/repo";
+import {
+  updateAccount,
+  changePassword,
+  updateEmailPreferences,
+  updateParentPin,
+  signOutEverywhere,
+  deleteAccount,
+} from "./actions";
 
 export const metadata: Metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
@@ -16,6 +35,14 @@ const TIER_LABEL: Record<string, string> = {
   diagnostic: "Diagnostic (free)",
   standard: "HEXA Complete",
   family: "HEXA Partner",
+};
+
+const STATUS_CONTEXT: Record<string, string> = {
+  trialing: "You're on the 14-day free trial — billing starts when it ends.",
+  active: "Your subscription is active and renews monthly.",
+  past_due: "Your last payment didn't go through — update your card to keep access.",
+  canceled: "Your subscription has ended. You can re-subscribe any time.",
+  paused: "Your subscription is paused.",
 };
 
 export default async function SettingsPage({
@@ -28,6 +55,7 @@ export default async function SettingsPage({
   if (!parentId) redirect("/login?redirect=/settings");
   const parent = await findParentById(parentId);
   if (!parent) redirect("/login?redirect=/settings");
+  const children = await listChildren(parentId);
 
   return (
     <div className="relative min-h-screen">
@@ -37,7 +65,7 @@ export default async function SettingsPage({
       <main className="mx-auto max-w-3xl px-6 py-10 lg:py-16">
         <PageHeader
           title="Settings"
-          description="Manage your account, security and subscription."
+          description="Your account, family, security, billing and data — all in one place."
           breadcrumbs={[{ label: "Dashboard", href: "/dashboard" }, { label: "Settings" }]}
           backFallback="/dashboard"
         />
@@ -60,11 +88,14 @@ export default async function SettingsPage({
         )}
 
         <div className="flex flex-col gap-6">
-          {/* Account */}
+          {/* 1 — Profile */}
           <Card variant="glass-strong" padding="xl">
-            <h2 className="text-lg font-semibold text-fog-50 mb-1">Account</h2>
+            <div className="flex items-center gap-2 mb-1">
+              <UserRound className="h-4 w-4 text-violet-300" />
+              <h2 className="text-lg font-semibold text-fog-50">Profile</h2>
+            </div>
             <p className="text-sm text-fog-400 mb-6">
-              Your name and sign-in email.
+              Your name, sign-in email and password.
             </p>
             <form action={updateAccount} className="flex flex-col gap-4">
               <Input
@@ -75,96 +106,50 @@ export default async function SettingsPage({
               />
               <Input
                 label="Email"
+                type="email"
                 defaultValue={parent.email}
                 disabled
                 hint="Contact support to change your sign-in email."
               />
-              <Button type="submit" variant="primary" size="md" className="self-start">
+              <SubmitButton variant="primary" size="md" className="self-start" pendingLabel="Saving…">
                 Save changes
-              </Button>
+              </SubmitButton>
             </form>
-          </Card>
 
-          {/* Security */}
-          <Card variant="glass-strong" padding="xl">
-            <div className="flex items-center gap-2 mb-1">
-              <ShieldCheck className="h-4 w-4 text-violet-300" />
-              <h2 className="text-lg font-semibold text-fog-50">Security</h2>
-            </div>
-            <p className="text-sm text-fog-400 mb-6">Change your password.</p>
+            <div className="my-6 border-t border-white/5" />
+
             <form action={changePassword} className="flex flex-col gap-4">
               <Input
                 name="current_password"
                 type="password"
                 label="Current password"
+                autoComplete="current-password"
                 required
               />
               <Input
                 name="new_password"
                 type="password"
                 label="New password"
-                hint="At least 8 characters."
+                autoComplete="new-password"
+                hint="At least 8 characters. Changing it signs you out everywhere else."
                 required
+                minLength={8}
               />
-              <Button type="submit" variant="secondary" size="md" className="self-start">
+              <SubmitButton variant="secondary" size="md" className="self-start" pendingLabel="Updating…">
                 Update password
-              </Button>
+              </SubmitButton>
             </form>
           </Card>
 
-          {/* Parent gate PIN */}
-          <Card variant="glass-strong" padding="xl">
-            <div className="flex items-center gap-2 mb-1">
-              <ShieldCheck className="h-4 w-4 text-neon-300" />
-              <h2 className="text-lg font-semibold text-fog-50">Parent gate</h2>
-            </div>
-            <p className="text-sm text-fog-400 mb-6">
-              Require a 4-digit PIN before exiting child-mode lessons back to
-              the parent dashboard.
-            </p>
-            <form action={updateParentPin} className="flex flex-col gap-4">
-              <Input
-                name="current_password"
-                type="password"
-                label="Current password"
-                required
-              />
-              <Input
-                name="parent_pin"
-                type="password"
-                label="4-digit PIN"
-                inputMode="numeric"
-                pattern="[0-9]{4}"
-                minLength={4}
-                maxLength={4}
-                hint={parent.parent_pin_hash ? "A parent PIN is set. Enter a new PIN to replace it." : "Used only for exiting child mode."}
-                required
-              />
-              <Input
-                name="confirm_parent_pin"
-                type="password"
-                label="Confirm PIN"
-                inputMode="numeric"
-                pattern="[0-9]{4}"
-                minLength={4}
-                maxLength={4}
-                required
-              />
-              <Button type="submit" variant="secondary" size="md" className="self-start">
-                {parent.parent_pin_hash ? "Update parent PIN" : "Set parent PIN"}
-              </Button>
-            </form>
-          </Card>
-
-          {/* Email preferences */}
+          {/* 2 — Notifications */}
           <Card variant="glass-strong" padding="xl">
             <div className="flex items-center gap-2 mb-1">
               <Mail className="h-4 w-4 text-amber-300" />
-              <h2 className="text-lg font-semibold text-fog-50">Email preferences</h2>
+              <h2 className="text-lg font-semibold text-fog-50">Notifications</h2>
             </div>
             <p className="text-sm text-fog-400 mb-6">
-              Choose which emails we send you. Account and safety emails are
-              always delivered.
+              Choose which emails we send you. Alerts always appear on your
+              dashboard regardless.
             </p>
             <form action={updateEmailPreferences} className="flex flex-col gap-4">
               <label className="flex items-start gap-3 text-sm text-fog-200 cursor-pointer">
@@ -197,25 +182,153 @@ export default async function SettingsPage({
                   </span>
                 </span>
               </label>
-              <Button type="submit" variant="secondary" size="md" className="self-start">
+              <label className="flex items-start gap-3 text-sm text-fog-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="escalation_alerts"
+                  defaultChecked={!parent.escalation_alert_opt_out}
+                  className="mt-0.5 rounded border-white/10 bg-white/5"
+                />
+                <span>
+                  Wellbeing alerts
+                  <span className="block text-xs text-fog-500 mt-0.5">
+                    An email when a lesson is paused because your child seemed to
+                    be struggling. Details stay in your dashboard, never in email.
+                  </span>
+                </span>
+              </label>
+              <SubmitButton variant="secondary" size="md" className="self-start" pendingLabel="Saving…">
                 Save preferences
-              </Button>
+              </SubmitButton>
             </form>
           </Card>
 
-          {/* Subscription */}
+          {/* 3 — Children */}
+          <Card variant="glass-strong" padding="xl">
+            <div className="flex items-center gap-2 mb-1">
+              <Users className="h-4 w-4 text-cyan-400" />
+              <h2 className="text-lg font-semibold text-fog-50">Children</h2>
+            </div>
+            <p className="text-sm text-fog-400 mb-6">
+              Profiles, SEND indicators and target exam windows are managed on
+              each child&apos;s page.
+            </p>
+            {children.length > 0 ? (
+              <ul className="flex flex-col gap-3 mb-5">
+                {children.map((child) => (
+                  <li key={child._id?.toHexString()}>
+                    <Link
+                      href={`/dashboard/children/${child._id?.toHexString()}`}
+                      className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-white/[0.03] px-4 py-3 transition-colors hover:border-white/20 hover:bg-white/[0.05]"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium text-fog-100">
+                          {child.full_name}
+                        </span>
+                        <span className="block text-xs text-fog-500">
+                          {child.target_exam_window
+                            ? `Target: ${child.target_exam_window}`
+                            : "No exam window set"}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-xs font-medium text-violet-300">
+                        Edit profile
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mb-5 text-sm text-fog-500">
+                No children added yet — add your first child to begin the
+                diagnostic.
+              </p>
+            )}
+            <Button href="/dashboard/children/new" variant="outline" size="sm">
+              Add a child
+            </Button>
+          </Card>
+
+          {/* 4 — Security */}
+          <Card variant="glass-strong" padding="xl">
+            <div className="flex items-center gap-2 mb-1">
+              <ShieldCheck className="h-4 w-4 text-neon-300" />
+              <h2 className="text-lg font-semibold text-fog-50">Security</h2>
+            </div>
+            <p className="text-sm text-fog-400 mb-6">
+              Parent gate PIN and session control.
+            </p>
+
+            <form action={updateParentPin} className="flex flex-col gap-4">
+              <Input
+                name="current_password"
+                type="password"
+                label="Current password"
+                autoComplete="current-password"
+                required
+              />
+              <Input
+                name="parent_pin"
+                type="password"
+                label="4-digit PIN"
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                minLength={4}
+                maxLength={4}
+                hint={
+                  parent.parent_pin_hash
+                    ? "A parent PIN is set. Enter a new PIN to replace it."
+                    : "Required before exiting child-mode lessons back to the dashboard."
+                }
+                required
+              />
+              <Input
+                name="confirm_parent_pin"
+                type="password"
+                label="Confirm PIN"
+                inputMode="numeric"
+                pattern="[0-9]{4}"
+                minLength={4}
+                maxLength={4}
+                required
+              />
+              <SubmitButton variant="secondary" size="md" className="self-start" pendingLabel="Saving…">
+                {parent.parent_pin_hash ? "Update parent PIN" : "Set parent PIN"}
+              </SubmitButton>
+            </form>
+
+            <div className="my-6 border-t border-white/5" />
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-medium text-fog-200">Sessions</div>
+                <p className="text-xs text-fog-500 mt-0.5 max-w-sm">
+                  You&apos;re signed in on this device. Signing out everywhere
+                  ends every other session (other browsers, devices) — this one
+                  stays signed in.
+                </p>
+              </div>
+              <form action={signOutEverywhere}>
+                <SubmitButton variant="outline" size="sm" pendingLabel="Signing out…">
+                  <LogOut className="h-4 w-4" /> Sign out everywhere
+                </SubmitButton>
+              </form>
+            </div>
+          </Card>
+
+          {/* 5 — Billing */}
           <Card variant="glass" padding="xl">
             <div className="flex items-center gap-2 mb-1">
               <CreditCard className="h-4 w-4 text-cyan-400" />
-              <h2 className="text-lg font-semibold text-fog-50">Subscription</h2>
+              <h2 className="text-lg font-semibold text-fog-50">Billing</h2>
             </div>
-            <div className="mt-4 flex items-center justify-between">
-              <div>
+            <div className="mt-4 flex items-center justify-between gap-4">
+              <div className="min-w-0">
                 <div className="text-sm text-fog-200 font-medium">
                   {TIER_LABEL[parent.subscription_tier] ?? parent.subscription_tier}
                 </div>
                 <div className="text-xs text-fog-500 mt-0.5">
-                  Status: {parent.billing_status}
+                  {STATUS_CONTEXT[parent.billing_status] ?? `Status: ${parent.billing_status}`}
                 </div>
               </div>
               <Badge
@@ -249,22 +362,61 @@ export default async function SettingsPage({
             </div>
           </Card>
 
-          {/* Data rights */}
+          {/* 6 — Data & privacy */}
           <Card variant="outline" padding="xl">
             <h2 className="text-lg font-semibold text-fog-50 mb-1">
-              Your data
+              Data &amp; privacy
             </h2>
-            <p className="text-sm text-fog-400 mb-4">
-              Under UK GDPR you can request a copy of your family&apos;s data or
-              ask us to delete it. We action requests within statutory timeframes.
+            <p className="text-sm text-fog-400 mb-5">
+              Under UK GDPR your family&apos;s data is yours: download a full
+              copy any time, or delete the account entirely.
             </p>
-            <Button
-              href="mailto:privacy@hexa.education?subject=Data%20request"
-              variant="ghost"
-              size="sm"
-            >
-              Request data export or deletion
-            </Button>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="text-sm font-medium text-fog-200">Export my data</div>
+                <p className="text-xs text-fog-500 mt-0.5 max-w-sm">
+                  A JSON file with your account, children, lesson history,
+                  progress, schedules and evidence records.
+                </p>
+              </div>
+              <Button href="/api/account/export" variant="secondary" size="sm" external>
+                <Download className="h-4 w-4" /> Download export
+              </Button>
+            </div>
+
+            <div className="my-6 border-t border-crimson-400/15" />
+
+            <div className="rounded-xl border border-crimson-400/20 bg-crimson-500/5 p-5">
+              <div className="flex items-center gap-2 mb-2">
+                <Trash2 className="h-4 w-4 text-crimson-400" />
+                <h3 className="text-sm font-semibold text-fog-100">Delete account</h3>
+              </div>
+              <p className="text-xs text-fog-400 mb-4 leading-relaxed">
+                Permanently removes your account, every child profile, all
+                lesson history, progress, schedules, portfolios and uploaded
+                evidence, and cancels any active subscription. This cannot be
+                undone — consider downloading your export first.
+              </p>
+              <form action={deleteAccount} className="flex flex-col sm:flex-row gap-3 sm:items-end">
+                <Input
+                  name="confirm_delete"
+                  label='Type DELETE to confirm'
+                  placeholder="DELETE"
+                  autoComplete="off"
+                  required
+                  className="sm:w-48"
+                />
+                <SubmitButton
+                  variant="ghost"
+                  size="md"
+                  pendingLabel="Deleting…"
+                  className="self-start border border-crimson-400/40 text-crimson-400 hover:bg-crimson-500/10 hover:text-crimson-300"
+                >
+                  Delete my account
+                </SubmitButton>
+              </form>
+            </div>
           </Card>
         </div>
       </main>
