@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { SubmitButton } from "@/components/ui/submit-button";
 import {
   currentParentId,
   getActiveChild,
@@ -82,9 +83,9 @@ export default async function SchedulePage() {
               </Badge>
             ) : (
               <form action={approveSchedule}>
-                <Button type="submit" variant="primary" size="md">
+                <SubmitButton variant="primary" size="md" pendingLabel="Approving…">
                   Approve this week
-                </Button>
+                </SubmitButton>
               </form>
             )
           }
@@ -105,25 +106,25 @@ export default async function SchedulePage() {
                   key={i}
                   className="rounded-xl bg-white/[0.03] border border-white/5 p-4"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <span className="w-24 shrink-0 text-sm font-medium text-fog-300">
                       {DAYS[item.day]}
                     </span>
                     <Badge variant="violet" size="sm">
                       {SUBJECT_LABEL[item.subject]}
                     </Badge>
-                    <span className="flex-1 text-sm text-fog-100">
+                    <span className="flex-1 min-w-[10rem] text-sm text-fog-100">
                       {item.topic_title}
                     </span>
                     <Link
                       href={`/learn/lesson?topic=${item.topic_tag}`}
-                      className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-300 hover:text-violet-200"
+                      className="inline-flex min-h-11 items-center gap-1.5 text-xs font-medium text-violet-300 hover:text-violet-200"
                     >
                       <Sparkles className="h-3.5 w-3.5" /> Start
                     </Link>
                   </div>
                   {item.reason && (
-                    <p className="mt-2 pl-[7rem] text-xs leading-relaxed text-fog-500">
+                    <p className="mt-2 sm:pl-[7rem] text-xs leading-relaxed text-fog-500">
                       Why: {item.reason}
                     </p>
                   )}

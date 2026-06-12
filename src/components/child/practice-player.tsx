@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Check, X, Volume2, Mic, Square, Loader2, Sparkles, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalmPause } from "@/components/child/calm-pause";
+import { Celebration } from "@/components/fx/celebration";
 import { logLessonCompletion } from "@/app/(dashboard)/lesson/actions";
 import { fetchJsonWithRetry } from "@/lib/fetch-with-retry";
 import { cn } from "@/lib/utils";
@@ -330,12 +331,14 @@ export function PracticePlayer({
         <div className="child-panel p-8 sm:p-12 text-center animate-child-pop">
           <div
             className={cn(
-              "mx-auto mb-6 flex h-28 w-28 items-center justify-center rounded-full border-2",
+              "relative mx-auto mb-6 flex h-28 w-28 items-center justify-center rounded-full border-2",
               mastered
                 ? "bg-neon-500/10 border-neon-400/50 glow-neon"
                 : "bg-violet-500/10 border-violet-400/40",
             )}
           >
+            {/* The one BIG moment — certification earns the full burst. */}
+            {mastered && <Celebration variant={1} big />}
             <span className="text-6xl" aria-hidden>
               {mastered ? "🏆" : "🌟"}
             </span>
@@ -435,13 +438,14 @@ export function PracticePlayer({
                   !revealed && chosen && "border-violet-400/70 bg-violet-500/15",
                   !revealed && !chosen && "border-white/10 bg-white/[0.03] hover:border-white/30",
                   showCorrect && "border-neon-400/70 bg-neon-500/15",
-                  showWrong && "border-crimson-400/60 bg-crimson-500/10",
+                  // A wrong pick gently dims — never a red flash or shake.
+                  showWrong && "border-white/10 bg-white/[0.02] opacity-60",
                   revealed && !showCorrect && !showWrong && "border-white/5 opacity-50",
                 )}
               >
                 <span className="text-fog-50">{option}</span>
                 {showCorrect && <Check className="h-7 w-7 text-neon-400" />}
-                {showWrong && <X className="h-7 w-7 text-crimson-400" />}
+                {showWrong && <X className="h-7 w-7 text-fog-400" />}
               </motion.button>
             );
           })}
@@ -478,7 +482,9 @@ export function PracticePlayer({
                   <Loader2 className="h-5 w-5 animate-spin" /> Thinking of a hint…
                 </span>
               ) : isCorrect ? (
-                <span className="font-semibold">
+                <span className="relative inline-block font-semibold">
+                  {/* Fires only after the answer; varies so it never feels mechanical. */}
+                  <Celebration variant={step} />
                   {PRAISE[step % PRAISE.length]}
                 </span>
               ) : (

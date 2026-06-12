@@ -54,6 +54,12 @@ export function EmojiCheckin({ done = false }: { done?: boolean }) {
             onClick={() => choose(m.mood)}
             disabled={pending}
             whileTap={{ scale: 0.92 }}
+            // Tactile single bounce on the picked face — quick, fires once.
+            animate={
+              picked === m.mood
+                ? { scale: [1, 1.18, 1], transition: { duration: 0.35 } }
+                : undefined
+            }
             className={`child-touch flex flex-col items-center justify-center gap-1 rounded-3xl border p-3 transition-all disabled:opacity-60 ${
               picked === m.mood
                 ? "border-violet-400/60 bg-violet-500/15"

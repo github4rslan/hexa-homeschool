@@ -140,6 +140,24 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Tailwind CSS 4 removed the default pointer cursor on buttons — restore it
+     globally so every pressable element advertises itself. Disabled controls
+     read as clearly un-pressable. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  select:not(:disabled),
+  label:has(> input[type="checkbox"]:not(:disabled)),
+  label:has(> input[type="radio"]:not(:disabled)) {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"],
+  input:disabled {
+    cursor: not-allowed;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;

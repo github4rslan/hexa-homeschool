@@ -9,7 +9,11 @@ const buttonVariants = cva(
     "font-medium tracking-tight whitespace-nowrap",
     "transition-all duration-300 ease-out",
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-2 focus-visible:ring-offset-void",
-    "disabled:pointer-events-none disabled:opacity-50",
+    "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100 disabled:shadow-none",
+    // Pressable feel for every variant; reduced-motion users get color-only
+    // feedback (the global media query also zeroes transitions).
+    "cursor-pointer active:scale-[0.98] active:duration-100",
+    "motion-reduce:hover:scale-100 motion-reduce:active:scale-100",
     "overflow-hidden group",
   ],
   {
@@ -38,10 +42,11 @@ const buttonVariants = cva(
           "hover:bg-neon-500/15 hover:border-neon-400/60 hover:shadow-[0_0_50px_-10px_rgba(6,255,165,0.8)]",
         ],
         // Child mode: high-contrast, friendly, big radius (Children's Code).
+        // Presses slightly more playfully than the adult variants.
         child: [
           "bg-gradient-to-br from-violet-500 via-violet-600 to-cyan-500 text-white",
           "shadow-[0_0_50px_-12px_rgba(124,58,237,0.7)]",
-          "hover:scale-[1.03] active:scale-[0.97] transition-transform",
+          "hover:scale-[1.03] active:scale-[0.96] transition-transform",
         ],
         // ── Warm marketing theme (heritage / editorial) ──
         forest: [
