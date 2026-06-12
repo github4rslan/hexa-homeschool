@@ -83,6 +83,12 @@ Layered bug-catching for a push-to-production setup with no staging:
    Tests live in `tests/`; `vitest.config.ts` stubs the `server-only` package.
    Tests must pass before every push.
 
+2. **CI (GitHub Actions, `.github/workflows/ci.yml`)** — type-check, lint,
+   unit tests and a production build on every push/PR to `main`. Runs without
+   secrets: the build tolerates missing env vars by design (feature keys
+   degrade gracefully). Since a push to `main` *is* the production deploy,
+   CI is the record of whether that deploy was built from green code.
+
 ## Supabase Migration (historical)
 
 The project began on Supabase (Postgres + RLS + Supabase Auth) and was fully
