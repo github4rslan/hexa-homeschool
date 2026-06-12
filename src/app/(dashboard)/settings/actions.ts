@@ -9,6 +9,7 @@ import {
   findParentById,
   setParentPinHash,
   setWeeklyDigestOptOut,
+  setWeeklyPlanEmailOptOut,
 } from "@/lib/db/repo";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import type { ParentDoc } from "@/lib/db/types";
@@ -31,9 +32,11 @@ export async function updateEmailPreferences(formData: FormData) {
   const parentId = await currentParentId();
   if (!parentId) redirect("/login?redirect=/settings");
 
-  // Checkbox present = digest on; absent = opted out.
+  // Checkbox present = email on; absent = opted out.
   const digestOn = formData.get("weekly_digest") === "on";
+  const planOn = formData.get("weekly_plan_email") === "on";
   await setWeeklyDigestOptOut(parentId, !digestOn);
+  await setWeeklyPlanEmailOptOut(parentId, !planOn);
   revalidatePath("/settings");
   redirect("/settings?saved=1");
 }
