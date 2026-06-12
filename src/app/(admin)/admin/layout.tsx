@@ -1,13 +1,22 @@
+import { redirect } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { getSession } from "@/lib/auth/session";
+import { findParentById } from "@/lib/db/repo";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // Role gate: the middleware only guarantees a session; the admin surface
+  // shows cross-family data (incl. children's escalation text), so it must be
+  // limited to staff. is_admin is granted manually in Atlas — never self-serve.
   const session = await getSession();
-  const displayName = session?.email?.split("@")[0] || "Admin";
+  if (!session) redirect("/login?redirect=/admin");
+  const parent = await findParentById(session.id);
+  if (!parent?.is_admin) redirect("/dashboard");
+
+  const displayName = session.email?.split("@")[0] || "Admin";
 
   return (
     <div className="relative min-h-screen flex">

@@ -25,7 +25,7 @@ Staff   ──► (admin) ─ agents telemetry, audit, curriculum, finance, esca
 | `(auth)` | Public | login, logout, signup (+ verify, verify-sent), verify |
 | `(dashboard)` | Parents | dashboard (children CRUD), onboarding (diagnostic), schedule, portfolio, tutoring, settings, compliance/cnis, lesson |
 | `(child)` | Children | learn, learn/lesson — distraction-free lesson UI |
-| `(admin)` | Staff | agents, audit, compliance, curriculum, escalations, experiments, finance, settings, tutors, users |
+| `(admin)` | Staff | agents, audit, compliance, curriculum, escalations, experiments, finance, settings, tutors, users. Gated by `ParentDoc.is_admin` in the group layout (granted manually in Atlas; middleware only checks "signed in") |
 
 ## Library Domains (`src/lib/`)
 
