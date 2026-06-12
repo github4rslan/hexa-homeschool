@@ -756,8 +756,12 @@ export function currentWeekStart(): string {
   const d = new Date();
   const day = (d.getDay() + 6) % 7; // 0 = Monday
   d.setDate(d.getDate() - day);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().slice(0, 10);
+  // Format from local date parts — toISOString() would shift the date back a
+  // day in timezones east of UTC (local Monday midnight = Sunday in UTC).
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
 }
 
 const SUBJECT_DISPLAY: Record<Subject, string> = {

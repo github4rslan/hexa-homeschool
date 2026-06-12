@@ -48,6 +48,7 @@ see [.env.example](.env.example) for the full list.
 | Command | Purpose |
 |---|---|
 | `npm run type-check` | TypeScript check (no emit) — primary verification |
+| `npm test` | Vitest unit tests (pure logic: safety matcher, exam engine, rate limit, billing maps, week math) — must pass before pushing |
 | `npm run build` | Production build — run before pushing |
 | `npm run lint` | ESLint |
 | `npm run seed` | Seed MongoDB — owns all collection indexes (live db) |
