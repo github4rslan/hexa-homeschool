@@ -4,6 +4,7 @@ import { CompliancePreview } from "@/components/marketing/compliance-preview";
 import { Card } from "@/components/ui/card";
 import { CTA } from "@/components/marketing/cta";
 import { Check, FileText } from "lucide-react";
+import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 
 export const metadata: Metadata = {
   title: "Compliance & data protection",
@@ -31,6 +32,7 @@ const DATA_RIGHTS = [
 export default function CompliancePage() {
   return (
     <>
+      <BreadcrumbJsonLd items={[{ name: "Compliance", path: "/compliance" }]} />
       <Section padded className="pt-16">
         <SectionHeader
           eyebrow="Trust & Compliance"

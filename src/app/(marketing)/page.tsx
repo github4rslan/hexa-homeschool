@@ -1,6 +1,5 @@
 import { Hero } from "@/components/marketing/hero";
 import { TrustBar } from "@/components/marketing/trust-bar";
-import { StructuredData } from "@/components/seo/structured-data";
 import { StatsStrip } from "@/components/marketing/stats-strip";
 import { Problem } from "@/components/marketing/problem";
 import { Solution } from "@/components/marketing/solution";
@@ -15,7 +14,6 @@ import { CTA } from "@/components/marketing/cta";
 export default function HomePage() {
   return (
     <>
-      <StructuredData />
       <Hero />
       <TrustBar />
       <StatsStrip />

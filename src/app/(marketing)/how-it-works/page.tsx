@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { JourneyTimeline } from "@/components/marketing/journey-timeline";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { CTA } from "@/components/marketing/cta";
+import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 
 export const metadata: Metadata = {
   title: "How HEXA works",
@@ -12,6 +13,7 @@ export const metadata: Metadata = {
 export default function HowItWorksPage() {
   return (
     <>
+      <BreadcrumbJsonLd items={[{ name: "How it works", path: "/how-it-works" }]} />
       <Section padded className="pt-16">
         <SectionHeader
           eyebrow="How it works"
