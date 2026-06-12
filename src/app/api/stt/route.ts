@@ -14,6 +14,7 @@ import {
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { rateLimit } from "@/lib/rate-limit";
+import { parentCanUseAi, AI_ENTITLEMENT_ERROR } from "@/lib/billing/entitlement";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -68,6 +69,14 @@ export async function POST(request: Request) {
       { error: "Audio exceeds maximum size." },
       { status: 413 },
     );
+  }
+
+  // Tier gate on the paid ElevenLabs call (no-op while billing is unconfigured).
+  // Note: the spoken-distress scan happens on the transcript, which only
+  // exists after this paid call — an unentitled account loses that scan, but
+  // its typed answers still pass /api/tutor's free distress gate.
+  if (!(await parentCanUseAi(parentId))) {
+    return NextResponse.json({ error: AI_ENTITLEMENT_ERROR }, { status: 403 });
   }
 
   const limited = rateLimit(

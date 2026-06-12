@@ -35,6 +35,17 @@ All routes are App Router route handlers under `src/app/api/`, `runtime = "nodej
 - **Responses** are `NextResponse.json({ ... })`; errors always carry an `error`
   string.
 
+## Entitlement (paid AI features)
+
+`/api/tutor`, `/api/tts` and `/api/stt` are tier-gated via
+`lib/billing/entitlement.ts` (`canUseAiFeatures`): while Stripe is **not**
+configured (`STRIPE_SECRET_KEY` unset) every signed-in account is entitled
+(pilot mode — there is no upgrade path to demand). Once billing is live, the
+free `diagnostic` tier gets 403, and paid tiers lose access on
+`canceled`/`paused` (`past_due` keeps a dunning grace window). The distress
+gate in `/api/tutor` runs **before** the entitlement check, so a distress
+message from an unpaid account still freezes and escalates.
+
 ## Rate limiting
 
 `/api/tutor`, `/api/tts` and `/api/stt` require a session and apply a per-user

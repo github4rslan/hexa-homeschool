@@ -9,6 +9,7 @@ import {
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { rateLimit } from "@/lib/rate-limit";
+import { parentCanUseAi, AI_ENTITLEMENT_ERROR } from "@/lib/billing/entitlement";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -86,6 +87,13 @@ export async function POST(request: Request) {
         { status: 200, headers: { "Cache-Control": "no-store" } },
       );
     }
+  }
+
+  // Entitlement AFTER the distress gate — a distress message from an unpaid
+  // account must still freeze and escalate (the gate above costs nothing);
+  // only the paid OpenAI explanation below is tier-gated.
+  if (!(await parentCanUseAi(parentId))) {
+    return NextResponse.json({ error: AI_ENTITLEMENT_ERROR }, { status: 403 });
   }
 
   // Rate limit AFTER the distress gate (a distress message must never be
