@@ -251,6 +251,28 @@ export function weeklyPlanTemplate(opts: {
   };
 }
 
+export function escalationAlertTemplate(opts: {
+  parentName: string | null;
+  childFirstName: string;
+  severity: string;
+  dashboardUrl: string;
+  settingsUrl: string;
+}): { subject: string; html: string } {
+  const greeting = opts.parentName
+    ? `Hi ${opts.parentName.split(" ")[0]},`
+    : "Hello,";
+  return {
+    subject: `${opts.childFirstName} could use a check-in`,
+    html: WRAP(`
+      ${heading(greeting)}
+      <p style="margin:0 0 16px;">During today&rsquo;s lesson, something ${opts.childFirstName} wrote suggested they were finding things hard, so we gently paused the session. This is a precaution — our safety check prefers to pause too often rather than miss a moment that matters.</p>
+      <p style="margin:0 0 22px;">A calm break and a quick chat is usually all that&rsquo;s needed. The details are waiting in your dashboard (severity: ${opts.severity}) — we don&rsquo;t include them in email.</p>
+      <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.dashboardUrl, "Review in my dashboard")}</p>
+      <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">You can manage these alerts in <a href="${opts.settingsUrl}" style="color:${COLORS.clayDeep};">Settings &rarr; Email preferences</a>. Account and safety emails inside the dashboard are always available regardless.</p>
+    `),
+  };
+}
+
 export function portfolioShareTemplate(opts: {
   childName: string;
   term: string;

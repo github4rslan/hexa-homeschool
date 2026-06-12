@@ -42,12 +42,27 @@ child-scoped query). Treat any code path that touches child collections outside
   that AI output served to children passed validation
 - Dossiers carry a verification hash and generation timestamp
 
+## Data Rights (UK GDPR)
+
+- **Right of access / portability**: Settings → Data & privacy → "Download
+  export" (`GET /api/account/export`) returns the family's documents as JSON,
+  parent-scoped in the repo layer, with password/PIN hashes stripped.
+- **Right to erasure**: Settings → Data & privacy → "Delete account"
+  (type-to-confirm). `repo.deleteFamilyData` cascades children, evaluations,
+  lesson logs, competence, check-ins, dossiers, schedules, escalations, media
+  registry rows and tutor bookings, cancels any active Stripe subscription,
+  then removes the parent account last (a partial failure can never orphan
+  child data behind a deleted login). Verified end-to-end against a throwaway
+  family. Note: Cloudinary binaries referenced by deleted media registry rows
+  are not yet purged from Cloudinary itself — see Open Items.
+
 ## Open Items Before Live Children's Data
 
 1. **Confirm Atlas cluster region** meets UK data-residency requirements
    (deliberate, owner-approved choice to use MongoDB — but region must be verified)
 2. **Auth + rate limiting on `/api/tutor` and `/api/tts`** (currently open)
-3. Data retention / deletion policy (right to erasure) — no automated deletion
-   flow exists yet
+3. ~~Right to erasure — no automated deletion flow~~ — self-serve deletion +
+   export shipped (see Data Rights). Remaining: purge Cloudinary-hosted
+   binaries on account deletion; written retention schedule for logs.
 4. Privacy policy and cookies pages exist in `(marketing)` — keep them in sync
    with actual processing (Cloudinary, Brevo, OpenAI, ElevenLabs as processors)

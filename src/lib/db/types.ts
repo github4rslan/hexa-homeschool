@@ -23,6 +23,14 @@ export interface ParentDoc {
    * granted manually in Atlas. Undefined/false = regular parent.
    */
   is_admin?: boolean;
+  /**
+   * Session invalidation counter. Sessions carry it as `tv`; bumping it
+   * ("sign out everywhere", password change) rejects all older sessions.
+   * Undefined = 0.
+   */
+  token_version?: number;
+  /** Escalation alert email opt-out. Undefined/false = receives alerts. */
+  escalation_alert_opt_out?: boolean;
   /** Bcrypt hash of the 4-digit parent gate PIN used to exit child mode. */
   parent_pin_hash?: string | null;
   subscription_tier: "diagnostic" | "standard" | "family";

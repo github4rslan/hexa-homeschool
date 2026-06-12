@@ -83,10 +83,32 @@ export async function markEmailVerified(parentId: string): Promise<boolean> {
   return true;
 }
 
-/** The signed-in parent's id, or null. Replaces Supabase getUser()+ensureParentId. */
+/**
+ * The signed-in parent's id, or null. Replaces Supabase getUser()+ensureParentId.
+ * Also enforces session invalidation: a token whose `tv` no longer matches the
+ * parent's token_version (bumped by "sign out everywhere" / password change)
+ * is treated as signed out, at the cost of one indexed point-read per request.
+ */
 export async function currentParentId(): Promise<string | null> {
   const session = await getSession();
-  return session?.id ?? null;
+  if (!session) return null;
+  const parent = await findParentById(session.id);
+  if (!parent) return null;
+  if ((session.tokenVersion ?? 0) !== (parent.token_version ?? 0)) return null;
+  return session.id;
+}
+
+/** Bump token_version (kills every existing session); returns the new version. */
+export async function bumpTokenVersion(parentId: string): Promise<number | null> {
+  const oid = toObjectId(parentId);
+  if (!oid) return null;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.findOneAndUpdate(
+    { _id: oid },
+    { $inc: { token_version: 1 }, $set: { updated_at: new Date() } },
+    { returnDocument: "after" },
+  );
+  return res ? (res.token_version ?? 0) : null;
 }
 
 // ── Parents: billing (Stripe) ────────────────────────────
@@ -1123,6 +1145,129 @@ export async function openEscalations(
     .sort({ created_at: -1 })
     .limit(10)
     .toArray();
+}
+
+export async function setEscalationAlertOptOut(
+  parentId: string,
+  optOut: boolean,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  await col.updateOne(
+    { _id: oid },
+    { $set: { escalation_alert_opt_out: optOut, updated_at: new Date() } },
+  );
+  return true;
+}
+
+// ── Data rights: export + erasure (UK GDPR) ──────────────
+
+/** Child-scoped collections cascaded on export/erasure. */
+const CHILD_SCOPED_COLLECTIONS = [
+  Collections.evaluations,
+  Collections.lessonLogs,
+  Collections.competence,
+  Collections.checkins,
+  Collections.dossiers,
+  Collections.schedules,
+  Collections.escalations,
+  Collections.media,
+] as const;
+
+/**
+ * Full export of the family's data for the signed-in parent (GDPR access
+ * right). Everything is keyed off parentId → owned child ids, so the silo
+ * holds by construction. Secrets (password/PIN hashes) are stripped.
+ */
+export async function exportFamilyData(
+  parentId: string,
+): Promise<Record<string, unknown> | null> {
+  const parent = await findParentById(parentId);
+  if (!parent?._id) return null;
+
+  const children = await listChildren(parentId);
+  const childIds = children.map((c) => c._id!).filter(Boolean);
+  const byChild: Record<string, unknown[]> = {};
+  for (const name of CHILD_SCOPED_COLLECTIONS) {
+    const col = await getCollection(name);
+    byChild[name] =
+      childIds.length === 0
+        ? []
+        : await col.find({ child_id: { $in: childIds } }).toArray();
+  }
+
+  const bookingsCol = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
+  const bookings = await bookingsCol.find({ parent_id: parent._id }).toArray();
+
+  const {
+    password_hash: _password,
+    parent_pin_hash: _pin,
+    ...safeParent
+  } = parent as ParentDoc & { parent_pin_hash?: string };
+  void _password;
+  void _pin;
+
+  return {
+    exported_at: new Date().toISOString(),
+    format: "hexa-family-export/v1",
+    parent: safeParent,
+    children,
+    tutor_bookings: bookings,
+    ...byChild,
+  };
+}
+
+/**
+ * Right to erasure: delete the parent and EVERYTHING owned by them.
+ * Highest-risk function in the codebase — every delete is keyed to this
+ * parent's _id or their children's ids; nothing here can touch another
+ * family. Returns per-collection deletion counts for the audit trail.
+ */
+export async function deleteFamilyData(
+  parentId: string,
+): Promise<Record<string, number> | null> {
+  const parentOid = toObjectId(parentId);
+  if (!parentOid) return null;
+  const parent = await findParentById(parentId);
+  if (!parent?._id) return null;
+
+  const children = await listChildren(parentId);
+  const childIds = children.map((c) => c._id!).filter(Boolean);
+  const deleted: Record<string, number> = {};
+
+  for (const name of CHILD_SCOPED_COLLECTIONS) {
+    const col = await getCollection(name);
+    if (childIds.length === 0) {
+      deleted[name] = 0;
+      continue;
+    }
+    const res = await col.deleteMany({ child_id: { $in: childIds } });
+    deleted[name] = res.deletedCount;
+  }
+
+  // Parent-scoped rows: tutor bookings, media uploaded by the parent.
+  const bookingsCol = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
+  deleted[Collections.tutorBookings] = (
+    await bookingsCol.deleteMany({ parent_id: parentOid })
+  ).deletedCount;
+  const mediaCol = await getCollection<MediaDoc>(Collections.media);
+  deleted[`${Collections.media}_owned`] = (
+    await mediaCol.deleteMany({ owner_id: parentOid })
+  ).deletedCount;
+
+  // Children, then the parent account itself — last, so a partial failure
+  // above never leaves orphaned child data behind a deleted login.
+  const childCol = await getCollection<ChildDoc>(Collections.children);
+  deleted[Collections.children] = (
+    await childCol.deleteMany({ parent_id: parentOid })
+  ).deletedCount;
+  const parentCol = await getCollection<ParentDoc>(Collections.parents);
+  deleted[Collections.parents] = (
+    await parentCol.deleteOne({ _id: parentOid })
+  ).deletedCount;
+
+  return deleted;
 }
 
 function escapeRegex(s: string): string {
