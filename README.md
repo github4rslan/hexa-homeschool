@@ -24,9 +24,14 @@ they're ever shown, plus optional voice narration.
 
 This project is **deployed automatically via GitHub → Vercel**: every push to the
 GitHub repository triggers a production deploy. The app is not run locally —
-verify changes with `npm run type-check` and `npm run build` before pushing.
-Environment variables are configured in the Vercel dashboard (see
+verify changes with `npm run type-check`, `npm test` and `npm run build` before
+pushing. Environment variables are configured in the Vercel dashboard (see
 [.env.example](.env.example) for the full list).
+
+**CI must be green.** GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml))
+runs type-check, lint, unit tests and a production build on every push and PR to
+`main`. The Vercel deploy is the release — a red CI run means the deploy that
+just went out was built from broken code and needs an immediate fix or revert.
 
 ## Setup Reference
 
