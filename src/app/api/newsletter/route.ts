@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCollection, Collections } from "@/lib/mongodb";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,6 +15,20 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** Public newsletter signup. Idempotent on email (unique index). */
 export async function POST(request: Request) {
+  // Public + unauthenticated, so key the limit on the caller's IP.
+  const ip =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const limited = await rateLimit(`newsletter:${ip}`, 5, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please wait a moment and try again." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSeconds) },
+      },
+    );
+  }
+
   let body: { email?: unknown; source?: unknown };
   try {
     body = (await request.json()) as { email?: unknown; source?: unknown };

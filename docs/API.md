@@ -50,10 +50,14 @@ message from an unpaid account still freezes and escalates.
 ## Rate limiting
 
 `/api/tutor`, `/api/tts` and `/api/stt` require a session and apply a per-user
-fixed-window limit via `lib/rate-limit.ts`. Over-limit requests get 429 with a
-`Retry-After` header. The limiter is in-memory per serverless instance — a first gate against
-credit-burning abuse, not a distributed guarantee. On `/api/tutor` the limit is
-checked **after** the distress gate so a distress message is never blocked.
+fixed-window limit via `lib/rate-limit.ts`; `/api/newsletter` applies a per-IP
+limit (5/min) since it is public. Over-limit requests get 429 with a
+`Retry-After` header. When `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
+are set, limits are enforced in Upstash Redis and shared across all serverless
+instances; when unset (or if Upstash errors), the limiter falls back to the
+original in-memory per-instance buckets — degraded scope, never a crash. On
+`/api/tutor` the limit is checked **after** the distress gate so a distress
+message is never blocked.
 
 ## Billing flow (Stripe)
 
@@ -73,5 +77,5 @@ Stripe ─► POST /api/billing/webhook ─► repo.updateParentBilling…  (tie
 
 ## Known Gaps (fix before public launch)
 
-1. `/api/newsletter` has no rate limit and can be used to spam the subscribers
-   collection (writes are idempotent per email, but unbounded).
+1. ~~`/api/newsletter` has no rate limit~~ — closed: 5/min per IP via
+   `lib/rate-limit.ts`.
