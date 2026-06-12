@@ -89,6 +89,18 @@ Layered bug-catching for a push-to-production setup with no staging:
    degrade gracefully). Since a push to `main` *is* the production deploy,
    CI is the record of whether that deploy was built from green code.
 
+3. **Sentry (`@sentry/nextjs`)** — runtime error capture for what slips into
+   production. Configs: `src/instrumentation.ts` (server/edge),
+   `src/instrumentation-client.ts`, shared scrubber in
+   `lib/monitoring/sentry-shared.ts`. Unset `NEXT_PUBLIC_SENTRY_DSN` /
+   `SENTRY_DSN` = fully disabled. **Privacy invariant (children's platform):**
+   `sendDefaultPii: false`, the shared `beforeSend` strips user identity,
+   cookies, headers, bodies, query strings and breadcrumb data; no tracing, no
+   session replay. Events carry stack traces + route names, tagged
+   `route_group` (marketing/auth/dashboard/child/admin/api) so child-facing
+   errors are triaged first. Every runtime config must keep using the shared
+   scrubber.
+
 ## Supabase Migration (historical)
 
 The project began on Supabase (Postgres + RLS + Supabase Auth) and was fully
