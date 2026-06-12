@@ -9,6 +9,7 @@ import {
 } from "@/lib/ai/config";
 import { currentParentId, findMediaByHash, recordMedia } from "@/lib/db/repo";
 import { rateLimit } from "@/lib/rate-limit";
+import { parentCanUseAi, AI_ENTITLEMENT_ERROR } from "@/lib/billing/entitlement";
 import {
   uploadBytes,
   getCloudinaryConfig,
@@ -68,6 +69,11 @@ export async function POST(request: Request) {
       { error: `Text exceeds ${MAX_TTS_CHARS} characters.` },
       { status: 413 },
     );
+  }
+
+  // Tier gate on the paid ElevenLabs call (no-op while billing is unconfigured).
+  if (!(await parentCanUseAi(parentId))) {
+    return NextResponse.json({ error: AI_ENTITLEMENT_ERROR }, { status: 403 });
   }
 
   const limited = rateLimit(
