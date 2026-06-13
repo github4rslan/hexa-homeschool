@@ -199,6 +199,22 @@ export default async function SettingsPage({
                   </span>
                 </span>
               </label>
+              <label className="flex items-start gap-3 text-sm text-fog-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="onboarding_emails"
+                  defaultChecked={!parent.marketing_emails_opt_out}
+                  className="mt-0.5 rounded border-white/10 bg-white/5"
+                />
+                <span>
+                  Onboarding tips
+                  <span className="block text-xs text-fog-500 mt-0.5">
+                    A few helpful emails as you get started — a nudge to run the
+                    diagnostic, and a note when your first weekly plan is
+                    approved. Account and safety emails always come through.
+                  </span>
+                </span>
+              </label>
               <SubmitButton variant="secondary" size="md" className="self-start" pendingLabel="Saving…">
                 Save preferences
               </SubmitButton>

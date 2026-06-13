@@ -11,6 +11,7 @@ import {
   setWeeklyDigestOptOut,
   setWeeklyPlanEmailOptOut,
   setEscalationAlertOptOut,
+  setMarketingEmailsOptOut,
   setTwoFactorEnabled,
   bumpTokenVersion,
   deleteFamilyData,
@@ -43,9 +44,11 @@ export async function updateEmailPreferences(formData: FormData) {
   const digestOn = formData.get("weekly_digest") === "on";
   const planOn = formData.get("weekly_plan_email") === "on";
   const alertsOn = formData.get("escalation_alerts") === "on";
+  const onboardingOn = formData.get("onboarding_emails") === "on";
   await setWeeklyDigestOptOut(parentId, !digestOn);
   await setWeeklyPlanEmailOptOut(parentId, !planOn);
   await setEscalationAlertOptOut(parentId, !alertsOn);
+  await setMarketingEmailsOptOut(parentId, !onboardingOn);
   revalidatePath("/settings");
   redirect("/settings?saved=1");
 }

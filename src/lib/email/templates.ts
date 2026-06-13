@@ -144,6 +144,71 @@ export function verifyEmailTemplate(opts: {
   };
 }
 
+// ── Lifecycle (onboarding) emails ────────────────────────
+
+export function welcomeTemplate(opts: {
+  name: string | null;
+  dashboardUrl: string;
+}): { subject: string; html: string } {
+  const greeting = opts.name ? `Welcome, ${opts.name.split(" ")[0]}.` : "Welcome to HEXA.";
+  return {
+    subject: "Welcome to HEXA — here's how to begin",
+    html: WRAP(`
+      ${heading(greeting)}
+      <p style="margin:0 0 18px;">Your account is ready. HEXA helps you teach with confidence, prove progress with evidence, and let your child sit exams only when they&rsquo;re truly ready.</p>
+      <p style="margin:0 0 10px;font-weight:600;color:${COLORS.forestDeep};">Your first three steps:</p>
+      <ol style="margin:0 0 22px;padding-left:20px;color:${COLORS.ink};">
+        <li style="margin-bottom:6px;">Add your child&rsquo;s profile.</li>
+        <li style="margin-bottom:6px;">Run the free diagnostic — about 10 minutes to find their real starting point.</li>
+        <li>Review the first weekly plan and approve it. Nothing is forced.</li>
+      </ol>
+      <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.dashboardUrl, "Go to my dashboard")}</p>
+      <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">We&rsquo;re here if you need anything — just reply to this email.</p>
+    `),
+  };
+}
+
+export function diagnosticNudgeTemplate(opts: {
+  name: string | null;
+  childName: string;
+  diagnosticUrl: string;
+  settingsUrl: string;
+}): { subject: string; html: string } {
+  const greeting = opts.name ? `Hi ${opts.name.split(" ")[0]},` : "Hi there,";
+  return {
+    subject: `10 minutes to ${opts.childName}'s starting point`,
+    html: WRAP(`
+      ${heading(greeting)}
+      <p style="margin:0 0 18px;">You&rsquo;ve added ${opts.childName} to HEXA — the next step is the diagnostic. It takes about 10 minutes and finds exactly where ${opts.childName} is in Maths, English and Science, so every lesson after starts at the right level.</p>
+      <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.diagnosticUrl, "Start the diagnostic")}</p>
+      <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">Prefer not to get onboarding emails? <a href="${opts.settingsUrl}" style="color:${COLORS.clayDeep};">Turn them off in Settings</a>. Account and safety emails will still reach you.</p>
+    `),
+  };
+}
+
+export function firstPlanTemplate(opts: {
+  name: string | null;
+  childName: string;
+  learnUrl: string;
+  settingsUrl: string;
+}): { subject: string; html: string } {
+  const greeting = opts.name ? `Nice work, ${opts.name.split(" ")[0]}.` : "Nice work.";
+  return {
+    subject: `${opts.childName}'s first week is approved 🎉`,
+    html: WRAP(`
+      ${heading(greeting)}
+      <p style="margin:0 0 18px;">You&rsquo;ve approved ${opts.childName}&rsquo;s first weekly plan. Here&rsquo;s what happens next:</p>
+      <ul style="margin:0 0 22px;padding-left:20px;color:${COLORS.ink};">
+        <li style="margin-bottom:6px;">${opts.childName} works through daily lessons in child mode — calm, paced, encouraging.</li>
+        <li style="margin-bottom:6px;">HEXA tracks every step and certifies topics as they&rsquo;re mastered.</li>
+        <li>You&rsquo;ll get a weekly digest, and a Local Authority-ready portfolio builds itself as you go.</li>
+      </ul>
+      <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.learnUrl, "Open child mode")}</p>
+      <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">Prefer not to get onboarding emails? <a href="${opts.settingsUrl}" style="color:${COLORS.clayDeep};">Turn them off in Settings</a>.</p>
+    `),
+  };
+}
+
 /** Kept structurally identical to repo.ts → ChildWeekSummary (no server-only import here). */
 export interface DigestChild {
   childName: string;
