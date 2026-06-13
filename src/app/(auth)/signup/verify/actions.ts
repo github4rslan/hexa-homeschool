@@ -10,7 +10,9 @@ import {
   createCodeToken,
   verifyCodeToken,
 } from "@/lib/email/verification";
-import { verifyCodeTemplate } from "@/lib/email/templates";
+import { verifyCodeTemplate, welcomeTemplate } from "@/lib/email/templates";
+import { sendLifecycleEmail } from "@/lib/email/lifecycle";
+import { appUrl } from "@/lib/email/verification";
 import { captureServer } from "@/lib/analytics/server";
 import { CODE_COOKIE } from "../verify-cookie";
 
@@ -39,6 +41,13 @@ export async function verifyCode(formData: FormData) {
   captureServer(parentId!, "signup_completed", { verification: "code" });
   jar.delete(CODE_COOKIE);
   const verified = await findParentById(parentId!);
+  await sendLifecycleEmail(parentId!, "welcome", () => {
+    const tmpl = welcomeTemplate({
+      name: verified?.full_name ?? null,
+      dashboardUrl: `${appUrl()}/dashboard`,
+    });
+    return { to: email, subject: tmpl.subject, html: tmpl.html };
+  });
   await createSession({
     id: parentId!,
     email,

@@ -19,6 +19,18 @@ export interface ParentDoc {
   /** Weekly plan email opt-out. Undefined/false = receives the plan email. */
   weekly_plan_email_opt_out?: boolean;
   /**
+   * Lifecycle/marketing email opt-out (welcome is transactional and ignores
+   * this; the diagnostic nudge and first-plan celebration respect it).
+   * Undefined/false = receives lifecycle emails.
+   */
+  marketing_emails_opt_out?: boolean;
+  /**
+   * Lifecycle emails already sent to this parent (by key, e.g. "welcome",
+   * "diagnostic_nudge", "first_plan"). Append-only; guarantees each lifecycle
+   * email is sent at most once.
+   */
+  lifecycle_emails_sent?: string[];
+  /**
    * Staff flag gating the (admin) routes. No self-serve path sets this —
    * granted manually in Atlas. Undefined/false = regular parent.
    */

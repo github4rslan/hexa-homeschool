@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
-import { verifyVerificationToken } from "@/lib/email/verification";
+import { verifyVerificationToken, appUrl } from "@/lib/email/verification";
 import { markEmailVerified, findParentById } from "@/lib/db/repo";
 import { createSession } from "@/lib/auth/session";
+import { sendLifecycleEmail } from "@/lib/email/lifecycle";
+import { welcomeTemplate } from "@/lib/email/templates";
 import { captureServer } from "@/lib/analytics/server";
 
 export const runtime = "nodejs";
@@ -23,6 +25,13 @@ export async function GET(request: Request) {
   captureServer(parentId, "signup_completed", { verification: "link" });
   const parent = await findParentById(parentId);
   if (parent?._id) {
+    await sendLifecycleEmail(parentId, "welcome", () => {
+      const tmpl = welcomeTemplate({
+        name: parent.full_name,
+        dashboardUrl: `${appUrl()}/dashboard`,
+      });
+      return { to: parent.email, subject: tmpl.subject, html: tmpl.html };
+    });
     await createSession({
       id: parent._id.toHexString(),
       email: parent.email,

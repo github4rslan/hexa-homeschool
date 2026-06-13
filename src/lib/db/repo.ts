@@ -1193,6 +1193,106 @@ export async function setEscalationAlertOptOut(
   return true;
 }
 
+export async function setMarketingEmailsOptOut(
+  parentId: string,
+  optOut: boolean,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  await col.updateOne(
+    { _id: oid },
+    { $set: { marketing_emails_opt_out: optOut, updated_at: new Date() } },
+  );
+  return true;
+}
+
+// ── Lifecycle (onboarding) emails ────────────────────────
+
+/**
+ * Atomically claim a lifecycle email for a parent so it's sent at most once,
+ * even if a cron run overlaps itself. Returns true only if THIS call added the
+ * key (i.e. the caller now owns the send); false if it was already sent.
+ */
+export async function claimLifecycleEmail(
+  parentId: string,
+  key: string,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne(
+    { _id: oid, lifecycle_emails_sent: { $ne: key } },
+    {
+      $addToSet: { lifecycle_emails_sent: key },
+      $set: { updated_at: new Date() },
+    },
+  );
+  return res.modifiedCount > 0;
+}
+
+/** Release a claimed lifecycle key (used to roll back if the send fails). */
+export async function releaseLifecycleEmail(
+  parentId: string,
+  key: string,
+): Promise<void> {
+  const oid = toObjectId(parentId);
+  if (!oid) return;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  await col.updateOne(
+    { _id: oid },
+    { $pull: { lifecycle_emails_sent: key } },
+  );
+}
+
+export interface NudgeCandidate {
+  parent: ParentDoc;
+  firstChildName: string;
+}
+
+/**
+ * Parents eligible for the day-2 diagnostic nudge: verified, not opted out of
+ * lifecycle email, account at least `minAgeMs` old, not already nudged, who
+ * have added a child but have NO diagnostic evaluation recorded for any child.
+ * Returns the first child's name for personalisation.
+ */
+export async function findDiagnosticNudgeCandidates(
+  minAgeMs: number,
+): Promise<NudgeCandidate[]> {
+  const parentCol = await getCollection<ParentDoc>(Collections.parents);
+  const childCol = await getCollection<ChildDoc>(Collections.children);
+  const evalCol = await getCollection<EvaluationDoc>(Collections.evaluations);
+
+  const cutoff = new Date(Date.now() - minAgeMs);
+  const parents = await parentCol
+    .find({
+      email_verified: { $ne: false },
+      marketing_emails_opt_out: { $ne: true },
+      lifecycle_emails_sent: { $ne: "diagnostic_nudge" },
+      created_at: { $lte: cutoff },
+    })
+    .toArray();
+
+  const candidates: NudgeCandidate[] = [];
+  for (const parent of parents) {
+    if (!parent._id) continue;
+    const children = await childCol
+      .find({ parent_id: parent._id })
+      .sort({ created_at: 1 })
+      .toArray();
+    if (children.length === 0) continue; // nudge needs a child to talk about
+
+    const childIds = children.map((c) => c._id!).filter(Boolean);
+    const hasDiagnostic = await evalCol.countDocuments({
+      child_id: { $in: childIds },
+    });
+    if (hasDiagnostic > 0) continue; // already past this step
+
+    candidates.push({ parent, firstChildName: children[0].full_name });
+  }
+  return candidates;
+}
+
 // ── Data rights: export + erasure (UK GDPR) ──────────────
 
 /** Child-scoped collections cascaded on export/erasure. */
