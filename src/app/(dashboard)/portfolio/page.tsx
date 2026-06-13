@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { FileText } from "lucide-react";
 import { PortfolioGenerator } from "@/components/compliance/portfolio-generator";
 import { BackButton } from "@/components/ui/back-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
+import { currentParentId, listChildren } from "@/lib/db/repo";
 
 export const metadata: Metadata = {
   title: "Compliance portfolio",
@@ -9,7 +12,12 @@ export const metadata: Metadata = {
     "Generate a verified, tamper-evident Local Authority portfolio with an SHA-256 verification hash.",
 };
 
-export default function PortfolioPage() {
+export const dynamic = "force-dynamic";
+
+export default async function PortfolioPage() {
+  const parentId = await currentParentId();
+  const children = parentId ? await listChildren(parentId) : [];
+
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 bg-void -z-20" />
@@ -33,6 +41,34 @@ export default function PortfolioPage() {
           />
         </div>
         <PortfolioGenerator />
+
+        {children.length > 0 && (
+          <div className="mx-auto mt-8 max-w-3xl print:hidden">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+              <div className="mb-3 flex items-center gap-2">
+                <FileText className="h-4 w-4 text-violet-300" />
+                <h2 className="text-sm font-semibold text-fog-50">
+                  Monthly progress reports
+                </h2>
+              </div>
+              <p className="mb-4 text-sm text-fog-400">
+                A printable month-by-month summary for each child — additional
+                local-authority evidence alongside the verified portfolio.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {children.map((c) => (
+                  <Link
+                    key={c._id?.toHexString()}
+                    href={`/dashboard/children/${c._id?.toHexString()}/report`}
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-white/10 bg-white/[0.04] px-4 text-sm text-fog-100 hover:border-white/25 hover:bg-white/[0.06]"
+                  >
+                    {c.full_name}&apos;s report
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
