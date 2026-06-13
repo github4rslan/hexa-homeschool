@@ -33,6 +33,12 @@ export interface ParentDoc {
   escalation_alert_opt_out?: boolean;
   /** Bcrypt hash of the 4-digit parent gate PIN used to exit child mode. */
   parent_pin_hash?: string | null;
+  /**
+   * Email two-factor sign-in (opt-in). When true and Brevo is configured,
+   * login requires a 6-digit emailed code after the password.
+   * Undefined/false = password only.
+   */
+  two_factor_enabled?: boolean;
   subscription_tier: "diagnostic" | "standard" | "family";
   billing_status: "trialing" | "active" | "past_due" | "canceled" | "paused";
   /** Stripe linkage — absent until the parent first goes through Checkout. */

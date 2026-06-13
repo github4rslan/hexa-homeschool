@@ -83,6 +83,91 @@ export async function verifyCodeToken(
   }
 }
 
+// ── Two-factor sign-in codes ─────────────────────────────────
+// Same stateless pattern as the signup codes, but a distinct purpose, a
+// 10-minute expiry, and an attempt counter signed into the token: each wrong
+// guess re-issues the token with `a` incremented (original expiry preserved),
+// and after MAX_TWO_FACTOR_ATTEMPTS the token is dead — the parent must sign
+// in again for a fresh code. Single use: the cookie is deleted on success.
+
+export const MAX_TWO_FACTOR_ATTEMPTS = 5;
+
+/** Signed token binding a parentId to a 2FA code hash; expires in 10 minutes. */
+export async function createTwoFactorToken(
+  parentId: string,
+  code: string,
+): Promise<string> {
+  return new SignJWT({ purpose: "twofa_code", h: hashCode(code, parentId), a: 0 })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(parentId)
+    .setIssuedAt()
+    .setExpirationTime("10m")
+    .sign(secret());
+}
+
+export type TwoFactorCheck =
+  | { status: "ok"; parentId: string }
+  /** Wrong code with attempts left — set `retryToken` as the new cookie. */
+  | { status: "bad_code"; parentId: string; remaining: number; retryToken: string }
+  /** Wrong code and the attempt budget is spent — require a fresh sign-in. */
+  | { status: "exhausted"; parentId: string }
+  /** Missing/garbled/expired token. */
+  | { status: "invalid" };
+
+export async function checkTwoFactorToken(
+  token: string,
+  code: string,
+): Promise<TwoFactorCheck> {
+  let payload;
+  try {
+    ({ payload } = await jwtVerify(token, secret()));
+  } catch {
+    return { status: "invalid" };
+  }
+  if (payload.purpose !== "twofa_code" || !payload.sub) return { status: "invalid" };
+  const expected = payload.h;
+  const attempts = typeof payload.a === "number" ? payload.a : 0;
+  if (typeof expected !== "string" || typeof payload.exp !== "number") {
+    return { status: "invalid" };
+  }
+
+  if (expected === hashCode(code.trim(), payload.sub)) {
+    return { status: "ok", parentId: payload.sub };
+  }
+
+  const nextAttempts = attempts + 1;
+  if (nextAttempts >= MAX_TWO_FACTOR_ATTEMPTS) {
+    return { status: "exhausted", parentId: payload.sub };
+  }
+  const retryToken = await new SignJWT({
+    purpose: "twofa_code",
+    h: expected,
+    a: nextAttempts,
+  })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(payload.sub)
+    .setIssuedAt()
+    .setExpirationTime(payload.exp) // keep the ORIGINAL 10-minute window
+    .sign(secret());
+  return {
+    status: "bad_code",
+    parentId: payload.sub,
+    remaining: MAX_TWO_FACTOR_ATTEMPTS - nextAttempts,
+    retryToken,
+  };
+}
+
+/** ParentId carried by a (possibly attempt-spent) 2FA token, for resends. */
+export async function readTwoFactorSubject(token: string): Promise<string | null> {
+  try {
+    const { payload } = await jwtVerify(token, secret());
+    if (payload.purpose !== "twofa_code" || !payload.sub) return null;
+    return payload.sub;
+  } catch {
+    return null;
+  }
+}
+
 export function appUrl(): string {
   return (
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
