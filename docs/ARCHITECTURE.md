@@ -51,7 +51,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 | Collection | Doc | Purpose |
 |---|---|---|
 | `parents` | ParentDoc | Account, password hash, subscription tier, billing status, Stripe customer/subscription ids (synced by `/api/billing/webhook` only), email prefs (`weekly_digest_opt_out`, `weekly_plan_email_opt_out`, `escalation_alert_opt_out`, `marketing_emails_opt_out` — toggles in `/settings`), `lifecycle_emails_sent` (idempotency keys for onboarding emails), `two_factor_enabled`, `is_admin` staff flag, `token_version` (session invalidation — "sign out everywhere" / password change) |
-| `children` | ChildDoc | Profile, DOB, SEND indicators, target exam window |
+| `children` | ChildDoc | Profile, DOB, SEND indicators, target exam window, child-chosen personalisation (`voice_id`, `accent`) |
 | `evaluation_records` | EvaluationDoc | Diagnostic/mock results, predicted grades |
 | `instructional_logs` | LessonLogDoc | Per-lesson logs (phase, attempts, hints, mastery) |
 | `competence_matrix` | CompetenceDoc | Topic state: locked → training → certified; optional spaced-repetition schedule (`next_review_at`, `review_interval_days`) |

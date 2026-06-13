@@ -1447,6 +1447,26 @@ export async function setParentPinHash(
   return res.matchedCount > 0;
 }
 
+/**
+ * Set a child's personalisation choices (narration voice + child-mode accent).
+ * Both optional; only provided fields are written. Ownership enforced — the
+ * child must belong to the parent. Validation of allowed values happens in the
+ * calling action.
+ */
+export async function setChildPreferences(
+  parentId: string,
+  childId: ObjectId,
+  prefs: { voiceId?: string | null; accent?: string | null },
+): Promise<boolean> {
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+  const set: Partial<ChildDoc> = { updated_at: new Date() };
+  if (prefs.voiceId !== undefined) set.voice_id = prefs.voiceId;
+  if (prefs.accent !== undefined) set.accent = prefs.accent;
+  const col = await getCollection<ChildDoc>(Collections.children);
+  const res = await col.updateOne({ _id: childId }, { $set: set });
+  return res.matchedCount > 0;
+}
+
 export async function setTwoFactorEnabled(
   parentId: string,
   enabled: boolean,

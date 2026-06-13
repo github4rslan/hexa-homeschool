@@ -27,6 +27,22 @@ export const ELEVENLABS_STT_MODEL = "scribe_v1";
 /** "Sarah — Mature, Reassuring, Confident": an age-appropriate teaching voice. */
 export const ELEVENLABS_DEFAULT_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
 
+/**
+ * Curated, age-appropriate teaching voices a child may pick in "My stuff".
+ * Kept short on purpose — choice without overwhelm. All are calm, clear and
+ * warm; none are babyish. The first entry is the default.
+ */
+export const CHILD_VOICES: { id: string; label: string; blurb: string }[] = [
+  { id: "EXAVITQu4vr4xnSDxMaL", label: "Sarah", blurb: "Calm and reassuring" },
+  { id: "pNInz6obpgDQGcFmaJgB", label: "Adam", blurb: "Warm and steady" },
+  { id: "ThT5KcBeYPX3keUQqHPh", label: "Dorothy", blurb: "Bright and friendly" },
+];
+
+/** Whether a voice id is one of the curated child voices (validation guard). */
+export function isCuratedVoice(id: string): boolean {
+  return CHILD_VOICES.some((v) => v.id === id);
+}
+
 export function getOpenAIKey(): string {
   const key = process.env.OPENAI_API_KEY;
   if (!key) {

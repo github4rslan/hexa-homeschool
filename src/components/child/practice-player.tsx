@@ -58,10 +58,13 @@ export function PracticePlayer({
   questions,
   curriculumTopic,
   lessonTitle,
+  voiceId,
 }: {
   questions: Question[];
   curriculumTopic: string;
   lessonTitle: string;
+  /** Child-chosen narration voice; falls back to the server default when unset. */
+  voiceId?: string | null;
 }) {
   const [step, setStep] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
@@ -296,7 +299,10 @@ export function PracticePlayer({
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: question.prompt }),
+        body: JSON.stringify({
+          text: question.prompt,
+          ...(voiceId ? { voiceId } : {}),
+        }),
       });
       if (!res.ok) return;
       const blob = await res.blob();
