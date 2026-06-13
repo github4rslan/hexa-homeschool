@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HexaLogo } from "@/components/ui/hexa-logo";
+import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 
 export default function AuthLayout({
   children,
@@ -22,6 +23,8 @@ export default function AuthLayout({
       <main className="flex min-h-screen items-center justify-center px-6 py-20">
         {children}
       </main>
+      {/* Parents-only analytics; never mounted in (child) routes. */}
+      <AnalyticsProvider />
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   updateParentBillingByCustomerId,
   type BillingUpdate,
 } from "@/lib/db/repo";
+import { captureServer } from "@/lib/analytics/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -123,6 +124,11 @@ export async function POST(request: Request) {
         const customerId = customerIdOf(session.customer);
         if (customerId) update.stripeCustomerId = customerId;
         await updateParentBillingById(parentId, update);
+        // checkout.session.completed fires once per checkout — the natural
+        // dedupe point for the funnel's "subscription active" moment.
+        captureServer(parentId, "subscription_active", {
+          tier: update.tier ?? session.metadata?.tier ?? "unknown",
+        });
         break;
       }
 

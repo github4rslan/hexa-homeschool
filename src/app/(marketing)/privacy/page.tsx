@@ -127,6 +127,9 @@ export default function PrivacyPage() {
         <li><strong>OpenAI:</strong> language model inference (no training on customer data).</li>
         <li><strong>ElevenLabs:</strong> voice synthesis (no training on customer data).</li>
         <li><strong>Vercel:</strong> application hosting.</li>
+        <li><strong>Stripe:</strong> subscription billing.</li>
+        <li><strong>Brevo:</strong> transactional and (opt-in) lifecycle email to parents.</li>
+        <li><strong>PostHog (EU cloud):</strong> opt-in product analytics for parents only &mdash; never used in the child experience, identifies by internal account id, no profiling or session recording.</li>
       </ul>
 
       <h2 id="contact">Contact</h2>

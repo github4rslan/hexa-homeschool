@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { currentParentId, findParentById } from "@/lib/db/repo";
+import { captureServer } from "@/lib/analytics/server";
 import {
   getStripe,
   priceIdForTier,
@@ -60,6 +61,7 @@ export async function GET(request: Request) {
     if (!session.url) {
       throw new Error("Stripe returned a checkout session without a URL.");
     }
+    captureServer(parentId, "checkout_started", { tier });
     return NextResponse.redirect(session.url, 303);
   } catch (err) {
     if (err instanceof BillingConfigError) {

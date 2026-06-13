@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Cookie, X } from "lucide-react";
 import Link from "next/link";
+import { CONSENT_EVENT } from "@/components/analytics/analytics-provider";
 
 const KEY = "hexa-cookie-consent-v1";
 
@@ -21,11 +22,13 @@ export function CookieBanner() {
 
   function accept() {
     localStorage.setItem(KEY, "accepted");
+    window.dispatchEvent(new Event(CONSENT_EVENT));
     setVisible(false);
   }
 
   function decline() {
     localStorage.setItem(KEY, "declined");
+    window.dispatchEvent(new Event(CONSENT_EVENT));
     setVisible(false);
   }
 
@@ -49,9 +52,9 @@ export function CookieBanner() {
                   We use minimal cookies
                 </h4>
                 <p className="text-xs text-fog-400 leading-relaxed">
-                  Only the cookies required to keep you signed in and the
-                  platform running. No advertising, no third-party trackers, no
-                  profiling.{" "}
+                  Cookies that keep you signed in, plus — only if you accept —
+                  privacy-respecting product analytics to improve HEXA for
+                  parents. No advertising, and children are never tracked.{" "}
                   <Link href="/cookies" className="text-violet-300 hover:text-violet-200 underline underline-offset-2">
                     Read more
                   </Link>

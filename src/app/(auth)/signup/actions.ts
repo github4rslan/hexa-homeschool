@@ -8,6 +8,7 @@ import { createSession } from "@/lib/auth/session";
 import { emailConfigured, sendEmail } from "@/lib/email/send";
 import { generateCode, createCodeToken } from "@/lib/email/verification";
 import { verifyCodeTemplate } from "@/lib/email/templates";
+import { captureServer } from "@/lib/analytics/server";
 import { CODE_COOKIE } from "./verify-cookie";
 
 export async function signup(formData: FormData) {
@@ -41,6 +42,7 @@ export async function signup(formData: FormData) {
   });
 
   if (autoVerify) {
+    captureServer(parentId, "signup_completed", { verification: "auto" });
     await createSession({ id: parentId, email });
     redirect("/onboarding");
   }
@@ -54,6 +56,7 @@ export async function signup(formData: FormData) {
   // for a code that will never arrive — verify them and sign them straight in.
   if (!res.ok) {
     await markEmailVerified(parentId);
+    captureServer(parentId, "signup_completed", { verification: "send-failed" });
     await createSession({ id: parentId, email });
     redirect("/onboarding");
   }

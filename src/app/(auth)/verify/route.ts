@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyVerificationToken } from "@/lib/email/verification";
 import { markEmailVerified, findParentById } from "@/lib/db/repo";
 import { createSession } from "@/lib/auth/session";
+import { captureServer } from "@/lib/analytics/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,6 +20,7 @@ export async function GET(request: Request) {
   }
 
   await markEmailVerified(parentId);
+  captureServer(parentId, "signup_completed", { verification: "link" });
   const parent = await findParentById(parentId);
   if (parent?._id) {
     await createSession({

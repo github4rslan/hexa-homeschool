@@ -5,8 +5,10 @@ import {
   getActiveChild,
   insertLessonLog,
   upsertCompetence,
+  familyLessonCount,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
+import { captureServer } from "@/lib/analytics/server";
 
 export interface LessonLogInput {
   topicTag: string;
@@ -55,6 +57,13 @@ export async function logLessonCompletion(
     mastery_score: Number(masteryPct.toFixed(2)),
   });
   if (!logged) return { persisted: false, reason: "Log write rejected." };
+
+  // Activation milestone: the family's FIRST completed lesson. Server-side,
+  // attributed to the parent account only — no child id, no lesson detail
+  // (Children's Code: children are never tracked or profiled).
+  if ((await familyLessonCount(parentId)) === 1) {
+    captureServer(parentId, "first_lesson_run");
+  }
 
   const state: "locked" | "training" | "certified" =
     masteryPct >= 100 ? "certified" : masteryPct >= 50 ? "training" : "locked";

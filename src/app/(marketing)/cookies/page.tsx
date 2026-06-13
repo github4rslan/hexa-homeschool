@@ -29,9 +29,18 @@ export default function CookiesPage() {
 
       <h3>Analytics (opt-in only)</h3>
       <p>
-        We use <strong>self-hosted Plausible Analytics</strong>, which is
-        cookieless and GDPR-friendly. No personal identifiers are recorded;
-        we cannot track you across sessions.
+        With your consent, we use <strong>PostHog</strong> (EU cloud) for
+        privacy-respecting product analytics, so we can see which parts of the
+        platform parents use and improve them. Analytics run only after you
+        choose &ldquo;Accept all&rdquo; in the cookie banner, identify you by an
+        internal account id only (never your name or email), and have
+        autocapture and session recording switched off.
+      </p>
+      <p>
+        <strong>Children are never tracked.</strong> Analytics are not loaded at
+        all in the child-facing learning experience &mdash; no events, no
+        profiling, no session recording, in line with the ICO Children&rsquo;s
+        Code.
       </p>
 
       <h2>What we don't do</h2>

@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signup } from "./actions";
+import { TrackOnMount } from "@/components/analytics/analytics-provider";
 
 export const metadata: Metadata = {
   title: "Create your HEXA account",
@@ -17,6 +18,7 @@ export default function SignupPage({
 }) {
   return (
     <Card variant="glass-strong" padding="xl" className="w-full max-w-md">
+      <TrackOnMount event="signup_started" />
       <div className="flex flex-col gap-2 mb-8">
         <h1 className="text-3xl font-semibold tracking-tight text-fog-50">
           Create your account

@@ -16,6 +16,21 @@ break a legal requirement.
 | Safeguarding (KCSIE-adjacent) | Detect and escalate child distress to a responsible adult | Escalation matrix → freeze session, log, notify parent (see [AI-AGENTS.md](AI-AGENTS.md)) |
 | Data residency | Children's data kept in-region | ⚠ Depends on MongoDB Atlas cluster region — see note in `lib/mongodb.ts` |
 
+## Processors
+
+External data processors and what they touch:
+
+| Processor | Purpose | Data | Children's data? |
+|---|---|---|---|
+| MongoDB Atlas | System of record | All | Yes (region-gated) |
+| Cloudinary | Media (images, lesson audio, work, PDFs) | Uploaded media | Yes |
+| Brevo | Transactional + lifecycle email | Parent email/name | No |
+| OpenAI | Teaching Agent + Checker | Lesson prompts/answers (transient) | Indirectly (no identity sent) |
+| ElevenLabs | TTS narration + STT transcription | Lesson text / spoken-answer audio (STT transient) | Indirectly (no identity sent) |
+| Stripe | Subscription billing | Parent billing details | No |
+| Sentry | Error tracking | Stack traces + route names only (PII-scrubbed) | No |
+| PostHog (EU cloud) | **Parents-only** product analytics | Parent Mongo id + funnel events | **No — never loaded in `(child)` routes; children are never tracked, profiled or session-recorded.** Consent-gated, autocapture off, session recording off. |
+
 ## Portfolio / Dossier System
 
 `POST /api/portfolio` generates a verified portfolio for a child + term:

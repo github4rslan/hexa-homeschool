@@ -8,6 +8,8 @@ import { withSentryConfig } from "@sentry/nextjs";
  * - api.cloudinary.com  — signed direct uploads from the browser (upload-button)
  * - res.cloudinary.com  — delivered images / uploaded work
  * - *.ingest.*.sentry.io — client error events (PII-scrubbed)
+ * - *.posthog.com / *.i.posthog.com — parents-only product analytics
+ *   (never loaded in (child) routes; harmless to allow when the key is unset)
  * Stripe needs nothing: checkout/portal are full-page server redirects, not
  * embedded JS. TTS audio is proxied through /api/tts and played from blob:
  * URLs. `'unsafe-inline'` script-src is required by Next.js hydration inline
@@ -21,7 +23,7 @@ const csp = [
   "img-src 'self' data: blob: https://res.cloudinary.com",
   "media-src 'self' blob: https://res.cloudinary.com",
   "font-src 'self' data:",
-  "connect-src 'self' https://api.cloudinary.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io",
+  "connect-src 'self' https://api.cloudinary.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://*.posthog.com https://*.i.posthog.com",
   "worker-src 'self' blob:",
   "frame-src 'none'",
   "frame-ancestors 'none'",
