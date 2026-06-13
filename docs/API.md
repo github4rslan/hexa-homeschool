@@ -20,6 +20,7 @@ All routes are App Router route handlers under `src/app/api/`, `runtime = "nodej
 | `/api/billing/webhook` | POST | Stripe signature | Event sink and **only writer** of `subscription_tier` / `billing_status` / Stripe ids. Handles `checkout.session.completed`, `customer.subscription.created/updated/deleted`. |
 | `/api/digest/weekly` | GET | Cron | Weekly parent progress digest (lessons completed, topics certified, escalation count per child). Requires `Authorization: Bearer $CRON_SECRET`; scheduled Mondays 07:00 UTC via `vercel.json`. Skips opted-out parents (`weekly_digest_opt_out`) and fully-quiet weeks. 503 when `CRON_SECRET` or `BREVO_API_KEY` is unset. |
 | `/api/account/export` | GET | Parent | UK GDPR data access: downloads the family's documents as JSON (parent-scoped in the repo layer; password/PIN hashes stripped). |
+| `/api/health` | GET | Public | Liveness + MongoDB readiness probe for an external uptime monitor. 200 `{ ok, db: "up" }` on a successful db ping, 503 on failure. No auth, no data exposure, rate-limited 60/min per IP. |
 
 ## Conventions
 
