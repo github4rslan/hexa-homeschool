@@ -300,6 +300,10 @@ export interface SubjectStanding {
   /** readiness 0–100 derived from raw_score, or null if not assessed. */
   readiness: number | null;
   grade: string | null;
+  /** True when the latest result for this subject came from a mock exam. */
+  fromMock: boolean;
+  /** When the latest result was recorded (for parent context), or null. */
+  assessedAt: Date | null;
 }
 
 /**
@@ -322,6 +326,8 @@ export async function latestEvaluationsBySubject(
         subject,
         readiness: typeof doc?.raw_score === "number" ? doc.raw_score : null,
         grade: doc?.model_predicted_grade ?? null,
+        fromMock: doc?.mock_exam === true,
+        assessedAt: doc?.created_at ?? null,
       };
     }),
   );
@@ -531,6 +537,109 @@ export async function childStreak(
     .project<{ timestamp_end: Date }>({ timestamp_end: 1 })
     .toArray();
   return computeStreak(logs.map((l) => new Date(l.timestamp_end).getTime()));
+}
+
+// ── Mock exams ───────────────────────────────────────────
+
+export interface MockQuestion {
+  questionId: string;
+  topicTag: string;
+  tier: number;
+  prompt: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+/**
+ * Build a mock-exam paper for a subject: up to `count` human-authored questions
+ * drawn across the child's training/certified topics in that subject, spread
+ * over difficulty tiers. If the child has little progress yet, falls back to the
+ * subject's questions generally so a mock is always runnable. Deterministic
+ * source content; never AI-authored.
+ */
+export async function buildMockPaper(
+  childId: ObjectId,
+  subject: Subject,
+  count = 10,
+): Promise<MockQuestion[]> {
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const qCol = await getCollection<QuestionDoc>(Collections.questions);
+
+  const subjectTopics = await topicsCol.find({ subject }).toArray();
+  const subjectTags = new Set(subjectTopics.map((t) => t.topic_tag));
+
+  const comps = await compCol
+    .find({
+      child_id: childId,
+      state: { $in: ["training", "certified"] },
+      topic_tag: { $in: [...subjectTags] },
+    })
+    .toArray();
+  const progressedTags = comps.map((c) => c.topic_tag);
+
+  const tagFilter =
+    progressedTags.length > 0 ? progressedTags : [...subjectTags];
+
+  const pool = await qCol
+    .find({
+      subject,
+      topic_tag: { $in: tagFilter },
+      kind: { $in: ["practice", "mastery"] },
+    })
+    .toArray();
+
+  // Spread by tier for a fair paper: sort by tier then take an even sample.
+  pool.sort((a, b) => a.tier - b.tier);
+  const picked: QuestionDoc[] = [];
+  if (pool.length <= count) {
+    picked.push(...pool);
+  } else {
+    const step = pool.length / count;
+    for (let i = 0; i < count; i++) picked.push(pool[Math.floor(i * step)]);
+  }
+
+  return picked
+    .filter((q) => q._id)
+    .map((q) => ({
+      questionId: q._id!.toHexString(),
+      topicTag: q.topic_tag,
+      tier: q.tier,
+      prompt: q.prompt,
+      options: q.options,
+      correctIndex: q.correct_index,
+      explanation: q.explanation,
+    }));
+}
+
+/**
+ * Persist a completed mock exam as an EvaluationDoc with mock_exam: true, so
+ * the exam-decision engine and parent trajectory see real assessment data.
+ * Ownership enforced. Returns false if the child isn't owned.
+ */
+export async function recordMockResult(
+  parentId: string,
+  childId: ObjectId,
+  input: {
+    subject: Subject;
+    scorePct: number;
+    estimatedTier: number;
+    indicativeGrade: string;
+  },
+): Promise<boolean> {
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+  const col = await getCollection<EvaluationDoc>(Collections.evaluations);
+  await col.insertOne({
+    child_id: childId,
+    subject: input.subject,
+    raw_score: input.scorePct,
+    model_predicted_grade: input.indicativeGrade,
+    confidence_interval: Math.min(0.99, Math.max(0.5, input.scorePct / 100)),
+    mock_exam: true,
+    created_at: new Date(),
+  } as EvaluationDoc);
+  return true;
 }
 
 // ── Spaced-repetition warm-up ────────────────────────────

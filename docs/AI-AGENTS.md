@@ -33,6 +33,15 @@ child answer ──► safety gate (checkDistress)            ◄── runs FIR
 Do not bypass the checker, lower the threshold, or serve raw completions in
 `(child)` routes.
 
+**Mock exams use AI only for post-exam explanations.** A mock paper is scored
+**deterministically** against the human-authored canonical answers
+(`lib/engine/mock-exam.ts`) — AI is never involved in producing a score or
+grade. After submission, explanations for wrong answers are fetched through the
+same `POST /api/tutor` pipeline above (distress gate → Teaching Agent →
+Checker), so they carry the identical safety guarantees; if the call is
+rate-limited, tier-gated, or unconfigured, the child sees the canonical
+human-authored explanation instead.
+
 ### Thresholds
 
 | Agent | Threshold | Constant |

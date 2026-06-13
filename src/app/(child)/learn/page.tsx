@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Map as MapIcon, Sparkles } from "lucide-react";
+import { Map as MapIcon, Sparkles, GraduationCap } from "lucide-react";
 import { EmojiCheckin } from "@/components/child/emoji-checkin";
 import { StreakFlame } from "@/components/child/streak-flame";
 import { QuestCards, type Quest } from "@/components/child/quest-cards";
@@ -121,13 +121,22 @@ export default async function LearnHubPage() {
 
       <QuestCards quests={quests} />
 
-      <Link
-        href="/learn/map"
-        className="child-touch child-panel mt-5 flex items-center justify-center gap-3 p-5 text-lg font-semibold text-fog-100 transition-all hover:scale-[1.01]"
-      >
-        <MapIcon className="h-6 w-6 text-fog-300" />
-        See my journey
-      </Link>
+      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        <Link
+          href="/learn/map"
+          className="child-touch child-panel flex items-center justify-center gap-3 p-5 text-lg font-semibold text-fog-100 transition-all hover:scale-[1.01]"
+        >
+          <MapIcon className="h-6 w-6 text-fog-300" />
+          See my journey
+        </Link>
+        <Link
+          href="/learn/mock"
+          className="child-touch child-panel flex items-center justify-center gap-3 p-5 text-lg font-semibold text-fog-100 transition-all hover:scale-[1.01]"
+        >
+          <GraduationCap className="h-6 w-6 text-fog-300" />
+          Try a mock exam
+        </Link>
+      </div>
 
       <p className="mt-8 text-center text-fog-500">
         Pick a quest to begin. You&apos;ve got this! 💪

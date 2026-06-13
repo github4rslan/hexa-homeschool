@@ -1,0 +1,337 @@
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { Timer, ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
+import { Celebration } from "@/components/fx/celebration";
+import { submitMock, type MockSubmitResult } from "@/app/(child)/learn/mock/actions";
+import type { MockQuestion } from "@/lib/db/repo";
+import type { Subject } from "@/lib/db/types";
+
+/**
+ * Timed mock-exam paper. Deterministically scored on submit; the timer is
+ * visible but calm (no red flash, no alarm) and when it runs out the paper
+ * submits gracefully mid-question. After results, AI explanations for WRONG
+ * answers are fetched through /api/tutor (Teaching Agent + Checker pipeline) —
+ * never for scoring. Reduced-motion respected throughout.
+ */
+
+interface AiExplanation {
+  loading: boolean;
+  text: string | null;
+}
+
+function fmt(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+export function MockExamPlayer({
+  subject,
+  subjectLabel,
+  questions,
+  durationSeconds,
+}: {
+  subject: Subject;
+  subjectLabel: string;
+  questions: MockQuestion[];
+  durationSeconds: number;
+}) {
+  const router = useRouter();
+  const reduce = useReducedMotion();
+
+  const [index, setIndex] = useState(0);
+  const [answers, setAnswers] = useState<(number | null)[]>(
+    () => questions.map(() => null),
+  );
+  const [submitted, setSubmitted] = useState(false);
+  const [result, setResult] = useState<MockSubmitResult | null>(null);
+  const [remaining, setRemaining] = useState(durationSeconds);
+  const [explanations, setExplanations] = useState<Record<number, AiExplanation>>({});
+  const submittingRef = useRef(false);
+
+  const q = questions[index];
+
+  const doSubmit = useCallback(async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitted(true);
+    const key = questions.map((qq, i) => ({
+      tier: qq.tier,
+      correct: answers[i] === qq.correctIndex,
+    }));
+    const res = await submitMock(subject, key);
+    setResult(res);
+  }, [answers, questions, subject]);
+
+  // Gentle countdown; auto-submits at zero.
+  useEffect(() => {
+    if (submitted) return;
+    if (remaining <= 0) {
+      void doSubmit();
+      return;
+    }
+    const t = setTimeout(() => setRemaining((r) => r - 1), 1000);
+    return () => clearTimeout(t);
+  }, [remaining, submitted, doSubmit]);
+
+  function pick(i: number) {
+    setAnswers((prev) => {
+      const next = [...prev];
+      next[index] = i;
+      return next;
+    });
+  }
+
+  const answeredCount = answers.filter((a) => a !== null).length;
+  const lowTime = remaining <= 60;
+
+  // ── Results screen ───────────────────────────────────────
+  if (submitted) {
+    if (!result) {
+      return (
+        <div className="py-16 text-center text-xl text-fog-300">
+          Marking your paper…
+        </div>
+      );
+    }
+    return (
+      <MockResults
+        subjectLabel={subjectLabel}
+        result={result}
+        questions={questions}
+        answers={answers}
+        explanations={explanations}
+        setExplanations={setExplanations}
+        onDone={() => router.push("/learn")}
+        reduce={!!reduce}
+      />
+    );
+  }
+
+  // ── Exam screen ──────────────────────────────────────────
+  return (
+    <div>
+      <div className="mb-6 flex items-center justify-between">
+        <span className="text-base font-medium text-fog-300">
+          {subjectLabel} mock · {index + 1} of {questions.length}
+        </span>
+        <span
+          className={[
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-base font-semibold tabular-nums transition-colors",
+            lowTime
+              ? "border-amber-400/40 bg-amber-500/10 text-amber-200"
+              : "border-white/10 bg-white/[0.04] text-fog-300",
+          ].join(" ")}
+          aria-live="off"
+        >
+          <Timer className="h-4 w-4" /> {fmt(remaining)}
+        </span>
+      </div>
+
+      <div className="mb-6 h-2 overflow-hidden rounded-full bg-white/5">
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-400 transition-all"
+          style={{ width: `${(answeredCount / questions.length) * 100}%` }}
+        />
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={q.questionId}
+          initial={reduce ? false : { opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={reduce ? undefined : { opacity: 0, x: -24 }}
+          transition={{ duration: 0.25 }}
+        >
+          <h2 className="mb-6 text-2xl font-semibold text-fog-50">{q.prompt}</h2>
+          <div className="grid gap-3">
+            {q.options.map((opt, i) => {
+              const chosen = answers[index] === i;
+              return (
+                <button
+                  key={i}
+                  onClick={() => pick(i)}
+                  className={[
+                    "child-touch rounded-2xl border p-5 text-left text-lg transition-colors",
+                    chosen
+                      ? "border-violet-400/60 bg-violet-500/15 text-violet-100"
+                      : "border-white/10 bg-white/[0.03] text-fog-100 hover:border-white/25 hover:bg-white/[0.06]",
+                  ].join(" ")}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      <div className="mt-8 flex items-center justify-between">
+        <button
+          onClick={() => setIndex((n) => Math.max(0, n - 1))}
+          disabled={index === 0}
+          className="child-touch inline-flex items-center gap-2 rounded-2xl border border-white/10 px-5 py-3 text-base text-fog-200 disabled:opacity-40"
+        >
+          <ArrowLeft className="h-5 w-5" /> Back
+        </button>
+
+        {index < questions.length - 1 ? (
+          <button
+            onClick={() => setIndex((n) => Math.min(questions.length - 1, n + 1))}
+            className="child-touch inline-flex items-center gap-2 rounded-2xl bg-white/10 px-6 py-3 text-base font-semibold text-fog-50"
+          >
+            Next <ArrowRight className="h-5 w-5" />
+          </button>
+        ) : (
+          <button
+            onClick={() => void doSubmit()}
+            className="child-touch inline-flex items-center gap-2 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 px-7 py-3 text-base font-semibold text-white"
+          >
+            Finish paper <Check className="h-5 w-5" />
+          </button>
+        )}
+      </div>
+
+      <p className="mt-6 text-center text-sm text-fog-500">
+        You can go back and change answers any time before you finish.
+      </p>
+    </div>
+  );
+}
+
+function MockResults({
+  subjectLabel,
+  result,
+  questions,
+  answers,
+  explanations,
+  setExplanations,
+  onDone,
+  reduce,
+}: {
+  subjectLabel: string;
+  result: MockSubmitResult;
+  questions: MockQuestion[];
+  answers: (number | null)[];
+  explanations: Record<number, AiExplanation>;
+  setExplanations: React.Dispatch<React.SetStateAction<Record<number, AiExplanation>>>;
+  onDone: () => void;
+  reduce: boolean;
+}) {
+  const wrong = questions
+    .map((q, i) => ({ q, i }))
+    .filter(({ q, i }) => answers[i] !== q.correctIndex);
+
+  async function explain(i: number) {
+    const q = questions[i];
+    setExplanations((prev) => ({ ...prev, [i]: { loading: true, text: null } }));
+    try {
+      const chosen = answers[i];
+      const res = await fetch("/api/tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: q.prompt,
+          correctAnswer: q.options[q.correctIndex],
+          topic: q.topicTag,
+          studentAnswer: chosen !== null ? q.options[chosen] : "",
+          wasCorrect: false,
+        }),
+      });
+      // Any non-OK (rate limit, tier gate, config) → fall back to the canonical
+      // human-authored explanation. A child never sees a raw error.
+      const data = res.ok ? await res.json() : null;
+      setExplanations((prev) => ({
+        ...prev,
+        [i]: {
+          loading: false,
+          text: (data?.explanation as string) || q.explanation,
+        },
+      }));
+    } catch {
+      setExplanations((prev) => ({
+        ...prev,
+        [i]: { loading: false, text: q.explanation },
+      }));
+    }
+  }
+
+  return (
+    <div>
+      <div className="relative py-8 text-center">
+        {!reduce && (
+          <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
+            <Celebration big variant={3} />
+          </div>
+        )}
+        <motion.div
+          initial={reduce ? false : { opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
+          <p className="text-lg text-fog-300">Your work is paying off —</p>
+          <p className="mt-1 text-3xl font-semibold text-fog-50">
+            {subjectLabel} is at a{" "}
+            <span className="text-neon-300">
+              {result.indicativeGrade.toLowerCase().replace("grade ", "grade ")}
+            </span>{" "}
+            level today.
+          </p>
+          <p className="mt-3 text-xl text-fog-300">
+            You got {result.correct} of {result.total} right.
+          </p>
+        </motion.div>
+      </div>
+
+      {wrong.length > 0 ? (
+        <div className="mt-4">
+          <h2 className="mb-4 text-xl font-semibold text-fog-100">
+            Let&apos;s look at the tricky ones
+          </h2>
+          <div className="flex flex-col gap-4">
+            {wrong.map(({ q, i }) => {
+              const ex = explanations[i];
+              return (
+                <div
+                  key={q.questionId}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"
+                >
+                  <p className="mb-2 text-lg text-fog-100">{q.prompt}</p>
+                  <p className="mb-3 text-base text-neon-300">
+                    Answer: {q.options[q.correctIndex]}
+                  </p>
+                  {ex?.text ? (
+                    <p className="text-base text-fog-300">{ex.text}</p>
+                  ) : (
+                    <button
+                      onClick={() => void explain(i)}
+                      disabled={ex?.loading}
+                      className="child-touch inline-flex items-center gap-2 rounded-xl border border-violet-400/30 bg-violet-500/10 px-4 py-2 text-base text-violet-200 disabled:opacity-60"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      {ex?.loading ? "Thinking…" : "Explain this one"}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        <p className="mt-4 text-center text-lg text-neon-300">
+          A clean sweep — every answer correct. Wonderful.
+        </p>
+      )}
+
+      <button
+        onClick={onDone}
+        className="child-touch mt-8 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 px-8 py-4 text-lg font-semibold text-white"
+      >
+        Back to learning <ArrowRight className="h-5 w-5" />
+      </button>
+    </div>
+  );
+}

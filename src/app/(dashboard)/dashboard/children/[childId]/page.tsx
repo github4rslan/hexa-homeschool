@@ -113,8 +113,15 @@ export default async function ChildProfilePage({
                 key={s.subject}
                 className="rounded-xl bg-white/[0.03] border border-white/5 p-4"
               >
-                <div className="text-sm font-semibold text-fog-50">
-                  {SUBJECT_LABEL[s.subject]}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-sm font-semibold text-fog-50">
+                    {SUBJECT_LABEL[s.subject]}
+                  </div>
+                  {s.fromMock && (
+                    <span className="rounded-full border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-cyan-300">
+                      Mock
+                    </span>
+                  )}
                 </div>
                 {s.readiness !== null ? (
                   <>
@@ -122,7 +129,8 @@ export default async function ChildProfilePage({
                       {Math.round(s.readiness)}%
                     </div>
                     <div className="text-[10px] font-mono uppercase tracking-widest text-fog-500">
-                      Readiness{s.grade ? ` · Grade ${s.grade}` : ""}
+                      {s.fromMock ? "Mock score" : "Readiness"}
+                      {s.grade ? ` · Grade ${s.grade}` : ""}
                     </div>
                   </>
                 ) : (
