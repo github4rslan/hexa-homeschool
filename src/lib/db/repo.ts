@@ -418,6 +418,61 @@ export async function certifiedBySubject(
   return result;
 }
 
+export interface TopicMapNode {
+  topicTag: string;
+  title: string;
+  order: number;
+  workingGradeBand: string;
+  state: CompetenceDoc["state"]; // locked when the child has no row yet
+  certifiedAt: Date | null;
+  /** True when this topic is certified but a spaced-repetition review is due. */
+  needsRefresh: boolean;
+}
+
+/**
+ * Full per-subject progress map for one child: every curriculum topic in
+ * `order`, annotated with the child's competence state (defaulting to "locked"
+ * when no row exists yet) and whether a certified topic is due for review.
+ * Read-only reference content joined with child-scoped competence; the child id
+ * is the caller's active child (ownership enforced at the page/route layer).
+ */
+export async function competenceMapForChild(
+  childId: ObjectId,
+): Promise<Record<Subject, TopicMapNode[]>> {
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const [topics, comps] = await Promise.all([
+    topicsCol.find({}).sort({ subject: 1, order: 1 }).toArray(),
+    compCol.find({ child_id: childId }).toArray(),
+  ]);
+  const byTag = new Map(comps.map((c) => [c.topic_tag, c]));
+  const now = Date.now();
+
+  const result: Record<Subject, TopicMapNode[]> = {
+    mathematics: [],
+    english: [],
+    science: [],
+  };
+  for (const t of topics) {
+    const c = byTag.get(t.topic_tag);
+    const state = c?.state ?? "locked";
+    const needsRefresh =
+      state === "certified" &&
+      !!c?.next_review_at &&
+      c.next_review_at.getTime() <= now;
+    result[t.subject].push({
+      topicTag: t.topic_tag,
+      title: t.title,
+      order: t.order,
+      workingGradeBand: t.working_grade_band,
+      state,
+      certifiedAt: c?.certified_at ?? null,
+      needsRefresh,
+    });
+  }
+  return result;
+}
+
 // ── Daily check-in (Stage 3) ─────────────────────────────
 export async function recordCheckin(
   parentId: string,

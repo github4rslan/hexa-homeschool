@@ -54,7 +54,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 | `children` | ChildDoc | Profile, DOB, SEND indicators, target exam window |
 | `evaluation_records` | EvaluationDoc | Diagnostic/mock results, predicted grades |
 | `instructional_logs` | LessonLogDoc | Per-lesson logs (phase, attempts, hints, mastery) |
-| `competence_matrix` | CompetenceDoc | Topic state: locked → training → certified |
+| `competence_matrix` | CompetenceDoc | Topic state: locked → training → certified; optional spaced-repetition schedule (`next_review_at`, `review_interval_days`) |
 | `compliance_dossiers` | DossierDoc | Portfolio evidence with secure hash |
 | `curriculum_topics` / `questions` | — | Human-authored curriculum + question bank |
 | `checkins` | CheckinDoc | Daily mood → difficulty throttle |

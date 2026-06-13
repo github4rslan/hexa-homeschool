@@ -105,6 +105,13 @@ export interface CompetenceDoc {
   state: "locked" | "training" | "certified";
   certified_at: Date | null;
   updated_at: Date;
+  /**
+   * Spaced-repetition review schedule (set on certification). Legacy rows with
+   * these undefined are treated as due-now with a 7-day interval. A due review
+   * never demotes certification — it only surfaces a warm-up.
+   */
+  next_review_at?: Date | null;
+  review_interval_days?: number;
 }
 
 export interface CheckinDoc {
