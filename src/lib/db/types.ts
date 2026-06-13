@@ -67,6 +67,10 @@ export interface ChildDoc {
   date_of_birth: string; // ISO date
   send_indicators: string[];
   target_exam_window: string | null;
+  /** Child-chosen narration voice (one of the curated CHILD_VOICES ids). */
+  voice_id?: string | null;
+  /** Child-chosen child-mode accent preset id (see lib/child/accents.ts). */
+  accent?: string | null;
   created_at: Date;
   updated_at: Date;
 }

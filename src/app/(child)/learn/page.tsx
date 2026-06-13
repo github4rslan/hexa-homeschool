@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Map as MapIcon, Sparkles, GraduationCap } from "lucide-react";
+import { Map as MapIcon, Sparkles, GraduationCap, Settings2 } from "lucide-react";
 import { EmojiCheckin } from "@/components/child/emoji-checkin";
 import { StreakFlame } from "@/components/child/streak-flame";
 import { QuestCards, type Quest } from "@/components/child/quest-cards";
@@ -17,6 +17,7 @@ import {
   dueReviewWarmup,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
+import { accentPreset } from "@/lib/child/accents";
 import type { Subject } from "@/lib/db/types";
 
 export const metadata: Metadata = { title: "Learn" };
@@ -75,6 +76,7 @@ export default async function LearnHubPage() {
   });
 
   const firstName = child.full_name.split(" ")[0];
+  const accent = accentPreset(child.accent);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -121,20 +123,27 @@ export default async function LearnHubPage() {
 
       <QuestCards quests={quests} />
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <Link
           href="/learn/map"
           className="child-touch child-panel flex items-center justify-center gap-3 p-5 text-lg font-semibold text-fog-100 transition-all hover:scale-[1.01]"
         >
-          <MapIcon className="h-6 w-6 text-fog-300" />
-          See my journey
+          <MapIcon className={`h-6 w-6 ${accent.text}`} />
+          My journey
         </Link>
         <Link
           href="/learn/mock"
           className="child-touch child-panel flex items-center justify-center gap-3 p-5 text-lg font-semibold text-fog-100 transition-all hover:scale-[1.01]"
         >
-          <GraduationCap className="h-6 w-6 text-fog-300" />
-          Try a mock exam
+          <GraduationCap className={`h-6 w-6 ${accent.text}`} />
+          Mock exam
+        </Link>
+        <Link
+          href="/learn/my-stuff"
+          className="child-touch child-panel flex items-center justify-center gap-3 p-5 text-lg font-semibold text-fog-100 transition-all hover:scale-[1.01]"
+        >
+          <Settings2 className={`h-6 w-6 ${accent.text}`} />
+          My stuff
         </Link>
       </div>
 

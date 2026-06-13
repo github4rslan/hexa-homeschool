@@ -15,11 +15,14 @@ export function Explainer({
   summary,
   points,
   onContinue,
+  voiceId,
 }: {
   title: string;
   summary: string;
   points: string[];
   onContinue: () => void;
+  /** Child-chosen narration voice; falls back to the server default when unset. */
+  voiceId?: string | null;
 }) {
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -50,7 +53,10 @@ export function Explainer({
       const res = await fetch("/api/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: narration.slice(0, 1200) }),
+        body: JSON.stringify({
+          text: narration.slice(0, 1200),
+          ...(voiceId ? { voiceId } : {}),
+        }),
       });
       if (!res.ok) return;
       const blob = await res.blob();

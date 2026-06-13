@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { DailyFlow } from "@/components/child/daily-flow";
-import { getTopic, firstTopic, getQuestions } from "@/lib/db/repo";
+import {
+  getTopic,
+  firstTopic,
+  getQuestions,
+  currentParentId,
+  getActiveChild,
+} from "@/lib/db/repo";
+import { readActiveChildId } from "@/lib/active-child";
 import type { Question } from "@/components/lesson/lesson-player";
 
 export const metadata: Metadata = { title: "Lesson" };
@@ -15,6 +22,13 @@ export default async function ChildLessonPage({
   const { topic } = await searchParams;
   const topicDoc = topic ? await getTopic(topic) : await firstTopic("mathematics");
   if (!topicDoc) redirect("/learn");
+
+  // The active child's chosen narration voice (falls back to the server default).
+  const parentId = await currentParentId();
+  const child = parentId
+    ? await getActiveChild(parentId, await readActiveChildId())
+    : null;
+  const voiceId = child?.voice_id ?? null;
 
   const docs = await getQuestions({ topicTag: topicDoc.topic_tag }, 50);
   const questions: Question[] = docs
@@ -45,6 +59,7 @@ export default async function ChildLessonPage({
       points={points.length ? points : [topicDoc.summary]}
       questions={questions}
       curriculumTopic={topicDoc.topic_tag}
+      voiceId={voiceId}
     />
   );
 }

@@ -18,12 +18,15 @@ export function DailyFlow({
   points,
   questions,
   curriculumTopic,
+  voiceId,
 }: {
   title: string;
   summary: string;
   points: string[];
   questions: Question[];
   curriculumTopic: string;
+  /** Child-chosen narration voice, threaded to both phases' TTS. */
+  voiceId?: string | null;
 }) {
   const [phase, setPhase] = useState<"explainer" | "practice">("explainer");
 
@@ -74,12 +77,14 @@ export function DailyFlow({
               summary={summary}
               points={points}
               onContinue={() => setPhase("practice")}
+              voiceId={voiceId}
             />
           ) : (
             <PracticePlayer
               questions={questions}
               curriculumTopic={curriculumTopic}
               lessonTitle={title}
+              voiceId={voiceId}
             />
           )}
         </motion.div>
