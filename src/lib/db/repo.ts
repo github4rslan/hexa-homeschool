@@ -1166,8 +1166,25 @@ export async function getOrCreateWeeklySchedule(
   const existing = await col.findOne({ child_id: childId, week_start: weekStart });
   if (existing) return { schedule: existing, created: false };
 
-  // Generate from curriculum gaps: topics NOT yet certified, in order, one per
-  // weekday across the three subjects (Mon–Fri).
+  const items = await buildScheduleItems(childId);
+  const doc: WeeklyScheduleDoc = {
+    child_id: childId,
+    week_start: weekStart,
+    items,
+    approved_by_parent: false,
+    generated_at: new Date(),
+  };
+  const res = await col.insertOne(doc as WeeklyScheduleDoc);
+  return { schedule: { ...doc, _id: res.insertedId }, created: true };
+}
+
+/**
+ * Build a fresh week of plan items from the child's curriculum gaps: the next
+ * not-yet-certified topic per subject, one per weekday (Mon=Maths, Tue=English,
+ * Wed=Science, Thu=Maths, Fri=English), with a data-grounded reason per item.
+ * Pure of any persistence so both initial generation and regeneration share it.
+ */
+async function buildScheduleItems(childId: ObjectId): Promise<ScheduleItemDoc[]> {
   const compCol = await getCollection<CompetenceDoc>(Collections.competence);
   const competence = await compCol.find({ child_id: childId }).toArray();
   const certifiedTags = new Set(
@@ -1175,7 +1192,6 @@ export async function getOrCreateWeeklySchedule(
   );
   const stateByTag = new Map(competence.map((c) => [c.topic_tag, c.state]));
 
-  // Latest evaluation per subject — grounds the per-item reasons in real data.
   const standings = await latestEvaluationsBySubject(childId);
   const gradeBySubject = new Map(standings.map((s) => [s.subject, s.grade]));
 
@@ -1192,7 +1208,6 @@ export async function getOrCreateWeeklySchedule(
   }
 
   const items: ScheduleItemDoc[] = [];
-  // Mon=Maths, Tue=English, Wed=Science, Thu=Maths, Fri=English (gap-driven).
   const plan: { day: number; subject: Subject }[] = [
     { day: 0, subject: "mathematics" },
     { day: 1, subject: "english" },
@@ -1218,16 +1233,137 @@ export async function getOrCreateWeeklySchedule(
       });
     }
   }
+  return items;
+}
 
-  const doc: WeeklyScheduleDoc = {
+const PARENT_EDIT_REASON = "Chosen by you.";
+
+/** The subject's uncertified topics (in order) — the valid swap targets. */
+export async function swappableTopicsForSubject(
+  childId: ObjectId,
+  subject: Subject,
+): Promise<{ topicTag: string; title: string }[]> {
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const certified = new Set(
+    (await compCol.find({ child_id: childId, state: "certified" }).toArray()).map(
+      (c) => c.topic_tag,
+    ),
+  );
+  const topics = await topicsCol.find({ subject }).sort({ order: 1 }).toArray();
+  return topics
+    .filter((t) => !certified.has(t.topic_tag))
+    .map((t) => ({ topicTag: t.topic_tag, title: t.title }));
+}
+
+/**
+ * Replace the topic of the schedule item at `itemIndex` with `topicTag` (must be
+ * a valid uncertified topic in that item's subject). Marks the item as a parent
+ * choice and counts the edit as approval. Ownership enforced.
+ */
+export async function swapScheduleItemTopic(
+  parentId: string,
+  childId: ObjectId,
+  itemIndex: number,
+  topicTag: string,
+): Promise<boolean> {
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+  const col = await getCollection<WeeklyScheduleDoc>(Collections.schedules);
+  const schedule = await col.findOne({
     child_id: childId,
-    week_start: weekStart,
-    items,
-    approved_by_parent: false,
-    generated_at: new Date(),
+    week_start: currentWeekStart(),
+  });
+  if (!schedule || !schedule.items[itemIndex]) return false;
+
+  const item = schedule.items[itemIndex];
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const topic = await topicsCol.findOne({ topic_tag: topicTag, subject: item.subject });
+  if (!topic) return false; // must be a real topic in the SAME subject
+
+  const items = [...schedule.items];
+  items[itemIndex] = {
+    ...item,
+    topic_tag: topic.topic_tag,
+    topic_title: topic.title,
+    reason: PARENT_EDIT_REASON,
   };
-  const res = await col.insertOne(doc as WeeklyScheduleDoc);
-  return { schedule: { ...doc, _id: res.insertedId }, created: true };
+  await col.updateOne(
+    { _id: schedule._id },
+    { $set: { items, approved_by_parent: true } },
+  );
+  return true;
+}
+
+/**
+ * Move the item at `itemIndex` to `newDay` (0–6). Counts as a parent approval.
+ * Ownership enforced.
+ */
+export async function moveScheduleItemDay(
+  parentId: string,
+  childId: ObjectId,
+  itemIndex: number,
+  newDay: number,
+): Promise<boolean> {
+  if (newDay < 0 || newDay > 6) return false;
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+  const col = await getCollection<WeeklyScheduleDoc>(Collections.schedules);
+  const schedule = await col.findOne({
+    child_id: childId,
+    week_start: currentWeekStart(),
+  });
+  if (!schedule || !schedule.items[itemIndex]) return false;
+
+  const items = [...schedule.items];
+  items[itemIndex] = { ...items[itemIndex], day: newDay };
+  await col.updateOne(
+    { _id: schedule._id },
+    { $set: { items, approved_by_parent: true } },
+  );
+  return true;
+}
+
+/** Remove all items on a weekday ("we're away that day"). Counts as approval. */
+export async function clearScheduleDay(
+  parentId: string,
+  childId: ObjectId,
+  day: number,
+): Promise<boolean> {
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+  const col = await getCollection<WeeklyScheduleDoc>(Collections.schedules);
+  const schedule = await col.findOne({
+    child_id: childId,
+    week_start: currentWeekStart(),
+  });
+  if (!schedule) return false;
+  const items = schedule.items.filter((it) => it.day !== day);
+  await col.updateOne(
+    { _id: schedule._id },
+    { $set: { items, approved_by_parent: true } },
+  );
+  return true;
+}
+
+/** Regenerate the whole week from current progress (re-runs the generator). */
+export async function regenerateWeeklySchedule(
+  parentId: string,
+  childId: ObjectId,
+): Promise<boolean> {
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+  const col = await getCollection<WeeklyScheduleDoc>(Collections.schedules);
+  const items = await buildScheduleItems(childId);
+  await col.updateOne(
+    { child_id: childId, week_start: currentWeekStart() },
+    {
+      $set: {
+        items,
+        approved_by_parent: false,
+        generated_at: new Date(),
+      },
+      $setOnInsert: { child_id: childId, week_start: currentWeekStart() },
+    },
+    { upsert: true },
+  );
+  return true;
 }
 
 export async function approveWeeklySchedule(

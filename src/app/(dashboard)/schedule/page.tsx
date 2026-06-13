@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { CalendarDays, Check, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
@@ -11,20 +10,16 @@ import {
   currentParentId,
   getActiveChild,
   getOrCreateWeeklySchedule,
+  swappableTopicsForSubject,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { sendWeeklyPlanEmail } from "@/lib/email/weekly-plan";
-import { approveSchedule } from "./actions";
+import { approveSchedule, regenerateWeek } from "./actions";
+import { EditableSchedule, type SwapOption } from "@/components/dashboard/editable-schedule";
+import type { Subject } from "@/lib/db/types";
 
 export const metadata: Metadata = { title: "Weekly schedule" };
 export const dynamic = "force-dynamic";
-
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const SUBJECT_LABEL: Record<string, string> = {
-  mathematics: "Maths",
-  english: "English",
-  science: "Science",
-};
 
 export default async function SchedulePage() {
   const parentId = await currentParentId();
@@ -62,6 +57,19 @@ export default async function SchedulePage() {
   }
   const firstName = child.full_name.split(" ")[0];
 
+  // Valid swap targets per subject (uncertified topics, in order) for the editor.
+  const subjects: Subject[] = ["mathematics", "english", "science"];
+  const swapEntries = await Promise.all(
+    subjects.map(
+      async (s) =>
+        [s, await swappableTopicsForSubject(child._id!, s)] as [Subject, SwapOption[]],
+    ),
+  );
+  const swapOptionsBySubject = Object.fromEntries(swapEntries) as Record<
+    Subject,
+    SwapOption[]
+  >;
+
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 bg-void -z-20" />
@@ -92,45 +100,25 @@ export default async function SchedulePage() {
         />
 
         <Card variant="glass-strong" padding="lg">
-          <div className="flex items-center gap-2 mb-5">
-            <CalendarDays className="h-4 w-4 text-violet-300" />
-            <span className="text-sm font-mono uppercase tracking-widest text-fog-500">
-              Week of {schedule?.week_start}
-            </span>
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-violet-300" />
+              <span className="text-sm font-mono uppercase tracking-widest text-fog-500">
+                Week of {schedule?.week_start}
+              </span>
+            </div>
+            <form action={regenerateWeek}>
+              <SubmitButton variant="ghost" size="sm" pendingLabel="Regenerating…">
+                <Sparkles className="h-3.5 w-3.5" /> Regenerate week
+              </SubmitButton>
+            </form>
           </div>
 
-          {schedule && schedule.items.length > 0 ? (
-            <div className="flex flex-col gap-3">
-              {schedule.items.map((item, i) => (
-                <div
-                  key={i}
-                  className="rounded-xl bg-white/[0.03] border border-white/5 p-4"
-                >
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-                    <span className="w-24 shrink-0 text-sm font-medium text-fog-300">
-                      {DAYS[item.day]}
-                    </span>
-                    <Badge variant="violet" size="sm">
-                      {SUBJECT_LABEL[item.subject]}
-                    </Badge>
-                    <span className="flex-1 min-w-[10rem] text-sm text-fog-100">
-                      {item.topic_title}
-                    </span>
-                    <Link
-                      href={`/learn/lesson?topic=${item.topic_tag}`}
-                      className="inline-flex min-h-11 items-center gap-1.5 text-xs font-medium text-violet-300 hover:text-violet-200"
-                    >
-                      <Sparkles className="h-3.5 w-3.5" /> Start
-                    </Link>
-                  </div>
-                  {item.reason && (
-                    <p className="mt-2 sm:pl-[7rem] text-xs leading-relaxed text-fog-500">
-                      Why: {item.reason}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
+          {schedule ? (
+            <EditableSchedule
+              items={schedule.items}
+              swapOptionsBySubject={swapOptionsBySubject}
+            />
           ) : (
             <p className="text-sm text-fog-400 py-6 text-center">
               No plan items yet — run the diagnostic so the Planning Agent can
@@ -139,8 +127,9 @@ export default async function SchedulePage() {
           )}
 
           <p className="mt-5 text-xs text-fog-500">
-            Approving confirms the week for {firstName}. You can re-open the plan
-            any time; the schedule regenerates each week from real progress.
+            Approving confirms the week for {firstName}. Editing an item — swap a
+            topic, move a day, or clear a day you&apos;re away — counts as your
+            approval, so there&apos;s no second step for your own change.
           </p>
         </Card>
       </main>
