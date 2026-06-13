@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Check, GraduationCap, Activity, BookOpen } from "lucide-react";
+import { Check, GraduationCap, Activity, BookOpen, TrendingUp } from "lucide-react";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
@@ -14,10 +14,12 @@ import {
   countCertified,
   listMedia,
   getWeeklySchedule,
+  evaluationHistory,
 } from "@/lib/db/repo";
 import { buildAssessmentNarrative } from "@/lib/engine/assessment-narrative";
 import { UploadButton } from "@/components/media/upload-button";
 import { ExamDecisionCard } from "@/components/dashboard/exam-decision-card";
+import { TrajectoryChart } from "@/components/dashboard/trajectory-chart";
 import { computeExamDecision } from "@/lib/engine/exam-decision";
 import { saveChildProfile } from "./actions";
 
@@ -46,6 +48,7 @@ export default async function ChildProfilePage({
   if (!child?._id) redirect("/dashboard");
 
   const standings = await latestEvaluationsBySubject(child._id);
+  const history = await evaluationHistory(child._id);
   const certified = await countCertified(child._id);
   const work = await listMedia({ useCase: "child_work", childId, limit: 12 });
   const decision = computeExamDecision(
@@ -174,6 +177,20 @@ export default async function ChildProfilePage({
             </p>
           </Card>
         )}
+
+        {/* GCSE readiness trajectory */}
+        <Card variant="glass-strong" padding="xl" className="mb-6">
+          <div className="flex items-center gap-2 mb-5">
+            <TrendingUp className="h-4 w-4 text-violet-300" />
+            <h2 className="text-lg font-semibold text-fog-50">
+              Readiness trajectory
+            </h2>
+          </div>
+          <TrajectoryChart
+            history={history}
+            targetWindow={child.target_exam_window}
+          />
+        </Card>
 
         {/* Exam decision (age 13+) */}
         {decision.eligible && (

@@ -333,6 +333,45 @@ export async function latestEvaluationsBySubject(
   );
 }
 
+export interface EvaluationPoint {
+  subject: Subject;
+  /** Numeric GCSE grade parsed from model_predicted_grade (top of a band). */
+  grade: number;
+  mock: boolean;
+  at: Date;
+}
+
+/**
+ * Chronological evaluation history (diagnostics + mocks) for a child, one point
+ * per record that has a parseable predicted grade. Powers the readiness
+ * trajectory chart — pure data, no AI.
+ */
+export async function evaluationHistory(
+  childId: ObjectId,
+): Promise<EvaluationPoint[]> {
+  const col = await getCollection<EvaluationDoc>(Collections.evaluations);
+  const docs = await col
+    .find({ child_id: childId })
+    .sort({ created_at: 1 })
+    .toArray();
+  const points: EvaluationPoint[] = [];
+  for (const d of docs) {
+    if (!d.subject || !d.model_predicted_grade) continue;
+    // Grades may be a band like "Grade 4–5" or a bare number; take the highest.
+    const nums = d.model_predicted_grade.match(/\d+/g);
+    if (!nums?.length) continue;
+    const grade = Math.max(...nums.map(Number));
+    if (!Number.isFinite(grade)) continue;
+    points.push({
+      subject: d.subject,
+      grade,
+      mock: d.mock_exam === true,
+      at: d.created_at,
+    });
+  }
+  return points;
+}
+
 /** Has a compliance dossier been generated for this child in the given period? */
 export async function hasDossierForPeriod(
   childId: ObjectId,
