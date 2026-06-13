@@ -3,6 +3,11 @@ import { ObjectId } from "mongodb";
 import { getCollection, Collections } from "@/lib/mongodb";
 import { getSession } from "@/lib/auth/session";
 import { computeStreak } from "@/lib/engine/streak";
+import {
+  scheduleFirstReview,
+  nextReview,
+  isReviewDue,
+} from "@/lib/engine/spaced-repetition";
 import type {
   ParentDoc,
   ChildDoc,
@@ -377,15 +382,27 @@ export async function upsertCompetence(
 ): Promise<boolean> {
   if (!(await assertOwnsChild(parentId, childId))) return false;
   const col = await getCollection<CompetenceDoc>(Collections.competence);
+
+  // Schedule the first spaced-repetition review only on a FRESH certification
+  // (a topic moving into "certified" that wasn't already certified). Re-running
+  // a certified topic must not reset its review schedule.
+  const set: Partial<CompetenceDoc> = {
+    state,
+    certified_at: state === "certified" ? new Date() : null,
+    updated_at: new Date(),
+  };
+  if (state === "certified") {
+    const existing = await col.findOne({ child_id: childId, topic_tag: topicTag });
+    if (existing?.state !== "certified") {
+      const sched = scheduleFirstReview();
+      set.next_review_at = sched.nextReviewAt;
+      set.review_interval_days = sched.intervalDays;
+    }
+  }
+
   await col.updateOne(
     { child_id: childId, topic_tag: topicTag },
-    {
-      $set: {
-        state,
-        certified_at: state === "certified" ? new Date() : null,
-        updated_at: new Date(),
-      },
-    },
+    { $set: set },
     { upsert: true },
   );
   return true;
@@ -514,6 +531,93 @@ export async function childStreak(
     .project<{ timestamp_end: Date }>({ timestamp_end: 1 })
     .toArray();
   return computeStreak(logs.map((l) => new Date(l.timestamp_end).getTime()));
+}
+
+// ── Spaced-repetition warm-up ────────────────────────────
+
+export interface WarmupQuestion {
+  topicTag: string;
+  topicTitle: string;
+  questionId: string;
+  prompt: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
+/**
+ * Up to `max` warm-up questions drawn from the child's certified topics whose
+ * spaced-repetition review is due (legacy certified rows with no schedule count
+ * as due). One human-authored question per due topic, easiest tier first. Pure
+ * recall practice — never AI-authored.
+ */
+export async function dueReviewWarmup(
+  childId: ObjectId,
+  max = 3,
+): Promise<WarmupQuestion[]> {
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const certified = await compCol
+    .find({ child_id: childId, state: "certified" })
+    .toArray();
+
+  const dueTags = certified
+    .filter((c) => isReviewDue(c.next_review_at))
+    .map((c) => c.topic_tag);
+  if (dueTags.length === 0) return [];
+
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const qCol = await getCollection<QuestionDoc>(Collections.questions);
+
+  const out: WarmupQuestion[] = [];
+  for (const tag of dueTags) {
+    if (out.length >= max) break;
+    const topic = await topicsCol.findOne({ topic_tag: tag });
+    const q = await qCol.findOne(
+      { topic_tag: tag, kind: { $in: ["practice", "mastery"] } },
+      { sort: { tier: 1 } },
+    );
+    if (!topic || !q || !q._id) continue;
+    out.push({
+      topicTag: tag,
+      topicTitle: topic.title,
+      questionId: q._id.toHexString(),
+      prompt: q.prompt,
+      options: q.options,
+      correctIndex: q.correct_index,
+      explanation: q.explanation,
+    });
+  }
+  return out;
+}
+
+/**
+ * Record a warm-up review outcome: advance (correct → interval ×2, capped) or
+ * reset (incorrect → 7 days) the topic's review schedule. NEVER changes the
+ * competence state — certification is permanent; only the cadence moves.
+ */
+export async function recordReviewResult(
+  parentId: string,
+  childId: ObjectId,
+  topicTag: string,
+  correct: boolean,
+): Promise<boolean> {
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+  const col = await getCollection<CompetenceDoc>(Collections.competence);
+  const existing = await col.findOne({ child_id: childId, topic_tag: topicTag });
+  if (!existing || existing.state !== "certified") return false;
+
+  const sched = nextReview(existing.review_interval_days, correct);
+  await col.updateOne(
+    { child_id: childId, topic_tag: topicTag },
+    {
+      $set: {
+        next_review_at: sched.nextReviewAt,
+        review_interval_days: sched.intervalDays,
+        updated_at: new Date(),
+      },
+    },
+  );
+  return true;
 }
 
 // ── Daily check-in (Stage 3) ─────────────────────────────
