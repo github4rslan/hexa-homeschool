@@ -2,6 +2,7 @@ import "server-only";
 import { ObjectId } from "mongodb";
 import { getCollection, Collections } from "@/lib/mongodb";
 import { getSession } from "@/lib/auth/session";
+import { computeStreak } from "@/lib/engine/streak";
 import type {
   ParentDoc,
   ChildDoc,
@@ -471,6 +472,48 @@ export async function competenceMapForChild(
     });
   }
   return result;
+}
+
+/**
+ * Topic tags the child completed a lesson on TODAY (UTC-day), so the daily-quest
+ * cards can show a checkmark per subject the child has already done today.
+ */
+export async function todaysCompletedTopicTags(
+  childId: ObjectId,
+): Promise<Set<string>> {
+  const start = new Date();
+  start.setUTCHours(0, 0, 0, 0);
+  const col = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+  const logs = await col
+    .find({
+      child_id: childId,
+      status: "completed",
+      timestamp_end: { $gte: start },
+    })
+    .project<{ topic_tag: string }>({ topic_tag: 1 })
+    .toArray();
+  return new Set(logs.map((l) => l.topic_tag));
+}
+
+/**
+ * Current learning streak for a child, computed from completed lesson logs
+ * (UTC-day buckets, one grace day per week — see `lib/engine/streak.ts`).
+ * Looks back 120 days, which comfortably covers any live streak.
+ */
+export async function childStreak(
+  childId: ObjectId,
+): Promise<{ current: number; completedToday: boolean }> {
+  const col = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+  const since = new Date(Date.now() - 120 * 24 * 60 * 60 * 1000);
+  const logs = await col
+    .find({
+      child_id: childId,
+      status: "completed",
+      timestamp_end: { $gte: since },
+    })
+    .project<{ timestamp_end: Date }>({ timestamp_end: 1 })
+    .toArray();
+  return computeStreak(logs.map((l) => new Date(l.timestamp_end).getTime()));
 }
 
 // ── Daily check-in (Stage 3) ─────────────────────────────
