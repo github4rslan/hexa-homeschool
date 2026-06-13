@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { CTA } from "@/components/marketing/cta";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
+import { TrackOnMount } from "@/components/analytics/analytics-provider";
 
 export const metadata: Metadata = {
   title: "Pricing",
@@ -63,6 +64,7 @@ export default function PricingPage() {
   return (
     <>
       <BreadcrumbJsonLd items={[{ name: "Pricing", path: "/pricing" }]} />
+      <TrackOnMount event="pricing_viewed" />
       <Section padded className="pt-16">
         <SectionHeader
           eyebrow="Pricing"

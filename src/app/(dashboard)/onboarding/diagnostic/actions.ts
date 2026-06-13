@@ -2,6 +2,7 @@
 
 import { currentParentId, getActiveChild, insertEvaluations } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
+import { captureServer } from "@/lib/analytics/server";
 
 export interface DiagnosticSubjectOutcome {
   subject: "mathematics" | "english" | "science";
@@ -41,6 +42,8 @@ export async function saveDiagnosticResults(
       mock_exam: false,
     })),
   );
+
+  if (ok) captureServer(parentId, "diagnostic_completed");
 
   return ok
     ? { persisted: true }

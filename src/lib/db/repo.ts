@@ -350,6 +350,24 @@ export async function insertLessonLog(
   return true;
 }
 
+/**
+ * Total completed-lesson logs across every child in the family. Used to spot
+ * the family's FIRST lesson (activation milestone) — the count is per family,
+ * never exposed per child.
+ */
+export async function familyLessonCount(parentId: string): Promise<number> {
+  const parentOid = toObjectId(parentId);
+  if (!parentOid) return 0;
+  const childCol = await getCollection<ChildDoc>(Collections.children);
+  const ids = await childCol
+    .find({ parent_id: parentOid })
+    .project<{ _id: ObjectId }>({ _id: 1 })
+    .toArray();
+  if (!ids.length) return 0;
+  const logCol = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+  return logCol.countDocuments({ child_id: { $in: ids.map((d) => d._id) } });
+}
+
 export async function upsertCompetence(
   parentId: string,
   childId: ObjectId,

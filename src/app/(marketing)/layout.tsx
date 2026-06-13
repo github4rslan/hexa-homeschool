@@ -6,6 +6,7 @@ import { SkipLink } from "@/components/ui/skip-link";
 import { CookieBanner } from "@/components/fx/cookie-banner";
 import { NextStepFunnel } from "@/components/marketing/next-step-funnel";
 import { StructuredData } from "@/components/seo/structured-data";
+import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 
 export default function MarketingLayout({
   children,
@@ -29,6 +30,8 @@ export default function MarketingLayout({
       <NextStepFunnel />
       <MarketingFooter />
       <CookieBanner />
+      {/* Parents-only analytics; never mounted in (child) routes. */}
+      <AnalyticsProvider />
     </div>
   );
 }

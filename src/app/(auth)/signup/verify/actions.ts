@@ -11,6 +11,7 @@ import {
   verifyCodeToken,
 } from "@/lib/email/verification";
 import { verifyCodeTemplate } from "@/lib/email/templates";
+import { captureServer } from "@/lib/analytics/server";
 import { CODE_COOKIE } from "../verify-cookie";
 
 /** Check the typed code; on success verify the account and sign in. */
@@ -35,6 +36,7 @@ export async function verifyCode(formData: FormData) {
   }
 
   await markEmailVerified(parentId!);
+  captureServer(parentId!, "signup_completed", { verification: "code" });
   jar.delete(CODE_COOKIE);
   const verified = await findParentById(parentId!);
   await createSession({
