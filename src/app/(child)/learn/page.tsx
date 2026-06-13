@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Calculator, BookText, FlaskConical, ArrowRight } from "lucide-react";
+import { Calculator, BookText, FlaskConical, ArrowRight, Map } from "lucide-react";
 import { EmojiCheckin } from "@/components/child/emoji-checkin";
 import {
   currentParentId,
@@ -104,6 +104,14 @@ export default async function LearnHubPage() {
           );
         })}
       </div>
+
+      <Link
+        href="/learn/map"
+        className="child-touch child-panel mt-5 flex items-center justify-center gap-3 p-5 text-lg font-semibold text-fog-100 transition-all hover:scale-[1.01]"
+      >
+        <Map className="h-6 w-6 text-fog-300" />
+        See my journey
+      </Link>
 
       <p className="mt-8 text-center text-fog-500">
         Pick a subject to start your lesson. You&apos;ve got this! 💪
