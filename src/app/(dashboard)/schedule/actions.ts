@@ -6,11 +6,59 @@ import {
   findParentById,
   getActiveChild,
   approveWeeklySchedule,
+  swapScheduleItemTopic,
+  moveScheduleItemDay,
+  clearScheduleDay,
+  regenerateWeeklySchedule,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { sendLifecycleEmail } from "@/lib/email/lifecycle";
 import { firstPlanTemplate } from "@/lib/email/templates";
 import { appUrl } from "@/lib/email/verification";
+
+async function activeChildId(): Promise<{ parentId: string; childId: import("mongodb").ObjectId } | null> {
+  const parentId = await currentParentId();
+  if (!parentId) return null;
+  const child = await getActiveChild(parentId, await readActiveChildId());
+  if (!child?._id) return null;
+  return { parentId, childId: child._id };
+}
+
+export async function swapTopic(formData: FormData): Promise<void> {
+  const ctx = await activeChildId();
+  if (!ctx) return;
+  const itemIndex = Number(formData.get("itemIndex"));
+  const topicTag = String(formData.get("topicTag") || "");
+  if (Number.isNaN(itemIndex) || !topicTag) return;
+  await swapScheduleItemTopic(ctx.parentId, ctx.childId, itemIndex, topicTag);
+  revalidatePath("/schedule");
+}
+
+export async function moveDay(formData: FormData): Promise<void> {
+  const ctx = await activeChildId();
+  if (!ctx) return;
+  const itemIndex = Number(formData.get("itemIndex"));
+  const newDay = Number(formData.get("newDay"));
+  if (Number.isNaN(itemIndex) || Number.isNaN(newDay)) return;
+  await moveScheduleItemDay(ctx.parentId, ctx.childId, itemIndex, newDay);
+  revalidatePath("/schedule");
+}
+
+export async function clearDay(formData: FormData): Promise<void> {
+  const ctx = await activeChildId();
+  if (!ctx) return;
+  const day = Number(formData.get("day"));
+  if (Number.isNaN(day)) return;
+  await clearScheduleDay(ctx.parentId, ctx.childId, day);
+  revalidatePath("/schedule");
+}
+
+export async function regenerateWeek(): Promise<void> {
+  const ctx = await activeChildId();
+  if (!ctx) return;
+  await regenerateWeeklySchedule(ctx.parentId, ctx.childId);
+  revalidatePath("/schedule");
+}
 
 export async function approveSchedule(): Promise<void> {
   const parentId = await currentParentId();
