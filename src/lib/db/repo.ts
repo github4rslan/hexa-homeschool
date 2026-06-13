@@ -372,6 +372,122 @@ export async function evaluationHistory(
   return points;
 }
 
+export interface MonthlyReport {
+  childName: string;
+  /** "June 2026" */
+  periodLabel: string;
+  monthStart: Date;
+  monthEnd: Date;
+  lessonsCompleted: number;
+  topicsCertified: { title: string; subject: Subject }[];
+  evaluations: { subject: Subject; grade: string | null; mock: boolean; at: Date }[];
+  /** Distinct UTC days with a completed lesson this month. */
+  activeDays: number;
+  /** Next up to 3 uncertified topics across subjects (next month's focus). */
+  nextFocus: { title: string; subject: Subject }[];
+  generatedAt: Date;
+}
+
+/**
+ * Aggregate one calendar month of a child's activity for the monthly progress
+ * report / local-authority evidence. Ownership enforced. `year`/`month` are
+ * UTC (month 0–11).
+ */
+export async function monthlyReport(
+  parentId: string,
+  childId: ObjectId,
+  year: number,
+  month: number,
+): Promise<MonthlyReport | null> {
+  if (!(await assertOwnsChild(parentId, childId))) return null;
+
+  const monthStart = new Date(Date.UTC(year, month, 1));
+  const monthEnd = new Date(Date.UTC(year, month + 1, 1));
+  const child = await getChildById(parentId, childId.toHexString());
+  if (!child) return null;
+
+  const logsCol = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const evalCol = await getCollection<EvaluationDoc>(Collections.evaluations);
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+
+  const logs = await logsCol
+    .find({
+      child_id: childId,
+      status: "completed",
+      timestamp_end: { $gte: monthStart, $lt: monthEnd },
+    })
+    .toArray();
+  const lessonsCompleted = logs.length;
+  const activeDays = new Set(
+    logs
+      .filter((l) => l.timestamp_end)
+      .map((l) =>
+        Math.floor(new Date(l.timestamp_end as Date).getTime() / 86_400_000),
+      ),
+  ).size;
+
+  // Topics certified WITHIN the month.
+  const certifiedThisMonth = await compCol
+    .find({
+      child_id: childId,
+      state: "certified",
+      certified_at: { $gte: monthStart, $lt: monthEnd },
+    })
+    .toArray();
+  const certTags = certifiedThisMonth.map((c) => c.topic_tag);
+  const certTopics =
+    certTags.length > 0
+      ? await topicsCol.find({ topic_tag: { $in: certTags } }).toArray()
+      : [];
+  const topicsCertified = certTopics.map((t) => ({ title: t.title, subject: t.subject }));
+
+  // Evaluations recorded within the month.
+  const evals = await evalCol
+    .find({ child_id: childId, created_at: { $gte: monthStart, $lt: monthEnd } })
+    .sort({ created_at: 1 })
+    .toArray();
+  const evaluations = evals
+    .filter((e) => e.subject)
+    .map((e) => ({
+      subject: e.subject as Subject,
+      grade: e.model_predicted_grade ?? null,
+      mock: e.mock_exam === true,
+      at: e.created_at,
+    }));
+
+  // Next month's focus: next uncertified topics per subject (overall, not month-bound).
+  const allCertified = new Set(
+    (await compCol.find({ child_id: childId, state: "certified" }).toArray()).map(
+      (c) => c.topic_tag,
+    ),
+  );
+  const subjects: Subject[] = ["mathematics", "english", "science"];
+  const nextFocus: { title: string; subject: Subject }[] = [];
+  for (const subj of subjects) {
+    const topics = await topicsCol.find({ subject: subj }).sort({ order: 1 }).toArray();
+    const next = topics.find((t) => !allCertified.has(t.topic_tag));
+    if (next) nextFocus.push({ title: next.title, subject: subj });
+  }
+
+  return {
+    childName: child.full_name,
+    periodLabel: monthStart.toLocaleDateString("en-GB", {
+      month: "long",
+      year: "numeric",
+      timeZone: "UTC",
+    }),
+    monthStart,
+    monthEnd,
+    lessonsCompleted,
+    topicsCertified,
+    evaluations,
+    activeDays,
+    nextFocus,
+    generatedAt: new Date(),
+  };
+}
+
 /** Has a compliance dossier been generated for this child in the given period? */
 export async function hasDossierForPeriod(
   childId: ObjectId,

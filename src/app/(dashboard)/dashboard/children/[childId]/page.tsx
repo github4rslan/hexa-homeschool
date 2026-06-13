@@ -180,11 +180,20 @@ export default async function ChildProfilePage({
 
         {/* GCSE readiness trajectory */}
         <Card variant="glass-strong" padding="xl" className="mb-6">
-          <div className="flex items-center gap-2 mb-5">
-            <TrendingUp className="h-4 w-4 text-violet-300" />
-            <h2 className="text-lg font-semibold text-fog-50">
-              Readiness trajectory
-            </h2>
+          <div className="mb-5 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-violet-300" />
+              <h2 className="text-lg font-semibold text-fog-50">
+                Readiness trajectory
+              </h2>
+            </div>
+            <Button
+              href={`/dashboard/children/${childId}/report`}
+              variant="outline"
+              size="sm"
+            >
+              Monthly report
+            </Button>
           </div>
           <TrajectoryChart
             history={history}
