@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Map as MapIcon } from "lucide-react";
+import { Map as MapIcon, Sparkles } from "lucide-react";
 import { EmojiCheckin } from "@/components/child/emoji-checkin";
 import { StreakFlame } from "@/components/child/streak-flame";
 import { QuestCards, type Quest } from "@/components/child/quest-cards";
@@ -14,6 +14,7 @@ import {
   childStreak,
   todaysCompletedTopicTags,
   listTopics,
+  dueReviewWarmup,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
@@ -44,6 +45,7 @@ export default async function LearnHubPage() {
   const checkedIn = !!(await todaysCheckin(child._id));
   const streak = await childStreak(child._id);
   const doneTags = await todaysCompletedTopicTags(child._id);
+  const warmupCount = (await dueReviewWarmup(child._id, 3)).length;
 
   // Map each completed-today tag to its subject so a subject's quest reads as
   // "done today" once any lesson in it is completed.
@@ -94,6 +96,27 @@ export default async function LearnHubPage() {
         <div className="mb-8">
           <EmojiCheckin />
         </div>
+      )}
+
+      {warmupCount > 0 && (
+        <Link
+          href="/learn/warmup"
+          className="child-touch child-panel mb-5 flex items-center gap-4 p-5 transition-all hover:scale-[1.01]"
+        >
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500/15 text-amber-200">
+            <Sparkles className="h-7 w-7" />
+          </div>
+          <div className="flex-1">
+            <div className="text-xl font-semibold text-fog-50">
+              Quick warm-up
+            </div>
+            <div className="text-base text-fog-400">
+              {warmupCount === 1
+                ? "1 quick question to keep something fresh — you've got this."
+                : `${warmupCount} quick questions to keep things fresh — you've got this.`}
+            </div>
+          </div>
+        </Link>
       )}
 
       <QuestCards quests={quests} />
