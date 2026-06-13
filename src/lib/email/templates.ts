@@ -101,6 +101,33 @@ export function verifyCodeTemplate(opts: {
   };
 }
 
+export function twoFactorCodeTemplate(opts: {
+  name: string | null;
+  code: string;
+}): { subject: string; html: string } {
+  const greeting = opts.name ? `Hi ${opts.name.split(" ")[0]},` : "Hello,";
+  const cells = opts.code
+    .split("")
+    .map(
+      (d) =>
+        `<td style="padding:0 5px;"><div style="width:46px;height:58px;line-height:58px;background:${COLORS.linenAlt};border:1px solid rgba(197,127,42,0.35);border-radius:10px;font-family:${SANS};font-size:30px;font-weight:700;color:${COLORS.forestDeep};text-align:center;">${d}</div></td>`,
+    )
+    .join("");
+
+  return {
+    subject: `${opts.code} is your HEXA sign-in code`,
+    html: WRAP(`
+      ${heading(greeting)}
+      <p style="margin:0 0 22px;">Here&rsquo;s your two-factor sign-in code. Enter it to finish signing in to HEXA.</p>
+
+      <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 8px;"><tr>${cells}</tr></table>
+
+      <p style="margin:18px 0 0;color:${COLORS.inkSoft};font-size:13px;text-align:center;">This code expires in 10 minutes and works once.</p>
+      <p style="margin:20px 0 0;color:${COLORS.inkSoft};font-size:12.5px;">If you didn&rsquo;t just try to sign in, someone may know your password &mdash; change it from Settings as soon as you can.</p>
+    `),
+  };
+}
+
 export function verifyEmailTemplate(opts: {
   name: string | null;
   verifyUrl: string;

@@ -1118,6 +1118,20 @@ export async function setParentPinHash(
   return res.matchedCount > 0;
 }
 
+export async function setTwoFactorEnabled(
+  parentId: string,
+  enabled: boolean,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne(
+    { _id: oid },
+    { $set: { two_factor_enabled: enabled, updated_at: new Date() } },
+  );
+  return res.matchedCount > 0;
+}
+
 // ── Escalations (Stage 5 safety) ─────────────────────────
 export async function recordEscalation(
   childId: ObjectId,

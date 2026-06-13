@@ -24,9 +24,11 @@ import {
   changePassword,
   updateEmailPreferences,
   updateParentPin,
+  updateTwoFactor,
   signOutEverywhere,
   deleteAccount,
 } from "./actions";
+import { emailConfigured } from "@/lib/email/send";
 
 export const metadata: Metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
@@ -256,8 +258,35 @@ export default async function SettingsPage({
               <h2 className="text-lg font-semibold text-fog-50">Security</h2>
             </div>
             <p className="text-sm text-fog-400 mb-6">
-              Parent gate PIN and session control.
+              Two-factor sign-in, parent gate PIN and session control.
             </p>
+
+            <form action={updateTwoFactor} className="flex flex-col gap-4">
+              <label className="flex items-start gap-3 text-sm text-fog-200 cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="two_factor"
+                  defaultChecked={parent.two_factor_enabled === true}
+                  disabled={!emailConfigured()}
+                  className="mt-0.5 rounded border-white/10 bg-white/5"
+                />
+                <span>
+                  Two-factor sign-in
+                  <span className="block text-xs text-fog-500 mt-0.5">
+                    {emailConfigured()
+                      ? "After your password, we email you a 6-digit code to finish signing in. Recommended."
+                      : "Unavailable right now — email delivery isn't set up on this deployment, and two-factor codes arrive by email."}
+                  </span>
+                </span>
+              </label>
+              {emailConfigured() && (
+                <SubmitButton variant="secondary" size="md" className="self-start" pendingLabel="Saving…">
+                  Save two-factor setting
+                </SubmitButton>
+              )}
+            </form>
+
+            <div className="my-6 border-t border-white/5" />
 
             <form action={updateParentPin} className="flex flex-col gap-4">
               <Input

@@ -11,10 +11,12 @@ import {
   setWeeklyDigestOptOut,
   setWeeklyPlanEmailOptOut,
   setEscalationAlertOptOut,
+  setTwoFactorEnabled,
   bumpTokenVersion,
   deleteFamilyData,
 } from "@/lib/db/repo";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import { emailConfigured } from "@/lib/email/send";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { getStripe } from "@/lib/billing/stripe";
 import type { ParentDoc } from "@/lib/db/types";
@@ -139,6 +141,23 @@ export async function deleteAccount(formData: FormData) {
 
   await destroySession();
   redirect("/?deleted=1");
+}
+
+export async function updateTwoFactor(formData: FormData) {
+  const parentId = await currentParentId();
+  if (!parentId) redirect("/login?redirect=/settings");
+
+  const enabled = formData.get("two_factor") === "on";
+  // 2FA delivers codes by email; without Brevo it would lock parents out.
+  if (enabled && !emailConfigured()) {
+    redirect(
+      `/settings?error=${encodeURIComponent("Two-factor sign-in needs email delivery, which isn't set up on this deployment yet. Please try again later.")}`,
+    );
+  }
+
+  await setTwoFactorEnabled(parentId!, enabled);
+  revalidatePath("/settings");
+  redirect("/settings?saved=1");
 }
 
 export async function updateParentPin(formData: FormData) {
