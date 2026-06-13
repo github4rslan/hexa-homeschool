@@ -33,6 +33,15 @@ runs type-check, lint, unit tests and a production build on every push and PR to
 `main`. The Vercel deploy is the release — a red CI run means the deploy that
 just went out was built from broken code and needs an immediate fix or revert.
 
+### Uptime monitoring
+
+`GET /api/health` is a public, no-auth probe that returns `200 {"ok":true,"db":"up"}`
+when the app and its MongoDB connection are healthy, and `503` when the DB ping
+fails. Point an external monitor (e.g. [BetterStack](https://betterstack.com) or
+[UptimeRobot](https://uptimerobot.com)) at `https://<your-domain>/api/health` on
+a 1–5 minute interval to get alerted on outages. It exposes no data and is
+rate-limited (60/min per IP).
+
 ## Setup Reference
 
 Requires Node >= 20 and a MongoDB connection string (Atlas).
