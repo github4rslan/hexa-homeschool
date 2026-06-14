@@ -25,6 +25,7 @@ import type {
   TutorBookingDoc,
   EscalationDoc,
   AiInvocationDoc,
+  MessageDoc,
   Subject,
 } from "./types";
 
@@ -1597,6 +1598,181 @@ export async function listTutorBookings(
   if (!oid) return [];
   const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
   return col.find({ parent_id: oid }).sort({ created_at: -1 }).limit(20).toArray();
+}
+
+// ── Parent ↔ staff messaging ─────────────────────────────
+//
+// ISOLATION CONTRACT (cross-family leakage is the top risk here):
+//   • Every PARENT read/write filters on parent_id — a parent can only ever
+//     touch threads they own. A thread is "owned" when its booking/escalation
+//     belongs to the parent (verified before the first post).
+//   • STAFF functions are suffixed `AsStaff`, take NO parentId, and are only
+//     called from (admin) routes behind the existing admin gate.
+
+/** Does this parent own the booking/escalation a thread hangs off? */
+async function parentOwnsThread(
+  parentId: string,
+  threadType: MessageDoc["thread_type"],
+  threadId: string,
+): Promise<boolean> {
+  const parentOid = toObjectId(parentId);
+  const threadOid = toObjectId(threadId);
+  if (!parentOid || !threadOid) return false;
+
+  if (threadType === "booking") {
+    const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
+    const b = await col.findOne({ _id: threadOid, parent_id: parentOid });
+    return !!b;
+  }
+  // escalation: the escalation belongs to one of the parent's children.
+  const escCol = await getCollection<EscalationDoc>(Collections.escalations);
+  const esc = await escCol.findOne({ _id: threadOid });
+  if (!esc) return false;
+  return assertOwnsChild(parentId, esc.child_id);
+}
+
+/** Messages in a thread the PARENT owns, oldest first. Returns [] if not owned. */
+export async function listThreadMessagesForParent(
+  parentId: string,
+  threadType: MessageDoc["thread_type"],
+  threadId: string,
+): Promise<MessageDoc[]> {
+  const parentOid = toObjectId(parentId);
+  if (!parentOid) return [];
+  if (!(await parentOwnsThread(parentId, threadType, threadId))) return [];
+  const col = await getCollection<MessageDoc>(Collections.messages);
+  return col
+    .find({ parent_id: parentOid, thread_type: threadType, thread_id: threadId })
+    .sort({ created_at: 1 })
+    .toArray();
+}
+
+/** Parent posts to a thread they own. Returns false if not owned. */
+export async function postMessageAsParent(
+  parentId: string,
+  threadType: MessageDoc["thread_type"],
+  threadId: string,
+  childId: ObjectId,
+  body: string,
+): Promise<boolean> {
+  const parentOid = toObjectId(parentId);
+  if (!parentOid) return false;
+  if (!(await parentOwnsThread(parentId, threadType, threadId))) return false;
+  // The child must also belong to the parent (defence in depth).
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+
+  const col = await getCollection<MessageDoc>(Collections.messages);
+  await col.insertOne({
+    thread_type: threadType,
+    thread_id: threadId,
+    parent_id: parentOid,
+    child_id: childId,
+    sender: "parent",
+    body,
+    created_at: new Date(),
+    read_at: null,
+  } as MessageDoc);
+  return true;
+}
+
+/** Mark all staff messages in a parent-owned thread as read by the parent. */
+export async function markThreadReadByParent(
+  parentId: string,
+  threadType: MessageDoc["thread_type"],
+  threadId: string,
+): Promise<void> {
+  const parentOid = toObjectId(parentId);
+  if (!parentOid) return;
+  if (!(await parentOwnsThread(parentId, threadType, threadId))) return;
+  const col = await getCollection<MessageDoc>(Collections.messages);
+  await col.updateMany(
+    {
+      parent_id: parentOid,
+      thread_type: threadType,
+      thread_id: threadId,
+      sender: "staff",
+      read_at: null,
+    },
+    { $set: { read_at: new Date() } },
+  );
+}
+
+/** Count unread staff messages across all of a parent's threads (nav badge). */
+export async function unreadMessageCountForParent(parentId: string): Promise<number> {
+  const parentOid = toObjectId(parentId);
+  if (!parentOid) return 0;
+  const col = await getCollection<MessageDoc>(Collections.messages);
+  return col.countDocuments({
+    parent_id: parentOid,
+    sender: "staff",
+    read_at: null,
+  });
+}
+
+// ── Staff side (admin-gated; no parentId filter by design) ──
+
+/** All messages in a thread, oldest first — STAFF view. */
+export async function listThreadMessagesAsStaff(
+  threadType: MessageDoc["thread_type"],
+  threadId: string,
+): Promise<MessageDoc[]> {
+  const col = await getCollection<MessageDoc>(Collections.messages);
+  return col
+    .find({ thread_type: threadType, thread_id: threadId })
+    .sort({ created_at: 1 })
+    .toArray();
+}
+
+/**
+ * Staff posts to a thread. Looks up the owning parent_id/child_id from an
+ * existing message OR the underlying booking/escalation so the new row stays
+ * correctly attributed. Returns the parent_id for notification, or null.
+ */
+export async function postMessageAsStaff(
+  threadType: MessageDoc["thread_type"],
+  threadId: string,
+  body: string,
+): Promise<{ parentId: ObjectId; childId: ObjectId } | null> {
+  const threadOid = toObjectId(threadId);
+  if (!threadOid) return null;
+
+  let parentId: ObjectId | null = null;
+  let childId: ObjectId | null = null;
+
+  if (threadType === "booking") {
+    const b = await (
+      await getCollection<TutorBookingDoc>(Collections.tutorBookings)
+    ).findOne({ _id: threadOid });
+    if (b) {
+      parentId = b.parent_id;
+      childId = b.child_id;
+    }
+  } else {
+    const esc = await (
+      await getCollection<EscalationDoc>(Collections.escalations)
+    ).findOne({ _id: threadOid });
+    if (esc) {
+      childId = esc.child_id;
+      const childCol = await getCollection<ChildDoc>(Collections.children);
+      const child = await childCol.findOne({ _id: esc.child_id });
+      if (child) parentId = child.parent_id;
+    }
+  }
+
+  if (!parentId || !childId) return null;
+
+  const col = await getCollection<MessageDoc>(Collections.messages);
+  await col.insertOne({
+    thread_type: threadType,
+    thread_id: threadId,
+    parent_id: parentId,
+    child_id: childId,
+    sender: "staff",
+    body,
+    created_at: new Date(),
+    read_at: null,
+  } as MessageDoc);
+  return { parentId, childId };
 }
 
 // ── Weekly parent progress digest ────────────────────────

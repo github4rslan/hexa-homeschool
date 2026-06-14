@@ -10,8 +10,10 @@ import {
   currentParentId,
   tutorQuota,
   listTutorBookings,
+  listThreadMessagesForParent,
 } from "@/lib/db/repo";
 import { requestTutor } from "./actions";
+import { MessageThread, type ThreadMessage } from "@/components/dashboard/message-thread";
 
 export const metadata: Metadata = { title: "Human tutoring" };
 export const dynamic = "force-dynamic";
@@ -40,6 +42,25 @@ export default async function TutoringPage({
   const { used, limit } = await tutorQuota(parentId);
   const bookings = await listTutorBookings(parentId);
   const remaining = Math.max(0, limit - used);
+
+  // Load each booking's message thread (ownership-scoped in the repo).
+  const threadsByBooking = new Map<string, ThreadMessage[]>();
+  await Promise.all(
+    bookings.map(async (b) => {
+      const id = b._id?.toHexString();
+      if (!id) return;
+      const msgs = await listThreadMessagesForParent(parentId, "booking", id);
+      threadsByBooking.set(
+        id,
+        msgs.map((m) => ({
+          id: m._id!.toHexString(),
+          sender: m.sender,
+          body: m.body,
+          createdAt: m.created_at.toISOString(),
+        })),
+      );
+    }),
+  );
 
   return (
     <div className="relative min-h-screen">
@@ -143,23 +164,35 @@ export default async function TutoringPage({
                 Your requests
               </h3>
             </div>
-            <ul className="flex flex-col gap-3">
-              {bookings.map((b) => (
-                <li
-                  key={b._id?.toHexString()}
-                  className="flex items-center gap-3 border-b border-white/5 pb-3 last:border-0 last:pb-0"
-                >
-                  <Badge variant="outline" size="sm">
-                    {b.subject ? SUBJECT_LABEL[b.subject] : "General"}
-                  </Badge>
-                  <span className="flex-1 text-sm text-fog-300 truncate">
-                    {b.requested_slot || "Any time"}
-                  </span>
-                  <Badge variant={STATUS_VARIANT[b.status] ?? "outline"} size="sm">
-                    {b.status}
-                  </Badge>
-                </li>
-              ))}
+            <ul className="flex flex-col gap-5">
+              {bookings.map((b) => {
+                const id = b._id?.toHexString() ?? "";
+                return (
+                  <li
+                    key={id}
+                    className="border-b border-white/5 pb-5 last:border-0 last:pb-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" size="sm">
+                        {b.subject ? SUBJECT_LABEL[b.subject] : "General"}
+                      </Badge>
+                      <span className="flex-1 truncate text-sm text-fog-300">
+                        {b.requested_slot || "Any time"}
+                      </span>
+                      <Badge variant={STATUS_VARIANT[b.status] ?? "outline"} size="sm">
+                        {b.status}
+                      </Badge>
+                    </div>
+                    <div className="mt-3">
+                      <MessageThread
+                        threadType="booking"
+                        threadId={id}
+                        initialMessages={threadsByBooking.get(id) ?? []}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </Card>
         )}

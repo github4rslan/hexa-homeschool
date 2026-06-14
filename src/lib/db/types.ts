@@ -233,6 +233,24 @@ export interface TutorBookingDoc {
 }
 
 /**
+ * Parent ↔ staff message in a thread. Threads are scoped to a booking or an
+ * escalation; a parent only ever sees their own threads (enforced by parent_id
+ * filter in every repo read). Plain text only in Phase 1.
+ */
+export interface MessageDoc {
+  _id?: ObjectId;
+  thread_type: "booking" | "escalation";
+  /** The booking id or escalation id this thread hangs off (hex string). */
+  thread_id: string;
+  parent_id: ObjectId;
+  child_id: ObjectId;
+  sender: "parent" | "staff";
+  body: string; // ≤ 2000 chars
+  created_at: Date;
+  read_at: Date | null;
+}
+
+/**
  * One row per real AI agent invocation. Powers the admin Agent Telemetry
  * console with genuine counts/cost/latency (no fabricated figures).
  * Written best-effort — logging must never break a tutoring response.

@@ -118,6 +118,10 @@ async function main() {
     await db.collection("ai_invocations").createIndex({ created_at: -1 });
     await db.collection("ai_invocations").createIndex({ agent: 1, created_at: -1 });
 
+    // Parent ↔ staff messaging: thread reads, parent isolation, unread badge.
+    await db.collection("messages").createIndex({ thread_type: 1, thread_id: 1, created_at: 1 });
+    await db.collection("messages").createIndex({ parent_id: 1, sender: 1, read_at: 1 });
+
     console.log("✓ Indexes ensured.");
     console.log("\n✅ Seed complete.");
   } finally {
