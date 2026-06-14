@@ -200,7 +200,7 @@ export function firstPlanTemplate(opts: {
       <p style="margin:0 0 18px;">You&rsquo;ve approved ${opts.childName}&rsquo;s first weekly plan. Here&rsquo;s what happens next:</p>
       <ul style="margin:0 0 22px;padding-left:20px;color:${COLORS.ink};">
         <li style="margin-bottom:6px;">${opts.childName} works through daily lessons in child mode — calm, paced, encouraging.</li>
-        <li style="margin-bottom:6px;">HEXA tracks every step and certifies topics as they&rsquo;re mastered.</li>
+        <li style="margin-bottom:6px;">HEXA tracks every step and certifies each topic once it&rsquo;s securely learned.</li>
         <li>You&rsquo;ll get a weekly digest, and a Local Authority-ready portfolio builds itself as you go.</li>
       </ul>
       <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.learnUrl, "Open child mode")}</p>

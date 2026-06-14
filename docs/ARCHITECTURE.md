@@ -55,6 +55,29 @@ Empty/cold states never strand the user: the zero-children dashboard offers
 "Add your first child"; the no-child `/schedule` offers "Add a child"; the
 no-lessons activity feed offers "Start the diagnostic".
 
+## Terminology Glossary (canonical user-facing voice)
+
+One term per concept across pages, emails, toasts and components. Future
+sessions MUST comply — grep for the banned column before introducing copy.
+Child mode keeps a warmer register that maps 1:1 to the parent term.
+
+| Concept | Canonical (parent/system) | Child mode | Banned synonyms | Reserved exceptions |
+|---|---|---|---|---|
+| The unit a child works through | **lesson** | **quest** | session¹ | "session" only for auth/JWT (`createSession`), never the learning unit |
+| The weekly set of lessons | **plan** (UI label) | — | — | route + nav path stay `/schedule`; `weekly_schedules` collection name |
+| A topic reaching completion | **certified** | **mastered** | — | child mode's "mastered" is the warm 1:1 register |
+| The baseline level test | **diagnostic** | — | assessment² | "Assessment Agent" (agent proper noun); marketing funnel CTA "free assessment" |
+| The human who helps | **tutor** | — | teacher³ | "teacher" only in founder/marketing narrative prose, never product UI |
+
+¹ "session" as a single sitting was swept from the dashboard (stats, activity
+feed, escalation copy) in favour of "lesson". ² "assessment" survives only as
+the named AI agent and the marketing funnel CTA, both deliberate. ³ "teacher"
+appears in the About-page founder story by design.
+
+Child↔parent mapping holds: the plan email's "Tuesday: Fractions" is findable
+as Tuesday's quest in child mode (same topic, same day — see Cross-feature
+linking).
+
 ## Route Groups (`src/app/`)
 
 | Group | Audience | Contents |

@@ -91,7 +91,7 @@ export function MonthlyReportView({
             {/* Certified topics */}
             <section>
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-fog-300 report-muted">
-                Topics mastered this month
+                Topics certified this month
               </h2>
               {report.topicsCertified.length > 0 ? (
                 <ul className="flex flex-col gap-1.5">
