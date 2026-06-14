@@ -168,7 +168,15 @@ Layered bug-catching for a push-to-production setup with no staging:
    degrade gracefully). Since a push to `main` *is* the production deploy,
    CI is the record of whether that deploy was built from green code.
 
-3. **Sentry (`@sentry/nextjs`)** — runtime error capture for what slips into
+3. **Post-deploy smoke (Playwright, `npm run smoke`)** — a tripwire that the
+   *deployed* production site actually works. A `smoke` job in
+   `.github/workflows/ci.yml` runs push-to-`main` only, after `checks` builds
+   green, waits for `/api/health`, then runs ≤10 read-only tests against
+   production (login-gated ones use the dedicated `is_smoke_account` parent set
+   up via `npm run smoke:setup`; they skip without `SMOKE_*` secrets). A failure
+   fails the workflow → GitHub emails the owner. Never runs on PRs.
+
+4. **Sentry (`@sentry/nextjs`)** — runtime error capture for what slips into
    production. Configs: `src/instrumentation.ts` (server/edge),
    `src/instrumentation-client.ts`, shared scrubber in
    `lib/monitoring/sentry-shared.ts`. Unset `NEXT_PUBLIC_SENTRY_DSN` /

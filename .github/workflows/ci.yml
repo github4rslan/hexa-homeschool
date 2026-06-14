@@ -35,3 +35,47 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+  # Post-deploy smoke tests against the LIVE production site. Push-to-main only
+  # (a push is the deploy); never on PRs, so PR CI stays fast and secret-free.
+  # Runs after `checks` builds green, waits for the Vercel deploy to flip, then
+  # hits production. A failure fails the workflow → GitHub emails the owner.
+  # Login-gated specs skip themselves when SMOKE_* secrets are absent.
+  smoke:
+    needs: checks
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+      SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+      SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for the production deploy to be live
+        run: |
+          URL="${SMOKE_BASE_URL:-https://hexa.education}/api/health"
+          echo "Probing $URL …"
+          for i in $(seq 1 18); do
+            if curl -fsS --max-time 10 "$URL" >/dev/null 2>&1; then
+              echo "Deploy is live."
+              exit 0
+            fi
+            echo "Not ready yet (attempt $i/18); waiting 10s…"
+            sleep 10
+          done
+          echo "Health probe never went green; running smoke anyway to surface the failure."
+
+      - name: Smoke tests
+        run: npm run smoke
