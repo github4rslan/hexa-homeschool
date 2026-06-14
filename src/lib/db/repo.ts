@@ -698,6 +698,97 @@ export async function childStreak(
   return computeStreak(logs.map((l) => new Date(l.timestamp_end).getTime()));
 }
 
+export interface TodayQuest {
+  subject: Subject;
+  topicTag: string;
+  topicTitle: string;
+  done: boolean;
+}
+
+export interface TodayCard {
+  childId: string;
+  childName: string;
+  /** Today's quests, mirroring the approved weekly plan (same topic/day). */
+  quests: TodayQuest[];
+  streak: number;
+  completedToday: boolean;
+  reviewsDue: number;
+  openEscalations: number;
+  /** Subject just certified today, if any — drives the quiet "all done" line. */
+  certifiedToday: string | null;
+  allDone: boolean;
+}
+
+/**
+ * The 10-second daily glance for one child, derived entirely from real data:
+ * today's plan-mirrored quests with live done-state, current streak, reviews
+ * due, and any open escalation. Pure read; ownership enforced by the caller
+ * resolving the child from the parent's own children.
+ */
+export async function todayCard(
+  parentId: string,
+  child: ChildDoc,
+): Promise<TodayCard> {
+  const childId = child._id!;
+  const [schedule, doneTags, streak, comps, escalations, topics] =
+    await Promise.all([
+      getWeeklySchedule(parentId, childId),
+      todaysCompletedTopicTags(childId),
+      childStreak(childId),
+      (await getCollection<CompetenceDoc>(Collections.competence))
+        .find({ child_id: childId })
+        .toArray(),
+      openEscalations([childId]),
+      listTopics(),
+    ]);
+
+  const titleByTag = new Map(topics.map((t) => [t.topic_tag, t.title]));
+  const subjectByTag = new Map(topics.map((t) => [t.topic_tag, t.subject]));
+  const todayIndex = (new Date().getDay() + 6) % 7; // 0 = Monday
+
+  const quests: TodayQuest[] = (schedule?.items ?? [])
+    .filter((it) => it.day === todayIndex)
+    .map((it) => ({
+      subject: it.subject,
+      topicTag: it.topic_tag,
+      topicTitle: it.topic_title || titleByTag.get(it.topic_tag) || it.topic_tag,
+      done: doneTags.has(it.topic_tag),
+    }));
+
+  const reviewsDue = comps.filter(
+    (c) => c.state === "certified" && isReviewDue(c.next_review_at),
+  ).length;
+
+  // A subject certified today (for the quiet celebration line).
+  const start = new Date();
+  start.setUTCHours(0, 0, 0, 0);
+  let certifiedToday: string | null = null;
+  for (const c of comps) {
+    if (
+      c.state === "certified" &&
+      c.certified_at &&
+      new Date(c.certified_at) >= start
+    ) {
+      certifiedToday = titleByTag.get(c.topic_tag) ?? null;
+      if (certifiedToday) break;
+    }
+  }
+
+  const allDone = quests.length > 0 && quests.every((q) => q.done);
+
+  return {
+    childId: childId.toHexString(),
+    childName: child.full_name,
+    quests,
+    streak: streak.current,
+    completedToday: streak.completedToday,
+    reviewsDue,
+    openEscalations: escalations.length,
+    certifiedToday,
+    allDone,
+  };
+}
+
 // ── Mock exams ───────────────────────────────────────────
 
 export interface MockQuestion {

@@ -29,10 +29,14 @@ import {
   hasDossierForPeriod,
   openEscalations,
   onboardingChecklist,
+  todayCard,
+  type TodayCard as TodayCardData,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { isOnboardingDismissed } from "@/lib/onboarding-dismiss";
 import { GettingStarted, type ChecklistStep } from "@/components/dashboard/getting-started";
+import { TodayCard } from "@/components/dashboard/today-card";
+import { TodayBriefingHeader } from "@/components/dashboard/today-briefing-header";
 import { dismissGettingStarted } from "./actions";
 import { ShieldAlert } from "lucide-react";
 
@@ -80,6 +84,25 @@ function relativeTime(d: Date): string {
 function currentQuarter(): string {
   const now = new Date();
   return `Q${Math.floor(now.getMonth() / 3) + 1} ${now.getFullYear()}`;
+}
+
+/** One-line family summary for the Today briefing, from real data only. */
+function buildTodaySummary(card: TodayCardData): string {
+  const first = card.childName.split(" ")[0];
+  if (card.allDone) {
+    return `${first} finished today's quests${card.streak > 0 ? ` · ${card.streak}-day streak` : ""}. Lovely work.`;
+  }
+  const remaining = card.quests.filter((q) => !q.done).length;
+  const parts: string[] = [];
+  if (card.quests.length > 0) {
+    parts.push(`${remaining} quest${remaining === 1 ? "" : "s"} left today`);
+  } else {
+    parts.push("no quests planned today");
+  }
+  if (card.streak > 0) parts.push(`${card.streak}-day streak`);
+  if (card.reviewsDue > 0)
+    parts.push(`${card.reviewsDue} review${card.reviewsDue === 1 ? "" : "s"} due`);
+  return `${first}: ${parts.join(" · ")}.`;
 }
 
 export default async function DashboardPage() {
@@ -201,6 +224,15 @@ export default async function DashboardPage() {
   const showChecklist = !dismissed && steps.length > 0 && steps.some((s) => !s.done);
   const activeChildFirstName = activeChild?.full_name.split(" ")[0];
 
+  // Today command center: one card per child, derived from real data. The
+  // summary line speaks to the active child (or the only child).
+  const todayCards: TodayCardData[] = await Promise.all(
+    kids.map((kid) => todayCard(parentId!, kid)),
+  );
+  const activeCard =
+    todayCards.find((c) => c.childId === activeId) ?? todayCards[0];
+  const todaySummary = activeCard ? buildTodaySummary(activeCard) : "";
+
   return (
     <>
       <DashboardTopbar greeting={greeting} />
@@ -238,6 +270,22 @@ export default async function DashboardPage() {
             childName={activeChildFirstName}
             dismiss={dismissGettingStarted}
           />
+        )}
+
+        {todayCards.length > 0 && (
+          <section className="mb-10">
+            <div className="mb-6">
+              <TodayBriefingHeader
+                firstName={parent?.full_name?.split(" ")[0] ?? null}
+                summary={todaySummary}
+              />
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              {todayCards.map((card, i) => (
+                <TodayCard key={card.childId} card={card} index={i} />
+              ))}
+            </div>
+          </section>
         )}
 
         <section className="mb-10">
