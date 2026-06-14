@@ -15,11 +15,13 @@ import {
   listMedia,
   getWeeklySchedule,
   evaluationHistory,
+  childInsights,
 } from "@/lib/db/repo";
 import { buildAssessmentNarrative } from "@/lib/engine/assessment-narrative";
 import { UploadButton } from "@/components/media/upload-button";
 import { ExamDecisionCard } from "@/components/dashboard/exam-decision-card";
 import { TrajectoryChart } from "@/components/dashboard/trajectory-chart";
+import { InsightsPanel } from "@/components/dashboard/insights-panel";
 import { computeExamDecision } from "@/lib/engine/exam-decision";
 import { saveChildProfile } from "./actions";
 
@@ -50,6 +52,7 @@ export default async function ChildProfilePage({
   const standings = await latestEvaluationsBySubject(child._id);
   const history = await evaluationHistory(child._id);
   const certified = await countCertified(child._id);
+  const insights = await childInsights(parentId, child._id);
   const work = await listMedia({ useCase: "child_work", childId, limit: 12 });
   const decision = computeExamDecision(
     child.date_of_birth,
@@ -200,6 +203,13 @@ export default async function ChildProfilePage({
             targetWindow={child.target_exam_window}
           />
         </Card>
+
+        {/* Learning insights (deterministic, no AI) */}
+        <InsightsPanel
+          insights={insights.insights}
+          learning={insights.learning}
+          childFirstName={child.full_name.split(" ")[0]}
+        />
 
         {/* Exam decision (age 13+) */}
         {decision.eligible && (

@@ -156,7 +156,8 @@ Layered bug-catching for a push-to-production setup with no staging:
 1. **Unit tests (Vitest, `npm test`)** — pure high-stakes logic only, no DB or
    network: the distress matcher (`lib/safety/escalation.ts`), exam decision
    engine (`lib/engine/exam-decision.ts`), rate limiter (`lib/rate-limit.ts`),
-   Stripe tier/status maps (`lib/billing/stripe.ts`) and week-start date math.
+   Stripe tier/status maps (`lib/billing/stripe.ts`), week-start date math, and
+   the learning-insights engine (`lib/engine/insights.ts` — threshold/framing).
    Tests live in `tests/`; `vitest.config.ts` stubs the `server-only` package.
    Tests must pass before every push.
 

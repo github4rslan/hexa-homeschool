@@ -5,6 +5,12 @@ import { getSession } from "@/lib/auth/session";
 import { computeStreak } from "@/lib/engine/streak";
 import { sha256Hex } from "@/lib/compliance/portfolio";
 import {
+  buildInsights,
+  type Insight,
+  type LessonSample,
+  type MoodSample,
+} from "@/lib/engine/insights";
+import {
   scheduleFirstReview,
   nextReview,
   isReviewDue,
@@ -713,6 +719,58 @@ export async function masteryCertificate(
     achievedAt,
     verificationHash,
   };
+}
+
+/**
+ * Deterministic learning insights for a child's detail page. Pulls completed
+ * lessons + check-ins, hands them to the pure `buildInsights` engine, and
+ * returns plain-English pattern lines. Never compares children. Ownership
+ * enforced. Looks back 180 days, ample for a meaningful sample.
+ */
+export async function childInsights(
+  parentId: string,
+  childId: ObjectId,
+): Promise<{ insights: Insight[]; learning: boolean }> {
+  if (!(await assertOwnsChild(parentId, childId))) {
+    return { insights: [], learning: true };
+  }
+  const since = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000);
+  const logsCol = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+  const checkinsCol = await getCollection<CheckinDoc>(Collections.checkins);
+
+  const [logs, checkins] = await Promise.all([
+    logsCol
+      .find({ child_id: childId, status: "completed", timestamp_end: { $gte: since } })
+      .toArray(),
+    checkinsCol.find({ child_id: childId, created_at: { $gte: since } }).toArray(),
+  ]);
+
+  const lessons: LessonSample[] = logs.map((l) => ({
+    hour: l.timestamp_end ? new Date(l.timestamp_end).getHours() : 12,
+    mastery: typeof l.mastery_score === "number" ? l.mastery_score : null,
+    hintsUsed: l.hints_counter ?? 0,
+    certified: (l.mastery_score ?? 0) >= 100,
+  }));
+
+  // Per-day average mastery, to pair with each check-in's day.
+  const dayMastery = new Map<number, number[]>();
+  for (const l of logs) {
+    if (typeof l.mastery_score !== "number" || !l.timestamp_end) continue;
+    const day = Math.floor(new Date(l.timestamp_end).getTime() / 86_400_000);
+    const arr = dayMastery.get(day) ?? [];
+    arr.push(l.mastery_score);
+    dayMastery.set(day, arr);
+  }
+  const moods: MoodSample[] = checkins.map((c) => {
+    const day = Math.floor(new Date(c.created_at).getTime() / 86_400_000);
+    const arr = dayMastery.get(day);
+    return {
+      mood: c.mood,
+      dayMastery: arr && arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null,
+    };
+  });
+
+  return buildInsights(lessons, moods);
 }
 
 /** Has a compliance dossier been generated for this child in the given period? */
