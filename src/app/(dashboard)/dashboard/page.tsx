@@ -31,12 +31,14 @@ import {
   onboardingChecklist,
   todayCard,
   type TodayCard as TodayCardData,
+  weekInReview,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { isOnboardingDismissed } from "@/lib/onboarding-dismiss";
 import { GettingStarted, type ChecklistStep } from "@/components/dashboard/getting-started";
 import { TodayCard } from "@/components/dashboard/today-card";
 import { TodayBriefingHeader } from "@/components/dashboard/today-briefing-header";
+import { WeekInReview } from "@/components/dashboard/week-in-review";
 import { dismissGettingStarted } from "./actions";
 import { ShieldAlert } from "lucide-react";
 
@@ -233,6 +235,9 @@ export default async function DashboardPage() {
     todayCards.find((c) => c.childId === activeId) ?? todayCards[0];
   const todaySummary = activeCard ? buildTodaySummary(activeCard) : "";
 
+  // Week in Review ("HEXA Wrapped") for the active child.
+  const review = activeChild ? await weekInReview(parentId!, activeChild) : null;
+
   return (
     <>
       <DashboardTopbar greeting={greeting} />
@@ -287,6 +292,8 @@ export default async function DashboardPage() {
             </div>
           </section>
         )}
+
+        {review && <WeekInReview review={review} variant="parent" />}
 
         <section className="mb-10">
           <div className="flex items-center justify-between mb-6">

@@ -16,9 +16,11 @@ import {
   listTopics,
   dueReviewWarmup,
   getWeeklySchedule,
+  weekInReview,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { accentPreset } from "@/lib/child/accents";
+import { WeekInReview } from "@/components/dashboard/week-in-review";
 import type { Subject } from "@/lib/db/types";
 
 export const metadata: Metadata = { title: "Learn" };
@@ -48,6 +50,7 @@ export default async function LearnHubPage() {
   const streak = await childStreak(child._id);
   const doneTags = await todaysCompletedTopicTags(child._id);
   const warmupCount = (await dueReviewWarmup(child._id, 3)).length;
+  const review = await weekInReview(parentId, child);
 
   // Map each completed-today tag to its subject so a subject's quest reads as
   // "done today" once any lesson in it is completed.
@@ -140,6 +143,12 @@ export default async function LearnHubPage() {
       )}
 
       <QuestCards quests={quests} />
+
+      {review && !review.quiet && (
+        <div className="mt-5">
+          <WeekInReview review={review} variant="child" />
+        </div>
+      )}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <Link

@@ -489,6 +489,125 @@ export async function monthlyReport(
   };
 }
 
+export interface WeekInReview {
+  childId: string;
+  childName: string;
+  /** ISO Monday date of the week summarised. */
+  weekStart: string;
+  /** "2 – 8 June" style label. */
+  weekLabel: string;
+  lessonsCompleted: number;
+  topicsCertified: string[];
+  streak: number;
+  /** Subject with the most lessons this week, display label, or null. */
+  bestSubject: string | null;
+  totalMinutes: number;
+  activeDays: number;
+  /** True when the week had no completed lessons (drives a gentle empty slide). */
+  quiet: boolean;
+}
+
+/**
+ * "Week in Review" aggregate for one child — the current Monday→Sunday window,
+ * derived entirely from existing collections (no new schema). Powers the parent
+ * card, the child-mode celebration, and the shareable image. Ownership enforced.
+ */
+export async function weekInReview(
+  parentId: string,
+  child: ChildDoc,
+): Promise<WeekInReview | null> {
+  const childId = child._id!;
+  if (!(await assertOwnsChild(parentId, childId))) return null;
+
+  const weekStart = currentWeekStart();
+  const start = new Date(`${weekStart}T00:00:00`);
+  const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+  const logsCol = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+
+  const [logs, certified, streak] = await Promise.all([
+    logsCol
+      .find({
+        child_id: childId,
+        status: "completed",
+        timestamp_end: { $gte: start, $lt: end },
+      })
+      .toArray(),
+    compCol
+      .find({
+        child_id: childId,
+        state: "certified",
+        certified_at: { $gte: start, $lt: end },
+      })
+      .toArray(),
+    childStreak(childId),
+  ]);
+
+  const lessonsCompleted = logs.length;
+
+  // Total minutes from logged durations (guard against missing/negative spans).
+  const totalSeconds = logs.reduce((sum, l) => {
+    if (!l.timestamp_end) return sum;
+    const s =
+      (new Date(l.timestamp_end).getTime() - new Date(l.timestamp_start).getTime()) /
+      1000;
+    return sum + (s > 0 ? s : 0);
+  }, 0);
+  const totalMinutes = Math.round(totalSeconds / 60);
+
+  const activeDays = new Set(
+    logs
+      .filter((l) => l.timestamp_end)
+      .map((l) => Math.floor(new Date(l.timestamp_end as Date).getTime() / 86_400_000)),
+  ).size;
+
+  // Best subject = most lessons this week (resolve each log's topic → subject).
+  const certTags = certified.map((c) => c.topic_tag);
+  const logTags = Array.from(new Set(logs.map((l) => l.topic_tag).concat(certTags)));
+  const topicDocs =
+    logTags.length > 0
+      ? await topicsCol.find({ topic_tag: { $in: logTags } }).toArray()
+      : [];
+  const subjectByTag = new Map(topicDocs.map((t) => [t.topic_tag, t.subject]));
+  const titleByTag = new Map(topicDocs.map((t) => [t.topic_tag, t.title]));
+
+  const subjectCounts = new Map<Subject, number>();
+  for (const l of logs) {
+    const subj = subjectByTag.get(l.topic_tag);
+    if (subj) subjectCounts.set(subj, (subjectCounts.get(subj) ?? 0) + 1);
+  }
+  let bestSubject: string | null = null;
+  let bestCount = 0;
+  for (const [subj, count] of subjectCounts) {
+    if (count > bestCount) {
+      bestCount = count;
+      bestSubject = SUBJECT_DISPLAY[subj];
+    }
+  }
+
+  const topicsCertified = certTags
+    .map((t) => titleByTag.get(t))
+    .filter((t): t is string => Boolean(t));
+
+  const weekLabel = `${start.toLocaleDateString("en-GB", { day: "numeric", month: "long" })} – ${new Date(end.getTime() - 86_400_000).toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`;
+
+  return {
+    childId: childId.toHexString(),
+    childName: child.full_name,
+    weekStart,
+    weekLabel,
+    lessonsCompleted,
+    topicsCertified,
+    streak: streak.current,
+    bestSubject,
+    totalMinutes,
+    activeDays,
+    quiet: lessonsCompleted === 0,
+  };
+}
+
 /** Has a compliance dossier been generated for this child in the given period? */
 export async function hasDossierForPeriod(
   childId: ObjectId,
