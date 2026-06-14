@@ -74,6 +74,7 @@ export async function POST(request: Request) {
             trigger: distress.trigger,
             severity: distress.severity,
             matchedText: studentAnswer,
+            phrase: distress.phrase,
           });
           await notifyEscalation(parentId, child.full_name, distress.severity);
         }

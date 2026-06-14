@@ -27,7 +27,18 @@ const DEFAULT_TERM = (() => {
   return `Q${q} ${now.getFullYear()}`;
 })();
 
-export function PortfolioGenerator() {
+export interface PortfolioChild {
+  id: string;
+  name: string;
+}
+
+export function PortfolioGenerator({
+  children = [],
+}: {
+  /** The parent's children — when present, the picker selects by id (exact). */
+  children?: PortfolioChild[];
+}) {
+  const [childId, setChildId] = useState(children[0]?.id ?? "");
   const [childName, setChildName] = useState("");
   const [term, setTerm] = useState(DEFAULT_TERM);
   const [loading, setLoading] = useState(false);
@@ -59,10 +70,12 @@ export function PortfolioGenerator() {
     }
   }
 
+  const hasPicker = children.length > 0;
+
   async function generate(e: React.FormEvent) {
     e.preventDefault();
-    if (!childName.trim()) {
-      setError("Please enter the child's name.");
+    if (hasPicker ? !childId : !childName.trim()) {
+      setError(hasPicker ? "Please choose a child." : "Please enter the child's name.");
       return;
     }
     setError(null);
@@ -72,7 +85,11 @@ export function PortfolioGenerator() {
       const res = await fetch("/api/portfolio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ childName: childName.trim(), term: term.trim() }),
+        body: JSON.stringify(
+          hasPicker
+            ? { childId, term: term.trim() }
+            : { childName: childName.trim(), term: term.trim() },
+        ),
       });
       const data = (await res.json()) as PortfolioResponse & { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Generation failed.");
@@ -114,14 +131,38 @@ export function PortfolioGenerator() {
         </div>
 
         <form onSubmit={generate} className="grid sm:grid-cols-2 gap-4">
-          <Input
-            name="childName"
-            label="Child's name"
-            placeholder="e.g. Aisha Khan"
-            value={childName}
-            onChange={(e) => setChildName(e.target.value)}
-            required
-          />
+          {hasPicker ? (
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="childId"
+                className="text-xs font-medium uppercase tracking-wider text-fog-300"
+              >
+                Child
+              </label>
+              <select
+                id="childId"
+                name="childId"
+                value={childId}
+                onChange={(e) => setChildId(e.target.value)}
+                className="h-11 rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-fog-50 focus:border-violet-400/60 focus:outline-none focus:ring-2 focus:ring-violet-400/20"
+              >
+                {children.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <Input
+              name="childName"
+              label="Child's name"
+              placeholder="e.g. Aisha Khan"
+              value={childName}
+              onChange={(e) => setChildName(e.target.value)}
+              required
+            />
+          )}
           <Input
             name="term"
             label="Reporting term"

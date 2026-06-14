@@ -1,35 +1,40 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { currentWeekStart } from "@/lib/db/repo";
+import { describe, expect, it } from "vitest";
+import { currentWeekStart, londonParts } from "@/lib/db/repo";
 
-// June 2026: Monday 8th, Sunday 14th (local-time fixtures).
+// Day/week math is pinned to Europe/London (audit MEDIUM #2). Tests pass an
+// explicit instant so they are deterministic regardless of the CI runner's TZ.
+// June 2026: Monday 8th … Sunday 14th. BST (UTC+1) is in effect in June.
 
-afterEach(() => {
-  vi.useRealTimers();
+describe("londonParts", () => {
+  it("reads the London calendar day, not UTC", () => {
+    // 23:30Z on Sunday 14 June is 00:30 BST on Monday 15 June in London.
+    const p = londonParts(new Date("2026-06-14T23:30:00Z"));
+    expect(p.day).toBe(15);
+    expect(p.weekday).toBe(0); // Monday
+  });
 });
-
-function freezeAt(year: number, monthIndex: number, day: number, hour: number): void {
-  vi.useFakeTimers();
-  vi.setSystemTime(new Date(year, monthIndex, day, hour, 30, 0));
-}
 
 describe("currentWeekStart", () => {
   it("returns this week's Monday from midweek", () => {
-    freezeAt(2026, 5, 10, 15); // Wednesday 10 June
-    expect(currentWeekStart()).toBe("2026-06-08");
+    expect(currentWeekStart(new Date("2026-06-10T15:30:00Z"))).toBe("2026-06-08");
   });
 
-  it("returns today on a Monday, even just after local midnight", () => {
-    freezeAt(2026, 5, 8, 0); // Monday 8 June, 00:30 local
-    expect(currentWeekStart()).toBe("2026-06-08");
+  it("returns today on a Monday morning (London)", () => {
+    expect(currentWeekStart(new Date("2026-06-08T07:30:00Z"))).toBe("2026-06-08");
   });
 
-  it("still returns the PREVIOUS Monday late on a Sunday", () => {
-    freezeAt(2026, 5, 14, 23); // Sunday 14 June, 23:30 local
-    expect(currentWeekStart()).toBe("2026-06-08");
+  it("rolls to the new week at London midnight, not 01:00 BST", () => {
+    // 23:30Z Sunday = 00:30 BST Monday in London → already the NEW week.
+    expect(currentWeekStart(new Date("2026-06-14T23:30:00Z"))).toBe("2026-06-15");
+  });
+
+  it("still the previous Monday late Sunday evening in London", () => {
+    // 21:30Z Sunday = 22:30 BST Sunday in London → previous Monday.
+    expect(currentWeekStart(new Date("2026-06-14T21:30:00Z"))).toBe("2026-06-08");
   });
 
   it("crosses a month boundary correctly", () => {
-    freezeAt(2026, 6, 1, 12); // Wednesday 1 July → Monday 29 June
-    expect(currentWeekStart()).toBe("2026-06-29");
+    // Wednesday 1 July (London) → Monday 29 June.
+    expect(currentWeekStart(new Date("2026-07-01T12:00:00Z"))).toBe("2026-06-29");
   });
 });
