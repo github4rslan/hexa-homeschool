@@ -196,3 +196,9 @@ checks exist.
   `/api/tutor` resolve it via `lib/active-child.ts` (cookie).
 - **Db name**: `mongodb.ts` falls back to db name `"hexa"` if `MONGODB_DB` is
   unset — still set it explicitly in every environment.
+- **Theme**: the parent app (dashboard + auth) is dark by default; a `.theme-light`
+  scope (globals.css, same remap technique as `.theme-warm`) flips it via a class
+  on the `#hexa-workspace` wrapper. Preference is client-side (localStorage,
+  `hexa-theme`), set in Settings → Appearance, with an inline no-flash script.
+  Marketing is fixed-warm; child mode is fixed-light (readability + Children's
+  Code) and never mounts the theme provider.

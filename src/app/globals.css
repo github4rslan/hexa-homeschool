@@ -743,3 +743,87 @@
     background-color: var(--color-linen-50) !important;
   }
 }
+
+/* ──────────────────────────────────────────────────────────
+   Dark mode toggle — the parent app (dashboard + auth) is dark by
+   DEFAULT (the brand palette). `.theme-light` is the opt-in light skin:
+   like .theme-warm it remaps the dark utilities to light values in one
+   scope rather than forking every component, so a single class on the
+   workspace wrapper flips the whole surface. Violet/neon/amber accents
+   are kept (darkened for contrast on light). Child mode + marketing are
+   unaffected. Toggle + no-flash script in components/theme/*.
+   ────────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Surfaces → light. */
+  .theme-light .bg-void,
+  .theme-light .bg-abyss,
+  .theme-light .bg-nebula,
+  .theme-light .bg-cosmos,
+  .theme-light .bg-surface { background-color: #F6F7FB !important; }
+  .theme-light .bg-mesh-violet,
+  .theme-light .bg-mesh-hero,
+  .theme-light .bg-grid,
+  .theme-light .bg-aurora::before { background-image: none !important; }
+  .theme-light .glow-violet,
+  .theme-light .glow-neon,
+  .theme-light .glow-cyan { box-shadow: none !important; }
+
+  /* Text → dark ink. */
+  .theme-light .text-fog-50,
+  .theme-light .text-fog-100 { color: #14162B !important; }
+  .theme-light .text-fog-200 { color: #24263D !important; }
+  .theme-light .text-fog-300,
+  .theme-light .text-fog-400 { color: #4F5170 !important; }
+  .theme-light .text-fog-500,
+  .theme-light .text-fog-600,
+  .theme-light .text-fog-700 { color: #6B6E8C !important; }
+
+  /* White-alpha borders/fills (the glass detailing) → slate-alpha so they
+     read on a light surface instead of vanishing. */
+  .theme-light .border-white\/5,
+  .theme-light .border-white\/8,
+  .theme-light .border-white\/10,
+  .theme-light .border-white\/15,
+  .theme-light .border-white\/20 { border-color: rgba(20, 22, 43, 0.10) !important; }
+  .theme-light .bg-white\/5,
+  .theme-light .bg-white\/\[0\.02\],
+  .theme-light .bg-white\/\[0\.025\],
+  .theme-light .bg-white\/\[0\.03\],
+  .theme-light .bg-white\/\[0\.04\],
+  .theme-light .bg-white\/\[0\.05\] { background-color: rgba(20, 22, 43, 0.035) !important; }
+
+  /* Glass panels → solid white cards with a soft shadow. */
+  .theme-light .glass,
+  .theme-light .glass-strong,
+  .theme-light .glass-violet {
+    background: #FFFFFF !important;
+    border-color: rgba(20, 22, 43, 0.08) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow:
+      0 1px 2px rgba(20, 22, 43, 0.04),
+      0 12px 32px -18px rgba(20, 22, 43, 0.18) !important;
+  }
+
+  /* Accent text → darkened a step for AA contrast on white. */
+  .theme-light .text-violet-300,
+  .theme-light .text-violet-400 { color: var(--color-violet-700) !important; }
+  .theme-light .text-neon-400,
+  .theme-light .text-neon-500 { color: var(--color-neon-600) !important; }
+  .theme-light .text-cyan-300,
+  .theme-light .text-cyan-400 { color: var(--color-cyan-600) !important; }
+  .theme-light .text-amber-400 { color: var(--color-amber-500) !important; }
+
+  /* Neon text gradients → solid violet (kills the transparent fill on light). */
+  .theme-light .text-gradient-violet,
+  .theme-light .text-gradient-aurora,
+  .theme-light .text-gradient-shimmer {
+    background: none !important;
+    -webkit-text-fill-color: var(--color-violet-700) !important;
+    color: var(--color-violet-700) !important;
+    animation: none !important;
+  }
+
+  /* Skeleton shimmer base → light. */
+  .theme-light .animate-pulse { background-color: rgba(20, 22, 43, 0.06) !important; }
+}

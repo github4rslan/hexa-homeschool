@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { HexaLogo } from "@/components/ui/hexa-logo";
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
+import { ThemeProvider } from "@/components/theme/theme-provider";
+import { THEME_NOFLASH_SCRIPT } from "@/components/theme/theme";
 
 export default function AuthLayout({
   children,
@@ -8,7 +10,9 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <ThemeProvider>
+      <script dangerouslySetInnerHTML={{ __html: THEME_NOFLASH_SCRIPT }} />
+      <div className="relative min-h-screen overflow-hidden">
       {/* Ambient background */}
       <div className="fixed inset-0 bg-void -z-20" />
       <div className="fixed inset-0 bg-mesh-hero opacity-70 -z-10 pointer-events-none" />
@@ -25,6 +29,7 @@ export default function AuthLayout({
       </main>
       {/* Parents-only analytics; never mounted in (child) routes. */}
       <AnalyticsProvider />
-    </div>
+      </div>
+    </ThemeProvider>
   );
 }

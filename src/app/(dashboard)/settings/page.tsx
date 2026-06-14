@@ -11,8 +11,10 @@ import {
   Trash2,
   UserRound,
   LogOut,
+  Sun,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -91,6 +93,19 @@ export default async function SettingsPage({
         )}
 
         <div className="flex flex-col gap-6">
+          {/* 0 — Appearance */}
+          <Card variant="glass-strong" padding="xl">
+            <div className="flex items-center gap-2 mb-1">
+              <Sun className="h-4 w-4 text-amber-300" />
+              <h2 className="text-lg font-semibold text-fog-50">Appearance</h2>
+            </div>
+            <p className="text-sm text-fog-400 mb-5">
+              Choose how the dashboard looks. &ldquo;System&rdquo; follows your
+              device. Child mode always stays light for readability.
+            </p>
+            <ThemeToggle />
+          </Card>
+
           {/* 1 — Profile */}
           <Card variant="glass-strong" padding="xl">
             <div className="flex items-center gap-2 mb-1">
