@@ -12,7 +12,7 @@ export interface ParentDoc {
   email: string;
   full_name: string | null;
   password_hash: string;
-  /** Email verification (Resend). Undefined on legacy rows = treat as verified. */
+  /** Email verification (Brevo). Undefined on legacy rows = treat as verified. */
   email_verified?: boolean;
   /** Weekly progress digest opt-out. Undefined/false = receives the digest. */
   weekly_digest_opt_out?: boolean;
@@ -290,6 +290,8 @@ export interface EscalationDoc {
   trigger: string;
   severity: "immediate" | "critical" | "high" | "medium" | "low";
   matched_text: string;
+  /** The specific distress phrase that fired (audit detail; optional/legacy). */
+  phrase?: string;
   status: "open" | "acknowledged" | "resolved";
   created_at: Date;
   /** SLA workflow (optional; legacy rows = open/unset). */

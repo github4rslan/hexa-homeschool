@@ -49,8 +49,8 @@ const SUBJECT_LABEL: Record<Subject, string> = {
 };
 
 /**
- * Compute the decision for a child. `focus` is the lowest-readiness assessed
- * subject (where the next decision matters most); paths reflect that subject.
+ * Compute the decision for a child. `focus` is the HIGHEST-readiness assessed
+ * subject — the "ready to sit" anchor for the framing; paths reflect it.
  */
 export function computeExamDecision(
   dob: string,

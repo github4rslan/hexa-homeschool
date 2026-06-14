@@ -1290,8 +1290,7 @@ export async function recordCheckin(
 export async function todaysCheckin(
   childId: ObjectId,
 ): Promise<CheckinDoc | null> {
-  const start = new Date();
-  start.setHours(0, 0, 0, 0);
+  const start = londonDayStart();
   const col = await getCollection<CheckinDoc>(Collections.checkins);
   return col.findOne(
     { child_id: childId, created_at: { $gte: start } },
@@ -1843,15 +1842,76 @@ export async function parentOwnsChild(
 
 // ── Weekly schedule (Stage 5) ────────────────────────────
 /** Monday (local) of the current week as an ISO date string. */
-export function currentWeekStart(): string {
-  const d = new Date();
-  const day = (d.getDay() + 6) % 7; // 0 = Monday
-  d.setDate(d.getDate() - day);
-  // Format from local date parts — toISOString() would shift the date back a
-  // day in timezones east of UTC (local Monday midnight = Sunday in UTC).
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
+/**
+ * Calendar Y/M/D and weekday for an instant in Europe/London. Day/week math is
+ * pinned to London (not the Vercel server's UTC) so a UK child at 23:30 BST is
+ * bucketed into the correct local day and the weekly plan rolls over at local
+ * midnight, not 01:00 BST (audit MEDIUM #2). Uses Intl with an explicit
+ * timeZone, so it is correct through BST/GMT transitions.
+ */
+export function londonParts(now: Date = new Date()): {
+  year: number;
+  month: number; // 1–12
+  day: number;
+  /** 0 = Monday … 6 = Sunday. */
+  weekday: number;
+} {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+  });
+  const parts = Object.fromEntries(
+    fmt.formatToParts(now).map((p) => [p.type, p.value]),
+  );
+  const WD: Record<string, number> = {
+    Mon: 0,
+    Tue: 1,
+    Wed: 2,
+    Thu: 3,
+    Fri: 4,
+    Sat: 5,
+    Sun: 6,
+  };
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    weekday: WD[parts.weekday as string] ?? 0,
+  };
+}
+
+/**
+ * The instant of "today at 00:00 in Europe/London", as a Date. Used for
+ * day-boundary queries (e.g. today's check-in) so a late-evening BST session
+ * isn't bucketed into the wrong UTC day (audit MEDIUM #2).
+ */
+export function londonDayStart(now: Date = new Date()): Date {
+  const { year, month, day } = londonParts(now);
+  // London midnight in UTC terms: find the offset by formatting the same wall
+  // time. Construct from the London Y/M/D and let toLocaleString resolve the
+  // zone offset for that date (handles BST/GMT).
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
+  // Determine London's offset at that date by comparing wall clock vs UTC.
+  const asLondon = new Date(
+    utcGuess.toLocaleString("en-US", { timeZone: "Europe/London" }),
+  );
+  const asUtc = new Date(utcGuess.toLocaleString("en-US", { timeZone: "UTC" }));
+  const offsetMs = asUtc.getTime() - asLondon.getTime();
+  return new Date(utcGuess.getTime() + offsetMs);
+}
+
+export function currentWeekStart(now: Date = new Date()): string {
+  const { year, month, day, weekday } = londonParts(now);
+  // Subtract `weekday` days from the London calendar date to reach Monday. Use a
+  // UTC anchor purely for the date arithmetic, then format the resulting Y/M/D.
+  const anchor = new Date(Date.UTC(year, month - 1, day));
+  anchor.setUTCDate(anchor.getUTCDate() - weekday);
+  const y = anchor.getUTCFullYear();
+  const m = String(anchor.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(anchor.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${dd}`;
 }
 
@@ -2584,7 +2644,13 @@ export async function setTwoFactorEnabled(
 // ── Escalations (Stage 5 safety) ─────────────────────────
 export async function recordEscalation(
   childId: ObjectId,
-  input: { trigger: string; severity: EscalationDoc["severity"]; matchedText: string },
+  input: {
+    trigger: string;
+    severity: EscalationDoc["severity"];
+    matchedText: string;
+    /** The specific phrase that fired (audit detail; LOW #4). */
+    phrase?: string;
+  },
 ): Promise<void> {
   const col = await getCollection<EscalationDoc>(Collections.escalations);
   await col.insertOne({
@@ -2592,6 +2658,7 @@ export async function recordEscalation(
     trigger: input.trigger,
     severity: input.severity,
     matched_text: input.matchedText.slice(0, 280),
+    phrase: input.phrase,
     status: "open",
     created_at: new Date(),
   } as EscalationDoc);

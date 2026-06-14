@@ -63,7 +63,12 @@ export default async function PortfolioPage() {
             ]}
           />
         </div>
-        <PortfolioGenerator />
+        <PortfolioGenerator
+          children={children.map((c) => ({
+            id: c._id!.toHexString(),
+            name: c.full_name,
+          }))}
+        />
 
         {certificates.length > 0 && (
           <div className="mx-auto mt-8 max-w-3xl print:hidden">
