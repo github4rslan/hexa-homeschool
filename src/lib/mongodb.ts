@@ -88,4 +88,6 @@ export const Collections = {
   aiInvocations: "ai_invocations",
   // Parent ↔ staff messaging threads (booking + escalation)
   messages: "messages",
+  // Operations — append-only audit trail of staff WRITE actions + sensitive views
+  staffAuditLog: "staff_audit_log",
 } as const;

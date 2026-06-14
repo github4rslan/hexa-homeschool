@@ -122,6 +122,11 @@ async function main() {
     await db.collection("messages").createIndex({ thread_type: 1, thread_id: 1, created_at: 1 });
     await db.collection("messages").createIndex({ parent_id: 1, sender: 1, read_at: 1 });
 
+    // Staff audit trail: filter by staff/action, newest first.
+    await db.collection("staff_audit_log").createIndex({ created_at: -1 });
+    await db.collection("staff_audit_log").createIndex({ staff_email: 1, created_at: -1 });
+    await db.collection("staff_audit_log").createIndex({ action: 1, created_at: -1 });
+
     console.log("✓ Indexes ensured.");
     console.log("\n✅ Seed complete.");
   } finally {
