@@ -74,4 +74,5 @@ see [.env.example](.env.example) for the full list.
 - [docs/API.md](docs/API.md) — API routes, auth requirements, known gaps
 - [docs/AI-AGENTS.md](docs/AI-AGENTS.md) — Teaching Agent pipeline, safety gates, TTS
 - [docs/COMPLIANCE.md](docs/COMPLIANCE.md) — UK regulatory context (CNIS, Children's Code, safeguarding)
+- [docs/OPERATIONS.md](docs/OPERATIONS.md) — incident runbook (site down, DB, Stripe, rollback, Sentry, backups)
 - [CLAUDE.md](CLAUDE.md) — guidance for AI-assisted development
