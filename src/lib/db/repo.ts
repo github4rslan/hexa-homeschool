@@ -3,6 +3,7 @@ import { ObjectId } from "mongodb";
 import { getCollection, Collections } from "@/lib/mongodb";
 import { getSession } from "@/lib/auth/session";
 import { computeStreak } from "@/lib/engine/streak";
+import { sha256Hex } from "@/lib/compliance/portfolio";
 import {
   scheduleFirstReview,
   nextReview,
@@ -605,6 +606,112 @@ export async function weekInReview(
     totalMinutes,
     activeDays,
     quiet: lessonsCompleted === 0,
+  };
+}
+
+export interface SubjectMilestone {
+  subject: Subject;
+  label: string;
+  certified: number;
+  total: number;
+  /** True when every topic in the subject is certified (certificate-eligible). */
+  complete: boolean;
+}
+
+/**
+ * Per-subject certification milestones for a child: how many topics are
+ * certified vs the subject's total, and whether the subject is fully complete.
+ * Drives the "earned certificates" list on the portfolio page. Ownership
+ * enforced.
+ */
+export async function subjectMilestones(
+  parentId: string,
+  childId: ObjectId,
+): Promise<SubjectMilestone[]> {
+  if (!(await assertOwnsChild(parentId, childId))) return [];
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const [topics, comps] = await Promise.all([
+    topicsCol.find({}).toArray(),
+    compCol.find({ child_id: childId, state: "certified" }).toArray(),
+  ]);
+  const certifiedTags = new Set(comps.map((c) => c.topic_tag));
+  const subjects: Subject[] = ["mathematics", "english", "science"];
+  return subjects.map((subject) => {
+    const subjectTopics = topics.filter((t) => t.subject === subject);
+    const certified = subjectTopics.filter((t) =>
+      certifiedTags.has(t.topic_tag),
+    ).length;
+    const total = subjectTopics.length;
+    return {
+      subject,
+      label: SUBJECT_DISPLAY[subject],
+      certified,
+      total,
+      complete: total > 0 && certified === total,
+    };
+  });
+}
+
+export interface MasteryCertificate {
+  childFirstName: string;
+  subjectLabel: string;
+  topicsCertified: number;
+  /** Most recent certification date in the subject (the achievement date). */
+  achievedAt: Date;
+  /** Tamper-evident SHA-256 over the certificate facts (ties to compliance). */
+  verificationHash: string;
+}
+
+/**
+ * Build a print-ready mastery certificate for a fully-certified subject. The
+ * verification hash is SHA-256 over the canonical facts (child first name,
+ * subject, topic count, date) so it can be cross-checked — the same trust
+ * primitive as the compliance dossiers. Returns null unless the subject is
+ * complete. Ownership enforced.
+ */
+export async function masteryCertificate(
+  parentId: string,
+  child: ChildDoc,
+  subject: Subject,
+): Promise<MasteryCertificate | null> {
+  const childId = child._id!;
+  if (!(await assertOwnsChild(parentId, childId))) return null;
+
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const subjectTopics = await topicsCol.find({ subject }).toArray();
+  if (subjectTopics.length === 0) return null;
+  const tags = subjectTopics.map((t) => t.topic_tag);
+
+  const certified = await compCol
+    .find({ child_id: childId, state: "certified", topic_tag: { $in: tags } })
+    .toArray();
+  if (certified.length !== subjectTopics.length) return null; // not complete
+
+  const achievedAt = certified.reduce<Date>((latest, c) => {
+    const d = c.certified_at ? new Date(c.certified_at) : new Date(0);
+    return d > latest ? d : latest;
+  }, new Date(0));
+
+  const firstName = child.full_name.split(" ")[0];
+  const subjectLabel = SUBJECT_DISPLAY[subject];
+  const verificationHash = await sha256Hex(
+    JSON.stringify({
+      kind: "mastery-certificate",
+      childFirstName: firstName,
+      subject,
+      topics: subjectTopics.length,
+      achievedAt: achievedAt.toISOString().slice(0, 10),
+    }),
+  );
+
+  return {
+    childFirstName: firstName,
+    subjectLabel,
+    topicsCertified: subjectTopics.length,
+    achievedAt,
+    verificationHash,
   };
 }
 
