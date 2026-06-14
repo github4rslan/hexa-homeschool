@@ -174,7 +174,7 @@ export default async function DashboardPage() {
     time: relativeTime(l.timestamp_start),
     child: nameById.get(l.child_id.toHexString()) ?? "Child",
     event: l.status === "completed" ? "Completed a lesson" : "Started a lesson",
-    detail: `${l.topic_tag.replace(/_/g, " ")} session`,
+    detail: `${l.topic_tag.replace(/_/g, " ")} lesson`,
   }));
 
   // Compliance: real check for a dossier this quarter (active child).
@@ -211,11 +211,11 @@ export default async function DashboardPage() {
               <ShieldAlert className="h-5 w-5 text-crimson-400 mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-crimson-300">
-                  A learning session was paused for {nameById.get(escalations[0].child_id.toHexString()) ?? "your child"}.
+                  A lesson was paused for {nameById.get(escalations[0].child_id.toHexString()) ?? "your child"}.
                 </p>
                 <p className="text-xs text-fog-300 mt-1">
                   HEXA detected your child may have been feeling stuck or upset and
-                  paused the session. Please check in with them when you can. This
+                  paused the lesson. Please check in with them when you can. This
                   is an educational safeguard only — for any welfare concern, contact
                   your GP or relevant services.
                 </p>
@@ -262,9 +262,9 @@ export default async function DashboardPage() {
               icon={<Award className="h-4 w-4" />}
             />
             <StatCard
-              label="Avg session time"
+              label="Avg lesson time"
               value={avgSec ? `${Math.round(avgSec / 60)}m` : "—"}
-              hint={avgSec ? "within 45–60 min target" : "no sessions yet"}
+              hint={avgSec ? "within 45–60 min target" : "no lessons yet"}
               accent="cyan"
               icon={<Clock className="h-4 w-4" />}
             />
