@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, TrendingUp } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { EmptyIllustration } from "@/components/fx/empty-illustration";
 import { projectGrade, parseTargetWindow, type GradePoint } from "@/lib/engine/trajectory";
 import type { EvaluationPoint } from "@/lib/db/repo";
 import type { Subject } from "@/lib/db/types";
@@ -42,7 +43,7 @@ export function TrajectoryChart({
   if (!hasData) {
     return (
       <div className="rounded-xl border border-white/5 bg-white/[0.02] p-8 text-center">
-        <TrendingUp className="mx-auto mb-3 h-6 w-6 text-fog-500" />
+        <EmptyIllustration name="chart" className="mx-auto mb-3 text-fog-500" />
         <p className="text-sm text-fog-300">
           Run a mock exam to see the trajectory.
         </p>
@@ -130,7 +131,14 @@ export function TrajectoryChart({
                   opacity={0.5}
                 />
               )}
-              <path d={path} fill="none" stroke={s.stroke} strokeWidth={2} />
+              <path
+                d={path}
+                fill="none"
+                stroke={s.stroke}
+                strokeWidth={2}
+                pathLength={1}
+                className="traj-line"
+              />
               {pts.map((p, i) => (
                 <circle
                   key={i}
