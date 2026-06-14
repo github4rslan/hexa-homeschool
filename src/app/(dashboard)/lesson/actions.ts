@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import {
   currentParentId,
   getActiveChild,
@@ -69,6 +70,13 @@ export async function logLessonCompletion(
     masteryPct >= 100 ? "certified" : masteryPct >= 50 ? "training" : "locked";
 
   await upsertCompetence(parentId, child._id, topicTag, state);
+
+  // A completed lesson changes data shown on the child hub + progress map
+  // (quest done-state, certified nodes) and the parent dashboard (activity,
+  // week stats, getting-started checklist). Refresh them so none goes stale.
+  revalidatePath("/learn");
+  revalidatePath("/learn/map");
+  revalidatePath("/dashboard");
 
   return { persisted: true, competenceState: state };
 }
