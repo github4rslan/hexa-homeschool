@@ -81,5 +81,7 @@ const nextConfig: NextConfig = {
 export default withSentryConfig(nextConfig, {
   silent: true,
   sourcemaps: { disable: true },
+  // Tree-shake the client SDK: drop the debug logger (and other debug-only code
+  // paths) we don't use — we run error-capture only. Trims first-load JS.
   webpack: { treeshake: { removeDebugLogging: true } },
 });

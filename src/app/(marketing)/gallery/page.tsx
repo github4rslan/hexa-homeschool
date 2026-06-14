@@ -3,6 +3,7 @@ import { Section, SectionHeader } from "@/components/ui/section";
 import { Card } from "@/components/ui/card";
 import { CTA } from "@/components/marketing/cta";
 import { listMedia } from "@/lib/db/repo";
+import { cloudinaryThumb } from "@/lib/media/cloudinary";
 
 export const metadata: Metadata = {
   title: "Success gallery",
@@ -41,7 +42,7 @@ export default async function GalleryPage() {
               >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
-                  src={m.secure_url}
+                  src={cloudinaryThumb(m.secure_url, 600)}
                   alt="HEXA family moment"
                   className="h-full w-full object-cover"
                   loading="lazy"

@@ -64,7 +64,7 @@ export default async function PortfolioPage() {
           />
         </div>
         <PortfolioGenerator
-          children={children.map((c) => ({
+          childList={children.map((c) => ({
             id: c._id!.toHexString(),
             name: c.full_name,
           }))}
