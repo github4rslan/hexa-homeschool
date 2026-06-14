@@ -35,6 +35,8 @@ import {
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { isOnboardingDismissed } from "@/lib/onboarding-dismiss";
+import { birthdayAge } from "@/lib/child/birthday";
+import { Cake } from "lucide-react";
 import { GettingStarted, type ChecklistStep } from "@/components/dashboard/getting-started";
 import { TodayCard } from "@/components/dashboard/today-card";
 import { TodayBriefingHeader } from "@/components/dashboard/today-briefing-header";
@@ -238,11 +240,26 @@ export default async function DashboardPage() {
   // Week in Review ("HEXA Wrapped") for the active child.
   const review = activeChild ? await weekInReview(parentId!, activeChild) : null;
 
+  // Birthday: one tasteful banner if any child has a birthday today.
+  const birthdayChild = kids
+    .map((k) => ({ name: k.full_name.split(" ")[0], age: birthdayAge(k.date_of_birth) }))
+    .find((b) => b.age !== null);
+
   return (
     <>
       <DashboardTopbar greeting={greeting} />
 
       <div className="flex-1 p-6 lg:p-10 max-w-7xl">
+        {birthdayChild && (
+          <div className="mb-6 flex items-center gap-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3">
+            <Cake className="h-5 w-5 shrink-0 text-amber-300" />
+            <p className="text-sm text-fog-200">
+              Happy birthday, {birthdayChild.name}! 🎂 Turning {birthdayChild.age}{" "}
+              today — a lovely day to celebrate.
+            </p>
+          </div>
+        )}
+
         {escalations.length > 0 && (
           <div className="mb-6 rounded-xl border border-crimson-400/40 bg-crimson-500/10 px-4 py-3">
             <div className="flex items-start gap-3">

@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { Send, MessageSquare } from "lucide-react";
 import { sendParentMessage } from "@/app/(dashboard)/tutoring/message-actions";
 import { MAX_MESSAGE_CHARS } from "@/lib/messaging/validate";
+import { EmptyIllustration } from "@/components/fx/empty-illustration";
 
 export interface ThreadMessage {
   id: string;
@@ -51,9 +52,12 @@ export function MessageThread({
       </div>
 
       {initialMessages.length === 0 ? (
-        <p className="mb-4 text-sm text-fog-500">
-          No messages yet. Send a note and our team will reply here.
-        </p>
+        <div className="mb-4 flex flex-col items-center py-4 text-center">
+          <EmptyIllustration name="messages" className="mb-2 h-16 w-16 text-fog-600" />
+          <p className="text-sm text-fog-500">
+            No messages yet. Send a note and our team will reply here.
+          </p>
+        </div>
       ) : (
         <ul className="mb-4 flex flex-col gap-3">
           {initialMessages.map((m) => (

@@ -20,6 +20,7 @@ import {
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { accentPreset } from "@/lib/child/accents";
+import { isBirthdayToday } from "@/lib/child/birthday";
 import { WeekInReview } from "@/components/dashboard/week-in-review";
 import type { Subject } from "@/lib/db/types";
 
@@ -98,6 +99,7 @@ export default async function LearnHubPage() {
 
   const firstName = child.full_name.split(" ")[0];
   const accent = accentPreset(child.accent);
+  const isBirthday = isBirthdayToday(child.date_of_birth);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -106,12 +108,14 @@ export default async function LearnHubPage() {
           <StreakFlame count={streak.current} completedToday={streak.completedToday} />
         </div>
         <h1 className="text-4xl sm:text-5xl font-semibold text-fog-50">
-          Hi {firstName}! 👋
+          {isBirthday ? `Happy birthday, ${firstName}! 🎂` : `Hi ${firstName}! 👋`}
         </h1>
         <p className="mt-3 text-xl text-fog-300">
-          {streak.current > 1
-            ? `${streak.current} days in a row — lovely work.`
-            : "Here are today's quests."}
+          {isBirthday
+            ? "Hope your day is wonderful — here are today's quests when you're ready."
+            : streak.current > 1
+              ? `${streak.current} days in a row — lovely work.`
+              : "Here are today's quests."}
         </p>
       </div>
 
