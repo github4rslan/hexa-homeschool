@@ -17,6 +17,44 @@ Parent  ──► (dashboard) ─ children, schedule, portfolio, tutoring, compl
 Staff   ──► (admin) ─ agents telemetry, audit, curriculum, finance, escalations
 ```
 
+## Golden Path (new-family journey)
+
+The complete first-run flow, with the single primary CTA that carries the
+parent from each step to the next. Every post-action redirect and success
+screen below is wired so the chain never dead-ends:
+
+```
+signup ──► /signup/verify-sent ──► (email link) /verify
+   │                                     │
+   │   markEmailVerified + sign in       ▼
+   └────────────────────────────►  /onboarding  (3-step overview)
+                                         │ "Get started"
+                                         ▼
+                              /dashboard/children/new
+                                         │ createChild → redirect
+                                         ▼
+                              /onboarding/diagnostic
+                                         │ diagnostic complete → results + narrative
+                                         │ primary CTA "See this week's plan"
+                                         ▼
+                                    /schedule  (weekly plan + reasons)
+                                         │ approve (or any edit = approval)
+                                         │ → post-approval "How {child} starts" card
+                                         ▼
+                          set parent PIN (/settings#parent-pin) ─┐
+                                         │ "Open child mode"      │
+                                         ▼                        │
+                                     /learn  (child quests) ◄─────┘
+                                         │ first lesson done
+                                         ▼
+                          parent's next /dashboard visit shows real
+                          progress; getting-started checklist self-completes
+```
+
+Empty/cold states never strand the user: the zero-children dashboard offers
+"Add your first child"; the no-child `/schedule` offers "Add a child"; the
+no-lessons activity feed offers "Start the diagnostic".
+
 ## Route Groups (`src/app/`)
 
 | Group | Audience | Contents |

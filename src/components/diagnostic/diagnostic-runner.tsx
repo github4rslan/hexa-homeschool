@@ -340,20 +340,21 @@ export function DiagnosticRunner({ pool }: { pool: DiagnosticItem[] }) {
                 <div className="flex items-start gap-3">
                   <Target className="h-4 w-4 text-violet-300 mt-0.5 shrink-0" />
                   <p className="text-sm text-fog-200 leading-relaxed">
-                    Next, the Planning Agent will turn this baseline into a
-                    personalised two-year syllabus — which you review and approve
-                    before any lessons begin. Sit the exam when ready, not before.
+                    Next, the Planning Agent has turned this baseline into a
+                    personalised weekly plan — every lesson chosen for a reason
+                    you can see. Review and approve it before any lessons begin.
+                    Sit the exam when ready, not before.
                   </p>
                 </div>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button href="/dashboard" variant="primary" size="lg">
-                  Continue to dashboard
+                <Button href="/schedule" variant="primary" size="lg">
+                  See this week&apos;s plan
                   <ArrowRight className="h-4 w-4" />
                 </Button>
-                <Button href="/lesson" variant="secondary" size="lg">
-                  Try a sample lesson
+                <Button href="/dashboard" variant="secondary" size="lg">
+                  Go to dashboard
                 </Button>
               </div>
 

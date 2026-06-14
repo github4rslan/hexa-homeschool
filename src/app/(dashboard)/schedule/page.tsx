@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { CalendarDays, Check, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, KeyRound, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { SubmitButton } from "@/components/ui/submit-button";
 import {
   currentParentId,
+  findParentById,
   getActiveChild,
   getOrCreateWeeklySchedule,
   swappableTopicsForSubject,
@@ -47,6 +48,9 @@ export default async function SchedulePage() {
       </div>
     );
   }
+
+  const parent = await findParentById(parentId);
+  const hasPin = Boolean(parent?.parent_pin_hash);
 
   const result = await getOrCreateWeeklySchedule(parentId, child._id);
   const schedule = result?.schedule ?? null;
@@ -132,6 +136,58 @@ export default async function SchedulePage() {
             approval, so there&apos;s no second step for your own change.
           </p>
         </Card>
+
+        {schedule?.approved_by_parent && (
+          <Card variant="glass-strong" padding="lg" className="mt-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-neon-500/10 border border-neon-400/30">
+                <Sparkles className="h-5 w-5 text-neon-400" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-fog-50">
+                  How {firstName} starts
+                </h3>
+                <p className="mt-1 text-sm text-fog-400 leading-relaxed">
+                  The plan is approved. Hand the device to {firstName} and open
+                  child mode — they&apos;ll see this week&apos;s lessons as quests,
+                  matched day-for-day to the plan above.
+                  {!hasPin && (
+                    <>
+                      {" "}
+                      Set a 4-digit parent PIN first so you can step back into the
+                      dashboard whenever you like.
+                    </>
+                  )}
+                </p>
+                <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                  {hasPin ? (
+                    <>
+                      <Button href="/learn" variant="primary" size="md">
+                        Open child mode
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                      <Button href="/settings#parent-pin" variant="ghost" size="md">
+                        <KeyRound className="h-4 w-4" />
+                        Change parent PIN
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button href="/settings#parent-pin" variant="primary" size="md">
+                        <KeyRound className="h-4 w-4" />
+                        Set parent PIN
+                      </Button>
+                      <Button href="/learn" variant="ghost" size="md">
+                        Skip and open child mode
+                        <ArrowRight className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
       </main>
     </div>
   );
