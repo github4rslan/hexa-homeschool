@@ -16,7 +16,11 @@ const SUBJECT_META: { id: Subject; label: string; accent: string }[] = [
   { id: "science", label: "Science", accent: "neon" },
 ];
 
-export default async function ProgressMapPage() {
+export default async function ProgressMapPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ highlight?: string }>;
+}) {
   const parentId = await currentParentId();
   if (!parentId) redirect("/login?redirect=/learn/map");
   const child = await getActiveChild(parentId, await readActiveChildId());
@@ -24,6 +28,13 @@ export default async function ProgressMapPage() {
 
   const map = await competenceMapForChild(child._id);
   const firstName = child.full_name.split(" ")[0];
+  const { highlight } = await searchParams;
+  // Which subject contains the highlighted topic (deep-linked from a lesson).
+  const highlightSubject = highlight
+    ? (Object.keys(map) as Subject[]).find((s) =>
+        map[s].some((n) => n.topicTag === highlight),
+      )
+    : undefined;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -50,6 +61,7 @@ export default async function ProgressMapPage() {
             label={s.label}
             accent={s.accent}
             nodes={map[s.id]}
+            highlightTag={highlightSubject === s.id ? highlight : undefined}
           />
         ))}
       </div>

@@ -68,6 +68,7 @@ export async function GET(request: Request) {
         weekLabel,
         children,
         dashboardUrl: `${appUrl()}/dashboard`,
+        escalationsUrl: `${appUrl()}/tutoring#escalations`,
         settingsUrl: `${appUrl()}/settings`,
       });
       const res = await sendEmail({

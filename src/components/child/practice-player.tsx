@@ -366,7 +366,20 @@ export function PracticePlayer({
             </p>
           )}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button href="/learn" variant="child" size="child">
+            {mastered && (
+              <Button
+                href={`/learn/map?highlight=${encodeURIComponent(curriculumTopic)}`}
+                variant="child"
+                size="child"
+              >
+                See it on my journey
+              </Button>
+            )}
+            <Button
+              href="/learn"
+              variant={mastered ? "secondary" : "child"}
+              size="child"
+            >
               Back to subjects
             </Button>
           </div>

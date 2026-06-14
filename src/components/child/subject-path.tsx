@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Check, Lock, Sparkles, RefreshCw } from "lucide-react";
 import type { TopicMapNode } from "@/lib/db/repo";
@@ -43,18 +43,36 @@ function formatDate(d: Date | null): string {
   });
 }
 
+/** Whole days from now until `d`; null when `d` is past or missing. */
+function daysUntil(d: Date | null): number | null {
+  if (!d) return null;
+  const ms = new Date(d).getTime() - Date.now();
+  if (ms <= 0) return null;
+  return Math.max(1, Math.ceil(ms / (24 * 60 * 60 * 1000)));
+}
+
 export function SubjectPath({
   label,
   accent,
   nodes,
+  highlightTag,
 }: {
   label: string;
   accent: string;
   nodes: TopicMapNode[];
+  /** A topic to open + glow on load (deep-linked from a lesson celebration). */
+  highlightTag?: string;
 }) {
   const reduce = useReducedMotion();
   const palette = ACCENT[accent] ?? ACCENT.violet;
-  const [openTag, setOpenTag] = useState<string | null>(null);
+  const [openTag, setOpenTag] = useState<string | null>(highlightTag ?? null);
+
+  // Scroll the deep-linked node into view (client nav doesn't honour the hash).
+  useEffect(() => {
+    if (!highlightTag) return;
+    const el = document.getElementById(`topic-${highlightTag}`);
+    el?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "center" });
+  }, [highlightTag, reduce]);
 
   const certifiedCount = nodes.filter((n) => n.state === "certified").length;
   // The "current" node: first one in training, else first locked one.
@@ -77,11 +95,17 @@ export function SubjectPath({
         {nodes.map((node, i) => {
           const isCurrent = i === currentIndex;
           const open = openTag === node.topicTag;
+          const highlighted = highlightTag === node.topicTag;
+          const reviewInDays = node.needsRefresh
+            ? null
+            : daysUntil(node.nextReviewAt);
           const status =
             node.state === "certified"
               ? node.needsRefresh
                 ? `Mastered ${formatDate(node.certifiedAt)} · ready for a quick refresh`
-                : `You mastered this${node.certifiedAt ? ` on ${formatDate(node.certifiedAt)}` : ""}`
+                : reviewInDays !== null
+                  ? `You mastered this${node.certifiedAt ? ` on ${formatDate(node.certifiedAt)}` : ""} · review comes up in ${reviewInDays} ${reviewInDays === 1 ? "day" : "days"}`
+                  : `You mastered this${node.certifiedAt ? ` on ${formatDate(node.certifiedAt)}` : ""}`
               : node.state === "training"
                 ? "You're here — keep going!"
                 : "Coming up on your path";
@@ -100,7 +124,11 @@ export function SubjectPath({
             );
 
           return (
-            <li key={node.topicTag} className="flex items-start gap-4">
+            <li
+              key={node.topicTag}
+              id={`topic-${node.topicTag}`}
+              className="flex items-start gap-4 scroll-mt-24"
+            >
               <motion.button
                 type="button"
                 onClick={() => setOpenTag(open ? null : node.topicTag)}
@@ -112,6 +140,7 @@ export function SubjectPath({
                     : node.state === "training"
                       ? `${palette.ring} ${palette.text}`
                       : "border-white/10 bg-white/[0.03] text-fog-600",
+                  highlighted ? `${palette.glow} ring-2 ring-offset-2 ring-offset-void` : "",
                 ].join(" ")}
                 animate={
                   isCurrent && node.state === "training" && !reduce

@@ -27,7 +27,7 @@ export async function sendEscalationAlert(
       parentName: parent.full_name,
       childFirstName: childName.split(" ")[0],
       severity,
-      dashboardUrl: `${appUrl()}/dashboard`,
+      detailUrl: `${appUrl()}/tutoring#escalations`,
       settingsUrl: `${appUrl()}/settings`,
     });
     await sendEmail({ to: parent.email, subject: tmpl.subject, html: tmpl.html });

@@ -106,6 +106,7 @@ export function MockExamPlayer({
         explanations={explanations}
         setExplanations={setExplanations}
         onDone={() => router.push("/learn")}
+        onSeeJourney={() => router.push("/learn/map")}
         reduce={!!reduce}
       />
     );
@@ -210,6 +211,7 @@ function MockResults({
   explanations,
   setExplanations,
   onDone,
+  onSeeJourney,
   reduce,
 }: {
   subjectLabel: string;
@@ -219,6 +221,7 @@ function MockResults({
   explanations: Record<number, AiExplanation>;
   setExplanations: React.Dispatch<React.SetStateAction<Record<number, AiExplanation>>>;
   onDone: () => void;
+  onSeeJourney: () => void;
   reduce: boolean;
 }) {
   const wrong = questions
@@ -326,12 +329,26 @@ function MockResults({
         </p>
       )}
 
-      <button
-        onClick={onDone}
-        className="child-touch mt-8 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 px-8 py-4 text-lg font-semibold text-white"
-      >
-        Back to learning <ArrowRight className="h-5 w-5" />
-      </button>
+      <p className="mt-8 text-center text-base text-fog-400">
+        {wrong.length > 0
+          ? `Next focus: a few more ${subjectLabel} lessons will lift this even higher.`
+          : `Next focus: keep your ${subjectLabel} streak going on your journey.`}
+      </p>
+
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <button
+          onClick={onSeeJourney}
+          className="child-touch inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-8 py-4 text-lg font-semibold text-fog-100 hover:border-white/30"
+        >
+          See my journey
+        </button>
+        <button
+          onClick={onDone}
+          className="child-touch inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-violet-500 to-violet-700 px-8 py-4 text-lg font-semibold text-white"
+        >
+          Back to learning <ArrowRight className="h-5 w-5" />
+        </button>
+      </div>
     </div>
   );
 }

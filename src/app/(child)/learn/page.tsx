@@ -15,6 +15,7 @@ import {
   todaysCompletedTopicTags,
   listTopics,
   dueReviewWarmup,
+  getWeeklySchedule,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { accentPreset } from "@/lib/child/accents";
@@ -60,15 +61,32 @@ export default async function LearnHubPage() {
 
   const firstTopics = await Promise.all(SUBJECTS.map((s) => firstTopic(s.id)));
 
+  // Today's quests correspond 1:1 to the parent's approved weekly plan: for
+  // each subject, prefer the topic the plan assigned to today (same topic,
+  // same day as the parent's /schedule). Fall back to the next uncertified
+  // topic when there's no plan item for that subject today.
+  const schedule = await getWeeklySchedule(parentId, child._id);
+  const todayIndex = (new Date().getDay() + 6) % 7; // 0 = Monday
+  const plannedTodayBySubject = new Map<Subject, { tag: string; title: string }>();
+  for (const item of schedule?.items ?? []) {
+    if (item.day === todayIndex && !plannedTodayBySubject.has(item.subject)) {
+      plannedTodayBySubject.set(item.subject, {
+        tag: item.topic_tag,
+        title: item.topic_title,
+      });
+    }
+  }
+
   const quests: Quest[] = SUBJECTS.map((s, i) => {
     const done = certified[s.id] ?? 0;
-    const topic = firstTopics[i];
+    const planned = plannedTodayBySubject.get(s.id);
+    const topicTag = planned?.tag ?? firstTopics[i]?.topic_tag;
     return {
       id: s.id,
       label: s.label,
       accent: s.accent,
       ring: s.ring,
-      href: topic ? `/learn/lesson?topic=${topic.topic_tag}` : "/learn/lesson",
+      href: topicTag ? `/learn/lesson?topic=${topicTag}` : "/learn/lesson",
       done: doneSubjects.has(s.id),
       progressLabel: `${done}/${TOPICS_PER_SUBJECT}`,
       progressPct: Math.round((done / TOPICS_PER_SUBJECT) * 100),

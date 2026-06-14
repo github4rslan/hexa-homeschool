@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   Activity,
+  ArrowRight,
   Award,
   Clock,
   FileCheck,
@@ -219,6 +220,13 @@ export default async function DashboardPage() {
                   is an educational safeguard only — for any welfare concern, contact
                   your GP or relevant services.
                 </p>
+                <Link
+                  href="/tutoring#escalations"
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-crimson-300 hover:text-crimson-200"
+                >
+                  View details &amp; message the team
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
               </div>
             </div>
           </div>
