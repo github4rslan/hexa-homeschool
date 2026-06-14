@@ -86,4 +86,6 @@ export const Collections = {
   newsletter: "newsletter_subscribers",
   // AI telemetry — one row per real agent invocation (powers admin console)
   aiInvocations: "ai_invocations",
+  // Parent ↔ staff messaging threads (booking + escalation)
+  messages: "messages",
 } as const;
