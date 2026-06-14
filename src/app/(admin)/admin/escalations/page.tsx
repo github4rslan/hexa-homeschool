@@ -1,105 +1,92 @@
 import type { Metadata } from "next";
-import { ShieldAlert, Activity } from "lucide-react";
+import { Activity } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/sidebar";
 import { MetricCard } from "@/components/admin/metric-card";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { adminOpenEscalations } from "@/lib/db/repo";
+import { adminEscalationQueue, escalationStats } from "@/lib/db/repo";
+import { EscalationRow } from "@/components/admin/escalation-row";
+import { slaState } from "@/lib/engine/escalation-sla";
 
 export const metadata: Metadata = { title: "Admin · Escalations" };
 export const dynamic = "force-dynamic";
 
-const severityVariant: Record<
-  string,
-  "crimson" | "amber" | "violet" | "neon" | "cyan"
-> = {
-  immediate: "crimson",
-  critical: "crimson",
-  high: "amber",
-  medium: "violet",
-  low: "cyan",
+const SEVERITY_ORDER: Record<string, number> = {
+  immediate: 0,
+  critical: 1,
+  high: 2,
+  medium: 3,
+  low: 4,
 };
 
-function relativeTime(d: Date): string {
-  const diffMin = Math.round((Date.now() - d.getTime()) / 60000);
-  if (diffMin < 1) return "just now";
-  if (diffMin < 60) return `${diffMin}m ago`;
-  const diffHr = Math.round(diffMin / 60);
-  if (diffHr < 24) return `${diffHr}h ago`;
-  return `${Math.round(diffHr / 24)}d ago`;
-}
-
 export default async function EscalationsPage() {
-  const escalations = await adminOpenEscalations(50);
-  const immediate = escalations.filter(
-    (e) => e.severity === "immediate" || e.severity === "critical",
+  const [queue, stats] = await Promise.all([
+    adminEscalationQueue(100),
+    escalationStats(),
+  ]);
+
+  // Open first, then by severity, then oldest first (most urgent at the top).
+  const sorted = [...queue].sort((a, b) => {
+    const openA = a.status === "open" ? 0 : 1;
+    const openB = b.status === "open" ? 0 : 1;
+    if (openA !== openB) return openA - openB;
+    const sevA = SEVERITY_ORDER[a.severity] ?? 9;
+    const sevB = SEVERITY_ORDER[b.severity] ?? 9;
+    if (sevA !== sevB) return sevA - sevB;
+    return a.createdAt.getTime() - b.createdAt.getTime();
+  });
+
+  const alarmed = queue.filter(
+    (e) =>
+      slaState({ severity: e.severity, status: e.status, created_at: e.createdAt })
+        .alarm,
   ).length;
 
   return (
     <>
       <AdminTopbar
         title="Safety Net · Escalations"
-        subtitle="Real distress escalations logged by the safety system"
+        subtitle="Acknowledge and resolve real distress escalations against SLA"
       />
 
       <div className="flex-1 p-6 lg:p-10 max-w-[1600px]">
         <section className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <MetricCard
             label="Open escalations"
-            value={escalations.length.toString()}
+            value={stats.open.toString()}
             accent="crimson"
-            hint="awaiting review"
+            hint="awaiting acknowledgement"
           />
           <MetricCard
-            label="High severity"
-            value={immediate.toString()}
+            label="SLA alarms"
+            value={alarmed.toString()}
             accent="amber"
-            hint="immediate or critical"
+            hint="immediate, unacked > 15 min"
           />
           <MetricCard
-            label="Source"
-            value="Live"
+            label="Median time to ack"
+            value={
+              stats.medianAckMinutes === null
+                ? "—"
+                : `${stats.medianAckMinutes}m`
+            }
             accent="neon"
-            hint="from the safety matcher"
+            hint="this week"
           />
         </section>
 
         <Card variant="glass" padding="none" className="overflow-hidden">
           <div className="px-6 py-4 border-b border-white/5">
-            <h2 className="text-lg font-semibold text-fog-50">Open queue</h2>
+            <h2 className="text-lg font-semibold text-fog-50">Queue</h2>
             <p className="text-xs text-fog-500 mt-0.5">
-              Triggered when a child&apos;s text matches a distress pattern. The
-              session is frozen and the parent is alerted.
+              Most urgent first. Acknowledging stops the SLA clock; both actions
+              are written to the audit trail.
             </p>
           </div>
 
-          {escalations.length > 0 ? (
+          {sorted.length > 0 ? (
             <div className="divide-y divide-white/5">
-              {escalations.map((e) => (
-                <div
-                  key={e._id?.toHexString()}
-                  className="px-6 py-4 hover:bg-white/[0.02] transition-colors flex items-start gap-4"
-                >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-crimson-400/30 bg-crimson-500/10 text-crimson-400">
-                    <ShieldAlert className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-fog-50">
-                        {e.trigger}
-                      </span>
-                      <Badge variant={severityVariant[e.severity] ?? "violet"} size="sm">
-                        {e.severity}
-                      </Badge>
-                    </div>
-                    <div className="text-xs text-fog-400 mt-1">
-                      Matched: &ldquo;{e.matched_text}&rdquo;
-                    </div>
-                  </div>
-                  <span className="text-xs text-fog-500 whitespace-nowrap">
-                    {relativeTime(e.created_at)}
-                  </span>
-                </div>
+              {sorted.map((e) => (
+                <EscalationRow key={e.id} esc={e} />
               ))}
             </div>
           ) : (
@@ -109,7 +96,7 @@ export default async function EscalationsPage() {
               </div>
               <h3 className="text-base font-semibold text-fog-50">All clear</h3>
               <p className="text-sm text-fog-500 mt-1">
-                No open escalations. New distress events will appear here in real time.
+                No escalations. New distress events will appear here in real time.
               </p>
             </div>
           )}
