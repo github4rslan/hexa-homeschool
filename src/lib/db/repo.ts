@@ -607,6 +607,8 @@ export interface TopicMapNode {
   certifiedAt: Date | null;
   /** True when this topic is certified but a spaced-repetition review is due. */
   needsRefresh: boolean;
+  /** When the next spaced-repetition review is scheduled (certified topics). */
+  nextReviewAt: Date | null;
 }
 
 /**
@@ -648,6 +650,7 @@ export async function competenceMapForChild(
       state,
       certifiedAt: c?.certified_at ?? null,
       needsRefresh,
+      nextReviewAt: c?.next_review_at ?? null,
     });
   }
   return result;
@@ -2024,6 +2027,36 @@ export async function openEscalations(
     .sort({ created_at: -1 })
     .limit(10)
     .toArray();
+}
+
+export interface ParentEscalation {
+  id: string;
+  childId: ObjectId;
+  childName: string;
+  severity: EscalationDoc["severity"];
+  createdAt: Date;
+}
+
+/**
+ * A parent's currently-open escalations across all their children, annotated
+ * with the child's name. Ownership is implicit: we resolve childIds from the
+ * parent's own children, so only their escalations are ever returned. Powers
+ * the parent-facing escalation detail + messaging thread.
+ */
+export async function listOpenEscalationsForParent(
+  parentId: string,
+): Promise<ParentEscalation[]> {
+  const kids = await listChildren(parentId);
+  if (kids.length === 0) return [];
+  const nameById = new Map(kids.map((k) => [k._id!.toHexString(), k.full_name]));
+  const escalations = await openEscalations(kids.map((k) => k._id!));
+  return escalations.map((e) => ({
+    id: e._id!.toHexString(),
+    childId: e.child_id,
+    childName: nameById.get(e.child_id.toHexString()) ?? "your child",
+    severity: e.severity,
+    createdAt: e.created_at,
+  }));
 }
 
 export async function setEscalationAlertOptOut(

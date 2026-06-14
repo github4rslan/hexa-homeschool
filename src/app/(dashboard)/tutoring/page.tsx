@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Users, Check, Clock } from "lucide-react";
+import { Users, Check, Clock, ShieldAlert } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import {
   tutorQuota,
   listTutorBookings,
   listThreadMessagesForParent,
+  listOpenEscalationsForParent,
 } from "@/lib/db/repo";
 import { requestTutor } from "./actions";
 import { MessageThread, type ThreadMessage } from "@/components/dashboard/message-thread";
@@ -62,6 +63,25 @@ export default async function TutoringPage({
     }),
   );
 
+  // Open safety escalations + their message threads (deep-linked from the
+  // dashboard alert and the escalation email/SMS).
+  const escalations = await listOpenEscalationsForParent(parentId);
+  const threadsByEscalation = new Map<string, ThreadMessage[]>();
+  await Promise.all(
+    escalations.map(async (e) => {
+      const msgs = await listThreadMessagesForParent(parentId, "escalation", e.id);
+      threadsByEscalation.set(
+        e.id,
+        msgs.map((m) => ({
+          id: m._id!.toHexString(),
+          sender: m.sender,
+          body: m.body,
+          createdAt: m.created_at.toISOString(),
+        })),
+      );
+    }),
+  );
+
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 bg-void -z-20" />
@@ -92,6 +112,57 @@ export default async function TutoringPage({
           <div className="mb-6 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-400">
             {sp.error}
           </div>
+        )}
+
+        {escalations.length > 0 && (
+          <Card
+            id="escalations"
+            variant="glass-strong"
+            padding="lg"
+            className="mb-6 scroll-mt-24 border-crimson-400/30"
+          >
+            <div className="mb-4 flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-crimson-400" />
+              <h2 className="text-lg font-semibold text-fog-50">Paused lessons</h2>
+            </div>
+            <p className="mb-5 text-sm text-fog-400">
+              HEXA paused a lesson because your child may have been feeling stuck
+              or upset. Check in with them when you can, and message the HEXA team
+              here if you&apos;d like support. This is an educational safeguard
+              only — for any welfare concern, contact your GP or relevant services.
+            </p>
+            <ul className="flex flex-col gap-5">
+              {escalations.map((e) => (
+                <li
+                  key={e.id}
+                  className="border-b border-white/5 pb-5 last:border-0 last:pb-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <Badge variant="outline" size="sm">
+                      {e.childName}
+                    </Badge>
+                    <span className="flex-1 truncate text-sm text-fog-300">
+                      Paused{" "}
+                      {e.createdAt.toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </span>
+                    <Badge variant="amber" size="sm">
+                      open
+                    </Badge>
+                  </div>
+                  <div className="mt-3">
+                    <MessageThread
+                      threadType="escalation"
+                      threadId={e.id}
+                      initialMessages={threadsByEscalation.get(e.id) ?? []}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
         )}
 
         <Card variant="glass-strong" padding="xl" className="mb-6">

@@ -1,4 +1,5 @@
-import { TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, TrendingUp } from "lucide-react";
 import { projectGrade, parseTargetWindow, type GradePoint } from "@/lib/engine/trajectory";
 import type { EvaluationPoint } from "@/lib/db/repo";
 import type { Subject } from "@/lib/db/types";
@@ -48,6 +49,13 @@ export function TrajectoryChart({
         <p className="mt-1 text-xs text-fog-500">
           We&apos;ll chart progress here once there are at least two assessments.
         </p>
+        <Link
+          href="/learn/mock"
+          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-violet-300 hover:text-violet-200"
+        >
+          Start a mock exam
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
       </div>
     );
   }

@@ -223,6 +223,8 @@ export function weeklyDigestTemplate(opts: {
   weekLabel: string;
   children: DigestChild[];
   dashboardUrl: string;
+  /** Deep-link to the paused-lessons detail + messaging thread. */
+  escalationsUrl: string;
   settingsUrl: string;
 }): { subject: string; html: string } {
   const greeting = opts.parentName
@@ -261,7 +263,7 @@ export function weeklyDigestTemplate(opts: {
           }
           ${
             child.escalations > 0
-              ? `<p style="margin:12px 0 0;padding:10px 12px;background:rgba(197,127,42,0.12);border:1px solid rgba(197,127,42,0.35);border-radius:8px;color:${COLORS.clayDeep};font-size:13px;line-height:1.5;"><strong>${child.escalations} wellbeing alert${child.escalations === 1 ? "" : "s"}</strong> raised this week. Please review the details in your dashboard.</p>`
+              ? `<p style="margin:12px 0 0;padding:10px 12px;background:rgba(197,127,42,0.12);border:1px solid rgba(197,127,42,0.35);border-radius:8px;color:${COLORS.clayDeep};font-size:13px;line-height:1.5;"><strong>${child.escalations} wellbeing alert${child.escalations === 1 ? "" : "s"}</strong> raised this week. <a href="${opts.escalationsUrl}" style="color:${COLORS.clayDeep};font-weight:600;">Review the details and message the team</a>.</p>`
               : ""
           }
         </td></tr>
@@ -347,7 +349,7 @@ export function escalationAlertTemplate(opts: {
   parentName: string | null;
   childFirstName: string;
   severity: string;
-  dashboardUrl: string;
+  detailUrl: string;
   settingsUrl: string;
 }): { subject: string; html: string } {
   const greeting = opts.parentName
@@ -357,9 +359,9 @@ export function escalationAlertTemplate(opts: {
     subject: `${opts.childFirstName} could use a check-in`,
     html: WRAP(`
       ${heading(greeting)}
-      <p style="margin:0 0 16px;">During today&rsquo;s lesson, something ${opts.childFirstName} wrote suggested they were finding things hard, so we gently paused the session. This is a precaution — our safety check prefers to pause too often rather than miss a moment that matters.</p>
-      <p style="margin:0 0 22px;">A calm break and a quick chat is usually all that&rsquo;s needed. The details are waiting in your dashboard (severity: ${opts.severity}) — we don&rsquo;t include them in email.</p>
-      <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.dashboardUrl, "Review in my dashboard")}</p>
+      <p style="margin:0 0 16px;">During today&rsquo;s lesson, something ${opts.childFirstName} wrote suggested they were finding things hard, so we gently paused the lesson. This is a precaution — our safety check prefers to pause too often rather than miss a moment that matters.</p>
+      <p style="margin:0 0 22px;">A calm break and a quick chat is usually all that&rsquo;s needed. The details are waiting in your dashboard (severity: ${opts.severity}), where you can also message the HEXA team — we don&rsquo;t include them in email.</p>
+      <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.detailUrl, "Review &amp; message the team")}</p>
       <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">You can manage these alerts in <a href="${opts.settingsUrl}" style="color:${COLORS.clayDeep};">Settings &rarr; Email preferences</a>. Account and safety emails inside the dashboard are always available regardless.</p>
     `),
   };

@@ -55,6 +55,21 @@ Empty/cold states never strand the user: the zero-children dashboard offers
 "Add your first child"; the no-child `/schedule` offers "Add a child"; the
 no-lessons activity feed offers "Start the diagnostic".
 
+### Cross-feature links (no orphan features)
+
+- Lesson celebration (certified) → `/learn/map?highlight=<topic>` which scrolls
+  to and glows the node that just lit up.
+- Progress-map certified nodes show "review comes up in N days" from the
+  spaced-repetition `next_review_at`.
+- Trajectory empty state → "Start a mock exam" (`/learn/mock`).
+- Mock result → "See my journey" (`/learn/map`) plus a next-focus line.
+- Weekly-plan email → `/schedule`; escalation email + digest → `/tutoring#escalations`.
+- Dashboard escalation banner → `/tutoring#escalations`, the parent-facing
+  paused-lessons detail with the escalation messaging thread ready.
+- Child quests reflect the approved weekly plan: today's quest per subject is
+  the topic the plan assigned to today (same topic, same day as `/schedule`),
+  falling back to the next uncertified topic when the plan has none for today.
+
 ## Terminology Glossary (canonical user-facing voice)
 
 One term per concept across pages, emails, toasts and components. Future
