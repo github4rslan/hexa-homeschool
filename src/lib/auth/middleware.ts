@@ -10,8 +10,9 @@ import { verifyToken, SESSION_COOKIE_NAME } from "@/lib/auth/session";
  * bounced off the login/signup pages.
  *
  * NOTE: this middleware only checks "signed in" (Edge runtime — no DB access).
- * The admin ROLE check (ParentDoc.is_admin) lives in the (admin) layout, which
- * redirects non-staff parents to /dashboard.
+ * The staff ROLE check (admin/support via `lib/auth/rbac.resolveRole`) lives in
+ * the (admin) layout, which redirects non-staff parents to /dashboard. Per-action
+ * write permissions are then enforced by the rbac matrix.
  */
 export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;

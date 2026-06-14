@@ -33,8 +33,10 @@ import type {
   EscalationDoc,
   AiInvocationDoc,
   MessageDoc,
+  StaffAuditLogDoc,
   Subject,
 } from "./types";
+import { resolveRole, type StaffRole } from "@/lib/auth/rbac";
 
 /**
  * Data-access layer over MongoDB.
@@ -1453,6 +1455,210 @@ export async function adminRecentLogs(limit = 8): Promise<LessonLogDoc[]> {
 export async function adminOpenEscalations(limit = 50): Promise<EscalationDoc[]> {
   const col = await getCollection<EscalationDoc>(Collections.escalations);
   return col.find({ status: "open" }).sort({ created_at: -1 }).limit(limit).toArray();
+}
+
+// ── Staff roles + audit trail (operations) ────────────────
+
+/** The effective staff role for an account (admin/support), or null. */
+export async function staffRole(parentId: string): Promise<StaffRole | null> {
+  const parent = await findParentById(parentId);
+  if (!parent) return null;
+  return resolveRole({ role: parent.role, is_admin: parent.is_admin });
+}
+
+/**
+ * Append one row to the staff audit trail. Best-effort and append-only — there
+ * are deliberately NO update/delete functions for this collection. Never throws
+ * (an audit-write failure must not block the staff action it records, but is
+ * logged for investigation).
+ */
+export async function recordStaffAction(input: {
+  staffId: string;
+  staffEmail: string;
+  action: string;
+  targetCollection?: string | null;
+  targetId?: string | null;
+}): Promise<void> {
+  try {
+    const oid = toObjectId(input.staffId);
+    if (!oid) return;
+    const col = await getCollection<StaffAuditLogDoc>(Collections.staffAuditLog);
+    await col.insertOne({
+      staff_id: oid,
+      staff_email: input.staffEmail,
+      action: input.action,
+      target_collection: input.targetCollection ?? null,
+      target_id: input.targetId ?? null,
+      created_at: new Date(),
+    } as StaffAuditLogDoc);
+  } catch (err) {
+    console.error("[staff audit] write failed (non-fatal):", err);
+  }
+}
+
+export interface StaffAuditEntry {
+  id: string;
+  staffEmail: string;
+  action: string;
+  targetCollection: string | null;
+  targetId: string | null;
+  createdAt: Date;
+}
+
+/** Read the audit trail with optional filters (staff email / action / since). */
+export async function listStaffAudit(
+  filters: { staffEmail?: string; action?: string; since?: Date } = {},
+  limit = 200,
+): Promise<StaffAuditEntry[]> {
+  const col = await getCollection<StaffAuditLogDoc>(Collections.staffAuditLog);
+  const query: Record<string, unknown> = {};
+  if (filters.staffEmail) query.staff_email = filters.staffEmail;
+  if (filters.action) query.action = filters.action;
+  if (filters.since) query.created_at = { $gte: filters.since };
+  const rows = await col
+    .find(query)
+    .sort({ created_at: -1 })
+    .limit(limit)
+    .toArray();
+  return rows.map((r) => ({
+    id: r._id!.toHexString(),
+    staffEmail: r.staff_email,
+    action: r.action,
+    targetCollection: r.target_collection ?? null,
+    targetId: r.target_id ?? null,
+    createdAt: r.created_at,
+  }));
+}
+
+/** Distinct staff emails + actions seen in the trail (for filter dropdowns). */
+export async function staffAuditFacets(): Promise<{
+  staff: string[];
+  actions: string[];
+}> {
+  const col = await getCollection<StaffAuditLogDoc>(Collections.staffAuditLog);
+  const [staff, actions] = await Promise.all([
+    col.distinct("staff_email"),
+    col.distinct("action"),
+  ]);
+  return {
+    staff: (staff as string[]).sort(),
+    actions: (actions as string[]).sort(),
+  };
+}
+
+// ── Escalation operations (SLA workflow) ──────────────────
+
+/** Full escalation queue for staff, newest first, with child names. */
+export interface AdminEscalation {
+  id: string;
+  childName: string;
+  severity: EscalationDoc["severity"];
+  status: EscalationDoc["status"];
+  trigger: string;
+  createdAt: Date;
+  acknowledgedAt: Date | null;
+  resolvedAt: Date | null;
+  staffNote: string | null;
+}
+
+export async function adminEscalationQueue(limit = 100): Promise<AdminEscalation[]> {
+  const escCol = await getCollection<EscalationDoc>(Collections.escalations);
+  const escalations = await escCol
+    .find({})
+    .sort({ created_at: -1 })
+    .limit(limit)
+    .toArray();
+  if (escalations.length === 0) return [];
+
+  const childCol = await getCollection<ChildDoc>(Collections.children);
+  const childIds = Array.from(new Set(escalations.map((e) => e.child_id.toHexString()))).map(
+    (id) => new ObjectId(id),
+  );
+  const children = await childCol.find({ _id: { $in: childIds } }).toArray();
+  const nameById = new Map(children.map((c) => [c._id!.toHexString(), c.full_name]));
+
+  return escalations.map((e) => ({
+    id: e._id!.toHexString(),
+    childName: nameById.get(e.child_id.toHexString()) ?? "a child",
+    severity: e.severity,
+    status: e.status,
+    trigger: e.trigger,
+    createdAt: e.created_at,
+    acknowledgedAt: e.acknowledged_at ?? null,
+    resolvedAt: e.resolved_at ?? null,
+    staffNote: e.staff_note ?? null,
+  }));
+}
+
+/**
+ * Acknowledge or resolve an escalation (staff action). Records the transition
+ * to the audit trail. `note` is internal-only. Returns false if the id is bad.
+ */
+export async function updateEscalationStatus(input: {
+  staffId: string;
+  staffEmail: string;
+  escalationId: string;
+  status: "acknowledged" | "resolved";
+  note?: string;
+}): Promise<boolean> {
+  const oid = toObjectId(input.escalationId);
+  if (!oid) return false;
+  const col = await getCollection<EscalationDoc>(Collections.escalations);
+  const set: Partial<EscalationDoc> = { status: input.status };
+  if (input.status === "acknowledged") set.acknowledged_at = new Date();
+  if (input.status === "resolved") set.resolved_at = new Date();
+  if (typeof input.note === "string") set.staff_note = input.note;
+  const res = await col.updateOne({ _id: oid }, { $set: set });
+  if (res.matchedCount === 0) return false;
+  await recordStaffAction({
+    staffId: input.staffId,
+    staffEmail: input.staffEmail,
+    action: `escalation.${input.status}`,
+    targetCollection: Collections.escalations,
+    targetId: input.escalationId,
+  });
+  return true;
+}
+
+export interface EscalationStats {
+  open: number;
+  /** Median minutes from created→acknowledged for escalations this week. */
+  medianAckMinutes: number | null;
+}
+
+/** Queue stats: open count + median time-to-acknowledge this week. */
+export async function escalationStats(): Promise<EscalationStats> {
+  const col = await getCollection<EscalationDoc>(Collections.escalations);
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const [open, acked] = await Promise.all([
+    col.countDocuments({ status: "open" }),
+    col
+      .find({ acknowledged_at: { $gte: weekAgo } })
+      .project<{ created_at: Date; acknowledged_at: Date }>({
+        created_at: 1,
+        acknowledged_at: 1,
+      })
+      .toArray(),
+  ]);
+
+  const mins = acked
+    .filter((a) => a.acknowledged_at)
+    .map(
+      (a) =>
+        (new Date(a.acknowledged_at).getTime() - new Date(a.created_at).getTime()) /
+        60000,
+    )
+    .filter((m) => m >= 0)
+    .sort((x, y) => x - y);
+
+  let medianAckMinutes: number | null = null;
+  if (mins.length > 0) {
+    const mid = Math.floor(mins.length / 2);
+    medianAckMinutes = Math.round(
+      mins.length % 2 ? mins[mid] : (mins[mid - 1] + mins[mid]) / 2,
+    );
+  }
+  return { open, medianAckMinutes };
 }
 
 // ── AI telemetry (real agent invocations) ─────────────────

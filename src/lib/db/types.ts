@@ -32,9 +32,17 @@ export interface ParentDoc {
   lifecycle_emails_sent?: string[];
   /**
    * Staff flag gating the (admin) routes. No self-serve path sets this —
-   * granted manually in Atlas. Undefined/false = regular parent.
+   * granted manually in Atlas. Undefined/false = regular parent. LEGACY: kept
+   * working as "admin"; new grants use `role`. See `lib/auth/rbac.ts`.
    */
   is_admin?: boolean;
+  /**
+   * Staff role. `admin` = full access; `support` = read admin pages + reply in
+   * messaging, but no curriculum/finance/settings writes. Absent + is_admin →
+   * treated as "admin" (legacy migration in code). Absent + no is_admin = not
+   * staff. Granted manually in Atlas; never self-serve.
+   */
+  role?: "admin" | "support";
   /**
    * Session invalidation counter. Sessions carry it as `tv`; bumping it
    * ("sign out everywhere", password change) rejects all older sessions.
@@ -283,5 +291,27 @@ export interface EscalationDoc {
   severity: "immediate" | "critical" | "high" | "medium" | "low";
   matched_text: string;
   status: "open" | "acknowledged" | "resolved";
+  created_at: Date;
+  /** SLA workflow (optional; legacy rows = open/unset). */
+  acknowledged_at?: Date | null;
+  resolved_at?: Date | null;
+  /** Internal staff note — NEVER shown to parents. */
+  staff_note?: string | null;
+}
+
+/**
+ * Append-only audit trail of staff actions. One row per staff WRITE, plus
+ * escalation-detail VIEWS (viewing a child's distress data is itself sensitive).
+ * No update/delete repo functions exist for this collection.
+ */
+export interface StaffAuditLogDoc {
+  _id?: ObjectId;
+  staff_id: ObjectId;
+  staff_email: string;
+  /** e.g. "escalation.acknowledge", "escalation.view", "message.reply". */
+  action: string;
+  /** Canonical collection the action targeted, when applicable. */
+  target_collection?: string | null;
+  target_id?: string | null;
   created_at: Date;
 }
