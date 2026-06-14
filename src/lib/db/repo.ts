@@ -1535,6 +1535,55 @@ export async function approveWeeklySchedule(
   return true;
 }
 
+/**
+ * Getting-started checklist state for the active child, derived entirely from
+ * real data (no stored checklist flags that could drift). Each boolean answers
+ * one onboarding step:
+ *  - hasChild:            the parent has at least one child (caller-supplied)
+ *  - hasEvaluation:       a diagnostic/mock result exists for this child
+ *  - hasApprovedSchedule: any weekly plan was ever approved for this child
+ *  - hasLesson:           at least one lesson has been logged for this child
+ * Ownership is enforced; a non-owned child returns all-false.
+ */
+export interface OnboardingChecklist {
+  hasEvaluation: boolean;
+  hasApprovedSchedule: boolean;
+  hasLesson: boolean;
+}
+
+export async function onboardingChecklist(
+  parentId: string,
+  childId: ObjectId,
+): Promise<OnboardingChecklist> {
+  const empty: OnboardingChecklist = {
+    hasEvaluation: false,
+    hasApprovedSchedule: false,
+    hasLesson: false,
+  };
+  if (!(await assertOwnsChild(parentId, childId))) return empty;
+
+  const [evals, schedules, logs] = await Promise.all([
+    getCollection<EvaluationDoc>(Collections.evaluations),
+    getCollection<WeeklyScheduleDoc>(Collections.schedules),
+    getCollection<LessonLogDoc>(Collections.lessonLogs),
+  ]);
+
+  const [evalCount, approvedCount, lessonCount] = await Promise.all([
+    evals.countDocuments({ child_id: childId }, { limit: 1 }),
+    schedules.countDocuments(
+      { child_id: childId, approved_by_parent: true },
+      { limit: 1 },
+    ),
+    logs.countDocuments({ child_id: childId }, { limit: 1 }),
+  ]);
+
+  return {
+    hasEvaluation: evalCount > 0,
+    hasApprovedSchedule: approvedCount > 0,
+    hasLesson: lessonCount > 0,
+  };
+}
+
 // ── Tutor bookings (Stage 5) ─────────────────────────────
 const TIER_TUTOR_QUOTA: Record<ParentDoc["subscription_tier"], number> = {
   diagnostic: 0,
