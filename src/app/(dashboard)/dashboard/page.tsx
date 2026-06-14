@@ -27,8 +27,12 @@ import {
   countCertifiedSince,
   hasDossierForPeriod,
   openEscalations,
+  onboardingChecklist,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
+import { isOnboardingDismissed } from "@/lib/onboarding-dismiss";
+import { GettingStarted, type ChecklistStep } from "@/components/dashboard/getting-started";
+import { dismissGettingStarted } from "./actions";
 import { ShieldAlert } from "lucide-react";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -179,6 +183,23 @@ export default async function DashboardPage() {
     ? await hasDossierForPeriod(activeChild._id, quarter)
     : false;
 
+  // Getting-started checklist — per the ACTIVE child, derived from real data.
+  // Shown until every step is done or the parent dismisses it.
+  const dismissed = await isOnboardingDismissed();
+  const checklist = activeChild?._id
+    ? await onboardingChecklist(parentId!, activeChild._id)
+    : null;
+  const steps: ChecklistStep[] = checklist
+    ? [
+        { key: "child", label: "Add your child", href: "/dashboard/children/new", done: true },
+        { key: "diagnostic", label: "Run the diagnostic", href: "/onboarding/diagnostic", done: checklist.hasEvaluation },
+        { key: "plan", label: "Approve the first plan", href: "/schedule", done: checklist.hasApprovedSchedule },
+        { key: "lesson", label: "Start the first lesson", href: "/learn", done: checklist.hasLesson },
+      ]
+    : [];
+  const showChecklist = !dismissed && steps.length > 0 && steps.some((s) => !s.done);
+  const activeChildFirstName = activeChild?.full_name.split(" ")[0];
+
   return (
     <>
       <DashboardTopbar greeting={greeting} />
@@ -201,6 +222,14 @@ export default async function DashboardPage() {
               </div>
             </div>
           </div>
+        )}
+
+        {showChecklist && (
+          <GettingStarted
+            steps={steps}
+            childName={activeChildFirstName}
+            dismiss={dismissGettingStarted}
+          />
         )}
 
         <section className="mb-10">
