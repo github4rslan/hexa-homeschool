@@ -269,7 +269,7 @@ export default async function SettingsPage({
           </Card>
 
           {/* 4 — Security */}
-          <Card variant="glass-strong" padding="xl">
+          <Card id="parent-pin" variant="glass-strong" padding="xl" className="scroll-mt-24">
             <div className="flex items-center gap-2 mb-1">
               <ShieldCheck className="h-4 w-4 text-neon-300" />
               <h2 className="text-lg font-semibold text-fog-50">Security</h2>

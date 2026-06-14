@@ -31,8 +31,8 @@ const STEPS = [
     icon: Calendar,
     title: "Review & approve the plan",
     description:
-      "The Planning Agent proposes a two-year syllabus. You review, adjust, and approve before lessons begin.",
-    href: "/dashboard",
+      "The Planning Agent proposes a tailored weekly plan. You review, adjust, and approve before lessons begin.",
+    href: "/schedule",
   },
 ];
 
