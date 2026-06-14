@@ -148,10 +148,8 @@ export default async function TutoringPage({
                         month: "short",
                       })}
                     </span>
-                    <Badge variant="amber" size="sm">
-                      open
-                    </Badge>
                   </div>
+                  <p className="mt-2 text-xs text-fog-400">{e.reassurance}</p>
                   <div className="mt-3">
                     <MessageThread
                       threadType="escalation"

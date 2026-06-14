@@ -110,6 +110,8 @@ async function main() {
     await db.collection("weekly_schedules").createIndex({ child_id: 1, week_start: 1 }, { unique: true });
     await db.collection("tutor_bookings").createIndex({ parent_id: 1, created_at: -1 });
     await db.collection("escalations").createIndex({ child_id: 1, status: 1, created_at: -1 });
+    // Admin queue: filter by status, order by severity + age.
+    await db.collection("escalations").createIndex({ status: 1, severity: 1, created_at: -1 });
 
     // Stage 6 newsletter (unique email).
     await db.collection("newsletter_subscribers").createIndex({ email: 1 }, { unique: true });

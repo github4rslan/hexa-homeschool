@@ -136,7 +136,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 | `checkins` | CheckinDoc | Daily mood → difficulty throttle |
 | `media` | MediaDoc | Cloudinary registry (dedupe via content hash) |
 | `weekly_schedules` | WeeklyScheduleDoc | Parent-set weekly plan; each item carries a data-grounded `reason` (competence state + latest evaluation) shown on `/schedule` — optional on legacy docs |
-| `tutor_bookings` / `escalations` | — | Human safety net |
+| `tutor_bookings` / `escalations` | — | Human safety net. Escalations carry an SLA workflow (`status` open→acknowledged→resolved, `acknowledged_at`, `resolved_at`, `staff_note` internal-only); the admin queue sorts by severity + age with live SLA timers (`lib/engine/escalation-sla.ts`), parents see only a reassuring status |
 | `messages` | MessageDoc | Parent ↔ staff threads on a booking/escalation; every parent read/write filters on `parent_id` for family isolation |
 | `staff_audit_log` | StaffAuditLogDoc | Append-only trail of staff WRITE actions + escalation-detail VIEWS (who, action, target, when). No update/delete repo functions exist |
 | `newsletter_subscribers` | — | Public lead capture |

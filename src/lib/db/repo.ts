@@ -2616,13 +2616,16 @@ export interface ParentEscalation {
   childName: string;
   severity: EscalationDoc["severity"];
   createdAt: Date;
+  /** Reassuring, parent-safe status — derived, never the raw staff workflow. */
+  reassurance: string;
 }
 
 /**
  * A parent's currently-open escalations across all their children, annotated
- * with the child's name. Ownership is implicit: we resolve childIds from the
- * parent's own children, so only their escalations are ever returned. Powers
- * the parent-facing escalation detail + messaging thread.
+ * with the child's name and a reassuring status line. Ownership is implicit: we
+ * resolve childIds from the parent's own children, so only their escalations are
+ * ever returned. Parents NEVER see staff notes or SLA timers — only whether the
+ * team has started looking.
  */
 export async function listOpenEscalationsForParent(
   parentId: string,
@@ -2630,13 +2633,26 @@ export async function listOpenEscalationsForParent(
   const kids = await listChildren(parentId);
   if (kids.length === 0) return [];
   const nameById = new Map(kids.map((k) => [k._id!.toHexString(), k.full_name]));
-  const escalations = await openEscalations(kids.map((k) => k._id!));
+  // Show open + acknowledged (resolved ones drop off the parent's list).
+  const escCol = await getCollection<EscalationDoc>(Collections.escalations);
+  const escalations = await escCol
+    .find({
+      child_id: { $in: kids.map((k) => k._id!) },
+      status: { $in: ["open", "acknowledged"] },
+    })
+    .sort({ created_at: -1 })
+    .limit(10)
+    .toArray();
   return escalations.map((e) => ({
     id: e._id!.toHexString(),
     childId: e.child_id,
     childName: nameById.get(e.child_id.toHexString()) ?? "your child",
     severity: e.severity,
     createdAt: e.created_at,
+    reassurance:
+      e.status === "acknowledged"
+        ? "A member of our team is looking into this."
+        : "We've logged this and our team will review it shortly.",
   }));
 }
 
