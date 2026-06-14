@@ -24,6 +24,18 @@ async function activeChildId(): Promise<{ parentId: string; childId: import("mon
   return { parentId, childId: child._id };
 }
 
+/**
+ * Pages whose data depends on the weekly plan: the plan itself, the dashboard
+ * (getting-started checklist + "next milestone"), and the child hub (today's
+ * quests mirror the plan). Revalidate all three after any plan mutation so none
+ * shows a stale week.
+ */
+function revalidatePlanPages(): void {
+  revalidatePath("/schedule");
+  revalidatePath("/dashboard");
+  revalidatePath("/learn");
+}
+
 export async function swapTopic(formData: FormData): Promise<void> {
   const ctx = await activeChildId();
   if (!ctx) return;
@@ -31,7 +43,7 @@ export async function swapTopic(formData: FormData): Promise<void> {
   const topicTag = String(formData.get("topicTag") || "");
   if (Number.isNaN(itemIndex) || !topicTag) return;
   await swapScheduleItemTopic(ctx.parentId, ctx.childId, itemIndex, topicTag);
-  revalidatePath("/schedule");
+  revalidatePlanPages();
 }
 
 export async function moveDay(formData: FormData): Promise<void> {
@@ -41,7 +53,7 @@ export async function moveDay(formData: FormData): Promise<void> {
   const newDay = Number(formData.get("newDay"));
   if (Number.isNaN(itemIndex) || Number.isNaN(newDay)) return;
   await moveScheduleItemDay(ctx.parentId, ctx.childId, itemIndex, newDay);
-  revalidatePath("/schedule");
+  revalidatePlanPages();
 }
 
 export async function clearDay(formData: FormData): Promise<void> {
@@ -50,14 +62,14 @@ export async function clearDay(formData: FormData): Promise<void> {
   const day = Number(formData.get("day"));
   if (Number.isNaN(day)) return;
   await clearScheduleDay(ctx.parentId, ctx.childId, day);
-  revalidatePath("/schedule");
+  revalidatePlanPages();
 }
 
 export async function regenerateWeek(): Promise<void> {
   const ctx = await activeChildId();
   if (!ctx) return;
   await regenerateWeeklySchedule(ctx.parentId, ctx.childId);
-  revalidatePath("/schedule");
+  revalidatePlanPages();
 }
 
 export async function approveSchedule(): Promise<void> {
@@ -66,7 +78,7 @@ export async function approveSchedule(): Promise<void> {
   const child = await getActiveChild(parentId, await readActiveChildId());
   if (!child?._id) return;
   const ok = await approveWeeklySchedule(parentId, child._id);
-  revalidatePath("/schedule");
+  revalidatePlanPages();
 
   // First-plan celebration — sent at most once per family (the lifecycle key
   // dedupes, so re-approving or approving a second child won't resend). Respects
