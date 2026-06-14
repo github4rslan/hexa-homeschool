@@ -23,6 +23,7 @@ import { ExamDecisionCard } from "@/components/dashboard/exam-decision-card";
 import { TrajectoryChart } from "@/components/dashboard/trajectory-chart";
 import { InsightsPanel } from "@/components/dashboard/insights-panel";
 import { computeExamDecision } from "@/lib/engine/exam-decision";
+import { cloudinaryThumb } from "@/lib/media/cloudinary";
 import { saveChildProfile } from "./actions";
 
 export const metadata: Metadata = { title: "Child profile" };
@@ -241,10 +242,14 @@ export default async function ChildProfilePage({
                   rel="noopener noreferrer"
                   className="aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
                 >
+                  {/* Thumbnail via Cloudinary f_auto,q_auto,w_400 (bandwidth).
+                      Signed-asset delivery doesn't go through next/image; the
+                      transform is the win. Full-res opens via the parent <a>. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={m.secure_url}
+                    src={cloudinaryThumb(m.secure_url, 400)}
                     alt="Uploaded work"
+                    loading="lazy"
                     className="h-full w-full object-cover"
                   />
                 </a>

@@ -129,6 +129,24 @@ export function signedDeliveryUrl(
   return `https://res.cloudinary.com/${cfg.cloudName}/${resourceType}/authenticated/s--${token.slice(0, 8)}--/${publicId}?_a=${expiresAt}`;
 }
 
+/**
+ * Insert delivery transforms into a Cloudinary URL. Adds `f_auto,q_auto`
+ * (automatic format + quality — big bandwidth win) and an optional width after
+ * the `/upload/` or `/authenticated/` segment. No-op for non-Cloudinary URLs.
+ * Pure string work; safe to call from server components.
+ */
+export function cloudinaryThumb(url: string, width?: number): string {
+  if (!url.includes("res.cloudinary.com")) return url;
+  const transforms = ["f_auto", "q_auto"];
+  if (width) transforms.push(`w_${width}`, "c_limit");
+  const t = transforms.join(",");
+  // Match the segment that immediately precedes the version/public id.
+  return url.replace(
+    /\/(upload|authenticated)\/(?!.*\/(upload|authenticated)\/)/,
+    `/$1/${t}/`,
+  );
+}
+
 /** Upload raw bytes server-side (used for TTS audio caching). */
 export async function uploadBytes(input: {
   bytes: ArrayBuffer;

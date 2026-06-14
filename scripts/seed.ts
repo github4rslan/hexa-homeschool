@@ -91,6 +91,10 @@ async function main() {
     await db.collection("instructional_logs").createIndex({ child_id: 1, timestamp_start: -1 });
     await db.collection("evaluation_records").createIndex({ child_id: 1, created_at: -1 });
     await db.collection("competence_matrix").createIndex({ child_id: 1, topic_tag: 1 }, { unique: true });
+    // Week-in-review / certificates: certified topics in a date window.
+    await db.collection("competence_matrix").createIndex({ child_id: 1, state: 1, certified_at: -1 });
+    // Lesson logs by child + end time (streaks, week aggregates, insights).
+    await db.collection("instructional_logs").createIndex({ child_id: 1, status: 1, timestamp_end: -1 });
     await db.collection("compliance_dossiers").createIndex({ child_id: 1, generated_at: -1 });
     await db.collection("children").createIndex({ parent_id: 1, created_at: -1 });
     await db.collection("parents").createIndex({ email: 1 }, { unique: true });

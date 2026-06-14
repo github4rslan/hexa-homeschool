@@ -33,12 +33,12 @@ export interface PortfolioChild {
 }
 
 export function PortfolioGenerator({
-  children = [],
+  childList = [],
 }: {
   /** The parent's children — when present, the picker selects by id (exact). */
-  children?: PortfolioChild[];
+  childList?: PortfolioChild[];
 }) {
-  const [childId, setChildId] = useState(children[0]?.id ?? "");
+  const [childId, setChildId] = useState(childList[0]?.id ?? "");
   const [childName, setChildName] = useState("");
   const [term, setTerm] = useState(DEFAULT_TERM);
   const [loading, setLoading] = useState(false);
@@ -70,7 +70,7 @@ export function PortfolioGenerator({
     }
   }
 
-  const hasPicker = children.length > 0;
+  const hasPicker = childList.length > 0;
 
   async function generate(e: React.FormEvent) {
     e.preventDefault();
@@ -146,7 +146,7 @@ export function PortfolioGenerator({
                 onChange={(e) => setChildId(e.target.value)}
                 className="h-11 rounded-xl border border-white/10 bg-white/[0.03] px-4 text-sm text-fog-50 focus:border-violet-400/60 focus:outline-none focus:ring-2 focus:ring-violet-400/20"
               >
-                {children.map((c) => (
+                {childList.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>

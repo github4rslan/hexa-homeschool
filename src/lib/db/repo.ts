@@ -1029,7 +1029,6 @@ export async function todayCard(
     ]);
 
   const titleByTag = new Map(topics.map((t) => [t.topic_tag, t.title]));
-  const subjectByTag = new Map(topics.map((t) => [t.topic_tag, t.subject]));
   const todayIndex = (new Date().getDay() + 6) % 7; // 0 = Monday
 
   const quests: TodayQuest[] = (schedule?.items ?? [])
