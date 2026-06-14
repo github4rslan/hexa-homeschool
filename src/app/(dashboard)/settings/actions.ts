@@ -12,12 +12,14 @@ import {
   setWeeklyPlanEmailOptOut,
   setEscalationAlertOptOut,
   setMarketingEmailsOptOut,
+  setParentPhone,
   setTwoFactorEnabled,
   bumpTokenVersion,
   deleteFamilyData,
 } from "@/lib/db/repo";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
 import { emailConfigured } from "@/lib/email/send";
+import { validatePhone } from "@/lib/sms/phone";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { getStripe } from "@/lib/billing/stripe";
 import type { ParentDoc } from "@/lib/db/types";
@@ -144,6 +146,27 @@ export async function deleteAccount(formData: FormData) {
 
   await destroySession();
   redirect("/?deleted=1");
+}
+
+export async function updatePhone(formData: FormData) {
+  const parentId = await currentParentId();
+  if (!parentId) redirect("/login?redirect=/settings");
+
+  const raw = String(formData.get("phone") || "").trim();
+  // Empty = clear the number (parent opts out of SMS).
+  if (raw === "") {
+    await setParentPhone(parentId!, null);
+    revalidatePath("/settings");
+    redirect("/settings?saved=1");
+  }
+
+  const valid = validatePhone(raw);
+  if (!valid.ok) {
+    redirect(`/settings?error=${encodeURIComponent(valid.error!)}`);
+  }
+  await setParentPhone(parentId!, valid.value!);
+  revalidatePath("/settings");
+  redirect("/settings?saved=1");
 }
 
 export async function updateTwoFactor(formData: FormData) {

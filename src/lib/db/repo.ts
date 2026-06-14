@@ -1991,6 +1991,21 @@ export async function setEscalationAlertOptOut(
   return true;
 }
 
+/** Set (or clear with null) the parent's E.164 phone for safety SMS. */
+export async function setParentPhone(
+  parentId: string,
+  phone: string | null,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  await col.updateOne(
+    { _id: oid },
+    { $set: { phone, updated_at: new Date() } },
+  );
+  return true;
+}
+
 export async function setMarketingEmailsOptOut(
   parentId: string,
   optOut: boolean,
