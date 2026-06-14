@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { Award, FileText } from "lucide-react";
 import { PortfolioGenerator } from "@/components/compliance/portfolio-generator";
 import { BackButton } from "@/components/ui/back-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
-import { currentParentId, listChildren } from "@/lib/db/repo";
+import {
+  currentParentId,
+  listChildren,
+  subjectMilestones,
+} from "@/lib/db/repo";
 
 export const metadata: Metadata = {
   title: "Compliance portfolio",
@@ -17,6 +21,25 @@ export const dynamic = "force-dynamic";
 export default async function PortfolioPage() {
   const parentId = await currentParentId();
   const children = parentId ? await listChildren(parentId) : [];
+
+  // Earned mastery certificates: fully-certified subjects, per child.
+  const certificates = parentId
+    ? (
+        await Promise.all(
+          children.map(async (c) => {
+            const milestones = await subjectMilestones(parentId, c._id!);
+            return milestones
+              .filter((m) => m.complete)
+              .map((m) => ({
+                childId: c._id!.toHexString(),
+                childName: c.full_name,
+                subject: m.subject,
+                label: m.label,
+              }));
+          }),
+        )
+      ).flat()
+    : [];
 
   return (
     <div className="relative min-h-screen">
@@ -41,6 +64,35 @@ export default async function PortfolioPage() {
           />
         </div>
         <PortfolioGenerator />
+
+        {certificates.length > 0 && (
+          <div className="mx-auto mt-8 max-w-3xl print:hidden">
+            <div className="rounded-2xl border border-amber-400/20 bg-amber-500/[0.04] p-6">
+              <div className="mb-3 flex items-center gap-2">
+                <Award className="h-4 w-4 text-amber-300" />
+                <h2 className="text-sm font-semibold text-fog-50">
+                  Mastery certificates
+                </h2>
+              </div>
+              <p className="mb-4 text-sm text-fog-400">
+                A print-beautiful certificate for every subject fully mastered —
+                carrying a tamper-evident verification reference.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {certificates.map((cert) => (
+                  <Link
+                    key={`${cert.childId}-${cert.subject}`}
+                    href={`/dashboard/children/${cert.childId}/certificate?subject=${cert.subject}`}
+                    className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-amber-400/20 bg-amber-500/[0.06] px-4 text-sm text-fog-100 hover:border-amber-400/40"
+                  >
+                    <Award className="h-3.5 w-3.5 text-amber-300" />
+                    {cert.childName.split(" ")[0]} · {cert.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
 
         {children.length > 0 && (
           <div className="mx-auto mt-8 max-w-3xl print:hidden">
