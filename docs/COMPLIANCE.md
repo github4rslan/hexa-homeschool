@@ -28,6 +28,7 @@ External data processors and what they touch:
 | OpenAI | Teaching Agent + Checker | Lesson prompts/answers (transient) | Indirectly (no identity sent) |
 | ElevenLabs | TTS narration + STT transcription | Lesson text / spoken-answer audio (STT transient) | Indirectly (no identity sent) |
 | Stripe | Subscription billing | Parent billing details | No |
+| Twilio | Immediate-severity safety SMS | Parent phone number + a calm alert (no child-written content) | No — alert names the child first name only, no distress detail over SMS |
 | Sentry | Error tracking | Stack traces + route names only (PII-scrubbed) | No |
 | PostHog (EU cloud) | **Parents-only** product analytics | Parent Mongo id + funnel events | **No — never loaded in `(child)` routes; children are never tracked, profiled or session-recorded.** Consent-gated, autocapture off, session recording off. |
 

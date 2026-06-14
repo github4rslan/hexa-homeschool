@@ -25,6 +25,7 @@ import {
   updateEmailPreferences,
   updateParentPin,
   updateTwoFactor,
+  updatePhone,
   signOutEverywhere,
   deleteAccount,
 } from "./actions";
@@ -300,6 +301,23 @@ export default async function SettingsPage({
                   Save two-factor setting
                 </SubmitButton>
               )}
+            </form>
+
+            <div className="my-6 border-t border-white/5" />
+
+            <form action={updatePhone} className="flex flex-col gap-4">
+              <Input
+                name="phone"
+                type="tel"
+                label="Mobile for urgent safety alerts"
+                defaultValue={parent.phone ?? ""}
+                placeholder="+447700900123"
+                inputMode="tel"
+                hint="Optional. If your child shows signs of serious distress, we'll text this number so you can check on them right away. International format. Leave blank to turn off."
+              />
+              <SubmitButton variant="secondary" size="md" className="self-start" pendingLabel="Saving…">
+                {parent.phone ? "Update mobile number" : "Add mobile number"}
+              </SubmitButton>
             </form>
 
             <div className="my-6 border-t border-white/5" />

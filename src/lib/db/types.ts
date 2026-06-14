@@ -43,6 +43,11 @@ export interface ParentDoc {
   token_version?: number;
   /** Escalation alert email opt-out. Undefined/false = receives alerts. */
   escalation_alert_opt_out?: boolean;
+  /**
+   * Parent mobile in E.164 (e.g. "+447700900123"), for immediate-severity
+   * safety SMS alerts. Absent = no SMS (email + dashboard remain the baseline).
+   */
+  phone?: string | null;
   /** Bcrypt hash of the 4-digit parent gate PIN used to exit child mode. */
   parent_pin_hash?: string | null;
   /**

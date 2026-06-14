@@ -10,7 +10,7 @@ import {
 import { readActiveChildId } from "@/lib/active-child";
 import { rateLimit } from "@/lib/rate-limit";
 import { parentCanUseAi, AI_ENTITLEMENT_ERROR } from "@/lib/billing/entitlement";
-import { sendEscalationAlert } from "@/lib/email/escalation-alert";
+import { notifyEscalation } from "@/lib/email/escalation-alert";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -75,7 +75,7 @@ export async function POST(request: Request) {
             severity: distress.severity,
             matchedText: studentAnswer,
           });
-          await sendEscalationAlert(parentId, child.full_name, distress.severity);
+          await notifyEscalation(parentId, child.full_name, distress.severity);
         }
       } catch (err) {
         console.error("[/api/tutor] escalation log failed (still freezing):", err);
