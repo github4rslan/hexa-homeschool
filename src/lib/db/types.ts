@@ -44,6 +44,12 @@ export interface ParentDoc {
    */
   role?: "admin" | "support";
   /**
+   * Dedicated post-deploy smoke-test account. Excluded from PostHog analytics
+   * and ALL lifecycle/onboarding emails so CI runs don't pollute product data
+   * or send real email. Set only by `npm run smoke:setup`.
+   */
+  is_smoke_account?: boolean;
+  /**
    * Session invalidation counter. Sessions carry it as `tv`; bumping it
    * ("sign out everywhere", password change) rejects all older sessions.
    * Undefined = 0.

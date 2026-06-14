@@ -10,7 +10,9 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "smoke:setup": "tsx scripts/smoke-setup.ts",
+    "smoke": "playwright test"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.57.0",
@@ -32,6 +34,7 @@
     "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.50.0",
     "@tailwindcss/postcss": "^4.0.0-beta.8",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.2",

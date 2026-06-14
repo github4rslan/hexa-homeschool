@@ -96,6 +96,24 @@ The push that broke `main` is already live. Restore the previous good build
 - **Data residency:** children's data residency follows the Atlas cluster region
   (see the compliance note in `lib/mongodb.ts`) — keep restores in-region.
 
+## 7. Post-deploy smoke suite failed (GitHub Actions emailed you)
+
+The `smoke` job runs Playwright against production after each push to `main`.
+A failure means the *deployed* site misbehaved — triage by what failed:
+
+1. Open the failed run → the failing test name says what broke:
+   - **public pages / health** → the site itself is degraded; go to **§1/§2**.
+   - **auth gating** → the login redirect changed; a real regression — roll back
+     (**§4**) if users can reach protected pages unauthenticated.
+   - **smoke account (login-gated)** → either a real dashboard/schedule/map
+     regression, OR the smoke account/data drifted (e.g. the week rolled over and
+     `smoke:setup` needs re-running to refresh the approved plan).
+2. Reproduce locally against prod: `SMOKE_EMAIL=… SMOKE_PASSWORD=… npm run smoke`.
+3. If it's the account/data (not the code), re-run `npm run smoke:setup` and
+   re-trigger the job. If it's the code, fix forward or roll back (**§4**).
+4. The suite retries twice and waits for the deploy to flip, so a single flake is
+   already absorbed — a clean failure is usually real.
+
 ---
 
 ## Owner checklist (verify these in the live dashboards)

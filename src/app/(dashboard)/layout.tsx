@@ -1,4 +1,4 @@
-import { currentParentId } from "@/lib/db/repo";
+import { currentParentId, findParentById } from "@/lib/db/repo";
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { THEME_NOFLASH_SCRIPT } from "@/components/theme/theme";
@@ -16,6 +16,10 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const parentId = await currentParentId();
+  // The dedicated smoke-test account is never tracked — skip analytics entirely
+  // so post-deploy CI runs don't pollute PostHog product data.
+  const parent = parentId ? await findParentById(parentId) : null;
+  const isSmoke = parent?.is_smoke_account === true;
   return (
     <ThemeProvider>
       <script
@@ -23,7 +27,7 @@ export default async function DashboardLayout({
         dangerouslySetInnerHTML={{ __html: THEME_NOFLASH_SCRIPT }}
       />
       {children}
-      <AnalyticsProvider identifyAs={parentId} />
+      {!isSmoke && <AnalyticsProvider identifyAs={parentId} />}
     </ThemeProvider>
   );
 }

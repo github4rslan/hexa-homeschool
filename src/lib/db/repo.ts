@@ -2779,8 +2779,10 @@ export async function claimLifecycleEmail(
   const oid = toObjectId(parentId);
   if (!oid) return false;
   const col = await getCollection<ParentDoc>(Collections.parents);
+  // The smoke account never claims a lifecycle key, so it never receives any
+  // onboarding/lifecycle email (CI must not send real mail).
   const res = await col.updateOne(
-    { _id: oid, lifecycle_emails_sent: { $ne: key } },
+    { _id: oid, lifecycle_emails_sent: { $ne: key }, is_smoke_account: { $ne: true } },
     {
       $addToSet: { lifecycle_emails_sent: key },
       $set: { updated_at: new Date() },
