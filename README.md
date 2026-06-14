@@ -66,6 +66,8 @@ see [.env.example](.env.example) for the full list.
 | `npm run build` | Production build — run before pushing |
 | `npm run lint` | ESLint |
 | `npm run seed` | Seed MongoDB — owns all collection indexes (live db) |
+| `npm run smoke:setup` | One-time: create/refresh the dedicated smoke account (owner-run, needs `SMOKE_EMAIL`/`SMOKE_PASSWORD`; never in CI) |
+| `npm run smoke` | Playwright post-deploy smoke suite against production (login-gated tests skip without `SMOKE_*`) |
 | `npm run dev` | Dev server — not used; the app deploys via GitHub → Vercel |
 
 ## Documentation
