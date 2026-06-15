@@ -32,7 +32,28 @@ interface SubjectProgress {
 
 type Phase = "intro" | "running" | "results";
 
-export function DiagnosticRunner({ pool }: { pool: DiagnosticItem[] }) {
+/**
+ * Warm, parent-facing description of the starting band. Never shown as a
+ * clinical age/grade label to a child (Children's Code) — it frames the entry
+ * level for the parent during onboarding setup.
+ */
+const BAND_INTRO: Record<number, string> = {
+  2: "We'll start with primary-level questions and adjust to your child as we go.",
+  3: "We'll start with lower-secondary questions and adjust to your child as we go.",
+  4: "We'll start at GCSE level and adjust to your child as we go.",
+};
+
+export function DiagnosticRunner({
+  pool,
+  startTier = 3,
+  keyStage = 4,
+}: {
+  pool: DiagnosticItem[];
+  /** Age-expected entry tier from placeChild(); defaults to mid (3) for previews. */
+  startTier?: number;
+  /** Starting key-stage band, for the warm intro copy only. */
+  keyStage?: number;
+}) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [subjectIndex, setSubjectIndex] = useState(0);
   const [current, setCurrent] = useState<DiagnosticItem | null>(null);
@@ -43,7 +64,7 @@ export function DiagnosticRunner({ pool }: { pool: DiagnosticItem[] }) {
       Object.fromEntries(
         DIAGNOSTIC_SUBJECTS.map((s) => [
           s.id,
-          { tier: 3, correct: 0, answered: 0, seen: new Set<string>() },
+          { tier: startTier, correct: 0, answered: 0, seen: new Set<string>() },
         ]),
       ) as Record<DiagnosticSubject, SubjectProgress>,
   );
@@ -169,9 +190,12 @@ export function DiagnosticRunner({ pool }: { pool: DiagnosticItem[] }) {
                 An adaptive assessment that maps your child&apos;s current level
                 against GCSE standards across Maths, English and Science.
               </p>
-              <p className="text-sm text-fog-500 mb-8">
+              <p className="text-sm text-fog-500 mb-4">
                 Questions adapt to each answer — getting harder when your child is
                 doing well, easier when they need support. No guesswork. Just facts.
+              </p>
+              <p className="text-sm text-violet-300/90 mb-8">
+                {BAND_INTRO[keyStage] ?? BAND_INTRO[4]}
               </p>
               <Button onClick={startDiagnostic} variant="primary" size="lg">
                 Begin diagnostic
