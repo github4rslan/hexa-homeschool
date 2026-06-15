@@ -32,6 +32,8 @@ export interface SeedQuestion {
   topic_tag: string;
   subject: Subject;
   tier: number;
+  /** UK key stage band: 2 (KS2), 3 (KS3), 4 (GCSE). This bank is all GCSE. */
+  key_stage: number;
   kind: "diagnostic" | "practice" | "mastery";
   prompt: string;
   options: string[];
@@ -305,6 +307,7 @@ export const SEED_QUESTIONS: SeedQuestion[] = Object.entries(
       topic_tag: topicTag,
       subject: topic.subject,
       tier,
+      key_stage: 4, // existing bank is GCSE; backfilled so legacy rows are explicit
       kind,
       prompt,
       options,
