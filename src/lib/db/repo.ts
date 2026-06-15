@@ -1394,11 +1394,32 @@ export async function getQuestions(
   return col.find(query).limit(limit).toArray();
 }
 
-/** The diagnostic item pool for a subject (kind=diagnostic), tier-ordered. */
-export async function getDiagnosticPool(subject: Subject): Promise<QuestionDoc[]> {
+/**
+ * The diagnostic item pool for a subject (kind=diagnostic), tier-ordered.
+ *
+ * Scoped to the child's key-stage band PLUS the adjacent harder band, so the
+ * estimate has headroom for a precocious child (KS2 → KS2+KS3, KS3 → KS3+KS4,
+ * KS4 → KS4). Legacy rows without a `key_stage` are treated as GCSE (4), so
+ * they only surface when band 4 is in range. Defaults to KS4 (the prior
+ * behaviour) when no band is supplied — e.g. a signed-out preview.
+ */
+export async function getDiagnosticPool(
+  subject: Subject,
+  keyStage = 4,
+): Promise<QuestionDoc[]> {
   const col = await getCollection<QuestionDoc>(Collections.questions);
+  // Band + one harder band of headroom; clamp into HEXA's KS2–KS4 range.
+  const base = Math.max(2, Math.min(4, keyStage));
+  const bands = base >= 4 ? [4] : [base, base + 1];
+
+  // Treat documents missing `key_stage` as GCSE (4) — include them only when
+  // band 4 is in range, so a young child never inherits unlabelled GCSE items.
+  const bandMatch: Record<string, unknown> = bands.includes(4)
+    ? { $or: [{ key_stage: { $in: bands } }, { key_stage: { $exists: false } }] }
+    : { key_stage: { $in: bands } };
+
   return col
-    .find({ subject, kind: "diagnostic" })
+    .find({ subject, kind: "diagnostic", ...bandMatch })
     .sort({ tier: 1 })
     .toArray();
 }
