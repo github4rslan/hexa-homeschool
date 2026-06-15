@@ -132,7 +132,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 | `instructional_logs` | LessonLogDoc | Per-lesson logs (phase, attempts, hints, mastery) |
 | `competence_matrix` | CompetenceDoc | Topic state: locked → training → certified; optional spaced-repetition schedule (`next_review_at`, `review_interval_days`) |
 | `compliance_dossiers` | DossierDoc | Portfolio evidence with secure hash |
-| `curriculum_topics` / `questions` | — | Human-authored curriculum + question bank |
+| `curriculum_topics` / `questions` | — | Human-authored curriculum + question bank. Each question carries an optional `key_stage` (2 = KS2, 3 = KS3, 4 = GCSE) so the diagnostic can select age-appropriate items; legacy rows without it are treated as GCSE (4). The engine SELECTS by band/tier — it never generates questions |
 | `checkins` | CheckinDoc | Daily mood → difficulty throttle |
 | `media` | MediaDoc | Cloudinary registry (dedupe via content hash) |
 | `weekly_schedules` | WeeklyScheduleDoc | Parent-set weekly plan; each item carries a data-grounded `reason` (competence state + latest evaluation) shown on `/schedule` — optional on legacy docs |

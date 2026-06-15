@@ -17,8 +17,13 @@ import { resolve } from "node:path";
 import { MongoClient } from "mongodb";
 import { SEED_TOPICS, SEED_QUESTIONS } from "../src/lib/data/curriculum.seed";
 import { SEED_QUESTIONS_EXTRA } from "../src/lib/data/curriculum.seed.extra";
+import { SEED_QUESTIONS_FOUNDATION } from "../src/lib/data/curriculum.seed.foundation";
 
-const ALL_QUESTIONS = [...SEED_QUESTIONS, ...SEED_QUESTIONS_EXTRA];
+const ALL_QUESTIONS = [
+  ...SEED_QUESTIONS,
+  ...SEED_QUESTIONS_EXTRA,
+  ...SEED_QUESTIONS_FOUNDATION,
+];
 
 function loadEnv(): Record<string, string> {
   try {
@@ -86,6 +91,8 @@ async function main() {
 
     await questionsCol.createIndex({ topic_tag: 1, kind: 1, tier: 1 });
     await questionsCol.createIndex({ subject: 1, kind: 1 });
+    // Age-scoped diagnostic pool: { subject, kind, key_stage, tier }.
+    await questionsCol.createIndex({ subject: 1, kind: 1, key_stage: 1, tier: 1 });
 
     // Child-scoped progress indexes (recent-first reads).
     await db.collection("instructional_logs").createIndex({ child_id: 1, timestamp_start: -1 });

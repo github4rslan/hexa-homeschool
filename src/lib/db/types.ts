@@ -207,6 +207,12 @@ export interface QuestionDoc {
   subject: Subject;
   /** 1 (easiest) … 5 (hardest); loosely maps to working grade. */
   tier: number;
+  /**
+   * UK key stage this item's difficulty sits in: 2 (KS2), 3 (KS3), 4 (GCSE).
+   * Optional + legacy-safe: rows without it are treated as 4 (GCSE) by the
+   * diagnostic pool query. Drives age-appropriate diagnostic selection.
+   */
+  key_stage?: number;
   kind: "diagnostic" | "practice" | "mastery";
   prompt: string;
   options: string[];

@@ -191,6 +191,7 @@ export const SEED_QUESTIONS_EXTRA: SeedQuestion[] = Object.entries(
       topic_tag: topicTag,
       subject: topic.subject,
       tier,
+      key_stage: 4, // existing bank is GCSE; backfilled so legacy rows are explicit
       kind,
       prompt,
       options,
