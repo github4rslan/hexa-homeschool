@@ -769,7 +769,12 @@
 @layer utilities {
   /* Surfaces → light. */
   .theme-light .bg-void,
+  .theme-light .bg-void\/80,
+  .theme-light .bg-void\/95,
   .theme-light .bg-abyss,
+  .theme-light .bg-abyss\/70,
+  .theme-light .bg-abyss\/80,
+  .theme-light .bg-abyss\/95,
   .theme-light .bg-nebula,
   .theme-light .bg-cosmos,
   .theme-light .bg-surface { background-color: #F6F7FB !important; }
