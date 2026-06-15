@@ -78,11 +78,39 @@ export function pickNextItem(
   return available[0];
 }
 
+/** Size of a single difficulty step in the ability estimate. */
+const TIER_STEP = 0.8;
+
+export interface TierUpdate {
+  /** The new ability estimate, clamped to [1, 5]. */
+  tier: number;
+  /** Running count of consecutive wrong answers (resets to 0 on a correct one). */
+  downStreak: number;
+}
+
 /**
- * Update the ability estimate after a response.
- * Correct → nudge up; incorrect → nudge down. Clamped to [1, 5].
+ * Update the ability estimate after a response (Brief: Agent 1 IRT rule).
+ *
+ * Difficulty steps DOWN only once TWO consecutive wrong answers have manifested
+ * — a single slip never lowers the tier. Sustained correct answers step UP and
+ * reset the down-streak. Clamped to the band-aware [1, 5] range.
+ *
+ * The caller threads `downStreak` back in on the next response (the runner
+ * tracks it per subject).
  */
-export function updateTier(currentTier: number, wasCorrect: boolean): number {
-  const delta = wasCorrect ? 0.8 : -0.8;
-  return Math.max(1, Math.min(5, currentTier + delta));
+export function updateTier(
+  currentTier: number,
+  wasCorrect: boolean,
+  downStreak = 0,
+): TierUpdate {
+  const clamp = (t: number) => Math.max(1, Math.min(5, t));
+
+  if (wasCorrect) {
+    return { tier: clamp(currentTier + TIER_STEP), downStreak: 0 };
+  }
+
+  // Wrong: only step down once this is the 2nd (or later) consecutive miss.
+  const nextStreak = downStreak + 1;
+  const tier = nextStreak >= 2 ? clamp(currentTier - TIER_STEP) : currentTier;
+  return { tier, downStreak: nextStreak };
 }

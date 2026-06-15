@@ -28,6 +28,8 @@ interface SubjectProgress {
   correct: number;
   answered: number;
   seen: Set<string>;
+  /** Consecutive wrong answers — drives the "down only after 2" IRT rule. */
+  downStreak: number;
 }
 
 type Phase = "intro" | "running" | "results";
@@ -64,7 +66,13 @@ export function DiagnosticRunner({
       Object.fromEntries(
         DIAGNOSTIC_SUBJECTS.map((s) => [
           s.id,
-          { tier: startTier, correct: 0, answered: 0, seen: new Set<string>() },
+          {
+            tier: startTier,
+            correct: 0,
+            answered: 0,
+            seen: new Set<string>(),
+            downStreak: 0,
+          },
         ]),
       ) as Record<DiagnosticSubject, SubjectProgress>,
   );
@@ -89,12 +97,15 @@ export function DiagnosticRunner({
 
     const subject = DIAGNOSTIC_SUBJECTS[subjectIndex].id;
     const wasCorrect = selected === current.correctIndex;
+    const prev = progress[subject];
+    const step = updateTier(prev.tier, wasCorrect, prev.downStreak);
 
     const updated: SubjectProgress = {
-      tier: updateTier(progress[subject].tier, wasCorrect),
-      correct: progress[subject].correct + (wasCorrect ? 1 : 0),
-      answered: progress[subject].answered + 1,
-      seen: new Set(progress[subject].seen).add(current.id),
+      tier: step.tier,
+      correct: prev.correct + (wasCorrect ? 1 : 0),
+      answered: prev.answered + 1,
+      seen: new Set(prev.seen).add(current.id),
+      downStreak: step.downStreak,
     };
     const nextProgress = { ...progress, [subject]: updated };
     setProgress(nextProgress);
