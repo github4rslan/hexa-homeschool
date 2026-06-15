@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
-import { Activity, ArrowRight, Check, CloudUpload, Target, X } from "lucide-react";
+import { Activity, ArrowRight, Check, CloudUpload, Loader2, Target, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,27 +34,37 @@ interface SubjectProgress {
 
 type Phase = "intro" | "running" | "results";
 
-/**
- * Warm, parent-facing description of the starting band. Never shown as a
- * clinical age/grade label to a child (Children's Code) — it frames the entry
- * level for the parent during onboarding setup.
- */
-const BAND_INTRO: Record<number, string> = {
-  2: "We'll start with primary-level questions and adjust to your child as we go.",
-  3: "We'll start with lower-secondary questions and adjust to your child as we go.",
-  4: "We'll start at GCSE level and adjust to your child as we go.",
+/** Warm, plain-language name for the starting band (parent-facing only). */
+const BAND_LEVEL: Record<number, string> = {
+  2: "primary-level",
+  3: "lower-secondary",
+  4: "GCSE",
 };
+
+/**
+ * Warm, parent-facing sentence stating the child's starting level. Never a
+ * clinical age/grade/band label or a "behind" framing (Children's Code) — it
+ * simply tells the parent where the diagnostic begins and that it adapts.
+ */
+function bandIntro(keyStage: number, childName?: string): string {
+  const who = childName?.trim() || "your child";
+  const level = BAND_LEVEL[keyStage] ?? BAND_LEVEL[4];
+  return `We'll start ${who} with ${level} questions and adjust as we go.`;
+}
 
 export function DiagnosticRunner({
   pool,
   startTier = 3,
   keyStage = 4,
+  childName,
 }: {
   pool: DiagnosticItem[];
   /** Age-expected entry tier from placeChild(); defaults to mid (3) for previews. */
   startTier?: number;
   /** Starting key-stage band, for the warm intro copy only. */
   keyStage?: number;
+  /** Child's first name, for warm parent-facing copy. Never a band label. */
+  childName?: string;
 }) {
   const [phase, setPhase] = useState<Phase>("intro");
   const [subjectIndex, setSubjectIndex] = useState(0);
@@ -82,6 +92,15 @@ export function DiagnosticRunner({
     () => Object.values(progress).reduce((sum, p) => sum + p.answered, 0),
     [progress],
   );
+
+  // Every subject must have at least one item, or the adaptive run would hit a
+  // blank screen. If the pool is short (e.g. a band not yet seeded), we show a
+  // calm "getting questions ready" message instead of letting a child stall.
+  const poolReady = useMemo(
+    () => DIAGNOSTIC_SUBJECTS.every((s) => pool.some((it) => it.subject === s.id)),
+    [pool],
+  );
+  const whoName = childName?.trim() || "your child";
 
   function startDiagnostic() {
     const first = DIAGNOSTIC_SUBJECTS[0].id;
@@ -206,15 +225,25 @@ export function DiagnosticRunner({
                 doing well, easier when they need support. No guesswork. Just facts.
               </p>
               <p className="text-sm text-violet-300/90 mb-8">
-                {BAND_INTRO[keyStage] ?? BAND_INTRO[4]}
+                {bandIntro(keyStage, childName)}
               </p>
-              <Button onClick={startDiagnostic} variant="primary" size="lg">
-                Begin diagnostic
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-              <p className="mt-4 text-xs text-fog-500">
-                {totalItems} adaptive questions · about 5 minutes
-              </p>
+              {poolReady ? (
+                <>
+                  <Button onClick={startDiagnostic} variant="primary" size="lg">
+                    Begin diagnostic
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  <p className="mt-4 text-xs text-fog-500">
+                    {totalItems} adaptive questions · about 5 minutes
+                  </p>
+                </>
+              ) : (
+                <p className="flex items-center justify-center gap-2 text-sm text-fog-400">
+                  <Loader2 className="h-4 w-4 animate-spin text-violet-300" />
+                  We&apos;re getting {whoName}&apos;s questions ready — please check
+                  back shortly.
+                </p>
+              )}
             </Card>
           </motion.div>
         )}
@@ -299,6 +328,32 @@ export function DiagnosticRunner({
             <p className="mt-4 text-center text-xs text-fog-500">
               Honesty over hype — we report real readiness, never an inflated score.
             </p>
+          </motion.div>
+        )}
+
+        {/* Safety net: a running diagnostic must never show a blank screen if a
+            subject's pool is unexpectedly empty (e.g. a band not yet seeded). */}
+        {phase === "running" && !current && (
+          <motion.div
+            key="preparing"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <Card variant="glass-strong" padding="xl" className="text-center">
+              <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-violet-500/10 border border-violet-400/30 mb-6">
+                <Loader2 className="h-7 w-7 text-violet-300 animate-spin" />
+              </div>
+              <h1 className="text-2xl font-semibold text-fog-50 mb-3">
+                We&apos;re getting {whoName}&apos;s questions ready
+              </h1>
+              <p className="text-fog-400 leading-relaxed mb-8">
+                This will only take a moment. Please check back shortly and we&apos;ll
+                pick up right where we left off.
+              </p>
+              <Button href="/dashboard" variant="secondary" size="lg">
+                Back to dashboard
+              </Button>
+            </Card>
           </motion.div>
         )}
 

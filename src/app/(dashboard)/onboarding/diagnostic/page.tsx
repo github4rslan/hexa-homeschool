@@ -69,6 +69,7 @@ export default async function DiagnosticPage() {
           pool={pool}
           startTier={placement.startTier}
           keyStage={placement.keyStage}
+          childName={child?.full_name?.trim().split(/\s+/)[0]}
         />
       </main>
     </div>
