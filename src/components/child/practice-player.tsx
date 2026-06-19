@@ -15,10 +15,17 @@ import { Button } from "@/components/ui/button";
 import { CalmPause } from "@/components/child/calm-pause";
 import { Celebration } from "@/components/fx/celebration";
 import { Interaction, type InteractionHandle } from "@/components/child/interaction";
-import { logLessonCompletion } from "@/app/(dashboard)/lesson/actions";
+import {
+  logLessonCompletion,
+  saveLessonProgressAction,
+  clearLessonProgressAction,
+} from "@/app/(dashboard)/lesson/actions";
 import {
   buildHintLadder,
+  resolveResumeStep,
+  clampResumeScore,
   type Interaction as InteractionDef,
+  type SavedProgress,
 } from "@/lib/child/interactions";
 import { accentPreset, type AccentPreset } from "@/lib/child/accents";
 import { cn } from "@/lib/utils";
@@ -79,6 +86,9 @@ export function PracticePlayer({
   curriculumTopic,
   voiceId,
   accent: accentId,
+  savedProgress,
+  firstName,
+  resumeKey,
 }: {
   questions: Question[];
   curriculumTopic: string;
@@ -86,8 +96,15 @@ export function PracticePlayer({
   voiceId?: string | null;
   /** Child-chosen accent preset id (threads colour through every surface). */
   accent?: string | null;
+  /** Server-synced mid-lesson progress (MongoDB) for a warm resume. */
+  savedProgress?: SavedProgress | null;
+  /** Child's first name, for the warm re-entry card. */
+  firstName?: string;
+  /** Per-child localStorage namespace for instant same-device resume. */
+  resumeKey?: string;
 }) {
   const accent: AccentPreset = accentPreset(accentId);
+  const storageKey = `hexa_progress_${resumeKey ?? "anon"}_${curriculumTopic}`;
 
   const [step, setStep] = useState(0);
   const [attempts, setAttempts] = useState(0);
@@ -126,6 +143,10 @@ export function PracticePlayer({
   const startedAtRef = useRef<number>(Date.now());
   const loggedRef = useRef(false);
   const [saved, setSaved] = useState(false);
+
+  // ── Resume (Feature 3) ──
+  const [resumed, setResumed] = useState(false);
+  const resumeAppliedRef = useRef(false);
 
   const question = questions[step];
   const complete = step >= questions.length;
@@ -169,6 +190,89 @@ export function PracticePlayer({
         !!navigator.mediaDevices?.getUserMedia,
     );
   }, []);
+
+  // Resume once on mount: reconcile the server copy (props) with a same-device
+  // localStorage copy (which may be a step ahead if a server write lagged), then
+  // land at the exact saved step. Pure math via resolveResumeStep keeps this
+  // honest: a content change, a fresh start, or a finished lesson all → no resume.
+  useEffect(() => {
+    if (resumeAppliedRef.current || questions.length === 0) return;
+    resumeAppliedRef.current = true;
+
+    let local: SavedProgress | null = null;
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (raw) {
+        const p = JSON.parse(raw) as Partial<SavedProgress>;
+        if (
+          typeof p.step === "number" &&
+          typeof p.score === "number" &&
+          typeof p.total === "number"
+        ) {
+          local = { step: p.step, score: p.score, total: p.total };
+        }
+      }
+    } catch {
+      /* corrupt localStorage is non-fatal */
+    }
+
+    // Choose whichever valid candidate is further along.
+    const candidates = [savedProgress ?? null, local].filter(
+      (c): c is SavedProgress =>
+        resolveResumeStep(c, questions.length) !== null,
+    );
+    if (candidates.length === 0) {
+      // Clear any stale (content-changed) local copy so it can't mislead later.
+      if (local) {
+        try {
+          window.localStorage.removeItem(storageKey);
+        } catch {
+          /* ignore */
+        }
+      }
+      return;
+    }
+    const best = candidates.reduce((a, b) => (b.step > a.step ? b : a));
+    const resumeStep = resolveResumeStep(best, questions.length);
+    if (resumeStep === null) return;
+
+    setStep(resumeStep);
+    setScore(clampResumeScore(best, resumeStep));
+    setResumed(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** Persist the current position (localStorage instantly + MongoDB best-effort). */
+  const persist = useCallback(
+    (atStep: number, atScore: number) => {
+      const payload: SavedProgress = {
+        step: atStep,
+        score: atScore,
+        total: questions.length,
+      };
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(payload));
+      } catch {
+        /* private mode / quota — server copy still saves */
+      }
+      void saveLessonProgressAction({
+        topicTag: curriculumTopic,
+        step: atStep,
+        score: atScore,
+        total: questions.length,
+      }).catch(() => {});
+    },
+    [storageKey, curriculumTopic, questions.length],
+  );
+
+  const clearProgress = useCallback(() => {
+    try {
+      window.localStorage.removeItem(storageKey);
+    } catch {
+      /* ignore */
+    }
+    void clearLessonProgressAction(curriculumTopic).catch(() => {});
+  }, [storageKey, curriculumTopic]);
 
   async function transcribe(blob: Blob) {
     setSttLoading(true);
@@ -324,7 +428,13 @@ export function PracticePlayer({
   function next() {
     cleanupAudio();
     stopRecorder();
-    setStep((s) => s + 1);
+    const nextStep = step + 1;
+    // Autosave the new position (or clear once the lesson is finished).
+    if (nextStep >= questions.length) clearProgress();
+    else persist(nextStep, score);
+
+    setStep(nextStep);
+    setResumed(false);
     setAttempts(0);
     setReady(false);
     setRevealed(false);
@@ -445,6 +555,30 @@ export function PracticePlayer({
 
   return (
     <div className="mx-auto max-w-2xl">
+      {/* Warm re-entry — intentional, never a jarring flash back to the start. */}
+      <AnimatePresence>
+        {resumed && outcome === null && (
+          <motion.div
+            key="resume"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className={cn(
+              "mb-5 flex items-center gap-3 rounded-3xl border p-4 text-lg text-fog-100",
+              accent.softBg,
+              accent.softBorder,
+            )}
+          >
+            <Sparkles className={cn("h-5 w-5 shrink-0", accent.text)} />
+            <span>
+              {firstName ? `Welcome back, ${firstName}` : "Welcome back"} — let&apos;s
+              pick up where you left off.
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Progress — slim accent-gradient bar, "N of M". */}
       <div className="mb-6">
         <div className="mb-2 flex items-center justify-between">

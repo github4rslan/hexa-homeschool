@@ -121,6 +121,25 @@ export interface LessonLogDoc {
   created_at: Date;
 }
 
+/**
+ * Within-lesson autosave (interactive daily flow). One row per child per topic,
+ * letting an interrupted child resume at the exact step. Deleted on completion —
+ * a finished lesson never resumes; the canonical LessonLogDoc / mastery result
+ * is the durable record. Pedagogical state only — never analytics.
+ */
+export interface LessonProgressDoc {
+  _id?: ObjectId;
+  child_id: ObjectId;
+  topic_tag: string;
+  /** Step the child was on (0-based). */
+  step: number;
+  /** Questions answered correctly so far. */
+  score: number;
+  /** Question count when saved (content-change guard on resume). */
+  total: number;
+  updated_at: Date;
+}
+
 export interface CompetenceDoc {
   _id?: ObjectId;
   child_id: ObjectId;

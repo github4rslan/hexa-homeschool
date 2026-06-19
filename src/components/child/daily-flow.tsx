@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Explainer } from "./explainer";
 import { PracticePlayer } from "./practice-player";
 import { accentPreset } from "@/lib/child/accents";
+import { resolveResumeStep, type SavedProgress } from "@/lib/child/interactions";
 import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
 
@@ -23,6 +24,9 @@ export function DailyFlow({
   curriculumTopic,
   voiceId,
   accent: accentId,
+  savedProgress,
+  firstName,
+  resumeKey,
 }: {
   title: string;
   summary: string;
@@ -33,9 +37,21 @@ export function DailyFlow({
   voiceId?: string | null;
   /** Child-chosen accent preset id (drives colour throughout). */
   accent?: string | null;
+  /** Server-synced mid-lesson progress for a warm resume (MongoDB). */
+  savedProgress?: SavedProgress | null;
+  /** Child's first name, for the warm re-entry card. */
+  firstName?: string;
+  /** Per-child localStorage namespace for instant same-device resume. */
+  resumeKey?: string;
 }) {
   const accent = accentPreset(accentId);
-  const [phase, setPhase] = useState<"explainer" | "practice">("explainer");
+  // If there's resumable progress, drop straight into practice at the saved step
+  // rather than replaying the explainer.
+  const canResume =
+    resolveResumeStep(savedProgress ?? null, questions.length) !== null;
+  const [phase, setPhase] = useState<"explainer" | "practice">(
+    canResume ? "practice" : "explainer",
+  );
 
   const PHASES = [
     { key: "explainer", label: "Learn" },
@@ -93,6 +109,9 @@ export function DailyFlow({
               curriculumTopic={curriculumTopic}
               voiceId={voiceId}
               accent={accentId}
+              savedProgress={savedProgress}
+              firstName={firstName}
+              resumeKey={resumeKey}
             />
           )}
         </motion.div>

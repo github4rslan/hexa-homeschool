@@ -96,6 +96,9 @@ async function main() {
     // Age-scoped diagnostic pool: { subject, kind, key_stage, tier }.
     await questionsCol.createIndex({ subject: 1, kind: 1, key_stage: 1, tier: 1 });
 
+    // Within-lesson autosave: one resume row per child per topic.
+    await db.collection("lesson_progress").createIndex({ child_id: 1, topic_tag: 1 }, { unique: true });
+
     // Child-scoped progress indexes (recent-first reads).
     await db.collection("instructional_logs").createIndex({ child_id: 1, timestamp_start: -1 });
     await db.collection("evaluation_records").createIndex({ child_id: 1, created_at: -1 });

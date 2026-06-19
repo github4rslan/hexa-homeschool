@@ -7,6 +7,8 @@ import {
   insertLessonLog,
   upsertCompetence,
   familyLessonCount,
+  saveLessonProgress,
+  clearLessonProgress,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { captureServer } from "@/lib/analytics/server";
@@ -71,6 +73,9 @@ export async function logLessonCompletion(
 
   await upsertCompetence(parentId, child._id, topicTag, state);
 
+  // The lesson is finished — drop any mid-lesson resume row so it never resumes.
+  await clearLessonProgress(parentId, child._id, topicTag);
+
   // A completed lesson changes data shown on the child hub + progress map
   // (quest done-state, certified nodes) and the parent dashboard (activity,
   // week stats, getting-started checklist). Refresh them so none goes stale.
@@ -79,4 +84,40 @@ export async function logLessonCompletion(
   revalidatePath("/dashboard");
 
   return { persisted: true, competenceState: state };
+}
+
+/**
+ * Autosave the child's mid-lesson position (interactive daily flow). Fire-and-
+ * forget from the client on each step; no-ops gracefully without a session/child.
+ * Pedagogical state only — never analytics.
+ */
+export async function saveLessonProgressAction(input: {
+  topicTag: string;
+  step: number;
+  score: number;
+  total: number;
+}): Promise<{ saved: boolean }> {
+  if (input.total <= 0 || input.step < 0) return { saved: false };
+  const parentId = await currentParentId();
+  if (!parentId) return { saved: false };
+  const child = await getActiveChild(parentId, await readActiveChildId());
+  if (!child?._id) return { saved: false };
+  const saved = await saveLessonProgress(parentId, child._id, input.topicTag, {
+    step: input.step,
+    score: input.score,
+    total: input.total,
+  });
+  return { saved };
+}
+
+/** Clear saved mid-lesson progress (e.g. when a child restarts a topic). */
+export async function clearLessonProgressAction(
+  topicTag: string,
+): Promise<{ cleared: boolean }> {
+  const parentId = await currentParentId();
+  if (!parentId) return { cleared: false };
+  const child = await getActiveChild(parentId, await readActiveChildId());
+  if (!child?._id) return { cleared: false };
+  await clearLessonProgress(parentId, child._id, topicTag);
+  return { cleared: true };
 }
