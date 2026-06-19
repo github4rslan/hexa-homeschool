@@ -71,6 +71,8 @@ export const Collections = {
   lessonLogs: "instructional_logs",
   competence: "competence_matrix",
   dossiers: "compliance_dossiers",
+  // Interactive daily flow — within-lesson autosave so a child resumes mid-lesson
+  lessonProgress: "lesson_progress",
   // Stage 1 — real curriculum + question bank
   topics: "curriculum_topics",
   questions: "questions",

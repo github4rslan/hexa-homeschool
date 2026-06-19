@@ -20,6 +20,7 @@ import type {
   ChildDoc,
   EvaluationDoc,
   LessonLogDoc,
+  LessonProgressDoc,
   CompetenceDoc,
   DossierDoc,
   CurriculumTopicDoc,
@@ -820,6 +821,63 @@ export async function familyLessonCount(parentId: string): Promise<number> {
   if (!ids.length) return 0;
   const logCol = await getCollection<LessonLogDoc>(Collections.lessonLogs);
   return logCol.countDocuments({ child_id: { $in: ids.map((d) => d._id) } });
+}
+
+// ── Within-lesson autosave / resume (interactive daily flow) ──
+
+/**
+ * Save the child's mid-lesson position so an interruption resumes at the exact
+ * step. Upsert keyed on (child, topic). Pedagogical state only — never
+ * analytics. Ownership enforced.
+ */
+export async function saveLessonProgress(
+  parentId: string,
+  childId: ObjectId,
+  topicTag: string,
+  progress: { step: number; score: number; total: number },
+): Promise<boolean> {
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+  const col = await getCollection<LessonProgressDoc>(Collections.lessonProgress);
+  await col.updateOne(
+    { child_id: childId, topic_tag: topicTag },
+    {
+      $set: {
+        step: progress.step,
+        score: progress.score,
+        total: progress.total,
+        updated_at: new Date(),
+      },
+    },
+    { upsert: true },
+  );
+  return true;
+}
+
+/** Read saved mid-lesson progress for a topic, or null. Ownership enforced. */
+export async function getLessonProgress(
+  parentId: string,
+  childId: ObjectId,
+  topicTag: string,
+): Promise<{ step: number; score: number; total: number } | null> {
+  if (!(await assertOwnsChild(parentId, childId))) return null;
+  const col = await getCollection<LessonProgressDoc>(Collections.lessonProgress);
+  const doc = await col.findOne({ child_id: childId, topic_tag: topicTag });
+  if (!doc) return null;
+  return { step: doc.step, score: doc.score, total: doc.total };
+}
+
+/**
+ * Clear saved progress (on completion, so a finished lesson never resumes).
+ * Ownership enforced.
+ */
+export async function clearLessonProgress(
+  parentId: string,
+  childId: ObjectId,
+  topicTag: string,
+): Promise<void> {
+  if (!(await assertOwnsChild(parentId, childId))) return;
+  const col = await getCollection<LessonProgressDoc>(Collections.lessonProgress);
+  await col.deleteOne({ child_id: childId, topic_tag: topicTag });
 }
 
 export async function upsertCompetence(

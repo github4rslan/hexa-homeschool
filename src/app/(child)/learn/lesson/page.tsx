@@ -7,6 +7,7 @@ import {
   getQuestions,
   currentParentId,
   getActiveChild,
+  getLessonProgress,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { normalizeInteraction } from "@/lib/child/interactions";
@@ -56,6 +57,15 @@ export default async function ChildLessonPage({
     redirect("/learn");
   }
 
+  // Server-synced mid-lesson progress (MongoDB) for a warm cross-device resume.
+  // The client also reconciles a localStorage copy for instant same-device resume.
+  const savedProgress =
+    parentId && child?._id
+      ? await getLessonProgress(parentId, child._id, topicDoc.topic_tag)
+      : null;
+  const firstName = child?.full_name.split(" ")[0] ?? "";
+  const resumeKey = child?._id?.toHexString() ?? "anon";
+
   return (
     <DailyFlow
       title={topicDoc.title}
@@ -65,6 +75,9 @@ export default async function ChildLessonPage({
       curriculumTopic={topicDoc.topic_tag}
       voiceId={voiceId}
       accent={accent}
+      savedProgress={savedProgress}
+      firstName={firstName}
+      resumeKey={resumeKey}
     />
   );
 }
