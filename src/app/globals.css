@@ -560,6 +560,20 @@
   .animate-child-pop {
     animation: child-pop 0.5s var(--ease-spring) both;
   }
+
+  /* Distraction-free lesson (Feature 4). FocusFrame flags `lesson-focus` on
+     <html>; the branding logo calmly fades so the lesson fills the space, and
+     re-reveals on hover/focus of the top edge. Opacity-only — never a flash. */
+  html.lesson-focus [data-focus-logo] {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s var(--ease-out-expo);
+  }
+  html.lesson-focus header:hover [data-focus-logo],
+  html.lesson-focus [data-focus-logo]:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 /* ──────────────────────────────────────────────────────────

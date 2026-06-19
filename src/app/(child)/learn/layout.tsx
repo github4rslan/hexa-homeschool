@@ -18,7 +18,13 @@ export default function LearnLayout({
       <div className="fixed inset-0 bg-mesh-hero opacity-40 -z-10 pointer-events-none" />
 
       <header className="flex items-center justify-between p-5 lg:p-8">
-        <Link href="/learn" className="inline-flex items-center gap-2.5">
+        {/* Branding fades in focus mode (re-reveals on hover/focus); the
+            parent-gate exit on the right always stays reachable. */}
+        <Link
+          href="/learn"
+          data-focus-logo
+          className="inline-flex items-center gap-2.5 rounded-lg focus-visible:opacity-100"
+        >
           <HexaLogo size={32} withText />
         </Link>
         <ParentGateExit className="child-touch text-base" />
