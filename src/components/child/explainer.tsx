@@ -4,6 +4,8 @@ import { useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Play, Pause, Loader2, ArrowRight, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { accentPreset } from "@/lib/child/accents";
+import { cn } from "@/lib/utils";
 
 /**
  * Explainer step (Brief: Daily Flow step 2). Phase-1 uses a clear written
@@ -16,6 +18,7 @@ export function Explainer({
   points,
   onContinue,
   voiceId,
+  accent: accentId,
 }: {
   title: string;
   summary: string;
@@ -23,7 +26,10 @@ export function Explainer({
   onContinue: () => void;
   /** Child-chosen narration voice; falls back to the server default when unset. */
   voiceId?: string | null;
+  /** Child-chosen accent preset id (drives the icon tile + play button). */
+  accent?: string | null;
 }) {
+  const accent = accentPreset(accentId);
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -79,8 +85,14 @@ export function Explainer({
       <div className="child-panel p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-14 w-14 items-center justify-center rounded-3xl bg-violet-500/15 border border-violet-400/30">
-              <Lightbulb className="h-7 w-7 text-violet-300" />
+            <div
+              className={cn(
+                "flex h-14 w-14 items-center justify-center rounded-3xl border",
+                accent.bg,
+                accent.border,
+              )}
+            >
+              <Lightbulb className={cn("h-7 w-7", accent.text)} />
             </div>
             <div>
               <span className="text-sm font-mono uppercase tracking-widest text-fog-500">
@@ -93,7 +105,10 @@ export function Explainer({
             onClick={toggle}
             disabled={loading}
             aria-label={playing ? "Pause narration" : "Play narration"}
-            className="child-touch flex w-16 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-violet-500 to-cyan-500 text-white disabled:opacity-60"
+            className={cn(
+              "child-touch flex w-16 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br text-white disabled:opacity-60",
+              accent.gradient,
+            )}
           >
             {loading ? (
               <Loader2 className="h-7 w-7 animate-spin" />
@@ -116,7 +131,13 @@ export function Explainer({
               transition={{ delay: i * 0.08 }}
               className="flex items-start gap-3 text-lg text-fog-100"
             >
-              <span className="mt-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-neon-500/15 text-sm font-semibold text-neon-400">
+              <span
+                className={cn(
+                  "mt-1.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+                  accent.bg,
+                  accent.text,
+                )}
+              >
                 {i + 1}
               </span>
               {p}

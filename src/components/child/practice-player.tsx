@@ -2,20 +2,41 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, X, Volume2, Mic, Square, Loader2, Sparkles, ArrowRight } from "lucide-react";
+import {
+  Volume2,
+  Mic,
+  Square,
+  Loader2,
+  Sparkles,
+  ArrowRight,
+  Lightbulb,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalmPause } from "@/components/child/calm-pause";
 import { Celebration } from "@/components/fx/celebration";
+import { Interaction, type InteractionHandle } from "@/components/child/interaction";
 import { logLessonCompletion } from "@/app/(dashboard)/lesson/actions";
-import { fetchJsonWithRetry } from "@/lib/fetch-with-retry";
+import {
+  buildHintLadder,
+  type Interaction as InteractionDef,
+} from "@/lib/child/interactions";
+import { accentPreset, type AccentPreset } from "@/lib/child/accents";
 import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
 
 /**
- * Child-mode practice + mastery in one flow (Brief: Daily Flow steps 3–4).
- * Big options, max 3 attempts per question, encouraging copy, Teaching-Agent
- * hints, optional "Listen", and a celebratory mastery screen. 100% = certified
- * (persisted via logLessonCompletion). Children's Code: large, calm, no streaks.
+ * Child-mode interactive practice + mastery (Features 1–2).
+ *
+ * Renders each step through the reusable <Interaction> (mcq / tap_reveal /
+ * fill_blank / drag_drop), checks answers locally and instantly (<200ms), and
+ * choreographs CALM feedback: correct = accent settle + rotating Celebration +
+ * an encouraging line; incorrect = soft dim + a progressive hint ladder
+ * (nudge → specific → full), up to 3 attempts then the worked solution. Never a
+ * red flash, shake or buzzer. The child's accent drives every surface.
+ *
+ * Pedagogical state (attempts, hints) is persisted on the lesson log via the
+ * repo layer — never analytics. Free-text answers are scanned by the distress
+ * gate (/api/safety-check) before the child moves on.
  */
 
 const MAX_ATTEMPTS = 3;
@@ -26,12 +47,11 @@ const MAX_RECORDING_MS = 15_000;
 
 /**
  * Match a transcript to one of the options: "option b"/"b" picks by letter,
- * otherwise the longest option whose normalized text contains (or is
- * contained by) the transcript wins. Null = let the child tap instead.
+ * otherwise the longest option whose normalized text overlaps the transcript
+ * wins. Null = let the child tap instead.
  */
 function matchSpokenOption(transcript: string, options: string[]): number | null {
-  const norm = (s: string) =>
-    s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   const t = norm(transcript);
   if (!t) return null;
 
@@ -57,43 +77,49 @@ function matchSpokenOption(transcript: string, options: string[]): number | null
 export function PracticePlayer({
   questions,
   curriculumTopic,
-  lessonTitle,
   voiceId,
+  accent: accentId,
 }: {
   questions: Question[];
   curriculumTopic: string;
-  lessonTitle: string;
   /** Child-chosen narration voice; falls back to the server default when unset. */
   voiceId?: string | null;
+  /** Child-chosen accent preset id (threads colour through every surface). */
+  accent?: string | null;
 }) {
+  const accent: AccentPreset = accentPreset(accentId);
+
   const [step, setStep] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
   const [attempts, setAttempts] = useState(0);
-  const [revealed, setRevealed] = useState(false); // show answer after 3 tries
+  const [ready, setReady] = useState(false);
+  const [revealed, setRevealed] = useState(false); // worked solution shown
+  const [outcome, setOutcome] = useState<"correct" | "incorrect" | null>(null);
   const [score, setScore] = useState(0);
   const [scoredThis, setScoredThis] = useState(false);
 
-  const [hint, setHint] = useState<string | null>(null);
-  const [hintLoading, setHintLoading] = useState(false);
+  // Progressive hint ladder (local, human-authored).
+  const [hintRung, setHintRung] = useState(0); // 0 = none shown yet
 
-  /**
-   * Safety freeze (child-safety rule 2): once /api/tutor or /api/stt returns
-   * frozen, the session is over — the calm-pause screen replaces the lesson
-   * and nothing below can un-set this.
-   */
+  // Pedagogical counters for the lesson log (NOT analytics).
+  const attemptsTotalRef = useRef(0);
+  const hintsTotalRef = useRef(0);
+
+  const interactionRef = useRef<InteractionHandle>(null);
+
+  /** Safety freeze (child-safety rule 2): terminal — replaces the lesson UI. */
   const [frozen, setFrozen] = useState<string | null>(null);
 
   const [audioLoading, setAudioLoading] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
 
-  // ── Speak-your-answer (STT) ──
+  // ── Speak-your-answer (STT) — mcq only ──
   const [speechSupported, setSpeechSupported] = useState(false);
   const [recording, setRecording] = useState(false);
   const [sttLoading, setSttLoading] = useState(false);
-  /** What the child said, shown back and sent to /api/tutor as studentAnswer. */
   const [spoken, setSpoken] = useState<string | null>(null);
   const [sttNotice, setSttNotice] = useState<string | null>(null);
+  const [spokenSelect, setSpokenSelect] = useState<number | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -103,7 +129,15 @@ export function PracticePlayer({
 
   const question = questions[step];
   const complete = step >= questions.length;
-  const isCorrect = selected !== null && selected === question?.correctIndex;
+
+  const interaction: InteractionDef = question
+    ? question.interaction ?? { type: "mcq" }
+    : { type: "mcq" };
+  const isMcq = interaction.type === "mcq";
+
+  const hintLadder = question
+    ? buildHintLadder({ hints: question.hints, explanation: question.explanation })
+    : [];
 
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
@@ -129,7 +163,6 @@ export function PracticePlayer({
   }, []);
   useEffect(() => stopRecorder, [stopRecorder]);
 
-  // Mic support is browser-only; decide after mount to avoid hydration drift.
   useEffect(() => {
     setSpeechSupported(
       typeof MediaRecorder !== "undefined" &&
@@ -148,7 +181,6 @@ export function PracticePlayer({
         text?: string;
         frozen?: boolean;
         message?: string;
-        error?: string;
       };
       if (data.frozen) {
         stopRecorder();
@@ -163,7 +195,7 @@ export function PracticePlayer({
       setSpoken(data.text);
       const match = matchSpokenOption(data.text, question?.options ?? []);
       if (match !== null) {
-        setSelected(match);
+        setSpokenSelect(match);
         setSttNotice(null);
       } else {
         setSttNotice("Tap the answer that matches what you said.");
@@ -188,8 +220,6 @@ export function PracticePlayer({
         if (e.data.size > 0) chunks.push(e.data);
       };
       rec.onstop = () => {
-        // The mic is released the moment recording ends; audio only ever
-        // lives in this blob until /api/stt has answered.
         stream.getTracks().forEach((t) => t.stop());
         const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
         if (blob.size > 0) void transcribe(blob);
@@ -204,7 +234,7 @@ export function PracticePlayer({
     }
   }
 
-  // Persist once on completion.
+  // Persist once on completion (attempts + hints come from the live counters).
   useEffect(() => {
     if (!complete || loggedRef.current || questions.length === 0) return;
     loggedRef.current = true;
@@ -217,19 +247,49 @@ export function PracticePlayer({
       score,
       total: questions.length,
       timeSpentSeconds,
-      hintsUsed: 0,
+      hintsUsed: hintsTotalRef.current,
     })
       .then((r) => setSaved(r.persisted))
       .catch(() => setSaved(false));
   }, [complete, curriculumTopic, score, questions.length]);
 
-  async function check() {
-    if (selected === null || !question) return;
-    const correct = selected === question.correctIndex;
+  /** Scan free-text answers for distress (fill_blank only). */
+  async function guardFreeText(): Promise<boolean> {
+    if (interaction.type !== "fill_blank") return false;
+    const text = interactionRef.current?.answerText() ?? "";
+    if (!text) return false;
+    try {
+      const res = await fetch("/api/safety-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = (await res.json()) as { frozen?: boolean; message?: string };
+      if (data.frozen) {
+        stopRecorder();
+        cleanupAudio();
+        setFrozen(data.message ?? "");
+        return true;
+      }
+    } catch {
+      /* safety-check is best-effort; never block on a network error */
+    }
+    return false;
+  }
+
+  function check() {
+    if (!ready || !question || revealed || outcome === "correct") return;
+
+    const correct = interactionRef.current?.isCorrect() ?? false;
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
+    attemptsTotalRef.current += 1;
+
+    // Free-text gets a distress scan in the background — feedback stays instant.
+    void guardFreeText();
 
     if (correct) {
+      setOutcome("correct");
       if (!scoredThis) {
         setScore((s) => s + 1);
         setScoredThis(true);
@@ -238,53 +298,41 @@ export function PracticePlayer({
       return;
     }
 
-    // Wrong: fetch an encouraging hint from the Teaching Agent (cold-start tolerant).
-    setHintLoading(true);
-    try {
-      const data = await fetchJsonWithRetry<{
-        explanation: string;
-        frozen?: boolean;
-        message?: string;
-      }>(
-        "/api/tutor",
-        {
-          prompt: question.prompt,
-          correctAnswer: question.explanation,
-          topic: lessonTitle,
-          // Prefer the child's own words: the distress gate in /api/tutor
-          // must scan what they actually said, not the option label.
-          studentAnswer: spoken ?? question.options[selected],
-          wasCorrect: false,
-        },
-        { timeoutMs: 25000, retries: 1 },
-      );
-      if (data.frozen) {
-        stopRecorder();
-        cleanupAudio();
-        setFrozen(data.message ?? "");
-        return;
-      }
-      setHint(data.explanation);
-    } catch {
-      setHint(question.explanation);
-    } finally {
-      setHintLoading(false);
-    }
+    setOutcome("incorrect");
+    // Surface the next hint rung automatically on a wrong try.
+    setHintRung((r) => {
+      const next = Math.min(r + 1, hintLadder.length);
+      if (next > r) hintsTotalRef.current += 1;
+      return next;
+    });
 
-    // After 3 attempts, reveal the answer and move on (no punitive tracking).
-    if (nextAttempts >= MAX_ATTEMPTS) setRevealed(true);
+    // After the final attempt, unfold the full worked solution.
+    if (nextAttempts >= MAX_ATTEMPTS) {
+      setHintRung(hintLadder.length);
+      setRevealed(true);
+    }
+  }
+
+  function showHint() {
+    setHintRung((r) => {
+      const next = Math.min(r + 1, hintLadder.length);
+      if (next > r) hintsTotalRef.current += 1;
+      return next;
+    });
   }
 
   function next() {
     cleanupAudio();
     stopRecorder();
     setStep((s) => s + 1);
-    setSelected(null);
     setAttempts(0);
+    setReady(false);
     setRevealed(false);
-    setHint(null);
+    setOutcome(null);
     setScoredThis(false);
+    setHintRung(0);
     setSpoken(null);
+    setSpokenSelect(null);
     setSttNotice(null);
   }
 
@@ -317,7 +365,7 @@ export function PracticePlayer({
     }
   }
 
-  // ── Safety freeze: replaces the entire lesson UI, checked before anything ──
+  // ── Safety freeze: replaces the entire lesson UI ──
   if (frozen !== null) {
     return (
       <CalmPause
@@ -340,10 +388,9 @@ export function PracticePlayer({
               "relative mx-auto mb-6 flex h-28 w-28 items-center justify-center rounded-full border-2",
               mastered
                 ? "bg-neon-500/10 border-neon-400/50 glow-neon"
-                : "bg-violet-500/10 border-violet-400/40",
+                : cn(accent.bg, accent.border),
             )}
           >
-            {/* The one BIG moment — certification earns the full burst. */}
             {mastered && <Celebration variant={1} big />}
             <span className="text-6xl" aria-hidden>
               {mastered ? "🏆" : "🌟"}
@@ -391,48 +438,62 @@ export function PracticePlayer({
   if (!question) return null;
 
   const attemptsLeft = MAX_ATTEMPTS - attempts;
+  const isCorrect = outcome === "correct";
+  // Hints not yet exhausted, still has tries, and not solved → can ask for more.
+  const canHint =
+    !revealed && !isCorrect && hintRung < hintLadder.length;
 
   return (
     <div className="mx-auto max-w-2xl">
-      {/* Progress */}
-      <div className="mb-6 flex items-center justify-between">
-        <span className="text-lg font-semibold text-fog-300">
-          Question {step + 1} of {questions.length}
-        </span>
-        <div className="flex items-center gap-3">
-          {speechSupported && (
-            <button
-              onClick={toggleSpeak}
-              disabled={sttLoading || revealed}
-              className={cn(
-                "child-touch inline-flex items-center gap-2 rounded-2xl border px-4 text-base disabled:opacity-50",
-                recording
-                  ? "border-crimson-400/60 bg-crimson-500/10 text-crimson-300 animate-pulse"
-                  : "border-white/10 bg-white/[0.03] text-fog-200 hover:border-white/30",
-              )}
-            >
-              {sttLoading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : recording ? (
-                <Square className="h-5 w-5" />
-              ) : (
-                <Mic className="h-5 w-5" />
-              )}
-              {recording ? "Done" : "Speak"}
-            </button>
-          )}
-          <button
-            onClick={listen}
-            disabled={audioLoading}
-            className="child-touch inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base text-fog-200 hover:border-white/30 disabled:opacity-50"
-          >
-            {audioLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Volume2 className="h-5 w-5" />
+      {/* Progress — slim accent-gradient bar, "N of M". */}
+      <div className="mb-6">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-lg font-semibold text-fog-300">
+            {step + 1} of {questions.length}
+          </span>
+          <div className="flex items-center gap-3">
+            {speechSupported && isMcq && (
+              <button
+                onClick={toggleSpeak}
+                disabled={sttLoading || revealed}
+                className={cn(
+                  "child-touch inline-flex items-center gap-2 rounded-2xl border px-4 text-base disabled:opacity-50",
+                  recording
+                    ? "border-crimson-400/60 bg-crimson-500/10 text-crimson-300 animate-pulse"
+                    : "border-white/10 bg-white/[0.03] text-fog-200 hover:border-white/30",
+                )}
+              >
+                {sttLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : recording ? (
+                  <Square className="h-5 w-5" />
+                ) : (
+                  <Mic className="h-5 w-5" />
+                )}
+                {recording ? "Done" : "Speak"}
+              </button>
             )}
-            Listen
-          </button>
+            <button
+              onClick={listen}
+              disabled={audioLoading}
+              className="child-touch inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base text-fog-200 hover:border-white/30 disabled:opacity-50"
+            >
+              {audioLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Volume2 className="h-5 w-5" />
+              )}
+              Listen
+            </button>
+          </div>
+        </div>
+        <div className="h-2.5 overflow-hidden rounded-full bg-white/5">
+          <motion.div
+            className={cn("h-full rounded-full bg-gradient-to-r", accent.bar)}
+            initial={false}
+            animate={{ width: `${(step / questions.length) * 100}%` }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          />
         </div>
       </div>
 
@@ -441,36 +502,20 @@ export function PracticePlayer({
           {question.prompt}
         </h1>
 
-        <div className="grid gap-4">
-          {question.options.map((option, i) => {
-            const chosen = selected === i;
-            const showCorrect = revealed && i === question.correctIndex;
-            const showWrong = revealed && chosen && i !== question.correctIndex;
-            return (
-              <motion.button
-                key={i}
-                onClick={() => !revealed && setSelected(i)}
-                disabled={revealed}
-                whileTap={{ scale: revealed ? 1 : 0.98 }}
-                className={cn(
-                  "child-touch flex items-center justify-between rounded-3xl border-2 px-6 text-left text-xl transition-all",
-                  !revealed && chosen && "border-violet-400/70 bg-violet-500/15",
-                  !revealed && !chosen && "border-white/10 bg-white/[0.03] hover:border-white/30",
-                  showCorrect && "border-neon-400/70 bg-neon-500/15",
-                  // A wrong pick gently dims — never a red flash or shake.
-                  showWrong && "border-white/10 bg-white/[0.02] opacity-60",
-                  revealed && !showCorrect && !showWrong && "border-white/5 opacity-50",
-                )}
-              >
-                <span className="text-fog-50">{option}</span>
-                {showCorrect && <Check className="h-7 w-7 text-neon-400" />}
-                {showWrong && <X className="h-7 w-7 text-fog-400" />}
-              </motion.button>
-            );
-          })}
-        </div>
+        <Interaction
+          key={step}
+          ref={interactionRef}
+          options={question.options}
+          correctIndex={question.correctIndex}
+          interaction={interaction}
+          accent={accent}
+          reveal={revealed}
+          wasCorrect={isCorrect}
+          onReadyChange={setReady}
+          forceMcqSelect={spokenSelect}
+        />
 
-        {/* Spoken-answer feedback */}
+        {/* Spoken-answer feedback (mcq) */}
         {(spoken || sttNotice) && !revealed && (
           <p className="mt-5 text-base text-fog-400">
             {spoken && (
@@ -483,47 +528,88 @@ export function PracticePlayer({
           </p>
         )}
 
-        {/* Feedback */}
+        {/* Progressive hints (muted accent tint, distinct from the answer) */}
         <AnimatePresence>
-          {(hint || hintLoading || revealed) && (
+          {hintRung > 0 && !isCorrect && (
             <motion.div
+              key="hints"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
-                "mt-6 rounded-3xl border p-5 text-lg",
-                isCorrect
-                  ? "border-neon-400/30 bg-neon-500/5 text-fog-100"
-                  : "border-amber-400/30 bg-amber-500/5 text-fog-200",
+                "mt-6 flex flex-col gap-3 rounded-3xl border p-5",
+                accent.softBg,
+                accent.softBorder,
               )}
             >
-              {hintLoading ? (
-                <span className="inline-flex items-center gap-2 text-fog-300">
-                  <Loader2 className="h-5 w-5 animate-spin" /> Thinking of a hint…
-                </span>
-              ) : isCorrect ? (
-                <span className="relative inline-block font-semibold">
-                  {/* Fires only after the answer; varies so it never feels mechanical. */}
-                  <Celebration variant={step} />
-                  {PRAISE[step % PRAISE.length]}
-                </span>
-              ) : (
-                <span>{hint ?? question.explanation}</span>
-              )}
+              {hintLadder.slice(0, hintRung).map((rung, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                  className="flex items-start gap-3 text-lg text-fog-100"
+                >
+                  <Lightbulb className={cn("mt-1 h-5 w-5 shrink-0", accent.text)} />
+                  <span>
+                    {i === hintLadder.length - 1 && revealed ? (
+                      <>
+                        <span className="mr-1 font-semibold text-fog-50">
+                          Here&apos;s how it works:
+                        </span>
+                        {rung}
+                      </>
+                    ) : (
+                      rung
+                    )}
+                  </span>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Correct moment — encouraging line; the burst is non-blocking. */}
+        <AnimatePresence>
+          {isCorrect && (
+            <motion.div
+              key="correct"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-6 rounded-3xl border border-neon-400/30 bg-neon-500/5 p-5 text-lg text-fog-100"
+            >
+              <span className="relative inline-block font-semibold">
+                <Celebration variant={step} />
+                {PRAISE[step % PRAISE.length]}
+              </span>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Actions */}
         <div className="mt-8 flex items-center justify-between gap-4">
-          {!revealed && !isCorrect && attempts > 0 && (
+          {canHint ? (
+            <button
+              onClick={showHint}
+              className="inline-flex items-center gap-2 text-base text-fog-400 transition-colors hover:text-fog-200"
+            >
+              <Lightbulb className="h-5 w-5" />
+              {hintRung === 0 ? "Show a hint" : "Another hint"}
+            </button>
+          ) : !revealed && !isCorrect && attempts > 0 ? (
             <span className="text-base text-fog-400">
               {attemptsLeft} {attemptsLeft === 1 ? "try" : "tries"} left
             </span>
+          ) : (
+            <span />
           )}
+
           <div className="ml-auto">
-            {revealed ? (
+            {revealed || isCorrect ? (
               <Button onClick={next} variant="child" size="child">
-                {step === questions.length - 1 ? "Finish" : "Next"}
+                {step === questions.length - 1 ? "Finish" : "Keep going"}
                 <ArrowRight className="h-6 w-6" />
               </Button>
             ) : (
@@ -531,7 +617,7 @@ export function PracticePlayer({
                 onClick={check}
                 variant="child"
                 size="child"
-                disabled={selected === null || hintLoading}
+                disabled={!ready}
               >
                 Check answer
               </Button>

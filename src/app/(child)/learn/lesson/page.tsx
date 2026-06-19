@@ -9,6 +9,7 @@ import {
   getActiveChild,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
+import { normalizeInteraction } from "@/lib/child/interactions";
 import type { Question } from "@/components/lesson/lesson-player";
 
 export const metadata: Metadata = { title: "Lesson" };
@@ -29,6 +30,7 @@ export default async function ChildLessonPage({
     ? await getActiveChild(parentId, await readActiveChildId())
     : null;
   const voiceId = child?.voice_id ?? null;
+  const accent = child?.accent ?? null;
 
   const docs = await getQuestions({ topicTag: topicDoc.topic_tag }, 50);
   const questions: Question[] = docs
@@ -39,6 +41,8 @@ export default async function ChildLessonPage({
       options: q.options,
       correctIndex: q.correct_index,
       explanation: q.explanation,
+      interaction: normalizeInteraction(q.interaction),
+      hints: q.hints,
     }));
 
   // Build the explainer "points" from real practice-question explanations —
@@ -60,6 +64,7 @@ export default async function ChildLessonPage({
       questions={questions}
       curriculumTopic={topicDoc.topic_tag}
       voiceId={voiceId}
+      accent={accent}
     />
   );
 }
