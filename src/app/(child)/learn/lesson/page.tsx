@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { DailyFlow } from "@/components/child/daily-flow";
+import { FocusFrame } from "@/components/child/focus-frame";
 import {
   getTopic,
   firstTopic,
@@ -67,17 +68,19 @@ export default async function ChildLessonPage({
   const resumeKey = child?._id?.toHexString() ?? "anon";
 
   return (
-    <DailyFlow
-      title={topicDoc.title}
-      summary={topicDoc.summary}
-      points={points.length ? points : [topicDoc.summary]}
-      questions={questions}
-      curriculumTopic={topicDoc.topic_tag}
-      voiceId={voiceId}
-      accent={accent}
-      savedProgress={savedProgress}
-      firstName={firstName}
-      resumeKey={resumeKey}
-    />
+    <FocusFrame>
+      <DailyFlow
+        title={topicDoc.title}
+        summary={topicDoc.summary}
+        points={points.length ? points : [topicDoc.summary]}
+        questions={questions}
+        curriculumTopic={topicDoc.topic_tag}
+        voiceId={voiceId}
+        accent={accent}
+        savedProgress={savedProgress}
+        firstName={firstName}
+        resumeKey={resumeKey}
+      />
+    </FocusFrame>
   );
 }
