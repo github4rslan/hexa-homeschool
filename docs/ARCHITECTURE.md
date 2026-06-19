@@ -130,9 +130,10 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 | `children` | ChildDoc | Profile, DOB, SEND indicators, target exam window, child-chosen personalisation (`voice_id`, `accent`) |
 | `evaluation_records` | EvaluationDoc | Diagnostic/mock results, predicted grades |
 | `instructional_logs` | LessonLogDoc | Per-lesson logs (phase, attempts, hints, mastery) |
+| `lesson_progress` | LessonProgressDoc | Within-lesson autosave (interactive daily flow): one row per child per topic (`step`, `score`, `total`) so an interrupted child resumes at the exact step. Deleted on completion — a finished lesson never resumes; pedagogical state only, never analytics |
 | `competence_matrix` | CompetenceDoc | Topic state: locked → training → certified; optional spaced-repetition schedule (`next_review_at`, `review_interval_days`) |
 | `compliance_dossiers` | DossierDoc | Portfolio evidence with secure hash |
-| `curriculum_topics` / `questions` | — | Human-authored curriculum + question bank. Each question carries an optional `key_stage` (2 = KS2, 3 = KS3, 4 = GCSE) so the diagnostic can select age-appropriate items; legacy rows without it are treated as GCSE (4). The engine SELECTS by band/tier — it never generates questions |
+| `curriculum_topics` / `questions` | — | Human-authored curriculum + question bank. Each question carries an optional `key_stage` (2 = KS2, 3 = KS3, 4 = GCSE) so the diagnostic can select age-appropriate items; legacy rows without it are treated as GCSE (4). Questions may also carry an optional `interaction` (the interactive-step schema, below) and `hints` (progressive nudges); both absent ⇒ a plain mcq. The engine SELECTS by band/tier — it never generates questions, answers, hints or interactions |
 | `checkins` | CheckinDoc | Daily mood → difficulty throttle |
 | `media` | MediaDoc | Cloudinary registry (dedupe via content hash) |
 | `weekly_schedules` | WeeklyScheduleDoc | Parent-set weekly plan; each item carries a data-grounded `reason` (competence state + latest evaluation) shown on `/schedule` — optional on legacy docs |
@@ -149,6 +150,41 @@ MongoDB has no equivalent, so **`repo.ts` enforces it in application code**: eve
 child-scoped query passes an ownership check (`assertOwnsChild`). All reads/writes
 must go through repo functions — never call `getCollection` from route handlers
 (the public `newsletter` route is the single deliberate exception).
+
+## Interactive Daily Flow (child)
+
+The child lesson (`(child)/learn/lesson` → `DailyFlow`: Explainer → Practice) is
+actively interactive. Steps are authored as **data**, not per-problem code.
+
+- **Problem schema** ([src/lib/child/interactions.ts](../src/lib/child/interactions.ts)):
+  a discriminated union — `mcq` (default) · `tap_reveal` · `fill_blank` ·
+  `drag_drop`. A question's optional `interaction` field selects the type;
+  `normalizeInteraction()` validates DB rows and falls back to `mcq` for
+  anything absent or malformed (legacy-safe). Answer checking
+  (`checkMcq/TapReveal/FillBlank/DragDrop`), the `buildHintLadder` (nudge →
+  specific → full), and resume math (`resolveResumeStep`/`clampResumeScore`) are
+  **pure + deterministic** (no AI, no network) and unit-tested
+  (`tests/interactions.test.ts`).
+- **Renderer** ([src/components/child/interaction.tsx](../src/components/child/interaction.tsx)):
+  one accent-driven `<Interaction>` used by `practice-player.tsx` (child) and
+  `lesson-player.tsx` (parent preview). Every type works on touch **and**
+  keyboard (drag_drop has mandatory tap-to-place + keyboard fallback), all
+  targets are `.child-touch` (≥64px), and the child's chosen accent
+  (`lib/child/accents.ts`) threads through every surface.
+- **Feedback (calm law)**: correct = accent settle + rotating `Celebration`
+  burst + an encouraging line (non-blocking); incorrect = a soft dim/desaturate
+  — never red, shake, or buzzer. Up to 3 attempts then the worked solution.
+  Attempts/hints are recorded on `LessonLogDoc` via the repo layer — **never
+  analytics**.
+- **Safety**: `fill_blank` is the only new free-text child surface, so typed
+  answers are scanned by an AI-free distress gate at `POST /api/safety-check`
+  (same freeze + escalate as `/api/tutor`); selection-only types need no scan.
+- **Resume**: within-lesson position autosaves to `lesson_progress` (repo) +
+  `localStorage` (instant same-device); the two reconcile on mount and a warm
+  "Welcome back" card precedes the exact-step fade-in.
+- **Focus mode** (`FocusFrame`): an active lesson fades the branding chrome and
+  centres content to ≥85% of the mobile viewport; the exit + parent-gate stay
+  reachable. All of the above hold under `prefers-reduced-motion` and WCAG AA.
 
 ## Quality & Monitoring
 
