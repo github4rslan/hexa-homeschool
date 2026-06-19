@@ -5,6 +5,7 @@ import {
   firstTopic,
   nextTopicAfter,
 } from "@/lib/db/repo";
+import { normalizeInteraction } from "@/lib/child/interactions";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,8 @@ export default async function LessonPage({
       options: q.options,
       correctIndex: q.correct_index,
       explanation: q.explanation,
+      interaction: normalizeInteraction(q.interaction),
+      hints: q.hints,
     }));
 
   // Where "Continue" goes: the next topic in this subject's sequence, or the

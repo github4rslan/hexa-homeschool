@@ -18,11 +18,13 @@ import { MongoClient } from "mongodb";
 import { SEED_TOPICS, SEED_QUESTIONS } from "../src/lib/data/curriculum.seed";
 import { SEED_QUESTIONS_EXTRA } from "../src/lib/data/curriculum.seed.extra";
 import { SEED_QUESTIONS_FOUNDATION } from "../src/lib/data/curriculum.seed.foundation";
+import { SEED_QUESTIONS_INTERACTIVE } from "../src/lib/data/curriculum.seed.interactive";
 
 const ALL_QUESTIONS = [
   ...SEED_QUESTIONS,
   ...SEED_QUESTIONS_EXTRA,
   ...SEED_QUESTIONS_FOUNDATION,
+  ...SEED_QUESTIONS_INTERACTIVE,
 ];
 
 function loadEnv(): Record<string, string> {
