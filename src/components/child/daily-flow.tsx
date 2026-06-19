@@ -4,13 +4,16 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Explainer } from "./explainer";
 import { PracticePlayer } from "./practice-player";
+import { accentPreset } from "@/lib/child/accents";
+import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
 
 /**
  * Sequences the child's lesson: Explainer → Practice/Mastery.
  * (Check-in happens on the /learn hub before this.)
  * Phases slide/fade into each other so the day feels like a journey; the
- * screen stays quiet while the child works — motion only at transitions.
+ * screen stays quiet while the child works — motion only at transitions. The
+ * child's accent threads through the phase bar and both phases.
  */
 export function DailyFlow({
   title,
@@ -19,6 +22,7 @@ export function DailyFlow({
   questions,
   curriculumTopic,
   voiceId,
+  accent: accentId,
 }: {
   title: string;
   summary: string;
@@ -27,7 +31,10 @@ export function DailyFlow({
   curriculumTopic: string;
   /** Child-chosen narration voice, threaded to both phases' TTS. */
   voiceId?: string | null;
+  /** Child-chosen accent preset id (drives colour throughout). */
+  accent?: string | null;
 }) {
+  const accent = accentPreset(accentId);
   const [phase, setPhase] = useState<"explainer" | "practice">("explainer");
 
   const PHASES = [
@@ -38,16 +45,16 @@ export function DailyFlow({
 
   return (
     <div>
-      {/* Phase progress — the fill animates as the journey advances. */}
+      {/* Phase progress — the accent fill animates as the journey advances. */}
       <div className="mx-auto mb-8 flex max-w-2xl items-center gap-3">
         {PHASES.map((p, i) => (
           <div key={p.key} className="flex-1">
             <div className="h-2 overflow-hidden rounded-full bg-white/5">
               <motion.div
-                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-cyan-400"
+                className={cn("h-full rounded-full bg-gradient-to-r", accent.bar)}
                 initial={false}
                 animate={{ width: i <= phaseIndex ? "100%" : "0%" }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               />
             </div>
             <span
@@ -69,7 +76,7 @@ export function DailyFlow({
           initial={{ opacity: 0, x: 28 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -28 }}
-          transition={{ duration: 0.3, ease: "easeOut" }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
         >
           {phase === "explainer" ? (
             <Explainer
@@ -78,13 +85,14 @@ export function DailyFlow({
               points={points}
               onContinue={() => setPhase("practice")}
               voiceId={voiceId}
+              accent={accentId}
             />
           ) : (
             <PracticePlayer
               questions={questions}
               curriculumTopic={curriculumTopic}
-              lessonTitle={title}
               voiceId={voiceId}
+              accent={accentId}
             />
           )}
         </motion.div>
