@@ -219,6 +219,19 @@ export interface QuestionDoc {
   correct_index: number;
   /** Human-authored canonical explanation (also the offline fallback). */
   explanation: string;
+  /**
+   * Optional interactive step definition (Feature 1: tap_reveal / fill_blank /
+   * drag_drop / mcq). Absent ⇒ renders as `mcq` from options/correct_index, so
+   * legacy rows are untouched. Validated via `normalizeInteraction` on read.
+   * Stored as the discriminated union in `lib/child/interactions.ts`; typed as
+   * `unknown` here to keep that schema out of the DB layer.
+   */
+  interaction?: unknown;
+  /**
+   * Optional human-authored progressive hints (nudge → specific). The full
+   * worked rung always falls back to `explanation`. AI never authors these.
+   */
+  hints?: string[];
   created_at: Date;
 }
 

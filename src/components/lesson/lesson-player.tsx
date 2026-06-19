@@ -20,6 +20,9 @@ import { cn } from "@/lib/utils";
 import { CalmPause } from "@/components/child/calm-pause";
 import { logLessonCompletion } from "@/app/(dashboard)/lesson/actions";
 import { fetchJsonWithRetry } from "@/lib/fetch-with-retry";
+import { Interaction as InteractionRenderer, type InteractionHandle } from "@/components/child/interaction";
+import type { Interaction } from "@/lib/child/interactions";
+import { accentPreset } from "@/lib/child/accents";
 
 export interface Question {
   id: string;
@@ -28,6 +31,13 @@ export interface Question {
   correctIndex: number;
   /** Human-authored canonical explanation — ground truth + offline fallback. */
   explanation: string;
+  /**
+   * Optional interactive step (Feature 1). Absent ⇒ plain mcq. Validated via
+   * `normalizeInteraction` before it reaches a renderer.
+   */
+  interaction?: Interaction;
+  /** Optional human-authored progressive hints (nudge → specific). */
+  hints?: string[];
 }
 
 /** Result shape returned by /api/tutor (Teaching Agent + Checker). */
@@ -58,9 +68,12 @@ export function LessonPlayer({
   nextHref?: string;
 }) {
   const [step, setStep] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
+  const [ready, setReady] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [wasCorrect, setWasCorrect] = useState(false);
   const [score, setScore] = useState(0);
+  const interactionRef = useRef<InteractionHandle>(null);
+  const accent = accentPreset(null);
 
   // Teaching Agent state
   const [tutor, setTutor] = useState<TutorResponse | null>(null);
@@ -84,7 +97,8 @@ export function LessonPlayer({
 
   const question = questions[step];
   const isLast = step === questions.length - 1;
-  const isCorrect = selected === question?.correctIndex;
+  const isCorrect = submitted && wasCorrect;
+  const interaction: Interaction = question?.interaction ?? { type: "mcq" };
   const progress = Math.min(
     100,
     ((Math.min(step, questions.length) + (submitted ? 1 : 0)) /
@@ -133,9 +147,10 @@ export function LessonPlayer({
     // Guard against double-submission (rapid double-click, re-entry): a second
     // call before `submitted` flips would otherwise score the same question
     // twice and push the total above the number of questions (e.g. 8/7).
-    if (selected === null || question === undefined || submitted) return;
+    if (!ready || question === undefined || submitted) return;
     setSubmitted(true);
-    const correct = selected === question.correctIndex;
+    const correct = interactionRef.current?.isCorrect() ?? false;
+    setWasCorrect(correct);
     if (correct) setScore((s) => Math.min(questions.length, s + 1));
 
     // Fire the Teaching Agent. Tolerate serverless cold starts (timeout+retry)
@@ -150,7 +165,8 @@ export function LessonPlayer({
           prompt: question.prompt,
           correctAnswer: question.explanation,
           topic: topicTag,
-          studentAnswer: question.options[selected],
+          studentAnswer:
+            interactionRef.current?.answerText() || question.options[0],
           wasCorrect: correct,
         },
         { timeoutMs: 25000, retries: 1 },
@@ -177,8 +193,9 @@ export function LessonPlayer({
       return;
     }
     setStep((s) => s + 1);
-    setSelected(null);
+    setReady(false);
     setSubmitted(false);
+    setWasCorrect(false);
   }
 
   async function handleListen() {
@@ -402,70 +419,18 @@ export function LessonPlayer({
                 <p className="-mt-4 mb-6 text-xs text-amber-400">{audioError}</p>
               )}
 
-              <div className="grid gap-3 mb-6">
-                {question.options.map((option, i) => {
-                  const isSelected = selected === i;
-                  const isAnswered = submitted;
-                  const isCorrectOption = i === question.correctIndex;
-
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => !submitted && setSelected(i)}
-                      disabled={submitted}
-                      className={cn(
-                        "flex items-center justify-between p-4 rounded-xl border text-left transition-all",
-                        !isAnswered &&
-                          isSelected &&
-                          "border-violet-400/60 bg-violet-500/10",
-                        !isAnswered &&
-                          !isSelected &&
-                          "border-white/10 hover:border-white/30 hover:bg-white/5",
-                        isAnswered &&
-                          isCorrectOption &&
-                          "border-neon-400/60 bg-neon-500/10",
-                        isAnswered &&
-                          isSelected &&
-                          !isCorrectOption &&
-                          "border-crimson-400/60 bg-crimson-500/10",
-                        isAnswered &&
-                          !isSelected &&
-                          !isCorrectOption &&
-                          "border-white/5 opacity-50",
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={cn(
-                            "flex h-6 w-6 items-center justify-center rounded-md text-xs font-mono font-medium border",
-                            isSelected &&
-                              !isAnswered &&
-                              "border-violet-400 text-violet-300 bg-violet-500/20",
-                            isAnswered &&
-                              isCorrectOption &&
-                              "border-neon-400 text-neon-400 bg-neon-500/20",
-                            isAnswered &&
-                              isSelected &&
-                              !isCorrectOption &&
-                              "border-crimson-400 text-crimson-400",
-                            !isSelected &&
-                              !isAnswered &&
-                              "border-white/15 text-fog-400",
-                          )}
-                        >
-                          {String.fromCharCode(65 + i)}
-                        </span>
-                        <span className="text-base text-fog-100">{option}</span>
-                      </div>
-                      {isAnswered && isCorrectOption && (
-                        <Check className="h-5 w-5 text-neon-400" />
-                      )}
-                      {isAnswered && isSelected && !isCorrectOption && (
-                        <X className="h-5 w-5 text-crimson-400" />
-                      )}
-                    </button>
-                  );
-                })}
+              <div className="mb-6">
+                <InteractionRenderer
+                  key={step}
+                  ref={interactionRef}
+                  options={question.options}
+                  correctIndex={question.correctIndex}
+                  interaction={interaction}
+                  accent={accent}
+                  reveal={submitted}
+                  wasCorrect={wasCorrect}
+                  onReadyChange={setReady}
+                />
               </div>
 
               {/* Teaching Agent explanation with visible checker status */}
@@ -517,7 +482,7 @@ export function LessonPlayer({
                     onClick={handleSubmit}
                     variant="primary"
                     size="md"
-                    disabled={selected === null}
+                    disabled={!ready}
                   >
                     Submit answer
                   </Button>

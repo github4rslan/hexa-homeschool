@@ -39,6 +39,14 @@ export interface SeedQuestion {
   options: string[];
   correct_index: number;
   explanation: string;
+  /**
+   * Optional interactive step definition (Feature 1). Absent ⇒ renders as mcq.
+   * Shape is the discriminated union in `lib/child/interactions.ts`; typed as
+   * `unknown` here to keep that schema out of the data layer.
+   */
+  interaction?: unknown;
+  /** Optional human-authored progressive hints (nudge → specific). */
+  hints?: string[];
 }
 
 // ════════════════════════════════════════════════════════════
