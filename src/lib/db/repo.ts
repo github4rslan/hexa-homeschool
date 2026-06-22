@@ -38,6 +38,12 @@ import type {
   Subject,
 } from "./types";
 import { resolveRole, type StaffRole } from "@/lib/auth/rbac";
+import {
+  ageFromDob,
+  placeChild,
+  type KeyStage,
+} from "@/lib/engine/diagnostic-placement";
+import { currentBandFrom } from "@/lib/engine/band-progression";
 
 /**
  * Data-access layer over MongoDB.
@@ -467,17 +473,23 @@ export async function monthlyReport(
       at: e.created_at,
     }));
 
-  // Next month's focus: next uncertified topics per subject (overall, not month-bound).
+  // Next month's focus: next uncertified topic per subject, WITHIN the child's
+  // current band (same band-aware selection the weekly plan uses).
   const allCertified = new Set(
     (await compCol.find({ child_id: childId, state: "certified" }).toArray()).map(
       (c) => c.topic_tag,
     ),
   );
+  const floor: KeyStage = childFloorBand(child.date_of_birth);
+  const allTopics = await topicsCol.find({}).sort({ order: 1 }).toArray();
   const subjects: Subject[] = ["mathematics", "english", "science"];
   const nextFocus: { title: string; subject: Subject }[] = [];
   for (const subj of subjects) {
-    const topics = await topicsCol.find({ subject: subj }).sort({ order: 1 }).toArray();
-    const next = topics.find((t) => !allCertified.has(t.topic_tag));
+    const band = bandFromData(floor, subj, allTopics, allCertified);
+    const inBand = allTopics.filter(
+      (t) => t.subject === subj && (t.key_stage ?? 4) === band,
+    );
+    const next = inBand.find((t) => !allCertified.has(t.topic_tag));
     if (next) nextFocus.push({ title: next.title, subject: subj });
   }
 
@@ -1421,17 +1433,101 @@ export async function firstTopic(subject: Subject): Promise<CurriculumTopicDoc |
   return col.findOne({ subject }, { sort: { order: 1 } });
 }
 
-/** Next topic in the subject's order after the given tag (for "continue"). */
+/**
+ * Next topic in the subject's order after the given tag (for "continue").
+ * Band-scoped: "continue" stays within the same key-stage band so a GCSE
+ * lesson never hands a child a KS2 topic. Legacy topics (missing key_stage)
+ * are treated as GCSE (4).
+ */
 export async function nextTopicAfter(
   topicTag: string,
 ): Promise<CurriculumTopicDoc | null> {
   const current = await getTopic(topicTag);
   if (!current) return null;
+  const band = current.key_stage ?? 4;
   const col = await getCollection<CurriculumTopicDoc>(Collections.topics);
   return col.findOne(
-    { subject: current.subject, order: { $gt: current.order } },
+    { subject: current.subject, key_stage: band, order: { $gt: current.order } },
     { sort: { order: 1 } },
   );
+}
+
+// ── Age-banding: which key-stage a child works in (Wave 3, Phase 2) ──
+
+/** Warm, parent-facing key-stage labels. NEVER shown to a child. */
+export const KEY_STAGE_LABEL: Record<KeyStage, string> = {
+  2: "primary level",
+  3: "lower-secondary level",
+  4: "GCSE level",
+};
+
+/** The child's age-expected band floor, from DOB. Progression never goes below it. */
+export function childFloorBand(dateOfBirth: string): KeyStage {
+  return placeChild(ageFromDob(dateOfBirth)).keyStage;
+}
+
+/**
+ * Resolve the band a child currently works in for a subject, given pre-fetched
+ * topics + their certified topic_tags. Pure of further IO so callers that
+ * already hold the data (the plan, the monthly report) avoid re-querying.
+ */
+function bandFromData(
+  floor: KeyStage,
+  subject: Subject,
+  topics: CurriculumTopicDoc[],
+  certified: Set<string>,
+): KeyStage {
+  return currentBandFrom(floor, (band) => {
+    const bandTopics = topics.filter(
+      (t) => t.subject === subject && (t.key_stage ?? 4) === band,
+    );
+    return (
+      bandTopics.length === 0 || bandTopics.every((t) => certified.has(t.topic_tag))
+    );
+  });
+}
+
+/**
+ * The band a child is CURRENTLY working in for a subject — the single source of
+ * truth shared by the weekly plan, daily lessons, the monthly next-focus and
+ * the parent's stage label. Starts at the age floor and advances past any band
+ * whose topics are all certified (cross-band progression).
+ */
+export async function currentBandForSubject(
+  childId: ObjectId,
+  subject: Subject,
+  floor: KeyStage,
+): Promise<KeyStage> {
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const [topics, certifiedRows] = await Promise.all([
+    topicsCol.find({ subject }).toArray(),
+    compCol.find({ child_id: childId, state: "certified" }).toArray(),
+  ]);
+  const certified = new Set(certifiedRows.map((c) => c.topic_tag));
+  return bandFromData(floor, subject, topics, certified);
+}
+
+/**
+ * The first uncertified topic for a child within their CURRENT band for a
+ * subject (band-aware replacement for `firstTopic` in child flows). Falls back
+ * to the band's first topic if all are certified, then null.
+ */
+export async function firstTopicInBandForChild(
+  childId: ObjectId,
+  subject: Subject,
+  floor: KeyStage,
+): Promise<CurriculumTopicDoc | null> {
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const [topics, certifiedRows] = await Promise.all([
+    topicsCol.find({ subject }).sort({ order: 1 }).toArray(),
+    compCol.find({ child_id: childId, state: "certified" }).toArray(),
+  ]);
+  const certified = new Set(certifiedRows.map((c) => c.topic_tag));
+  const band = bandFromData(floor, subject, topics, certified);
+  const inBand = topics.filter((t) => (t.key_stage ?? 4) === band);
+  return inBand.find((t) => !certified.has(t.topic_tag)) ?? inBand[0] ?? null;
 }
 
 export async function getQuestions(
@@ -2004,20 +2100,30 @@ const SUBJECT_DISPLAY: Record<Subject, string> = {
  * the choice: the child's competence state for the topic and their latest
  * evaluation for the subject. Plain English, encouraging, no jargon.
  */
+/** Warm, in-band phrasing for the plan reason — never frames a child as "behind". */
+const STAGE_PHRASE: Record<KeyStage, string> = {
+  2: "at primary level",
+  3: "at lower-secondary level",
+  4: "on the GCSE path",
+};
+
 function scheduleItemReason(input: {
   subject: Subject;
   topicTitle: string;
   topicState: CompetenceDoc["state"] | undefined;
   predictedGrade: string | null;
+  keyStage: KeyStage;
 }): string {
   const subject = SUBJECT_DISPLAY[input.subject];
+  const stage = STAGE_PHRASE[input.keyStage];
   if (input.topicState === "training") {
-    return `${input.topicTitle} is already in training — this session continues it toward certification.`;
+    return `${input.topicTitle} is already in training — this session continues it toward mastery.`;
   }
-  if (input.predictedGrade) {
-    return `The diagnostic predicted grade ${input.predictedGrade} in ${subject}; ${input.topicTitle} is the next uncertified topic on the GCSE path.`;
+  // Only reference a GCSE predicted grade when the child is actually at GCSE.
+  if (input.predictedGrade && input.keyStage === 4) {
+    return `The diagnostic predicted grade ${input.predictedGrade} in ${subject}; ${input.topicTitle} is the next topic ${stage}.`;
   }
-  return `${input.topicTitle} is the next step in the ${subject} sequence — it builds the foundations later topics rely on.`;
+  return `${input.topicTitle} is the next ${subject} topic ${stage} — it builds the foundations later topics rely on.`;
 }
 
 /** This week's schedule if it already exists — read-only, never generates. */
@@ -2063,6 +2169,11 @@ export async function getOrCreateWeeklySchedule(
  * Pure of any persistence so both initial generation and regeneration share it.
  */
 async function buildScheduleItems(childId: ObjectId): Promise<ScheduleItemDoc[]> {
+  // The child's age-expected band floor — the plan never selects below it.
+  const childCol = await getCollection<ChildDoc>(Collections.children);
+  const child = await childCol.findOne({ _id: childId });
+  const floor: KeyStage = child ? childFloorBand(child.date_of_birth) : 4;
+
   const compCol = await getCollection<CompetenceDoc>(Collections.competence);
   const competence = await compCol.find({ child_id: childId }).toArray();
   const certifiedTags = new Set(
@@ -2075,14 +2186,29 @@ async function buildScheduleItems(childId: ObjectId): Promise<ScheduleItemDoc[]>
 
   const subjects: Subject[] = ["mathematics", "english", "science"];
   const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const allTopics = await topicsCol.find({}).sort({ order: 1 }).toArray();
+
+  // Per subject, work in the child's CURRENT band and pick the next uncertified
+  // topic there. A KS2 child gets KS2 topics; the band advances only once the
+  // current band is fully certified (cross-band progression).
   const nextBySubject: Record<Subject, CurriculumTopicDoc | null> = {
     mathematics: null,
     english: null,
     science: null,
   };
+  const bandBySubject: Record<Subject, KeyStage> = {
+    mathematics: floor,
+    english: floor,
+    science: floor,
+  };
   for (const subj of subjects) {
-    const topics = await topicsCol.find({ subject: subj }).sort({ order: 1 }).toArray();
-    nextBySubject[subj] = topics.find((t) => !certifiedTags.has(t.topic_tag)) ?? topics[0] ?? null;
+    const band = bandFromData(floor, subj, allTopics, certifiedTags);
+    bandBySubject[subj] = band;
+    const inBand = allTopics.filter(
+      (t) => t.subject === subj && (t.key_stage ?? 4) === band,
+    );
+    nextBySubject[subj] =
+      inBand.find((t) => !certifiedTags.has(t.topic_tag)) ?? inBand[0] ?? null;
   }
 
   const items: ScheduleItemDoc[] = [];
@@ -2107,6 +2233,7 @@ async function buildScheduleItems(childId: ObjectId): Promise<ScheduleItemDoc[]>
           topicTitle: t.title,
           topicState: stateByTag.get(t.topic_tag),
           predictedGrade: gradeBySubject.get(subject) ?? null,
+          keyStage: bandBySubject[subject],
         }),
       });
     }
