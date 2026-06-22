@@ -5,6 +5,8 @@ import { FocusFrame } from "@/components/child/focus-frame";
 import {
   getTopic,
   firstTopic,
+  firstTopicInBandForChild,
+  childFloorBand,
   getQuestions,
   currentParentId,
   getActiveChild,
@@ -23,10 +25,8 @@ export default async function ChildLessonPage({
   searchParams: Promise<{ topic?: string }>;
 }) {
   const { topic } = await searchParams;
-  const topicDoc = topic ? await getTopic(topic) : await firstTopic("mathematics");
-  if (!topicDoc) redirect("/learn");
 
-  // The active child's chosen narration voice (falls back to the server default).
+  // The active child (drives voice, accent, and the age band).
   const parentId = await currentParentId();
   const child = parentId
     ? await getActiveChild(parentId, await readActiveChildId())
@@ -34,7 +34,24 @@ export default async function ChildLessonPage({
   const voiceId = child?.voice_id ?? null;
   const accent = child?.accent ?? null;
 
-  const docs = await getQuestions({ topicTag: topicDoc.topic_tag }, 50);
+  // Resolve the topic: explicit ?topic= wins; otherwise the child's first
+  // in-band maths topic (band-aware), falling back to the global first topic.
+  const topicDoc = topic
+    ? await getTopic(topic)
+    : child?._id
+      ? await firstTopicInBandForChild(
+          child._id,
+          "mathematics",
+          childFloorBand(child.date_of_birth),
+        )
+      : await firstTopic("mathematics");
+  if (!topicDoc) redirect("/learn");
+
+  // Daily lessons stay in the topic's band (legacy topics treated as GCSE).
+  const docs = await getQuestions(
+    { topicTag: topicDoc.topic_tag, keyStage: topicDoc.key_stage ?? 4 },
+    50,
+  );
   const questions: Question[] = docs
     .filter((q) => q.kind === "practice" || q.kind === "mastery")
     .map((q) => ({

@@ -33,11 +33,14 @@ export function MockExamPlayer({
   subjectLabel,
   questions,
   durationSeconds,
+  keyStage,
 }: {
   subject: Subject;
   subjectLabel: string;
   questions: MockQuestion[];
   durationSeconds: number;
+  /** Child's current band — tone guidance for post-exam AI explanations only. */
+  keyStage?: number;
 }) {
   const router = useRouter();
   const reduce = useReducedMotion();
@@ -108,6 +111,7 @@ export function MockExamPlayer({
         onDone={() => router.push("/learn")}
         onSeeJourney={() => router.push("/learn/map")}
         reduce={!!reduce}
+        keyStage={keyStage}
       />
     );
   }
@@ -213,6 +217,7 @@ function MockResults({
   onDone,
   onSeeJourney,
   reduce,
+  keyStage,
 }: {
   subjectLabel: string;
   result: MockSubmitResult;
@@ -223,6 +228,8 @@ function MockResults({
   onDone: () => void;
   onSeeJourney: () => void;
   reduce: boolean;
+  /** Child's band — tone guidance for AI explanations only (Checker still gates). */
+  keyStage?: number;
 }) {
   const wrong = questions
     .map((q, i) => ({ q, i }))
@@ -242,6 +249,7 @@ function MockResults({
           topic: q.topicTag,
           studentAnswer: chosen !== null ? q.options[chosen] : "",
           wasCorrect: false,
+          ...(keyStage ? { keyStage } : {}),
         }),
       });
       // Any non-OK (rate limit, tier gate, config) → fall back to the canonical

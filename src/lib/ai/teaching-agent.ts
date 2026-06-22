@@ -31,6 +31,24 @@ export interface TutorRequest {
   studentAnswer?: string;
   /** Whether the student got it right (changes encouragement framing). */
   wasCorrect?: boolean;
+  /**
+   * Optional UK key-stage band (2/3/4) — TONE GUIDANCE ONLY, so the reading
+   * level matches a younger child. The Checker still gates every output; this
+   * never bypasses validation or changes the canonical answer.
+   */
+  keyStage?: number;
+}
+
+/** Reading-level guidance for the Teaching Agent prompt (tone only). */
+function readingLevelGuidance(keyStage?: number): string | null {
+  switch (keyStage) {
+    case 2:
+      return "Reading level: a primary-school child (ages 7–10). Use very simple words and short sentences.";
+    case 3:
+      return "Reading level: a lower-secondary child (ages 11–13). Keep it clear and straightforward.";
+    default:
+      return null; // KS4 / unset → standard GCSE register
+  }
 }
 
 export interface CheckerResult {
@@ -121,6 +139,7 @@ async function generateExplanation(req: TutorRequest): Promise<ChatResult> {
     `Question: ${req.prompt}`,
     `Correct answer: ${req.correctAnswer}`,
     req.studentAnswer ? `Student's answer: ${req.studentAnswer}` : null,
+    readingLevelGuidance(req.keyStage),
     framing,
   ]
     .filter(Boolean)

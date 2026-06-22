@@ -8,7 +8,8 @@ import { QuestCards, type Quest } from "@/components/child/quest-cards";
 import {
   currentParentId,
   getActiveChild,
-  firstTopic,
+  firstTopicInBandForChild,
+  childFloorBand,
   certifiedBySubject,
   todaysCheckin,
   childStreak,
@@ -63,7 +64,12 @@ export default async function LearnHubPage() {
     if (subj) doneSubjects.add(subj);
   }
 
-  const firstTopics = await Promise.all(SUBJECTS.map((s) => firstTopic(s.id)));
+  // Band-aware fallback: the child's first in-band topic per subject (used only
+  // when the approved plan has no item for that subject today).
+  const floor = childFloorBand(child.date_of_birth);
+  const firstTopics = await Promise.all(
+    SUBJECTS.map((s) => firstTopicInBandForChild(child._id!, s.id, floor)),
+  );
 
   // Today's quests correspond 1:1 to the parent's approved weekly plan: for
   // each subject, prefer the topic the plan assigned to today (same topic,

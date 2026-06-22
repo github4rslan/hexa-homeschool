@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
-import { currentParentId, getActiveChild, buildMockPaper } from "@/lib/db/repo";
+import {
+  currentParentId,
+  getActiveChild,
+  buildMockPaper,
+  currentBandForSubject,
+  childFloorBand,
+} from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
 import { MockExamPlayer } from "@/components/child/mock-exam-player";
@@ -35,6 +41,14 @@ export default async function MockSubjectPage({
   // No questions available for this subject yet — send back to the hub.
   if (paper.length === 0) redirect("/learn/mock");
 
+  // The child's current band — passed to post-exam AI explanations as tone
+  // guidance only (the Checker still gates every explanation).
+  const keyStage = await currentBandForSubject(
+    child._id,
+    subject,
+    childFloorBand(child.date_of_birth),
+  );
+
   return (
     <div className="mx-auto max-w-2xl">
       <MockExamPlayer
@@ -42,6 +56,7 @@ export default async function MockSubjectPage({
         subjectLabel={SUBJECT_LABEL[subject]}
         questions={paper}
         durationSeconds={15 * 60}
+        keyStage={keyStage}
       />
     </div>
   );

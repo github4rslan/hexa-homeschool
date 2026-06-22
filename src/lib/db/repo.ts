@@ -1536,6 +1536,8 @@ export async function getQuestions(
     subject?: Subject;
     kind?: QuestionDoc["kind"];
     tier?: number;
+    /** Restrict to a key-stage band (daily lessons stay in the child's band). */
+    keyStage?: number;
   },
   limit = 50,
 ): Promise<QuestionDoc[]> {
@@ -1545,6 +1547,15 @@ export async function getQuestions(
   if (filter.subject) query.subject = filter.subject;
   if (filter.kind) query.kind = filter.kind;
   if (typeof filter.tier === "number") query.tier = filter.tier;
+  if (typeof filter.keyStage === "number") {
+    // Legacy-safe: rows missing key_stage are treated as GCSE (4), so a band-4
+    // fetch still includes them but a young band never inherits unlabelled items.
+    if (filter.keyStage === 4) {
+      query.$or = [{ key_stage: 4 }, { key_stage: { $exists: false } }];
+    } else {
+      query.key_stage = filter.keyStage;
+    }
+  }
   return col.find(query).limit(limit).toArray();
 }
 
