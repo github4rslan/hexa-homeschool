@@ -55,21 +55,21 @@ export interface SeedQuestion {
 
 export const SEED_TOPICS: SeedTopic[] = [
   // ── Mathematics (Pearson Edexcel 1MA1) ──
-  { subject: "mathematics", topic_tag: "maths_number", title: "Number & Place Value", summary: "Place value, ordering, rounding, estimation and standard form.", key_stage: 3, working_grade_band: "Grade 1–3", order: 1, prerequisite_tags: [] },
-  { subject: "mathematics", topic_tag: "maths_fractions", title: "Fractions, Decimals & Percentages", summary: "Converting and calculating with fractions, decimals and percentages.", key_stage: 3, working_grade_band: "Grade 2–4", order: 2, prerequisite_tags: ["maths_number"] },
-  { subject: "mathematics", topic_tag: "maths_ratio", title: "Ratio & Proportion", summary: "Sharing in a ratio, direct and inverse proportion.", key_stage: 3, working_grade_band: "Grade 3–5", order: 3, prerequisite_tags: ["maths_fractions"] },
+  { subject: "mathematics", topic_tag: "maths_number", title: "Number & Place Value", summary: "Place value, ordering, rounding, estimation and standard form.", key_stage: 4, working_grade_band: "Grade 1–3", order: 1, prerequisite_tags: [] },
+  { subject: "mathematics", topic_tag: "maths_fractions", title: "Fractions, Decimals & Percentages", summary: "Converting and calculating with fractions, decimals and percentages.", key_stage: 4, working_grade_band: "Grade 2–4", order: 2, prerequisite_tags: ["maths_number"] },
+  { subject: "mathematics", topic_tag: "maths_ratio", title: "Ratio & Proportion", summary: "Sharing in a ratio, direct and inverse proportion.", key_stage: 4, working_grade_band: "Grade 3–5", order: 3, prerequisite_tags: ["maths_fractions"] },
   { subject: "mathematics", topic_tag: "maths_algebra_linear", title: "Linear Algebra", summary: "Expressions, linear equations and rearranging formulae.", key_stage: 4, working_grade_band: "Grade 4–5", order: 4, prerequisite_tags: ["maths_number"] },
   { subject: "mathematics", topic_tag: "maths_sequences", title: "Sequences", summary: "Term-to-term and nth-term rules for linear sequences.", key_stage: 4, working_grade_band: "Grade 4–5", order: 5, prerequisite_tags: ["maths_algebra_linear"] },
   { subject: "mathematics", topic_tag: "maths_graphs", title: "Coordinates & Linear Graphs", summary: "Plotting lines, gradient and y = mx + c.", key_stage: 4, working_grade_band: "Grade 4–6", order: 6, prerequisite_tags: ["maths_algebra_linear"] },
   { subject: "mathematics", topic_tag: "maths_quadratics", title: "Quadratics", summary: "Expanding, factorising and solving quadratic equations.", key_stage: 4, working_grade_band: "Grade 5–7", order: 7, prerequisite_tags: ["maths_algebra_linear"] },
-  { subject: "mathematics", topic_tag: "maths_geometry", title: "Geometry & Angles", summary: "Angle rules, polygons and properties of shapes.", key_stage: 3, working_grade_band: "Grade 3–5", order: 8, prerequisite_tags: ["maths_number"] },
+  { subject: "mathematics", topic_tag: "maths_geometry", title: "Geometry & Angles", summary: "Angle rules, polygons and properties of shapes.", key_stage: 4, working_grade_band: "Grade 3–5", order: 8, prerequisite_tags: ["maths_number"] },
   { subject: "mathematics", topic_tag: "maths_pythagoras", title: "Pythagoras & Trigonometry", summary: "Right-angled triangles, Pythagoras and basic trig ratios.", key_stage: 4, working_grade_band: "Grade 5–7", order: 9, prerequisite_tags: ["maths_geometry"] },
   { subject: "mathematics", topic_tag: "maths_statistics", title: "Statistics & Probability", summary: "Averages, data handling and probability fundamentals.", key_stage: 4, working_grade_band: "Grade 3–6", order: 10, prerequisite_tags: ["maths_fractions"] },
 
   // ── English (AQA 8700) ──
-  { subject: "english", topic_tag: "eng_spelling", title: "Spelling & Vocabulary", summary: "Common spelling patterns and precise word choice.", key_stage: 3, working_grade_band: "Grade 1–3", order: 1, prerequisite_tags: [] },
-  { subject: "english", topic_tag: "eng_grammar", title: "Grammar & Sentence Structure", summary: "Subject–verb agreement, tenses and clauses.", key_stage: 3, working_grade_band: "Grade 2–4", order: 2, prerequisite_tags: ["eng_spelling"] },
-  { subject: "english", topic_tag: "eng_punctuation", title: "Punctuation", summary: "Apostrophes, commas, colons and speech punctuation.", key_stage: 3, working_grade_band: "Grade 2–4", order: 3, prerequisite_tags: ["eng_grammar"] },
+  { subject: "english", topic_tag: "eng_spelling", title: "Spelling & Vocabulary", summary: "Common spelling patterns and precise word choice.", key_stage: 4, working_grade_band: "Grade 1–3", order: 1, prerequisite_tags: [] },
+  { subject: "english", topic_tag: "eng_grammar", title: "Grammar & Sentence Structure", summary: "Subject–verb agreement, tenses and clauses.", key_stage: 4, working_grade_band: "Grade 2–4", order: 2, prerequisite_tags: ["eng_spelling"] },
+  { subject: "english", topic_tag: "eng_punctuation", title: "Punctuation", summary: "Apostrophes, commas, colons and speech punctuation.", key_stage: 4, working_grade_band: "Grade 2–4", order: 3, prerequisite_tags: ["eng_grammar"] },
   { subject: "english", topic_tag: "eng_comprehension", title: "Reading Comprehension", summary: "Retrieving and inferring meaning from texts.", key_stage: 4, working_grade_band: "Grade 3–5", order: 4, prerequisite_tags: ["eng_grammar"] },
   { subject: "english", topic_tag: "eng_devices", title: "Language Devices", summary: "Identifying simile, metaphor, personification and more.", key_stage: 4, working_grade_band: "Grade 4–6", order: 5, prerequisite_tags: ["eng_comprehension"] },
   { subject: "english", topic_tag: "eng_analysis", title: "Language Analysis", summary: "Analysing how writers create effect through word and structure.", key_stage: 4, working_grade_band: "Grade 5–7", order: 6, prerequisite_tags: ["eng_devices"] },
@@ -79,9 +79,9 @@ export const SEED_TOPICS: SeedTopic[] = [
   { subject: "english", topic_tag: "eng_shakespeare", title: "Shakespeare & Context", summary: "Reading Shakespeare and using contextual knowledge.", key_stage: 4, working_grade_band: "Grade 5–8", order: 10, prerequisite_tags: ["eng_analysis"] },
 
   // ── Science (AQA Combined Science Trilogy 8464) ──
-  { subject: "science", topic_tag: "sci_cells", title: "Cell Biology", summary: "Cell structure, transport and division.", key_stage: 3, working_grade_band: "Grade 2–4", order: 1, prerequisite_tags: [] },
-  { subject: "science", topic_tag: "sci_body", title: "Human Body Systems", summary: "Organisation, digestion and the circulatory system.", key_stage: 3, working_grade_band: "Grade 3–5", order: 2, prerequisite_tags: ["sci_cells"] },
-  { subject: "science", topic_tag: "sci_states", title: "States of Matter", summary: "Solids, liquids, gases and changes of state.", key_stage: 3, working_grade_band: "Grade 1–3", order: 3, prerequisite_tags: [] },
+  { subject: "science", topic_tag: "sci_cells", title: "Cell Biology", summary: "Cell structure, transport and division.", key_stage: 4, working_grade_band: "Grade 2–4", order: 1, prerequisite_tags: [] },
+  { subject: "science", topic_tag: "sci_body", title: "Human Body Systems", summary: "Organisation, digestion and the circulatory system.", key_stage: 4, working_grade_band: "Grade 3–5", order: 2, prerequisite_tags: ["sci_cells"] },
+  { subject: "science", topic_tag: "sci_states", title: "States of Matter", summary: "Solids, liquids, gases and changes of state.", key_stage: 4, working_grade_band: "Grade 1–3", order: 3, prerequisite_tags: [] },
   { subject: "science", topic_tag: "sci_atoms", title: "Atomic Structure", summary: "Atoms, elements and the periodic table.", key_stage: 4, working_grade_band: "Grade 3–5", order: 4, prerequisite_tags: ["sci_states"] },
   { subject: "science", topic_tag: "sci_reactions", title: "Chemical Reactions", summary: "Equations, acids, bases and reaction types.", key_stage: 4, working_grade_band: "Grade 4–6", order: 5, prerequisite_tags: ["sci_atoms"] },
   { subject: "science", topic_tag: "sci_forces", title: "Forces & Motion", summary: "Speed, acceleration and Newton's laws.", key_stage: 4, working_grade_band: "Grade 4–6", order: 6, prerequisite_tags: ["sci_states"] },
