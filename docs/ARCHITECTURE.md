@@ -133,7 +133,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 | `lesson_progress` | LessonProgressDoc | Within-lesson autosave (interactive daily flow): one row per child per topic (`step`, `score`, `total`) so an interrupted child resumes at the exact step. Deleted on completion — a finished lesson never resumes; pedagogical state only, never analytics |
 | `competence_matrix` | CompetenceDoc | Topic state: locked → training → certified; optional spaced-repetition schedule (`next_review_at`, `review_interval_days`) |
 | `compliance_dossiers` | DossierDoc | Portfolio evidence with secure hash |
-| `curriculum_topics` / `questions` | — | Human-authored curriculum + question bank. Each question carries an optional `key_stage` (2 = KS2, 3 = KS3, 4 = GCSE) so the diagnostic can select age-appropriate items; legacy rows without it are treated as GCSE (4). Questions may also carry an optional `interaction` (the interactive-step schema, below) and `hints` (progressive nudges); both absent ⇒ a plain mcq. The engine SELECTS by band/tier — it never generates questions, answers, hints or interactions |
+| `curriculum_topics` / `questions` | — | Human-authored curriculum + question bank. **Topics and questions are banded by `key_stage`** (2 = KS2, 3 = KS3, 4 = GCSE): the bank covers KS2/KS3 (`curriculum.seed.bands.ts`) and GCSE (`curriculum.seed*.ts`), so a young child works at their level. A topic's `key_stage` is its band; its questions are authored at that band. Legacy rows without `key_stage` are treated as GCSE (4). Questions may also carry an optional `interaction` (the interactive-step schema) and `hints`; both absent ⇒ a plain mcq. The engine SELECTS by band/tier — it never generates topics, questions, answers, hints or interactions |
 | `checkins` | CheckinDoc | Daily mood → difficulty throttle |
 | `media` | MediaDoc | Cloudinary registry (dedupe via content hash) |
 | `weekly_schedules` | WeeklyScheduleDoc | Parent-set weekly plan; each item carries a data-grounded `reason` (competence state + latest evaluation) shown on `/schedule` — optional on legacy docs |
@@ -150,6 +150,34 @@ MongoDB has no equivalent, so **`repo.ts` enforces it in application code**: eve
 child-scoped query passes an ownership check (`assertOwnsChild`). All reads/writes
 must go through repo functions — never call `getCollection` from route handlers
 (the public `newsletter` route is the single deliberate exception).
+
+## Age-Banding & Cross-Band Progression
+
+HEXA serves ages 7–16, so the plan and daily lessons are **age-appropriate**, not
+GCSE-by-default. The age→band policy lives in ONE place
+([lib/engine/diagnostic-placement.ts](../src/lib/engine/diagnostic-placement.ts)):
+`placeChild(age)` maps age → key stage (≤10 → KS2, 11–13 → KS3, 14+ → KS4).
+
+The **current band for a child + subject** is the single source of truth shared
+by the weekly plan, daily lessons, monthly next-focus and the parent's stage
+label. The rule (`currentBandFrom` in
+[lib/engine/band-progression.ts](../src/lib/engine/band-progression.ts), wrapped
+DB-side by `currentBandForSubject` / `firstTopicInBandForChild` in `repo.ts`):
+
+- Start at the child's **age-expected band (the floor)** — progression never
+  drops a child below their age band.
+- A child works **within that band**: selection is `topics.find({ subject,
+  key_stage: band })`, ordered. Daily lessons fetch questions filtered to the
+  topic's band (`getQuestions({ keyStage })`).
+- When **every topic in the band is certified** (or a band has no authored
+  topics), advance to the next band — **KS2 → KS3 → KS4** — never past KS4.
+
+`CompetenceDoc` is unchanged; only the *selection* logic is band-aware. The AI
+Teaching Agent receives the band as **tone guidance only** (simpler reading level
+for younger children) — the Checker still gates every explanation, and no
+content is ever AI-generated. The band/stage is surfaced to the **parent** in
+warm language on the child profile ("Working at primary level") and is **never
+shown to the child**.
 
 ## Interactive Daily Flow (child)
 
