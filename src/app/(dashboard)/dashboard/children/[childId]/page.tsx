@@ -16,6 +16,8 @@ import {
   getWeeklySchedule,
   evaluationHistory,
   childInsights,
+  childCurrentBands,
+  KEY_STAGE_LABEL,
 } from "@/lib/db/repo";
 import { buildAssessmentNarrative } from "@/lib/engine/assessment-narrative";
 import { UploadButton } from "@/components/media/upload-button";
@@ -53,6 +55,7 @@ export default async function ChildProfilePage({
   const standings = await latestEvaluationsBySubject(child._id);
   const history = await evaluationHistory(child._id);
   const certified = await countCertified(child._id);
+  const bands = await childCurrentBands(parentId, child._id);
   const insights = await childInsights(parentId, child._id);
   const work = await listMedia({ useCase: "child_work", childId, limit: 12 });
   const decision = computeExamDecision(
@@ -152,6 +155,38 @@ export default async function ChildProfilePage({
             {certified} topic{certified === 1 ? "" : "s"} certified so far.
           </p>
         </Card>
+
+        {/* Working level — warm, parent-facing stage per subject. The plan and
+            lessons select content at this level; it advances automatically as
+            topics are mastered. Never surfaced to the child. */}
+        {bands.length > 0 && (
+          <Card variant="glass" padding="xl" className="mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <GraduationCap className="h-4 w-4 text-cyan-300" />
+              <h2 className="text-lg font-semibold text-fog-50">Working level</h2>
+            </div>
+            <p className="text-sm text-fog-400 mb-5">
+              {child.full_name.split(" ")[0]}&apos;s lessons are pitched at the
+              right level for each subject — this moves up automatically as topics
+              are mastered.
+            </p>
+            <div className="grid sm:grid-cols-3 gap-4">
+              {bands.map((b) => (
+                <div
+                  key={b.subject}
+                  className="rounded-xl bg-white/[0.03] border border-white/5 p-4"
+                >
+                  <div className="text-sm font-semibold text-fog-50">
+                    {SUBJECT_LABEL[b.subject]}
+                  </div>
+                  <div className="mt-1 text-sm text-cyan-200">
+                    Working at {KEY_STAGE_LABEL[b.keyStage]}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         {/* Understanding these results — deterministic plain-English narrative */}
         {assessed && (

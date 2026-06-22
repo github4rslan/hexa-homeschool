@@ -1509,6 +1509,26 @@ export async function currentBandForSubject(
 }
 
 /**
+ * Per-subject current band for a child — parent-facing only. Powers the warm
+ * "working level" label on the child profile (never shown to the child).
+ * Ownership enforced.
+ */
+export async function childCurrentBands(
+  parentId: string,
+  childId: ObjectId,
+): Promise<{ subject: Subject; keyStage: KeyStage }[]> {
+  if (!(await assertOwnsChild(parentId, childId))) return [];
+  const child = await getChildById(parentId, childId.toHexString());
+  if (!child) return [];
+  const floor = childFloorBand(child.date_of_birth);
+  const subjects: Subject[] = ["mathematics", "english", "science"];
+  const bands = await Promise.all(
+    subjects.map((subject) => currentBandForSubject(childId, subject, floor)),
+  );
+  return subjects.map((subject, i) => ({ subject, keyStage: bands[i] }));
+}
+
+/**
  * The first uncertified topic for a child within their CURRENT band for a
  * subject (band-aware replacement for `firstTopic` in child flows). Falls back
  * to the band's first topic if all are certified, then null.
