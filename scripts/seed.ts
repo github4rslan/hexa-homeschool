@@ -19,12 +19,19 @@ import { SEED_TOPICS, SEED_QUESTIONS } from "../src/lib/data/curriculum.seed";
 import { SEED_QUESTIONS_EXTRA } from "../src/lib/data/curriculum.seed.extra";
 import { SEED_QUESTIONS_FOUNDATION } from "../src/lib/data/curriculum.seed.foundation";
 import { SEED_QUESTIONS_INTERACTIVE } from "../src/lib/data/curriculum.seed.interactive";
+import {
+  SEED_TOPICS_BANDS,
+  SEED_QUESTIONS_BANDS,
+} from "../src/lib/data/curriculum.seed.bands";
+
+const ALL_TOPICS = [...SEED_TOPICS, ...SEED_TOPICS_BANDS];
 
 const ALL_QUESTIONS = [
   ...SEED_QUESTIONS,
   ...SEED_QUESTIONS_EXTRA,
   ...SEED_QUESTIONS_FOUNDATION,
   ...SEED_QUESTIONS_INTERACTIVE,
+  ...SEED_QUESTIONS_BANDS,
 ];
 
 function loadEnv(): Record<string, string> {
@@ -62,7 +69,7 @@ async function main() {
     // ── Topics ──
     const topicsCol = db.collection("curriculum_topics");
     let topicUpserts = 0;
-    for (const t of SEED_TOPICS) {
+    for (const t of ALL_TOPICS) {
       const res = await topicsCol.updateOne(
         { topic_tag: t.topic_tag },
         { $set: { ...t }, $setOnInsert: { created_at: now } },
@@ -70,7 +77,7 @@ async function main() {
       );
       if (res.upsertedCount || res.modifiedCount) topicUpserts++;
     }
-    console.log(`✓ Topics: ${SEED_TOPICS.length} processed (${topicUpserts} written).`);
+    console.log(`✓ Topics: ${ALL_TOPICS.length} processed (${topicUpserts} written).`);
 
     // ── Questions ──
     // Natural key = topic_tag + prompt (prompts are unique within a topic).
