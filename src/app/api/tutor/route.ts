@@ -116,12 +116,18 @@ export async function POST(request: Request) {
     );
   }
 
+  const keyStage =
+    typeof body.keyStage === "number" && [2, 3, 4].includes(body.keyStage)
+      ? body.keyStage
+      : undefined;
+
   const req: TutorRequest = {
     prompt,
     correctAnswer,
     topic: asString(body.topic) || undefined,
     studentAnswer,
     wasCorrect: body.wasCorrect === true,
+    keyStage,
   };
 
   try {
