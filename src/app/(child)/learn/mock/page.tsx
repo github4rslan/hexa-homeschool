@@ -57,9 +57,10 @@ export default async function MockHubPage() {
           if (state?.taken) {
             const grade = state.result?.indicativeGrade?.toLowerCase() ?? "";
             return (
-              <div
+              <Link
                 key={s.id}
-                className="child-panel flex items-center gap-5 p-6"
+                href={`/learn/mock/${s.id}`}
+                className="child-touch child-panel group flex items-center gap-5 p-6 transition-all hover:scale-[1.01]"
               >
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl border-2 border-neon-400/40 bg-neon-500/10">
                   <Check className="h-9 w-9 text-neon-400" />
@@ -74,14 +75,11 @@ export default async function MockHubPage() {
                       : "Your result is saved. "}
                     Next mock {dateLabel(state.nextAvailable)}.
                   </p>
-                  <Link
-                    href="/learn/map"
-                    className="mt-2 inline-flex items-center gap-1.5 text-base font-medium text-neon-300 hover:text-neon-200"
-                  >
-                    See my journey <ArrowRight className="h-4 w-4" />
-                  </Link>
+                  <span className="mt-2 inline-flex items-center gap-1.5 text-base font-medium text-neon-300">
+                    See your result <ArrowRight className="h-4 w-4" />
+                  </span>
                 </div>
-              </div>
+              </Link>
             );
           }
 

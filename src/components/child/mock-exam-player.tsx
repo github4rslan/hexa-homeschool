@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Timer, ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
-import { Celebration } from "@/components/fx/celebration";
+import { MockGradeReveal } from "@/components/child/mock-result-view";
 import { submitMock, type MockSubmitResult } from "@/app/(child)/learn/mock/actions";
 import type { MockQuestion } from "@/lib/db/repo";
 import type { Subject } from "@/lib/db/types";
@@ -272,30 +272,12 @@ function MockResults({
 
   return (
     <div>
-      <div className="relative py-8 text-center">
-        {!reduce && (
-          <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center">
-            <Celebration big variant={3} />
-          </div>
-        )}
-        <motion.div
-          initial={reduce ? false : { opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-        >
-          <p className="text-lg text-fog-300">Your work is paying off —</p>
-          <p className="mt-1 text-3xl font-semibold text-fog-50">
-            {subjectLabel} is at a{" "}
-            <span className="text-neon-300">
-              {result.indicativeGrade.toLowerCase().replace("grade ", "grade ")}
-            </span>{" "}
-            level today.
-          </p>
-          <p className="mt-3 text-xl text-fog-300">
-            You got {result.correct} of {result.total} right.
-          </p>
-        </motion.div>
-      </div>
+      <MockGradeReveal
+        subjectLabel={subjectLabel}
+        indicativeGrade={result.indicativeGrade}
+        detail={`You got ${result.correct} of ${result.total} right.`}
+        reduce={reduce}
+      />
 
       {wrong.length > 0 ? (
         <div className="mt-4">
