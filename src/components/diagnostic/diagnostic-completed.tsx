@@ -38,7 +38,7 @@ export function DiagnosticCompleted({
         timeZone: "UTC",
       })
     : null;
-  const assessed = standings.some((s) => s.readiness !== null || s.grade !== null);
+  const assessed = standings.length > 0;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -59,30 +59,14 @@ export function DiagnosticCompleted({
             {standings.map((s) => (
               <div
                 key={s.subject}
-                className="flex items-center justify-between gap-4 rounded-xl border border-white/5 bg-white/[0.03] p-4"
+                className="rounded-xl border border-white/5 bg-white/[0.03] p-4"
               >
-                <div>
-                  <div className="text-sm font-semibold text-fog-50">
-                    {SUBJECT_LABEL[s.subject] ?? s.subject}
-                  </div>
-                  {s.grade ? (
-                    <div className="text-xs text-fog-500">
-                      Working at grade {s.grade}
-                    </div>
-                  ) : (
-                    <div className="text-xs text-fog-500">Baseline recorded</div>
-                  )}
+                <div className="text-sm font-semibold text-fog-50">
+                  {SUBJECT_LABEL[s.subject] ?? s.subject}
                 </div>
-                {s.readiness !== null && (
-                  <div className="text-right">
-                    <div className="text-lg font-semibold text-gradient-violet">
-                      {Math.round(s.readiness)}%
-                    </div>
-                    <div className="text-[10px] font-mono uppercase tracking-widest text-fog-500">
-                      Readiness
-                    </div>
-                  </div>
-                )}
+                <div className="mt-1 text-xs text-fog-500">
+                  Starting point saved
+                </div>
               </div>
             ))}
           </div>

@@ -1,6 +1,7 @@
 import "server-only";
 import { findParentById } from "@/lib/db/repo";
 import { verifyPassword } from "@/lib/auth/password";
+import { normaliseParentPin } from "@/lib/auth/parent-pin-input";
 
 export type ParentPinCheck =
   | { ok: true }
@@ -28,8 +29,8 @@ export async function verifyParentPin(
     };
   }
 
-  const pin = String(rawPin ?? "").trim();
-  if (!/^\d{4}$/.test(pin)) {
+  const pin = normaliseParentPin(rawPin);
+  if (!pin) {
     return { ok: false, error: "Enter the 4-digit parent PIN." };
   }
 
