@@ -33,7 +33,7 @@ signup ──► /signup/verify-sent ──► (email link) /verify
                               /dashboard/children/new
                                          │ createChild → redirect
                                          ▼
-                              /onboarding/diagnostic
+                              /onboarding/diagnostic   (ONE-TIME — see lock below)
                                          │ diagnostic complete → results + narrative
                                          │ primary CTA "See this week's plan"
                                          ▼
@@ -50,6 +50,18 @@ signup ──► /signup/verify-sent ──► (email link) /verify
                           parent's next /dashboard visit shows real
                           progress; getting-started checklist self-completes
 ```
+
+**Diagnostic is one-time (completion lock).** The onboarding diagnostic is a
+baseline that can't be re-rolled. On first full completion,
+`ChildDoc.diagnostic_completed_at` is set ONCE (`markDiagnosticCompleted`, never
+overwritten; the save also skips if a baseline already exists, so a back/
+double-click can't write a second one). Revisiting `/onboarding/diagnostic` for
+a completed child renders a read-only `DiagnosticCompleted` view (stable saved
+standings + completion date + forward CTAs) instead of the runner — no "Begin"
+button anywhere. Completion is per child and reflected at every entry point
+(onboarding overview, dashboard). Legacy-safe: a child with prior non-mock
+evaluations counts as completed and is back-filled. Mid-run (not yet saved) is
+NOT locked. There is deliberately no child or parent reset path.
 
 Empty/cold states never strand the user: the zero-children dashboard offers
 "Add your first child"; the no-child `/schedule` offers "Add a child"; the
@@ -127,7 +139,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 | Collection | Doc | Purpose |
 |---|---|---|
 | `parents` | ParentDoc | Account, password hash, subscription tier, billing status, Stripe customer/subscription ids (synced by `/api/billing/webhook` only), email prefs (`weekly_digest_opt_out`, `weekly_plan_email_opt_out`, `escalation_alert_opt_out`, `marketing_emails_opt_out` — toggles in `/settings`), `lifecycle_emails_sent` (idempotency keys for onboarding emails), `two_factor_enabled`, `phone` (E.164, for immediate-severity safety SMS), `is_admin` legacy staff flag + `role` ("admin" | "support" — see `lib/auth/rbac.ts`), `token_version` (session invalidation — "sign out everywhere" / password change) |
-| `children` | ChildDoc | Profile, DOB, SEND indicators, target exam window, child-chosen personalisation (`voice_id`, `accent`, `narration_autoplay` — auto read-aloud, default on) |
+| `children` | ChildDoc | Profile, DOB, SEND indicators, target exam window, child-chosen personalisation (`voice_id`, `accent`, `narration_autoplay` — auto read-aloud, default on), `diagnostic_completed_at` (one-time diagnostic lock — set once, legacy-safe) |
 | `evaluation_records` | EvaluationDoc | Diagnostic/mock results, predicted grades |
 | `instructional_logs` | LessonLogDoc | Per-lesson logs (phase, attempts, hints, mastery) |
 | `lesson_progress` | LessonProgressDoc | Within-lesson autosave (interactive daily flow): one row per child per topic (`step`, `score`, `total`) so an interrupted child resumes at the exact step. Deleted on completion — a finished lesson never resumes; pedagogical state only, never analytics |
