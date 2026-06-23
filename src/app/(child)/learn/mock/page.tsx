@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Calculator, BookText, FlaskConical, ArrowLeft, Timer } from "lucide-react";
-import { currentParentId, getActiveChild } from "@/lib/db/repo";
+import { Calculator, BookText, FlaskConical, ArrowLeft, Timer, Check, ArrowRight } from "lucide-react";
+import { currentParentId, getActiveChild, getMockState } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
+import type { Subject } from "@/lib/db/types";
 
 export const metadata: Metadata = { title: "Mock exam" };
 export const dynamic = "force-dynamic";
@@ -19,6 +20,12 @@ export default async function MockHubPage() {
   if (!parentId) redirect("/login?redirect=/learn/mock");
   const child = await getActiveChild(parentId, await readActiveChildId());
   if (!child?._id) redirect("/dashboard");
+
+  // Per-subject attempt state this period (one honest attempt each).
+  const states = await getMockState(parentId, child._id);
+  const stateBySubject = new Map(states.map((s) => [s.subject, s]));
+  const dateLabel = (d: Date) =>
+    d.toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" });
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -43,6 +50,42 @@ export default async function MockHubPage() {
       <div className="grid gap-5">
         {SUBJECTS.map((s) => {
           const Icon = s.icon;
+          const state = stateBySubject.get(s.id as Subject);
+
+          // Completed this period — a calm "done" panel (no retake), with the
+          // result and when the next mock unlocks. Effort-framed, encouraging.
+          if (state?.taken) {
+            const grade = state.result?.indicativeGrade?.toLowerCase() ?? "";
+            return (
+              <div
+                key={s.id}
+                className="child-panel flex items-center gap-5 p-6"
+              >
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl border-2 border-neon-400/40 bg-neon-500/10">
+                  <Check className="h-9 w-9 text-neon-400" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-2xl font-semibold text-fog-50">
+                    {s.label} mock complete this week
+                  </div>
+                  <p className="mt-1 text-base text-fog-400">
+                    {grade
+                      ? `You're at a ${grade} level today. `
+                      : "Your result is saved. "}
+                    Next mock {dateLabel(state.nextAvailable)}.
+                  </p>
+                  <Link
+                    href="/learn/map"
+                    className="mt-2 inline-flex items-center gap-1.5 text-base font-medium text-neon-300 hover:text-neon-200"
+                  >
+                    See my journey <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            );
+          }
+
+          // Available — start this period's attempt.
           return (
             <Link
               key={s.id}
