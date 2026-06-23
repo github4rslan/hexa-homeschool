@@ -77,12 +77,18 @@ Route: `POST /api/tts` · Provider: ElevenLabs (`eleven_turbo_v2_5` — high qua
 Confident"; warm `ELEVENLABS_VOICE_SETTINGS` in `lib/ai/config.ts`)
 
 - Input capped at 1,200 characters (ElevenLabs bills per character)
+- Child narration uses the central `ELEVENLABS_NARRATION_SPEED` baseline
+  (`0.85`), with a small key-stage adjustment so KS2 is calmest while retaining
+  the child's chosen voice
 - Generated audio is cached in Cloudinary, deduplicated by a hash of
-  model + voice + text (`content_hash` on MediaDoc); without Cloudinary it
-  streams bytes uncached
+  model + voice + speed + voice settings + text (`content_hash` on MediaDoc);
+  without Cloudinary it streams bytes uncached
 - **Auto-narration (Wave 4):** the child daily flow auto-plays the prompt when a
   step appears via the `useNarration` hook (one clip at a time; stops when the
-  child starts answering; prefetches the next step). It reuses this route as-is —
+  child starts answering; prefetches the next step). Spoken copy is deterministic
+  and human-authored: maths symbols become clear words, KS2 gets a short
+  encouraging lead, and punctuation creates a thinking beat before the options.
+  It reuses this route as-is —
   same rate-limit, tier-gate, cache and 503 fallback — so narration degrades
   silently when ElevenLabs is unconfigured. Controlled by
   `ChildDoc.narration_autoplay` (default on) via the My-stuff toggle and a

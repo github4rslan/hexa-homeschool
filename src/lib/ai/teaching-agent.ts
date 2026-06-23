@@ -43,7 +43,7 @@ export interface TutorRequest {
 function readingLevelGuidance(keyStage?: number): string | null {
   switch (keyStage) {
     case 2:
-      return "Reading level: a primary-school child (ages 7–10). Use very simple words and short sentences.";
+      return "Reading level: a primary-school child (ages 7–10). Use very simple, concrete words, one idea per short sentence, and explain the action step by step.";
     case 3:
       return "Reading level: a lower-secondary child (ages 11–13). Keep it clear and straightforward.";
     default:
@@ -171,7 +171,7 @@ async function runChecker(
     "You verify a tutor explanation BEFORE it reaches a child.",
     "Check two things strictly:",
     "1) Factual consistency: does the explanation agree with the canonical correct answer and contain no incorrect mathematical/scientific/grammatical claims?",
-    "2) Tone: is it free of condescension, shaming, or anything inappropriate for a child?",
+    "2) Tone: is it free of condescension, shaming, or anything inappropriate for a child, and does it match the requested reading level?",
     "Respond ONLY with JSON: {\"confidence\": number 0-1, \"factuallyConsistent\": boolean, \"toneAppropriate\": boolean, \"reason\": string}.",
     "confidence reflects your certainty the explanation is safe AND correct.",
   ].join(" ");
@@ -180,6 +180,7 @@ async function runChecker(
     req.topic ? `Topic: ${req.topic}` : null,
     `Question: ${req.prompt}`,
     `Canonical correct answer: ${req.correctAnswer}`,
+    readingLevelGuidance(req.keyStage),
     `Tutor explanation to validate: "${explanation}"`,
   ]
     .filter(Boolean)
