@@ -31,6 +31,7 @@ import {
 } from "@/lib/child/interactions";
 import { accentPreset, type AccentPreset } from "@/lib/child/accents";
 import { useNarration } from "@/lib/child/use-narration";
+import { useQuestionVisual } from "@/lib/child/use-question-visual";
 import { buildQuestionNarration } from "@/lib/child/narration-copy";
 import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
@@ -177,6 +178,8 @@ export function PracticePlayer({
     ? question.interaction ?? { type: "mcq" }
     : { type: "mcq" };
   const isMcq = interaction.type === "mcq";
+  const { visual: questionVisual, prefetch: prefetchQuestionVisual } =
+    useQuestionVisual(question?.id, keyStage);
 
   const hintLadder = question
     ? buildHintLadder({ hints: question.hints, explanation: question.explanation })
@@ -232,6 +235,12 @@ export function PracticePlayer({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, autoplayOn]);
+
+  // Generate/check the next visual while the child works on this question. The
+  // hook caches results and keeps one in-flight request per next question.
+  useEffect(() => {
+    prefetchQuestionVisual(questions[step + 1]?.id);
+  }, [prefetchQuestionVisual, questions, step]);
 
   // Resume once on mount: reconcile the server copy (props) with a same-device
   // localStorage copy (which may be a step ahead if a server write lagged), then
@@ -696,9 +705,35 @@ export function PracticePlayer({
       </div>
 
       <div className="child-panel p-6 sm:p-8">
-        <h1 className="text-3xl sm:text-4xl font-semibold text-fog-50 mb-8 leading-snug">
-          {question.prompt}
-        </h1>
+        <div
+          className={cn(
+            "mb-8 grid gap-5",
+            questionVisual && "lg:grid-cols-[1fr_220px] lg:items-start",
+          )}
+        >
+          <h1 className="text-3xl sm:text-4xl font-semibold text-fog-50 leading-snug">
+            {question.prompt}
+          </h1>
+          {questionVisual && (
+            <figure
+              className={cn(
+                "order-first overflow-hidden rounded-3xl border bg-white/[0.03] p-2 lg:order-none",
+                accent.softBorder,
+              )}
+            >
+              {/* AI-generated only after automated Checker approval; no spinner
+                  or fallback is shown when unavailable. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={questionVisual.url}
+                alt={questionVisual.alt}
+                className="aspect-[3/2] w-full rounded-2xl object-cover"
+                loading="eager"
+                decoding="async"
+              />
+            </figure>
+          )}
+        </div>
 
         {/* The first answering gesture silences narration so it never plays
             over a child who is actively working. */}
