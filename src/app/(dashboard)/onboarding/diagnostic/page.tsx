@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { HexaLogo } from "@/components/ui/hexa-logo";
 import { BackButton } from "@/components/ui/back-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
@@ -15,6 +16,7 @@ import {
 import { readActiveChildId } from "@/lib/active-child";
 import { DIAGNOSTIC_SUBJECTS, type DiagnosticItem } from "@/lib/data/diagnostic";
 import { ageFromDob, placeChild } from "@/lib/engine/diagnostic-placement";
+import { diagnosticPageState } from "@/lib/diagnostic/page-state";
 
 export const metadata: Metadata = {
   title: "Diagnostic",
@@ -26,19 +28,19 @@ export const dynamic = "force-dynamic";
 
 export default async function DiagnosticPage() {
   // Place the diagnostic at the active child's age-expected band. Ownership is
-  // enforced in the repo layer (parent-scoped read). With no active child
-  // (e.g. signed-out preview) we fall back to GCSE so the page never crashes.
+  // enforced in the repo layer (parent-scoped read). With no active child we
+  // redirect to profile creation rather than showing a non-persistable runner.
   const parentId = await currentParentId();
+  if (!parentId) redirect("/login");
   const child = parentId
     ? await getActiveChild(parentId, await readActiveChildId())
     : null;
+  if (!child?._id) redirect("/dashboard/children/new");
 
   // The diagnostic is a ONE-TIME learning check. If the active child has already
   // completed it, show the stable read-only baseline — never a fresh run.
-  const completion =
-    parentId && child?._id
-      ? await getDiagnosticCompletion(parentId, child._id)
-      : { completed: false, at: null };
+  const completion = await getDiagnosticCompletion(parentId, child._id);
+  const pageState = diagnosticPageState(completion.completed);
 
   const placement = child?.date_of_birth
     ? placeChild(ageFromDob(child.date_of_birth))
@@ -46,13 +48,13 @@ export default async function DiagnosticPage() {
 
   // Saved baseline for the completed view (read-only — never a recomputation).
   const standings =
-    completion.completed && child?._id
+    pageState === "completed"
       ? await latestEvaluationsBySubject(child._id)
       : [];
 
   // Load the band-scoped diagnostic item pool (kind=diagnostic) — only needed
   // when the child still has the diagnostic to take.
-  const pools = completion.completed
+  const pools = pageState === "completed"
     ? []
     : await Promise.all(
         DIAGNOSTIC_SUBJECTS.map((s) => getDiagnosticPool(s.id, placement.keyStage)),
@@ -89,7 +91,7 @@ export default async function DiagnosticPage() {
             ]}
           />
         </div>
-        {completion.completed ? (
+        {pageState === "completed" ? (
           <DiagnosticCompleted
             childName={child?.full_name?.trim().split(/\s+/)[0]}
             completedAt={completion.at}
