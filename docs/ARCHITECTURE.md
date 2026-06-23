@@ -53,15 +53,24 @@ signup ──► /signup/verify-sent ──► (email link) /verify
 
 **Diagnostic is one-time (completion lock).** The onboarding diagnostic is a
 baseline that can't be re-rolled. On first full completion,
-`ChildDoc.diagnostic_completed_at` is set ONCE (`markDiagnosticCompleted`, never
-overwritten; the save also skips if a baseline already exists, so a back/
-double-click can't write a second one). Revisiting `/onboarding/diagnostic` for
+`ChildDoc.diagnostic_completed_at` is claimed atomically
+(`markDiagnosticCompleted`, never overwritten within an assessment cycle), so
+back/double-click and concurrent submits cannot write a second baseline.
+Revisiting `/onboarding/diagnostic` for
 a completed child renders a read-only `DiagnosticCompleted` view (stable saved
 standings + completion date + forward CTAs) instead of the runner — no "Begin"
 button anywhere. Completion is per child and reflected at every entry point
 (onboarding overview, dashboard). Legacy-safe: a child with prior non-mock
 evaluations counts as completed and is back-filled. Mid-run (not yet saved) is
-NOT locked. There is deliberately no child or parent reset path.
+NOT locked.
+
+A parent can deliberately start a fresh baseline from the completed view using
+**Restart assessment**. The action requires the existing 4-digit parent PIN,
+then a separate confirmation that the new results replace the old baseline.
+The server re-verifies both gates, checks child ownership in `repo.ts`, deletes
+only `mock_exam: false` evaluation rows, and clears
+`diagnostic_completed_at`; mock-exam history is preserved. The next completed
+diagnostic atomically locks again. No child-facing route exposes this action.
 
 **Assessment integrity model.** Three assessment types, three attempt rules,
 enforced server-side via `repo.ts` (ownership-checked) — uninflated metrics for
@@ -69,7 +78,7 @@ the trajectory and the LA portfolio:
 
 | Assessment | Attempts | Lock |
 |---|---|---|
-| Diagnostic | once **ever** | `ChildDoc.diagnostic_completed_at` (set once; see above) |
+| Diagnostic | once per parent-authorised baseline cycle | `ChildDoc.diagnostic_completed_at` (atomic set-once lock; parent-PIN restart clears it deliberately) |
 | Mock exam | once **per period** (weekly) | `recordMockResult` refuses a second write for the same child + subject + period; `getMockState` / `hasMockThisPeriod` drive the hub tiles + run-page guard; cadence in `lib/engine/assessment-period.ts` |
 | Mastery check | **unlimited** | deliberately re-attemptable (fail → topic returns to rotation) — never locked |
 
