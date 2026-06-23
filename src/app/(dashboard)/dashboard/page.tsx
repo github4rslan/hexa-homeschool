@@ -29,6 +29,7 @@ import {
   hasDossierForPeriod,
   openEscalations,
   onboardingChecklist,
+  getDiagnosticCompletion,
   todayCard,
   type TodayCard as TodayCardData,
   weekInReview,
@@ -217,6 +218,10 @@ export default async function DashboardPage() {
   const checklist = activeChild?._id
     ? await onboardingChecklist(parentId!, activeChild._id)
     : null;
+  // One-time diagnostic completion for the active child (drives empty-state CTA).
+  const diagnosticDone = activeChild?._id
+    ? (await getDiagnosticCompletion(parentId!, activeChild._id)).completed
+    : false;
   const steps: ChecklistStep[] = checklist
     ? [
         { key: "child", label: "Add your child", href: "/dashboard/children/new", done: true },
@@ -419,13 +424,27 @@ export default async function DashboardPage() {
               </ul>
             ) : (
               <div className="py-8 text-center">
-                <p className="text-sm text-fog-400 mb-4">
-                  No lessons yet. Start the diagnostic to map where your child
-                  stands, then begin daily lessons.
-                </p>
-                <Button href="/onboarding/diagnostic" variant="secondary" size="md">
-                  Start the diagnostic
-                </Button>
+                {diagnosticDone ? (
+                  <>
+                    <p className="text-sm text-fog-400 mb-4">
+                      Learning check complete. Review this week&apos;s plan to
+                      begin daily lessons.
+                    </p>
+                    <Button href="/schedule" variant="secondary" size="md">
+                      See this week&apos;s plan
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-fog-400 mb-4">
+                      No lessons yet. Start the diagnostic to map where your child
+                      stands, then begin daily lessons.
+                    </p>
+                    <Button href="/onboarding/diagnostic" variant="secondary" size="md">
+                      Start the diagnostic
+                    </Button>
+                  </>
+                )}
               </div>
             )}
           </Card>

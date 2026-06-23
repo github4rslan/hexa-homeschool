@@ -1,42 +1,65 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Activity, ArrowRight, Calendar, Sparkles, User } from "lucide-react";
+import { Activity, ArrowRight, Calendar, Check, Sparkles, User } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { HexaLogo } from "@/components/ui/hexa-logo";
+import {
+  currentParentId,
+  getActiveChild,
+  getDiagnosticCompletion,
+} from "@/lib/db/repo";
+import { readActiveChildId } from "@/lib/active-child";
 
 export const metadata: Metadata = {
   title: "Welcome to HEXA",
 };
 
-const STEPS = [
-  {
-    number: "01",
-    icon: User,
-    title: "Tell us about your child",
-    description:
-      "Name, date of birth, any documented SEND designations, and an optional target exam window. Takes 2 minutes.",
-    href: "/dashboard/children/new",
-  },
-  {
-    number: "02",
-    icon: Activity,
-    title: "Run the diagnostic",
-    description:
-      "An adaptive assessment establishes your child's baseline across Maths, English and Science.",
-    href: "/onboarding/diagnostic",
-  },
-  {
-    number: "03",
-    icon: Calendar,
-    title: "Review & approve the plan",
-    description:
-      "The Planning Agent proposes a tailored weekly plan. You review, adjust, and approve before lessons begin.",
-    href: "/schedule",
-  },
-];
+export const dynamic = "force-dynamic";
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  // Reflect the active child's diagnostic completion so this overview never
+  // invites starting a learning check that's already done (per-child).
+  const parentId = await currentParentId();
+  const child = parentId
+    ? await getActiveChild(parentId, await readActiveChildId())
+    : null;
+  const diagnosticDone =
+    parentId && child?._id
+      ? (await getDiagnosticCompletion(parentId, child._id)).completed
+      : false;
+
+  const STEPS = [
+    {
+      number: "01",
+      icon: User,
+      title: "Tell us about your child",
+      description:
+        "Name, date of birth, any documented SEND designations, and an optional target exam window. Takes 2 minutes.",
+      href: "/dashboard/children/new",
+      done: !!child,
+    },
+    {
+      number: "02",
+      icon: Activity,
+      title: diagnosticDone ? "Learning check complete" : "Run the diagnostic",
+      description: diagnosticDone
+        ? "Your child's baseline is saved. View their results any time."
+        : "An adaptive assessment establishes your child's baseline across Maths, English and Science.",
+      href: "/onboarding/diagnostic",
+      done: diagnosticDone,
+    },
+    {
+      number: "03",
+      icon: Calendar,
+      title: "Review & approve the plan",
+      description:
+        "The Planning Agent proposes a tailored weekly plan. You review, adjust, and approve before lessons begin.",
+      href: "/schedule",
+      done: false,
+    },
+  ];
+
   return (
     <div className="relative min-h-screen">
       <div className="fixed inset-0 bg-void -z-20" />
@@ -70,12 +93,25 @@ export default function OnboardingPage() {
                 <span className="font-mono text-3xl font-light text-fog-600 w-12 shrink-0">
                   {step.number}
                 </span>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-violet-500/10 border border-violet-400/30">
-                  <step.icon className="h-5 w-5 text-violet-300" />
+                <div
+                  className={
+                    step.done
+                      ? "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-neon-400/40 bg-neon-500/10"
+                      : "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-violet-400/30 bg-violet-500/10"
+                  }
+                >
+                  {step.done ? (
+                    <Check className="h-5 w-5 text-neon-400" />
+                  ) : (
+                    <step.icon className="h-5 w-5 text-violet-300" />
+                  )}
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-fog-50">
+                  <h3 className="flex items-center gap-2 text-lg font-semibold text-fog-50">
                     {step.title}
+                    {step.done && (
+                      <Check className="h-4 w-4 text-neon-400" aria-label="Complete" />
+                    )}
                   </h3>
                   <p className="text-sm text-fog-400 mt-1">
                     {step.description}
