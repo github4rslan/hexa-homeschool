@@ -19,6 +19,7 @@ export function Explainer({
   points,
   onContinue,
   voiceId,
+  keyStage,
   accent: accentId,
   autoplay = true,
 }: {
@@ -28,13 +29,15 @@ export function Explainer({
   onContinue: () => void;
   /** Child-chosen narration voice; falls back to the server default when unset. */
   voiceId?: string | null;
+  /** Child's UK key stage, used only as a narration pace hint. */
+  keyStage?: number;
   /** Child-chosen accent preset id (drives the icon tile + play button). */
   accent?: string | null;
   /** Whether to auto-read the explainer on appearance (child preference). */
   autoplay?: boolean;
 }) {
   const accent = accentPreset(accentId);
-  const narration = useNarration(voiceId);
+  const narration = useNarration(voiceId, keyStage);
   const narrationText = `${title}. ${summary}. ${points.join(". ")}`;
   const autoplayedRef = useRef(false);
 

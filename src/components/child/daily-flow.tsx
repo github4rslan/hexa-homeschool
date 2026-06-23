@@ -23,6 +23,7 @@ export function DailyFlow({
   questions,
   curriculumTopic,
   voiceId,
+  keyStage,
   accent: accentId,
   narrationAutoplay = true,
   savedProgress,
@@ -36,6 +37,8 @@ export function DailyFlow({
   curriculumTopic: string;
   /** Child-chosen narration voice, threaded to both phases' TTS. */
   voiceId?: string | null;
+  /** Child's UK key stage, used only as a narration pace hint. */
+  keyStage?: number;
   /** Child-chosen accent preset id (drives colour throughout). */
   accent?: string | null;
   /** Child's "read questions to me" preference (auto-narration). */
@@ -104,6 +107,7 @@ export function DailyFlow({
               points={points}
               onContinue={() => setPhase("practice")}
               voiceId={voiceId}
+              keyStage={keyStage}
               accent={accentId}
               autoplay={narrationAutoplay}
             />
@@ -112,6 +116,7 @@ export function DailyFlow({
               questions={questions}
               curriculumTopic={curriculumTopic}
               voiceId={voiceId}
+              keyStage={keyStage}
               accent={accentId}
               narrationAutoplay={narrationAutoplay}
               savedProgress={savedProgress}

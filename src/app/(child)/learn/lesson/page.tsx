@@ -95,6 +95,7 @@ export default async function ChildLessonPage({
         questions={questions}
         curriculumTopic={topicDoc.topic_tag}
         voiceId={voiceId}
+        keyStage={topicDoc.key_stage ?? 4}
         accent={accent}
         narrationAutoplay={narrationAutoplay}
         savedProgress={savedProgress}

@@ -28,14 +28,31 @@ export const ELEVENLABS_API_BASE = "https://api.elevenlabs.io/v1";
  */
 export const ELEVENLABS_MODEL = "eleven_turbo_v2_5";
 /**
+ * Baseline narration pace for child lessons. ElevenLabs accepts 0.7–1.2;
+ * 0.85 is deliberately calm without sounding stretched. Keep this as the
+ * single by-ear tuning point for the whole lesson experience.
+ */
+export const ELEVENLABS_NARRATION_SPEED = 0.85;
+
+/**
+ * Younger children get a very small additional slowdown while older learners
+ * stay close to the baseline. This is a delivery hint only; it never changes
+ * the lesson content or selected voice.
+ */
+export function narrationSpeedForKeyStage(keyStage?: number): number {
+  if (keyStage === 2) return ELEVENLABS_NARRATION_SPEED - 0.03;
+  if (keyStage === 4) return ELEVENLABS_NARRATION_SPEED + 0.03;
+  return ELEVENLABS_NARRATION_SPEED;
+}
+/**
  * Warm, natural read settings (shared by /api/tts). Slightly lower stability for
  * gentle expressiveness, similarity kept high for the chosen voice, a light
  * style for friendliness, and speaker boost for clarity — calm, not robotic.
  */
 export const ELEVENLABS_VOICE_SETTINGS = {
-  stability: 0.4,
+  stability: 0.5,
   similarity_boost: 0.8,
-  style: 0.3,
+  style: 0.2,
   use_speaker_boost: true,
 } as const;
 /** ElevenLabs Scribe — speech-to-text for spoken answers. */
