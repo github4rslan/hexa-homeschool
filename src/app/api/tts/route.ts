@@ -4,6 +4,7 @@ import {
   ELEVENLABS_API_BASE,
   ELEVENLABS_MODEL,
   ELEVENLABS_DEFAULT_VOICE_ID,
+  ELEVENLABS_VOICE_SETTINGS,
   getElevenLabsKey,
   AiConfigError,
 } from "@/lib/ai/config";
@@ -139,7 +140,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         text,
         model_id: ELEVENLABS_MODEL,
-        voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+        voice_settings: ELEVENLABS_VOICE_SETTINGS,
       }),
     });
 
