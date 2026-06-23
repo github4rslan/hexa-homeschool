@@ -1,15 +1,20 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import {
   currentParentId,
+  getChildById,
   getActiveChild,
   insertEvaluations,
   markDiagnosticCompleted,
   releaseDiagnosticCompletion,
   getDiagnosticCompletion,
+  restartDiagnosticBaseline,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { captureServer } from "@/lib/analytics/server";
+import { verifyParentPin } from "@/lib/auth/parent-pin";
+import { restartConfirmationIsValid } from "@/lib/diagnostic/restart";
 
 export interface DiagnosticSubjectOutcome {
   subject: "mathematics" | "english" | "science";
@@ -20,6 +25,61 @@ export interface DiagnosticSubjectOutcome {
 export interface PersistResult {
   persisted: boolean;
   reason?: string;
+}
+
+export interface RestartDiagnosticState {
+  ok: boolean;
+  error?: string;
+  setupRequired?: boolean;
+}
+
+export async function verifyDiagnosticRestartPin(
+  _prevState: RestartDiagnosticState,
+  formData: FormData,
+): Promise<RestartDiagnosticState> {
+  const parentId = await currentParentId();
+  if (!parentId) return { ok: false, error: "Please sign in again." };
+  return verifyParentPin(parentId, formData.get("parent_pin"));
+}
+
+export async function restartDiagnosticAction(
+  childId: string,
+  _prevState: RestartDiagnosticState,
+  formData: FormData,
+): Promise<RestartDiagnosticState> {
+  const parentId = await currentParentId();
+  if (!parentId) return { ok: false, error: "Please sign in again." };
+
+  if (!restartConfirmationIsValid(formData.get("confirm_restart"))) {
+    return {
+      ok: false,
+      error: "Confirm that the new assessment will replace the saved baseline.",
+    };
+  }
+
+  // Re-check the PIN in the mutating action. Passing the first dialog alone
+  // never grants a reusable or client-forgeable permission.
+  const pinCheck = await verifyParentPin(parentId, formData.get("parent_pin"));
+  if (!pinCheck.ok) return pinCheck;
+
+  const child = await getChildById(parentId, childId);
+  if (!child?._id) {
+    return { ok: false, error: "That child profile was not found." };
+  }
+
+  const result = await restartDiagnosticBaseline(parentId, child._id);
+  if (!result.ok) {
+    return {
+      ok: false,
+      error: "The assessment could not be restarted. Please try again.",
+    };
+  }
+
+  revalidatePath("/onboarding");
+  revalidatePath("/onboarding/diagnostic");
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/children/${childId}`);
+  return { ok: true };
 }
 
 /**

@@ -94,6 +94,7 @@ export default async function DiagnosticPage() {
         {pageState === "completed" ? (
           <DiagnosticCompleted
             childName={child?.full_name?.trim().split(/\s+/)[0]}
+            childId={child._id.toHexString()}
             completedAt={completion.at}
             standings={standings}
           />

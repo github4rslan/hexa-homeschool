@@ -3,12 +3,11 @@
 import { revalidatePath } from "next/cache";
 import {
   currentParentId,
-  findParentById,
   getActiveChild,
   recordCheckin,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
-import { verifyPassword } from "@/lib/auth/password";
+import { verifyParentPin } from "@/lib/auth/parent-pin";
 
 export interface CheckinResult {
   ok: boolean;
@@ -43,28 +42,5 @@ export async function verifyParentGatePin(
     return { ok: false, error: "Please sign in again." };
   }
 
-  const parent = await findParentById(parentId);
-  if (!parent) {
-    return { ok: false, error: "Please sign in again." };
-  }
-
-  if (!parent.parent_pin_hash) {
-    return {
-      ok: false,
-      setupRequired: true,
-      error: "Set a parent PIN in Settings before leaving child mode.",
-    };
-  }
-
-  const pin = String(formData.get("parent_pin") || "").trim();
-  if (!/^\d{4}$/.test(pin)) {
-    return { ok: false, error: "Enter the 4-digit parent PIN." };
-  }
-
-  const ok = await verifyPassword(pin, parent.parent_pin_hash);
-  if (!ok) {
-    return { ok: false, error: "That PIN was not recognised." };
-  }
-
-  return { ok: true };
+  return verifyParentPin(parentId, formData.get("parent_pin"));
 }

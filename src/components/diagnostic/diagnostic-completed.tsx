@@ -1,6 +1,7 @@
 import { Check, ArrowRight, Target } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { DiagnosticRestart } from "@/components/diagnostic/diagnostic-restart";
 import type { SubjectStanding } from "@/lib/db/repo";
 
 /**
@@ -19,10 +20,12 @@ const SUBJECT_LABEL: Record<string, string> = {
 
 export function DiagnosticCompleted({
   childName,
+  childId,
   completedAt,
   standings,
 }: {
   childName?: string;
+  childId: string;
   completedAt: Date | null;
   standings: SubjectStanding[];
 }) {
@@ -107,6 +110,13 @@ export function DiagnosticCompleted({
           <Button href="/dashboard" variant="secondary" size="lg">
             Go to dashboard
           </Button>
+        </div>
+
+        <div className="mt-6 border-t border-white/5 pt-6 text-center">
+          <p className="mb-3 text-xs text-fog-500">
+            Parent only · PIN required
+          </p>
+          <DiagnosticRestart childId={childId} childName={who} />
         </div>
 
         {dateLabel && (
