@@ -1,6 +1,11 @@
 "use server";
 
-import { currentParentId, getActiveChild, insertEvaluations } from "@/lib/db/repo";
+import {
+  currentParentId,
+  getActiveChild,
+  insertEvaluations,
+  markDiagnosticCompleted,
+} from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { captureServer } from "@/lib/analytics/server";
 
@@ -43,7 +48,11 @@ export async function saveDiagnosticResults(
     })),
   );
 
-  if (ok) captureServer(parentId, "diagnostic_completed");
+  if (ok) {
+    // Lock the diagnostic: set the completion baseline ONCE (idempotent).
+    await markDiagnosticCompleted(parentId, child._id);
+    captureServer(parentId, "diagnostic_completed");
+  }
 
   return ok
     ? { persisted: true }
