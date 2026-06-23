@@ -95,6 +95,13 @@ export interface ChildDoc {
    * legacy-safe: undefined ⇒ ON (it helps the youngest and SEND learners).
    */
   narration_autoplay?: boolean;
+  /**
+   * When the child completed the one-time onboarding diagnostic. Set ONCE on
+   * first full completion (the baseline); never overwritten. Optional +
+   * legacy-safe: a child with prior non-mock evaluations but no flag is treated
+   * as already completed (and back-filled). Absent/null ⇒ not yet completed.
+   */
+  diagnostic_completed_at?: Date | null;
   created_at: Date;
   updated_at: Date;
 }

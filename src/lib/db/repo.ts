@@ -301,6 +301,74 @@ export async function insertEvaluations(
   return true;
 }
 
+/**
+ * Set the diagnostic-completion timestamp ONCE — the first full completion is
+ * the baseline; an existing value is never overwritten (idempotent against a
+ * late or repeat submit). Returns the effective completion time. Ownership
+ * enforced.
+ */
+export async function markDiagnosticCompleted(
+  parentId: string,
+  childId: ObjectId,
+): Promise<Date | null> {
+  if (!(await assertOwnsChild(parentId, childId))) return null;
+  const col = await getCollection<ChildDoc>(Collections.children);
+  const now = new Date();
+  await col.updateOne(
+    {
+      _id: childId,
+      $or: [
+        { diagnostic_completed_at: { $exists: false } },
+        { diagnostic_completed_at: null },
+      ],
+    },
+    { $set: { diagnostic_completed_at: now, updated_at: now } },
+  );
+  const doc = await col.findOne({ _id: childId });
+  return doc?.diagnostic_completed_at ?? null;
+}
+
+/**
+ * Whether the active child has completed the one-time diagnostic, with the
+ * timestamp. Legacy-safe: a child with prior non-mock evaluations but no flag
+ * counts as completed, and the flag is BACK-FILLED to the earliest such result
+ * so the baseline date stays stable. Ownership enforced.
+ */
+export async function getDiagnosticCompletion(
+  parentId: string,
+  childId: ObjectId,
+): Promise<{ completed: boolean; at: Date | null }> {
+  if (!(await assertOwnsChild(parentId, childId))) {
+    return { completed: false, at: null };
+  }
+  const col = await getCollection<ChildDoc>(Collections.children);
+  const child = await col.findOne({ _id: childId });
+  if (child?.diagnostic_completed_at) {
+    return { completed: true, at: child.diagnostic_completed_at };
+  }
+  // Legacy inference + back-fill from the earliest non-mock evaluation.
+  const evalCol = await getCollection<EvaluationDoc>(Collections.evaluations);
+  const firstEval = await evalCol.findOne(
+    { child_id: childId, mock_exam: false },
+    { sort: { created_at: 1 } },
+  );
+  if (firstEval) {
+    const at = firstEval.created_at;
+    await col.updateOne(
+      {
+        _id: childId,
+        $or: [
+          { diagnostic_completed_at: { $exists: false } },
+          { diagnostic_completed_at: null },
+        ],
+      },
+      { $set: { diagnostic_completed_at: at } },
+    );
+    return { completed: true, at };
+  }
+  return { completed: false, at: null };
+}
+
 export async function latestEvaluationGrade(
   childId: ObjectId,
 ): Promise<string | null> {
