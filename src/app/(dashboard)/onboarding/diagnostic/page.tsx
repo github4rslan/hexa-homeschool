@@ -4,7 +4,14 @@ import { HexaLogo } from "@/components/ui/hexa-logo";
 import { BackButton } from "@/components/ui/back-button";
 import { Breadcrumbs } from "@/components/ui/breadcrumbs";
 import { DiagnosticRunner } from "@/components/diagnostic/diagnostic-runner";
-import { currentParentId, getActiveChild, getDiagnosticPool } from "@/lib/db/repo";
+import { DiagnosticCompleted } from "@/components/diagnostic/diagnostic-completed";
+import {
+  currentParentId,
+  getActiveChild,
+  getDiagnosticPool,
+  getDiagnosticCompletion,
+  latestEvaluationsBySubject,
+} from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { DIAGNOSTIC_SUBJECTS, type DiagnosticItem } from "@/lib/data/diagnostic";
 import { ageFromDob, placeChild } from "@/lib/engine/diagnostic-placement";
@@ -25,14 +32,31 @@ export default async function DiagnosticPage() {
   const child = parentId
     ? await getActiveChild(parentId, await readActiveChildId())
     : null;
+
+  // The diagnostic is a ONE-TIME learning check. If the active child has already
+  // completed it, show the stable read-only baseline — never a fresh run.
+  const completion =
+    parentId && child?._id
+      ? await getDiagnosticCompletion(parentId, child._id)
+      : { completed: false, at: null };
+
   const placement = child?.date_of_birth
     ? placeChild(ageFromDob(child.date_of_birth))
     : { keyStage: 4 as const, startTier: 3 };
 
-  // Load the band-scoped diagnostic item pool (kind=diagnostic).
-  const pools = await Promise.all(
-    DIAGNOSTIC_SUBJECTS.map((s) => getDiagnosticPool(s.id, placement.keyStage)),
-  );
+  // Saved baseline for the completed view (read-only — never a recomputation).
+  const standings =
+    completion.completed && child?._id
+      ? await latestEvaluationsBySubject(child._id)
+      : [];
+
+  // Load the band-scoped diagnostic item pool (kind=diagnostic) — only needed
+  // when the child still has the diagnostic to take.
+  const pools = completion.completed
+    ? []
+    : await Promise.all(
+        DIAGNOSTIC_SUBJECTS.map((s) => getDiagnosticPool(s.id, placement.keyStage)),
+      );
   const pool: DiagnosticItem[] = pools.flat().map((q) => ({
     id: q._id!.toHexString(),
     subject: q.subject,
@@ -65,12 +89,20 @@ export default async function DiagnosticPage() {
             ]}
           />
         </div>
-        <DiagnosticRunner
-          pool={pool}
-          startTier={placement.startTier}
-          keyStage={placement.keyStage}
-          childName={child?.full_name?.trim().split(/\s+/)[0]}
-        />
+        {completion.completed ? (
+          <DiagnosticCompleted
+            childName={child?.full_name?.trim().split(/\s+/)[0]}
+            completedAt={completion.at}
+            standings={standings}
+          />
+        ) : (
+          <DiagnosticRunner
+            pool={pool}
+            startTier={placement.startTier}
+            keyStage={placement.keyStage}
+            childName={child?.full_name?.trim().split(/\s+/)[0]}
+          />
+        )}
       </main>
     </div>
   );
