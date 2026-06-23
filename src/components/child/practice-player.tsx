@@ -204,6 +204,16 @@ export function PracticePlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, question?.prompt, complete, revealed, autoplayOn]);
 
+  // Warm the NEXT step's narration while the child works on this one, so the
+  // first play after "Keep going" is instant (cached repeats are already free).
+  // At most one prefetch; respects the preference and the route's rate-limit.
+  useEffect(() => {
+    if (!autoplayOn) return;
+    const upcoming = questions[step + 1];
+    if (upcoming) narration.prefetch(upcoming.prompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, autoplayOn]);
+
   // Resume once on mount: reconcile the server copy (props) with a same-device
   // localStorage copy (which may be a step ahead if a server write lagged), then
   // land at the exact saved step. Pure math via resolveResumeStep keeps this
