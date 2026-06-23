@@ -179,6 +179,8 @@ export async function POST(request: Request) {
         resourceType: "video", // audio is delivered as a video resource type
         authenticated: true,
         publicIdHint: contentHash.slice(0, 32),
+        contentType: "audio/mpeg",
+        filename: "audio.mp3",
       })
         .then((up) =>
           recordMedia({

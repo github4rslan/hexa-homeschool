@@ -1812,6 +1812,15 @@ export async function getQuestions(
   return col.find(query).limit(limit).toArray();
 }
 
+export async function getQuestionById(
+  questionId: string,
+): Promise<QuestionDoc | null> {
+  const oid = toObjectId(questionId);
+  if (!oid) return null;
+  const col = await getCollection<QuestionDoc>(Collections.questions);
+  return col.findOne({ _id: oid });
+}
+
 /**
  * The diagnostic item pool for a subject (kind=diagnostic), tier-ordered.
  *
