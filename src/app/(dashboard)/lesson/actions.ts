@@ -9,6 +9,7 @@ import {
   familyLessonCount,
   saveLessonProgress,
   clearLessonProgress,
+  setChildPreferences,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { captureServer } from "@/lib/analytics/server";
@@ -108,6 +109,23 @@ export async function saveLessonProgressAction(input: {
     total: input.total,
   });
   return { saved };
+}
+
+/**
+ * Persist the child's "read questions to me" preference (the in-lesson mute
+ * toggle). Fire-and-forget from the client; no-ops without a session/child.
+ */
+export async function setNarrationAutoplayAction(
+  enabled: boolean,
+): Promise<{ ok: boolean }> {
+  const parentId = await currentParentId();
+  if (!parentId) return { ok: false };
+  const child = await getActiveChild(parentId, await readActiveChildId());
+  if (!child?._id) return { ok: false };
+  const ok = await setChildPreferences(parentId, child._id, {
+    narrationAutoplay: enabled,
+  });
+  return { ok };
 }
 
 /** Clear saved mid-lesson progress (e.g. when a child restarts a topic). */

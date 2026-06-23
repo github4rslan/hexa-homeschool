@@ -33,6 +33,8 @@ export default async function ChildLessonPage({
     : null;
   const voiceId = child?.voice_id ?? null;
   const accent = child?.accent ?? null;
+  // Auto-narration preference — default ON (legacy-safe: undefined ⇒ on).
+  const narrationAutoplay = child?.narration_autoplay !== false;
 
   // Resolve the topic: explicit ?topic= wins; otherwise the child's first
   // in-band maths topic (band-aware), falling back to the global first topic.
@@ -94,6 +96,7 @@ export default async function ChildLessonPage({
         curriculumTopic={topicDoc.topic_tag}
         voiceId={voiceId}
         accent={accent}
+        narrationAutoplay={narrationAutoplay}
         savedProgress={savedProgress}
         firstName={firstName}
         resumeKey={resumeKey}

@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Check, Volume2, Loader2, Palette } from "lucide-react";
+import { ArrowLeft, Check, Volume2, Loader2, Palette, BookOpenText } from "lucide-react";
 import type { AccentPreset } from "@/lib/child/accents";
 import { saveChildPreferences } from "@/app/(child)/learn/my-stuff/actions";
 
@@ -27,18 +27,26 @@ export function MyStuffPanel({
   accents,
   currentVoiceId,
   currentAccent,
+  currentNarrationAutoplay = true,
   onSave,
 }: {
   voices: Voice[];
   accents: AccentPreset[];
   currentVoiceId: string;
   currentAccent: string;
+  /** Child's "read questions to me" preference (auto-narration). */
+  currentNarrationAutoplay?: boolean;
   /** Injected in tests; defaults to the real server action. */
-  onSave?: (voiceId: string, accent: string) => Promise<{ ok: boolean }>;
+  onSave?: (
+    voiceId: string,
+    accent: string,
+    narrationAutoplay: boolean,
+  ) => Promise<{ ok: boolean }>;
 }) {
   const router = useRouter();
   const [voiceId, setVoiceId] = useState(currentVoiceId);
   const [accent, setAccent] = useState(currentAccent);
+  const [readAloud, setReadAloud] = useState(currentNarrationAutoplay);
   const [previewing, setPreviewing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -72,7 +80,11 @@ export function MyStuffPanel({
     setSaving(true);
     setSaved(false);
     try {
-      const res = await (onSave ?? saveChildPreferences)(voiceId, accent);
+      const res = await (onSave ?? saveChildPreferences)(
+        voiceId,
+        accent,
+        readAloud,
+      );
       if (res.ok) {
         setSaved(true);
         // Re-fetch the learn hub so the new accent applies immediately.
@@ -152,6 +164,44 @@ export function MyStuffPanel({
             );
           })}
         </div>
+      </section>
+
+      {/* Read aloud */}
+      <section className="mb-10">
+        <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold text-fog-100">
+          <BookOpenText className="h-6 w-6 text-fog-300" /> Reading help
+        </h2>
+        <button
+          type="button"
+          onClick={() => setReadAloud((v) => !v)}
+          role="switch"
+          aria-checked={readAloud}
+          className="child-panel child-touch flex w-full items-center gap-4 p-5 text-left"
+        >
+          <span
+            className={[
+              "relative flex h-8 w-14 shrink-0 items-center rounded-full transition-colors",
+              readAloud ? "bg-violet-500" : "bg-white/15",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "absolute h-6 w-6 rounded-full bg-white transition-transform",
+                readAloud ? "translate-x-7" : "translate-x-1",
+              ].join(" ")}
+            />
+          </span>
+          <span>
+            <span className="block text-xl font-semibold text-fog-50">
+              Read questions to me
+            </span>
+            <span className="block text-base text-fog-400">
+              {readAloud
+                ? "I'll read each question out loud for you."
+                : "Questions stay quiet — tap Listen any time you want to hear one."}
+            </span>
+          </span>
+        </button>
       </section>
 
       {/* Accent */}

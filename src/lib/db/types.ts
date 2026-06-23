@@ -90,6 +90,11 @@ export interface ChildDoc {
   voice_id?: string | null;
   /** Child-chosen child-mode accent preset id (see lib/child/accents.ts). */
   accent?: string | null;
+  /**
+   * Auto-read questions aloud on appearance (accessibility). Optional +
+   * legacy-safe: undefined ⇒ ON (it helps the youngest and SEND learners).
+   */
+  narration_autoplay?: boolean;
   created_at: Date;
   updated_at: Date;
 }
