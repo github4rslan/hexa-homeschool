@@ -145,7 +145,7 @@ linking).
 |---|---|---|
 | db | `mongodb.ts`, `db/repo.ts`, `db/types.ts` | Pooled client, canonical `Collections` map, the **only** data-access layer, document shapes |
 | auth | `auth/session.ts`, `auth/password.ts`, `auth/middleware.ts` | JWT sessions (HS256, `hexa_session` httpOnly cookie, 7-day expiry), bcrypt hashing |
-| ai | `ai/config.ts`, `ai/teaching-agent.ts` | OpenAI config + thresholds, Teaching Agent + Checker pipeline |
+| ai | `ai/config.ts`, `ai/teaching-agent.ts`, `ai/visual-*` | OpenAI config + thresholds, Teaching Agent + Checker pipeline, Visual Agent + Checker pipeline |
 | safety | `safety/escalation.ts` | Distress-phrase matcher → freeze, log, notify parent |
 | engine | `engine/exam-decision.ts` | Pure deterministic exam-path engine (age 13+, Paths A–D) |
 | compliance | `compliance/portfolio.ts` | Verified portfolio / dossier generation with secure hash |

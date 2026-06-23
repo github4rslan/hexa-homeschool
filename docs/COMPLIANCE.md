@@ -25,7 +25,7 @@ External data processors and what they touch:
 | MongoDB Atlas | System of record | All | Yes (region-gated) |
 | Cloudinary | Media (images, lesson audio, work, PDFs) | Uploaded media | Yes |
 | Brevo | Transactional + lifecycle email | Parent email/name | No |
-| OpenAI | Teaching Agent + Checker | Lesson prompts/answers (transient) | Indirectly (no identity sent) |
+| OpenAI | Teaching Agent + Checker; Visual Agent + Visual Checker | Lesson prompts/answers and AI image candidates (transient) | Indirectly (no identity sent) |
 | ElevenLabs | TTS narration + STT transcription | Lesson text / spoken-answer audio (STT transient) | Indirectly (no identity sent) |
 | Stripe | Subscription billing | Parent billing details | No |
 | Twilio | Immediate-severity safety SMS | Parent phone number + a calm alert (no child-written content) | No — alert names the child first name only, no distress detail over SMS |
@@ -57,6 +57,16 @@ child-scoped query). Treat any code path that touches child collections outside
 - AI invocations are logged per call (`ai_invocations`) — supports demonstrating
   that AI output served to children passed validation
 - Dossiers carry a verification hash and generation timestamp
+
+## DPIA Note — AI Lesson Visuals
+
+Per-question visuals are opt-in (`AI_VISUALS_ENABLED=true`) and fully automated:
+Visual Agent generation → image moderation → Visual Checker relevance/safety
+gate → render, or omit. A child never sees unchecked image output. Failed,
+flagged, rate-limited, unconfigured or kill-switched paths render the question
+with no image. Checked visuals are cached in Cloudinary with no child identity;
+parents/admins can flag a cached visual, which withdraws it from serving by
+setting `is_public=false` and `meta.flagged=true`.
 
 ## Data Rights (UK GDPR)
 

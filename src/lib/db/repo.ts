@@ -2277,6 +2277,26 @@ export async function findMediaByHash(
   return col.findOne({ use_case: useCase, content_hash: contentHash });
 }
 
+/** Withdraw all cached AI visuals for a question; flagged images are not served. */
+export async function flagQuestionVisuals(
+  questionId: string,
+  reason = "reported",
+): Promise<number> {
+  const col = await getCollection<MediaDoc>(Collections.media);
+  const result = await col.updateMany(
+    { use_case: "question_visual", "meta.question_id": questionId },
+    {
+      $set: {
+        is_public: false,
+        "meta.flagged": "true",
+        "meta.flag_reason": reason.slice(0, 80),
+        "meta.flagged_at": new Date().toISOString(),
+      },
+    },
+  );
+  return result.modifiedCount;
+}
+
 /** Ownership check exposed for media routes that operate on a child. */
 export async function parentOwnsChild(
   parentId: string,
