@@ -6,6 +6,7 @@ import {
   buildMockPaper,
   currentBandForSubject,
   childFloorBand,
+  hasMockThisPeriod,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
@@ -36,6 +37,11 @@ export default async function MockSubjectPage({
   if (!parentId) redirect(`/login?redirect=/learn/mock/${subject}`);
   const child = await getActiveChild(parentId, await readActiveChildId());
   if (!child?._id) redirect("/dashboard");
+
+  // One honest attempt per period: if this subject's mock is already done this
+  // period, never build a fresh paper — send the child to their saved result.
+  const mockState = await hasMockThisPeriod(parentId, child._id, subject);
+  if (mockState.taken) redirect("/learn/mock");
 
   const paper = await buildMockPaper(child._id, subject, 10);
   // No questions available for this subject yet — send back to the hub.
