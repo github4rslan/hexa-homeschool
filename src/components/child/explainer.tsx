@@ -6,6 +6,7 @@ import { Play, Pause, Loader2, ArrowRight, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { accentPreset } from "@/lib/child/accents";
 import { useNarration } from "@/lib/child/use-narration";
+import { buildExplainerNarration } from "@/lib/child/narration-copy";
 import { cn } from "@/lib/utils";
 
 /**
@@ -38,7 +39,12 @@ export function Explainer({
 }) {
   const accent = accentPreset(accentId);
   const narration = useNarration(voiceId, keyStage);
-  const narrationText = `${title}. ${summary}. ${points.join(". ")}`;
+  const narrationText = buildExplainerNarration({
+    title,
+    summary,
+    points,
+    keyStage,
+  });
   const autoplayedRef = useRef(false);
 
   // Auto-read the explainer when it appears (once), if the child wants it.

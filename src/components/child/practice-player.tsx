@@ -31,6 +31,7 @@ import {
 } from "@/lib/child/interactions";
 import { accentPreset, type AccentPreset } from "@/lib/child/accents";
 import { useNarration } from "@/lib/child/use-narration";
+import { buildQuestionNarration } from "@/lib/child/narration-copy";
 import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
 
@@ -164,6 +165,13 @@ export function PracticePlayer({
 
   const question = questions[step];
   const complete = step >= questions.length;
+  const narrationText = question
+    ? buildQuestionNarration({
+        prompt: question.prompt,
+        options: question.options,
+        keyStage,
+      })
+    : "";
 
   const interaction: InteractionDef = question
     ? question.interaction ?? { type: "mcq" }
@@ -203,9 +211,9 @@ export function PracticePlayer({
     if (narratedStepRef.current === step) return;
     if (silencedStepRef.current === step) return;
     narratedStepRef.current = step;
-    void narration.playText(question.prompt);
+    void narration.playText(narrationText);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, question?.prompt, complete, revealed, autoplayOn]);
+  }, [step, narrationText, complete, revealed, autoplayOn]);
 
   // Warm the NEXT step's narration while the child works on this one, so the
   // first play after "Keep going" is instant (cached repeats are already free).
@@ -213,7 +221,15 @@ export function PracticePlayer({
   useEffect(() => {
     if (!autoplayOn) return;
     const upcoming = questions[step + 1];
-    if (upcoming) narration.prefetch(upcoming.prompt);
+    if (upcoming) {
+      narration.prefetch(
+        buildQuestionNarration({
+          prompt: upcoming.prompt,
+          options: upcoming.options,
+          keyStage,
+        }),
+      );
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, autoplayOn]);
 
@@ -475,7 +491,7 @@ export function PracticePlayer({
   /** Replay (or pause) the current question — the manual "Listen" control. */
   function listen() {
     if (!question) return;
-    void narration.toggle(question.prompt);
+    void narration.toggle(narrationText);
   }
 
   /** First answering gesture on a step → go quiet so the child can think. */
@@ -496,7 +512,7 @@ export function PracticePlayer({
     if (next) {
       silencedStepRef.current = null;
       narratedStepRef.current = step;
-      if (question) void narration.playText(question.prompt);
+      if (question) void narration.playText(narrationText);
     } else {
       narration.stop();
     }

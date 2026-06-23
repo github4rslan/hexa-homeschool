@@ -64,12 +64,12 @@ type BTuple = [
 const QUESTIONS_BY_TOPIC: Record<string, BTuple[]> = {
   // ════════════ MATHS · KS2 ════════════
   maths_ks2_arithmetic: [
-    [1, "practice", "What is 7 × 8?", ["54", "56", "49", "63"], 1, "Seven eights are 56."],
-    [1, "practice", "What is 45 + 38?", ["83", "73", "85", "82"], 0, "45 + 38 = 83."],
-    [2, "practice", "What is 90 − 27?", ["63", "73", "67", "53"], 0, "90 − 27 = 63."],
-    [1, "mastery", "What is 6 × 9?", ["54", "56", "63", "48"], 0, "Six nines are 54."],
-    [2, "mastery", "What is 124 + 59?", ["183", "173", "184", "193"], 0, "124 + 59 = 183."],
-    [2, "mastery", "What is 100 − 64?", ["36", "46", "34", "44"], 0, "100 − 64 = 36."],
+    [1, "practice", "What is 7 × 8?", ["54", "56", "49", "63"], 1, "Seven groups of 8 make 56."],
+    [1, "practice", "What is 45 + 38?", ["83", "73", "85", "82"], 0, "Add 30 to 45 to get 75. Then add 8 more to get 83."],
+    [2, "practice", "What is 90 − 27?", ["63", "73", "67", "53"], 0, "Take away 20 from 90 to get 70. Then take away 7 more to get 63."],
+    [1, "mastery", "What is 6 × 9?", ["54", "56", "63", "48"], 0, "Six groups of 9 make 54."],
+    [2, "mastery", "What is 124 + 59?", ["183", "173", "184", "193"], 0, "Add 60 to 124 to get 184. Then take away 1, so the answer is 183."],
+    [2, "mastery", "What is 100 − 64?", ["36", "46", "34", "44"], 0, "Let's take away 64 from 100, step by step. Take away 60 to get 40, then take away 4 more to get 36."],
   ],
   maths_ks2_fractions: [
     [1, "practice", "What is ½ of 16?", ["8", "6", "4", "12"], 0, "Half of 16 is 8."],
