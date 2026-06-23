@@ -1,16 +1,17 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Play, Pause, Loader2, ArrowRight, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { accentPreset } from "@/lib/child/accents";
+import { useNarration } from "@/lib/child/use-narration";
 import { cn } from "@/lib/utils";
 
 /**
  * Explainer step (Brief: Daily Flow step 2). Phase-1 uses a clear written
- * explainer with optional ElevenLabs narration ("Play"). Video lands in
- * Stage 4 via Cloudinary. Big, calm, full playback control.
+ * explainer with natural-voice narration that auto-plays on appearance (Wave 4)
+ * and a Play/Pause control to replay it. Big, calm, fully controllable.
  */
 export function Explainer({
   title,
@@ -19,6 +20,7 @@ export function Explainer({
   onContinue,
   voiceId,
   accent: accentId,
+  autoplay = true,
 }: {
   title: string;
   summary: string;
@@ -28,57 +30,27 @@ export function Explainer({
   voiceId?: string | null;
   /** Child-chosen accent preset id (drives the icon tile + play button). */
   accent?: string | null;
+  /** Whether to auto-read the explainer on appearance (child preference). */
+  autoplay?: boolean;
 }) {
   const accent = accentPreset(accentId);
-  const [playing, setPlaying] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const urlRef = useRef<string | null>(null);
+  const narration = useNarration(voiceId);
+  const narrationText = `${title}. ${summary}. ${points.join(". ")}`;
+  const autoplayedRef = useRef(false);
 
-  const cleanup = useCallback(() => {
-    audioRef.current?.pause();
-    if (urlRef.current) URL.revokeObjectURL(urlRef.current);
-    audioRef.current = null;
-    urlRef.current = null;
-  }, []);
+  // Auto-read the explainer when it appears (once), if the child wants it.
+  useEffect(() => {
+    if (!autoplay || autoplayedRef.current) return;
+    autoplayedRef.current = true;
+    void narration.playText(narrationText);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoplay]);
 
-  async function toggle() {
-    if (audioRef.current && !audioRef.current.paused) {
-      audioRef.current.pause();
-      setPlaying(false);
-      return;
-    }
-    if (audioRef.current) {
-      void audioRef.current.play();
-      setPlaying(true);
-      return;
-    }
-    setLoading(true);
-    try {
-      const narration = `${title}. ${summary}. ${points.join(". ")}`;
-      const res = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: narration.slice(0, 1200),
-          ...(voiceId ? { voiceId } : {}),
-        }),
-      });
-      if (!res.ok) return;
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      urlRef.current = url;
-      const audio = new Audio(url);
-      audio.onended = () => setPlaying(false);
-      audioRef.current = audio;
-      await audio.play();
-      setPlaying(true);
-    } catch {
-      /* narration optional */
-    } finally {
-      setLoading(false);
-    }
+  function toggle() {
+    void narration.toggle(narrationText);
   }
+  const playing = narration.playing;
+  const loading = narration.loading;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -148,7 +120,7 @@ export function Explainer({
         <div className="flex justify-end">
           <Button
             onClick={() => {
-              cleanup();
+              narration.stop();
               onContinue();
             }}
             variant="child"
