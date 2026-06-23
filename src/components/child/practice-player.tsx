@@ -28,6 +28,7 @@ import {
   type SavedProgress,
 } from "@/lib/child/interactions";
 import { accentPreset, type AccentPreset } from "@/lib/child/accents";
+import { useNarration } from "@/lib/child/use-narration";
 import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
 
@@ -126,9 +127,12 @@ export function PracticePlayer({
   /** Safety freeze (child-safety rule 2): terminal — replaces the lesson UI. */
   const [frozen, setFrozen] = useState<string | null>(null);
 
-  const [audioLoading, setAudioLoading] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioUrlRef = useRef<string | null>(null);
+  // Narration engine (auto-play + replay) over the existing /api/tts contract.
+  const narration = useNarration(voiceId);
+  /** Which step we've already auto-narrated, so re-renders don't replay it. */
+  const narratedStepRef = useRef<number | null>(null);
+  /** First answering gesture per step silences narration ("go quiet to think"). */
+  const silencedStepRef = useRef<number | null>(null);
 
   // ── Speak-your-answer (STT) — mcq only ──
   const [speechSupported, setSpeechSupported] = useState(false);
@@ -160,18 +164,6 @@ export function PracticePlayer({
     ? buildHintLadder({ hints: question.hints, explanation: question.explanation })
     : [];
 
-  const cleanupAudio = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    if (audioUrlRef.current) {
-      URL.revokeObjectURL(audioUrlRef.current);
-      audioUrlRef.current = null;
-    }
-  }, []);
-  useEffect(() => cleanupAudio, [cleanupAudio]);
-
   const stopRecorder = useCallback(() => {
     if (recordTimerRef.current) {
       clearTimeout(recordTimerRef.current);
@@ -190,6 +182,20 @@ export function PracticePlayer({
         !!navigator.mediaDevices?.getUserMedia,
     );
   }, []);
+
+  // Auto-narrate the prompt when a new step appears — read the question TO the
+  // child, then go quiet. Once per step (a re-render won't replay it); skipped
+  // while a step is revealed/answered. Sticky activation from the tap that
+  // opened the lesson satisfies the browser autoplay policy; if the very first
+  // clip is still blocked it fails silently and the "Listen" control remains.
+  useEffect(() => {
+    if (!question || complete || revealed) return;
+    if (narratedStepRef.current === step) return;
+    if (silencedStepRef.current === step) return;
+    narratedStepRef.current = step;
+    void narration.playText(question.prompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, question?.prompt, complete, revealed]);
 
   // Resume once on mount: reconcile the server copy (props) with a same-device
   // localStorage copy (which may be a step ahead if a server write lagged), then
@@ -288,7 +294,7 @@ export function PracticePlayer({
       };
       if (data.frozen) {
         stopRecorder();
-        cleanupAudio();
+        narration.stop();
         setFrozen(data.message ?? "");
         return;
       }
@@ -371,7 +377,7 @@ export function PracticePlayer({
       const data = (await res.json()) as { frozen?: boolean; message?: string };
       if (data.frozen) {
         stopRecorder();
-        cleanupAudio();
+        narration.stop();
         setFrozen(data.message ?? "");
         return true;
       }
@@ -426,7 +432,7 @@ export function PracticePlayer({
   }
 
   function next() {
-    cleanupAudio();
+    narration.stop();
     stopRecorder();
     const nextStep = step + 1;
     // Autosave the new position (or clear once the lesson is finished).
@@ -446,33 +452,17 @@ export function PracticePlayer({
     setSttNotice(null);
   }
 
-  async function listen() {
+  /** Replay (or pause) the current question — the manual "Listen" control. */
+  function listen() {
     if (!question) return;
-    if (audioRef.current) {
-      void audioRef.current.play();
-      return;
-    }
-    setAudioLoading(true);
-    try {
-      const res = await fetch("/api/tts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: question.prompt,
-          ...(voiceId ? { voiceId } : {}),
-        }),
-      });
-      if (!res.ok) return;
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      audioUrlRef.current = url;
-      audioRef.current = new Audio(url);
-      await audioRef.current.play();
-    } catch {
-      /* narration is optional — silent fail */
-    } finally {
-      setAudioLoading(false);
-    }
+    void narration.toggle(question.prompt);
+  }
+
+  /** First answering gesture on a step → go quiet so the child can think. */
+  function onAnswerStart() {
+    if (silencedStepRef.current === step) return;
+    silencedStepRef.current = step;
+    narration.stop();
   }
 
   // ── Safety freeze: replaces the entire lesson UI ──
@@ -609,10 +599,10 @@ export function PracticePlayer({
             )}
             <button
               onClick={listen}
-              disabled={audioLoading}
+              disabled={narration.loading}
               className="child-touch inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base text-fog-200 hover:border-white/30 disabled:opacity-50"
             >
-              {audioLoading ? (
+              {narration.loading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <Volume2 className="h-5 w-5" />
@@ -636,18 +626,22 @@ export function PracticePlayer({
           {question.prompt}
         </h1>
 
-        <Interaction
-          key={step}
-          ref={interactionRef}
-          options={question.options}
-          correctIndex={question.correctIndex}
-          interaction={interaction}
-          accent={accent}
-          reveal={revealed}
-          wasCorrect={isCorrect}
-          onReadyChange={setReady}
-          forceMcqSelect={spokenSelect}
-        />
+        {/* The first answering gesture silences narration so it never plays
+            over a child who is actively working. */}
+        <div onPointerDownCapture={onAnswerStart} onKeyDownCapture={onAnswerStart}>
+          <Interaction
+            key={step}
+            ref={interactionRef}
+            options={question.options}
+            correctIndex={question.correctIndex}
+            interaction={interaction}
+            accent={accent}
+            reveal={revealed}
+            wasCorrect={isCorrect}
+            onReadyChange={setReady}
+            forceMcqSelect={spokenSelect}
+          />
+        </div>
 
         {/* Spoken-answer feedback (mcq) */}
         {(spoken || sttNotice) && !revealed && (
