@@ -194,6 +194,7 @@ export type MediaUseCase =
   | "marketing"
   | "child_work"
   | "lesson_audio"
+  | "question_visual"
   | "resource";
 
 export interface MediaDoc {

@@ -44,6 +44,7 @@ export const HEXA_FOLDERS = {
   marketing: "hexa/marketing",
   child_work: "hexa/work",
   lesson_audio: "hexa/audio",
+  question_visual: "hexa/question-visuals",
   resource: "hexa/resources",
 } as const;
 
@@ -151,9 +152,11 @@ export function cloudinaryThumb(url: string, width?: number): string {
 export async function uploadBytes(input: {
   bytes: ArrayBuffer;
   useCase: MediaUseCase;
-  resourceType: "video" | "raw"; // audio uploads as video resource type
+  resourceType: "image" | "video" | "raw";
   authenticated: boolean;
   publicIdHint?: string;
+  contentType?: string;
+  filename?: string;
 }): Promise<{ publicId: string; secureUrl: string }> {
   const cfg = getCloudinaryConfig();
   const timestamp = Math.floor(Date.now() / 1000);
@@ -170,8 +173,8 @@ export async function uploadBytes(input: {
   const form = new FormData();
   form.append(
     "file",
-    new Blob([input.bytes], { type: "audio/mpeg" }),
-    "audio.mp3",
+    new Blob([input.bytes], { type: input.contentType ?? "application/octet-stream" }),
+    input.filename ?? "asset.bin",
   );
   form.append("api_key", cfg.apiKey);
   form.append("timestamp", String(timestamp));

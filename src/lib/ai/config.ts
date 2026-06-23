@@ -19,6 +19,11 @@ export const TEACHING_MODEL = "gpt-4o-mini";
 /** Factual-confidence threshold the Teaching Checker must clear (brief: 95%). */
 export const TEACHING_CONFIDENCE_THRESHOLD = 0.95;
 
+/** Fully automated per-question educational visuals. */
+export const VISUAL_IMAGE_MODEL = "gpt-image-1";
+export const VISUAL_CHECKER_MODEL = "gpt-4o-mini";
+export const VISUAL_CHECKER_CONFIDENCE_THRESHOLD = 0.95;
+
 /** ElevenLabs configuration for lesson narration. */
 export const ELEVENLABS_API_BASE = "https://api.elevenlabs.io/v1";
 /**
