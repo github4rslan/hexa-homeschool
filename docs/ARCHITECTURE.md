@@ -63,6 +63,21 @@ button anywhere. Completion is per child and reflected at every entry point
 evaluations counts as completed and is back-filled. Mid-run (not yet saved) is
 NOT locked. There is deliberately no child or parent reset path.
 
+**Assessment integrity model.** Three assessment types, three attempt rules,
+enforced server-side via `repo.ts` (ownership-checked) — uninflated metrics for
+the trajectory and the LA portfolio:
+
+| Assessment | Attempts | Lock |
+|---|---|---|
+| Diagnostic | once **ever** | `ChildDoc.diagnostic_completed_at` (set once; see above) |
+| Mock exam | once **per period** (weekly) | `recordMockResult` refuses a second write for the same child + subject + period; `getMockState` / `hasMockThisPeriod` drive the hub tiles + run-page guard; cadence in `lib/engine/assessment-period.ts` |
+| Mastery check | **unlimited** | deliberately re-attemptable (fail → topic returns to rotation) — never locked |
+
+A completed mock shows a calm read-only result (`MockResultView`, reusing the
+shared `MockGradeReveal`) with the next-available date and forward CTAs — no
+retake. The result is the period's first recorded attempt, read back (never
+recomputed or best-of-many).
+
 Empty/cold states never strand the user: the zero-children dashboard offers
 "Add your first child"; the no-child `/schedule` offers "Add a child"; the
 no-lessons activity feed offers "Start the diagnostic".

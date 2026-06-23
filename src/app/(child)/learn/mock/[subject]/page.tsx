@@ -11,6 +11,7 @@ import {
 import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
 import { MockExamPlayer } from "@/components/child/mock-exam-player";
+import { MockResultView } from "@/components/child/mock-result-view";
 
 export const metadata: Metadata = { title: "Mock exam" };
 export const dynamic = "force-dynamic";
@@ -39,9 +40,25 @@ export default async function MockSubjectPage({
   if (!child?._id) redirect("/dashboard");
 
   // One honest attempt per period: if this subject's mock is already done this
-  // period, never build a fresh paper — send the child to their saved result.
+  // period, never build a fresh paper — show the saved, read-only result.
   const mockState = await hasMockThisPeriod(parentId, child._id, subject);
-  if (mockState.taken) redirect("/learn/mock");
+  if (mockState.taken) {
+    const nextAvailableLabel = mockState.nextAvailable.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      timeZone: "UTC",
+    });
+    return (
+      <div className="mx-auto max-w-2xl">
+        <MockResultView
+          subjectLabel={SUBJECT_LABEL[subject]}
+          indicativeGrade={mockState.result?.indicativeGrade ?? ""}
+          scorePct={mockState.result?.scorePct ?? 0}
+          nextAvailableLabel={nextAvailableLabel}
+        />
+      </div>
+    );
+  }
 
   const paper = await buildMockPaper(child._id, subject, 10);
   // No questions available for this subject yet — send back to the hub.
