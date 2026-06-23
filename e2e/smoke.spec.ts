@@ -40,12 +40,13 @@ test.describe("public pages", () => {
     expect(errors, errors.join("\n")).toHaveLength(0);
   });
 
-  test("pricing shows three tiers", async ({ page }) => {
+  test("pricing shows the plan tiers", async ({ page }) => {
     await page.goto("/pricing");
-    // Three plan names appear somewhere on the page.
-    await expect(page.getByText(/diagnostic/i).first()).toBeVisible();
-    await expect(page.getByText(/complete/i).first()).toBeVisible();
-    await expect(page.getByText(/partner/i).first()).toBeVisible();
+    // The two paid plans render as headings (the free Diagnostic tier is the
+    // default everyone starts on, not a paid card). Scope to headings so
+    // descriptive copy / hidden spans can't false-match.
+    await expect(page.getByRole("heading", { name: /complete/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /partner/i })).toBeVisible();
   });
 
   test("sitemap and robots respond 200", async ({ request }) => {
