@@ -11,13 +11,15 @@ export interface SavePrefsResult {
 }
 
 /**
- * Save the child's voice + accent choices. Validates both against the curated
- * allow-lists (never trust a raw id), then persists via the ownership-checked
- * repo setter. No-ops gracefully without a session/child.
+ * Save the child's voice + accent + "read questions to me" choices. Validates
+ * voice/accent against the curated allow-lists (never trust a raw id), then
+ * persists via the ownership-checked repo setter. No-ops gracefully without a
+ * session/child.
  */
 export async function saveChildPreferences(
   voiceId: string,
   accent: string,
+  narrationAutoplay?: boolean,
 ): Promise<SavePrefsResult> {
   const parentId = await currentParentId();
   if (!parentId) return { ok: false };
@@ -27,6 +29,8 @@ export async function saveChildPreferences(
   const ok = await setChildPreferences(parentId, child._id, {
     voiceId: isCuratedVoice(voiceId) ? voiceId : undefined,
     accent: isAccent(accent) ? accent : undefined,
+    narrationAutoplay:
+      typeof narrationAutoplay === "boolean" ? narrationAutoplay : undefined,
   });
   revalidatePath("/learn");
   return { ok };

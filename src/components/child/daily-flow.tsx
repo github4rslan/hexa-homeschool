@@ -24,6 +24,7 @@ export function DailyFlow({
   curriculumTopic,
   voiceId,
   accent: accentId,
+  narrationAutoplay = true,
   savedProgress,
   firstName,
   resumeKey,
@@ -37,6 +38,8 @@ export function DailyFlow({
   voiceId?: string | null;
   /** Child-chosen accent preset id (drives colour throughout). */
   accent?: string | null;
+  /** Child's "read questions to me" preference (auto-narration). */
+  narrationAutoplay?: boolean;
   /** Server-synced mid-lesson progress for a warm resume (MongoDB). */
   savedProgress?: SavedProgress | null;
   /** Child's first name, for the warm re-entry card. */
@@ -102,6 +105,7 @@ export function DailyFlow({
               onContinue={() => setPhase("practice")}
               voiceId={voiceId}
               accent={accentId}
+              autoplay={narrationAutoplay}
             />
           ) : (
             <PracticePlayer
@@ -109,6 +113,7 @@ export function DailyFlow({
               curriculumTopic={curriculumTopic}
               voiceId={voiceId}
               accent={accentId}
+              narrationAutoplay={narrationAutoplay}
               savedProgress={savedProgress}
               firstName={firstName}
               resumeKey={resumeKey}

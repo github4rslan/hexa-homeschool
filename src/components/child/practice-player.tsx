@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Volume2,
+  VolumeX,
   Mic,
   Square,
   Loader2,
@@ -19,6 +20,7 @@ import {
   logLessonCompletion,
   saveLessonProgressAction,
   clearLessonProgressAction,
+  setNarrationAutoplayAction,
 } from "@/app/(dashboard)/lesson/actions";
 import {
   buildHintLadder,
@@ -87,6 +89,7 @@ export function PracticePlayer({
   curriculumTopic,
   voiceId,
   accent: accentId,
+  narrationAutoplay = true,
   savedProgress,
   firstName,
   resumeKey,
@@ -97,6 +100,8 @@ export function PracticePlayer({
   voiceId?: string | null;
   /** Child-chosen accent preset id (threads colour through every surface). */
   accent?: string | null;
+  /** Child's "read questions to me" preference (auto-narration default-on). */
+  narrationAutoplay?: boolean;
   /** Server-synced mid-lesson progress (MongoDB) for a warm resume. */
   savedProgress?: SavedProgress | null;
   /** Child's first name, for the warm re-entry card. */
@@ -129,6 +134,8 @@ export function PracticePlayer({
 
   // Narration engine (auto-play + replay) over the existing /api/tts contract.
   const narration = useNarration(voiceId);
+  /** Live "read questions to me" preference; the in-lesson toggle updates it. */
+  const [autoplayOn, setAutoplayOn] = useState(narrationAutoplay);
   /** Which step we've already auto-narrated, so re-renders don't replay it. */
   const narratedStepRef = useRef<number | null>(null);
   /** First answering gesture per step silences narration ("go quiet to think"). */
@@ -189,13 +196,13 @@ export function PracticePlayer({
   // opened the lesson satisfies the browser autoplay policy; if the very first
   // clip is still blocked it fails silently and the "Listen" control remains.
   useEffect(() => {
-    if (!question || complete || revealed) return;
+    if (!autoplayOn || !question || complete || revealed) return;
     if (narratedStepRef.current === step) return;
     if (silencedStepRef.current === step) return;
     narratedStepRef.current = step;
     void narration.playText(question.prompt);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, question?.prompt, complete, revealed]);
+  }, [step, question?.prompt, complete, revealed, autoplayOn]);
 
   // Resume once on mount: reconcile the server copy (props) with a same-device
   // localStorage copy (which may be a step ahead if a server write lagged), then
@@ -465,6 +472,24 @@ export function PracticePlayer({
     narration.stop();
   }
 
+  /**
+   * One-tap mute/unmute: flips "read questions to me", silences any current clip
+   * when turning off, reads the current prompt when turning on, and persists the
+   * preference (fire-and-forget). A child is never trapped in audio.
+   */
+  function toggleAutoplay() {
+    const next = !autoplayOn;
+    setAutoplayOn(next);
+    if (next) {
+      silencedStepRef.current = null;
+      narratedStepRef.current = step;
+      if (question) void narration.playText(question.prompt);
+    } else {
+      narration.stop();
+    }
+    void setNarrationAutoplayAction(next).catch(() => {});
+  }
+
   // ── Safety freeze: replaces the entire lesson UI ──
   if (frozen !== null) {
     return (
@@ -597,6 +622,26 @@ export function PracticePlayer({
                 {recording ? "Done" : "Speak"}
               </button>
             )}
+            {/* Always-reachable one-tap mute/unmute for auto-narration. */}
+            <button
+              onClick={toggleAutoplay}
+              aria-pressed={!autoplayOn}
+              aria-label={
+                autoplayOn ? "Mute reading aloud" : "Unmute reading aloud"
+              }
+              className={cn(
+                "child-touch inline-flex items-center justify-center rounded-2xl border px-4 text-base",
+                autoplayOn
+                  ? "border-white/10 bg-white/[0.03] text-fog-200 hover:border-white/30"
+                  : "border-amber-400/40 bg-amber-500/10 text-amber-200",
+              )}
+            >
+              {autoplayOn ? (
+                <Volume2 className="h-5 w-5" />
+              ) : (
+                <VolumeX className="h-5 w-5" />
+              )}
+            </button>
             <button
               onClick={listen}
               disabled={narration.loading}

@@ -2852,12 +2852,18 @@ export async function setParentPinHash(
 export async function setChildPreferences(
   parentId: string,
   childId: ObjectId,
-  prefs: { voiceId?: string | null; accent?: string | null },
+  prefs: {
+    voiceId?: string | null;
+    accent?: string | null;
+    narrationAutoplay?: boolean;
+  },
 ): Promise<boolean> {
   if (!(await assertOwnsChild(parentId, childId))) return false;
   const set: Partial<ChildDoc> = { updated_at: new Date() };
   if (prefs.voiceId !== undefined) set.voice_id = prefs.voiceId;
   if (prefs.accent !== undefined) set.accent = prefs.accent;
+  if (prefs.narrationAutoplay !== undefined)
+    set.narration_autoplay = prefs.narrationAutoplay;
   const col = await getCollection<ChildDoc>(Collections.children);
   const res = await col.updateOne({ _id: childId }, { $set: set });
   return res.matchedCount > 0;

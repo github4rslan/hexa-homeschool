@@ -22,6 +22,7 @@ export default async function MyStuffPage() {
         accents={ACCENTS}
         currentVoiceId={child.voice_id ?? ELEVENLABS_DEFAULT_VOICE_ID}
         currentAccent={child.accent ?? DEFAULT_ACCENT}
+        currentNarrationAutoplay={child.narration_autoplay !== false}
       />
     </div>
   );
