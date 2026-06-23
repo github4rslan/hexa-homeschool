@@ -11,9 +11,11 @@ import {
   questionVisualHash,
 } from "@/lib/ai/visual-cache";
 import { VISUAL_PROMPT_VERSION } from "@/lib/ai/visual-prompt";
+import { aiVisualsEnabled } from "@/lib/ai/visual-flags";
 import {
   currentParentId,
   findMediaByHash,
+  flagQuestionVisuals,
   getQuestionById,
   logInvocation,
   recordMedia,
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
   if (!parentId) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
+  if (!aiVisualsEnabled()) return noVisual();
 
   let body: { questionId?: unknown; keyStage?: unknown };
   try {
@@ -183,4 +186,41 @@ export async function POST(request: Request) {
     console.error("[/api/question-visual] failed:", err);
     return noVisual();
   }
+}
+
+export async function DELETE(request: Request) {
+  const parentId = await currentParentId();
+  if (!parentId) {
+    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+
+  let body: { questionId?: unknown; reason?: unknown };
+  try {
+    body = (await request.json()) as { questionId?: unknown; reason?: unknown };
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  const questionId =
+    typeof body.questionId === "string" ? body.questionId.trim() : "";
+  if (!questionId) {
+    return NextResponse.json(
+      { error: "'questionId' is required." },
+      { status: 400 },
+    );
+  }
+
+  const question = await getQuestionById(questionId);
+  if (!question?._id) {
+    return NextResponse.json({ ok: true, flagged: 0 });
+  }
+
+  const flagged = await flagQuestionVisuals(
+    questionId,
+    typeof body.reason === "string" ? body.reason : "reported",
+  );
+  return NextResponse.json(
+    { ok: true, flagged },
+    { headers: { "Cache-Control": "no-store" } },
+  );
 }

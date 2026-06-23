@@ -111,6 +111,26 @@ Route: `POST /api/stt` · Provider: ElevenLabs Scribe (`scribe_v1`)
 - Telemetry: logged to `ai_invocations` as agent `"STT"` (latency + freeze
   outcome only — never the transcript).
 
+## Visual Agent + Checker
+
+Route: `POST /api/question-visual` · Generation model:
+`VISUAL_IMAGE_MODEL` · Checker model: `VISUAL_CHECKER_MODEL`
+
+The Visual Agent is fully automated and generates only candidate images. A
+candidate is never cached or returned until the automated Visual Checker passes
+both gates:
+
+1. OpenAI image moderation (`omni-moderation-latest`)
+2. Vision relevance/safety check against the human-authored question, canonical
+   answer, topic and key stage
+
+Failure at any point returns `{ visual: null }`, so the lesson renders the
+question alone. Checked images are cached in Cloudinary as `question_visual`
+media keyed by question content + prompt version. `AI_VISUALS_ENABLED` is an
+opt-in kill switch; unset/false disables all visuals, including cached ones.
+`DELETE /api/question-visual` flags cached visuals for a question by setting
+`is_public=false` and `meta.flagged=true`; flagged images are never re-served.
+
 ## Configuration & Failure Modes
 
 - Keys: `OPENAI_API_KEY`, `ELEVENLABS_API_KEY` — missing keys throw
