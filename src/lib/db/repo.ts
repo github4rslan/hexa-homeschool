@@ -353,6 +353,42 @@ export async function releaseDiagnosticCompletion(
 }
 
 /**
+ * Parent-scoped diagnostic restart. Deletes only non-mock baseline evaluations
+ * and re-opens the set-once completion flag; mock-exam history is untouched.
+ */
+export async function restartDiagnosticBaseline(
+  parentId: string,
+  childId: ObjectId,
+): Promise<{ ok: boolean; deletedBaselineCount: number }> {
+  if (!(await assertOwnsChild(parentId, childId))) {
+    return { ok: false, deletedBaselineCount: 0 };
+  }
+
+  // Keep the child locked while old baseline rows are removed. Clearing the
+  // flag is the final write that deliberately re-opens the diagnostic.
+  const evaluations = await getCollection<EvaluationDoc>(Collections.evaluations);
+  const deleted = await evaluations.deleteMany({
+    child_id: childId,
+    mock_exam: false,
+  });
+  const children = await getCollection<ChildDoc>(Collections.children);
+  const updated = await children.updateOne(
+    { _id: childId },
+    {
+      $set: {
+        diagnostic_completed_at: null,
+        updated_at: new Date(),
+      },
+    },
+  );
+
+  return {
+    ok: updated.matchedCount === 1,
+    deletedBaselineCount: deleted.deletedCount,
+  };
+}
+
+/**
  * Whether the active child has completed the one-time diagnostic, with the
  * timestamp. Legacy-safe: a child with prior non-mock evaluations but no flag
  * counts as completed, and the flag is BACK-FILLED to the earliest such result
