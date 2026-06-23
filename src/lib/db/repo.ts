@@ -44,6 +44,7 @@ import {
   type KeyStage,
 } from "@/lib/engine/diagnostic-placement";
 import { currentBandFrom } from "@/lib/engine/band-progression";
+import { periodWindowFromWeekStart } from "@/lib/engine/assessment-period";
 
 /**
  * Data-access layer over MongoDB.
@@ -1302,6 +1303,10 @@ export async function recordMockResult(
   },
 ): Promise<boolean> {
   if (!(await assertOwnsChild(parentId, childId))) return false;
+  // Integrity: one honest attempt per subject per period. Refuse a second write
+  // for this child + subject within the current period (a double-click /
+  // browser-back can't chase a better grade). The first attempt is the record.
+  if (await hasMockThisPeriodInternal(childId, input.subject)) return false;
   const col = await getCollection<EvaluationDoc>(Collections.evaluations);
   await col.insertOne({
     child_id: childId,
@@ -1313,6 +1318,107 @@ export async function recordMockResult(
     created_at: new Date(),
   } as EvaluationDoc);
   return true;
+}
+
+// ── Mock attempt lock (one honest attempt per subject per period) ──
+
+export interface MockSubjectState {
+  subject: Subject;
+  taken: boolean;
+  /** This period's recorded result, read back (never a recomputation). */
+  result: { scorePct: number; indicativeGrade: string } | null;
+  /** When the next attempt unlocks (start of the next period). */
+  nextAvailable: Date;
+}
+
+/** This period's first mock evaluation for a child + subject, or null. */
+async function mockThisPeriod(
+  childId: ObjectId,
+  subject: Subject,
+): Promise<EvaluationDoc | null> {
+  const { start, next } = periodWindowFromWeekStart(currentWeekStart());
+  const col = await getCollection<EvaluationDoc>(Collections.evaluations);
+  return col.findOne(
+    {
+      child_id: childId,
+      subject,
+      mock_exam: true,
+      created_at: { $gte: start, $lt: next },
+    },
+    { sort: { created_at: 1 } }, // the first attempt of the period is the record
+  );
+}
+
+/** Internal (no ownership check) — only called from owned contexts. */
+async function hasMockThisPeriodInternal(
+  childId: ObjectId,
+  subject: Subject,
+): Promise<boolean> {
+  return !!(await mockThisPeriod(childId, subject));
+}
+
+/**
+ * Per-subject mock state for the active child this period: taken?, the recorded
+ * result, and when the next attempt unlocks. Ownership enforced.
+ */
+export async function getMockState(
+  parentId: string,
+  childId: ObjectId,
+): Promise<MockSubjectState[]> {
+  const { next } = periodWindowFromWeekStart(currentWeekStart());
+  const subjects: Subject[] = ["mathematics", "english", "science"];
+  if (!(await assertOwnsChild(parentId, childId))) {
+    return subjects.map((subject) => ({
+      subject,
+      taken: false,
+      result: null,
+      nextAvailable: next,
+    }));
+  }
+  return Promise.all(
+    subjects.map(async (subject): Promise<MockSubjectState> => {
+      const doc = await mockThisPeriod(childId, subject);
+      return {
+        subject,
+        taken: !!doc,
+        result: doc
+          ? {
+              scorePct: typeof doc.raw_score === "number" ? doc.raw_score : 0,
+              indicativeGrade: doc.model_predicted_grade ?? "",
+            }
+          : null,
+        nextAvailable: next,
+      };
+    }),
+  );
+}
+
+/**
+ * Whether the active child has already sat this period's mock for one subject,
+ * with the recorded result + next-available date. Drives the run-page guard.
+ * Ownership enforced.
+ */
+export async function hasMockThisPeriod(
+  parentId: string,
+  childId: ObjectId,
+  subject: Subject,
+): Promise<MockSubjectState> {
+  const { next } = periodWindowFromWeekStart(currentWeekStart());
+  if (!(await assertOwnsChild(parentId, childId))) {
+    return { subject, taken: false, result: null, nextAvailable: next };
+  }
+  const doc = await mockThisPeriod(childId, subject);
+  return {
+    subject,
+    taken: !!doc,
+    result: doc
+      ? {
+          scorePct: typeof doc.raw_score === "number" ? doc.raw_score : 0,
+          indicativeGrade: doc.model_predicted_grade ?? "",
+        }
+      : null,
+    nextAvailable: next,
+  };
 }
 
 // ── Spaced-repetition warm-up ────────────────────────────
