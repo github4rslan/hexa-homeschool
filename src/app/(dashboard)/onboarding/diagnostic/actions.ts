@@ -5,6 +5,7 @@ import {
   getActiveChild,
   insertEvaluations,
   markDiagnosticCompleted,
+  getDiagnosticCompletion,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { captureServer } from "@/lib/analytics/server";
@@ -35,6 +36,14 @@ export async function saveDiagnosticResults(
 
   const child = await getActiveChild(parentId, await readActiveChildId());
   if (!child?._id) return { persisted: false, reason: "No child profile yet." };
+
+  // Integrity guard: the diagnostic is one-time. If a baseline already exists
+  // (browser back, double-click, late submit), do NOT write a second one —
+  // the saved baseline is stable. The completion flag is the atomic lock.
+  const existing = await getDiagnosticCompletion(parentId, child._id);
+  if (existing.completed) {
+    return { persisted: true, reason: "Already completed." };
+  }
 
   const ok = await insertEvaluations(
     parentId,
