@@ -5,6 +5,7 @@ import {
   ELEVENLABS_MODEL,
   ELEVENLABS_DEFAULT_VOICE_ID,
   ELEVENLABS_VOICE_SETTINGS,
+  narrationSpeedForKeyStage,
   getElevenLabsKey,
   AiConfigError,
 } from "@/lib/ai/config";
@@ -54,9 +55,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
-  let body: { text?: unknown; voiceId?: unknown };
+  let body: { text?: unknown; voiceId?: unknown; keyStage?: unknown };
   try {
-    body = (await request.json()) as { text?: unknown; voiceId?: unknown };
+    body = (await request.json()) as {
+      text?: unknown;
+      voiceId?: unknown;
+      keyStage?: unknown;
+    };
   } catch {
     return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
   }
@@ -96,10 +101,17 @@ export async function POST(request: Request) {
     typeof body.voiceId === "string" && body.voiceId.trim()
       ? body.voiceId.trim()
       : ELEVENLABS_DEFAULT_VOICE_ID;
+  const keyStage =
+    typeof body.keyStage === "number" && [2, 3, 4].includes(body.keyStage)
+      ? body.keyStage
+      : undefined;
+  const speed = narrationSpeedForKeyStage(keyStage);
 
-  // Cache key: identical text + voice + model → identical audio.
+  // Cache key includes every input that changes the generated audio.
   const contentHash = createHash("sha256")
-    .update(`${ELEVENLABS_MODEL}:${voiceId}:${text}`)
+    .update(
+      `${ELEVENLABS_MODEL}:${voiceId}:${speed}:${JSON.stringify(ELEVENLABS_VOICE_SETTINGS)}:${text}`,
+    )
     .digest("hex");
 
   const useCloud = cloudinaryAvailable();
@@ -140,7 +152,10 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         text,
         model_id: ELEVENLABS_MODEL,
-        voice_settings: ELEVENLABS_VOICE_SETTINGS,
+        voice_settings: {
+          ...ELEVENLABS_VOICE_SETTINGS,
+          speed,
+        },
       }),
     });
 

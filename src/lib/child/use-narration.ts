@@ -37,7 +37,10 @@ export interface NarrationApi {
   loading: boolean;
 }
 
-export function useNarration(voiceId?: string | null): NarrationApi {
+export function useNarration(
+  voiceId?: string | null,
+  keyStage?: number,
+): NarrationApi {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   /** text → object URL of the fetched MP3 (revoked on unmount). */
   const cacheRef = useRef<Map<string, string>>(new Map());
@@ -76,6 +79,7 @@ export function useNarration(voiceId?: string | null): NarrationApi {
             body: JSON.stringify({
               text: text.slice(0, NARRATION_MAX_CHARS),
               ...(voiceId ? { voiceId } : {}),
+              ...(keyStage ? { keyStage } : {}),
             }),
           });
           if (!res.ok) return null; // 503/429/502 → silently unavailable
@@ -92,7 +96,7 @@ export function useNarration(voiceId?: string | null): NarrationApi {
       inflightRef.current.set(key, p);
       return p;
     },
-    [voiceId],
+    [voiceId, keyStage],
   );
 
   const stop = useCallback(() => {

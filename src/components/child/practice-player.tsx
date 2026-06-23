@@ -88,6 +88,7 @@ export function PracticePlayer({
   questions,
   curriculumTopic,
   voiceId,
+  keyStage,
   accent: accentId,
   narrationAutoplay = true,
   savedProgress,
@@ -98,6 +99,8 @@ export function PracticePlayer({
   curriculumTopic: string;
   /** Child-chosen narration voice; falls back to the server default when unset. */
   voiceId?: string | null;
+  /** Child's UK key stage, used only as a narration pace hint. */
+  keyStage?: number;
   /** Child-chosen accent preset id (threads colour through every surface). */
   accent?: string | null;
   /** Child's "read questions to me" preference (auto-narration default-on). */
@@ -133,7 +136,7 @@ export function PracticePlayer({
   const [frozen, setFrozen] = useState<string | null>(null);
 
   // Narration engine (auto-play + replay) over the existing /api/tts contract.
-  const narration = useNarration(voiceId);
+  const narration = useNarration(voiceId, keyStage);
   /** Live "read questions to me" preference; the in-lesson toggle updates it. */
   const [autoplayOn, setAutoplayOn] = useState(narrationAutoplay);
   /** Which step we've already auto-narrated, so re-renders don't replay it. */
