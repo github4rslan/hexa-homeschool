@@ -21,7 +21,23 @@ export const TEACHING_CONFIDENCE_THRESHOLD = 0.95;
 
 /** ElevenLabs configuration for lesson narration. */
 export const ELEVENLABS_API_BASE = "https://api.elevenlabs.io/v1";
-export const ELEVENLABS_MODEL = "eleven_multilingual_v2";
+/**
+ * Turbo v2.5 — a high-quality, low-latency model. Naturalness AND speed matter
+ * now that narration auto-plays on every step. The cache key includes the model
+ * id, so this change simply warms a fresh cache.
+ */
+export const ELEVENLABS_MODEL = "eleven_turbo_v2_5";
+/**
+ * Warm, natural read settings (shared by /api/tts). Slightly lower stability for
+ * gentle expressiveness, similarity kept high for the chosen voice, a light
+ * style for friendliness, and speaker boost for clarity — calm, not robotic.
+ */
+export const ELEVENLABS_VOICE_SETTINGS = {
+  stability: 0.4,
+  similarity_boost: 0.8,
+  style: 0.3,
+  use_speaker_boost: true,
+} as const;
 /** ElevenLabs Scribe — speech-to-text for spoken answers. */
 export const ELEVENLABS_STT_MODEL = "scribe_v1";
 /** "Sarah — Mature, Reassuring, Confident": an age-appropriate teaching voice. */

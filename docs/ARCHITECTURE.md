@@ -127,7 +127,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 | Collection | Doc | Purpose |
 |---|---|---|
 | `parents` | ParentDoc | Account, password hash, subscription tier, billing status, Stripe customer/subscription ids (synced by `/api/billing/webhook` only), email prefs (`weekly_digest_opt_out`, `weekly_plan_email_opt_out`, `escalation_alert_opt_out`, `marketing_emails_opt_out` — toggles in `/settings`), `lifecycle_emails_sent` (idempotency keys for onboarding emails), `two_factor_enabled`, `phone` (E.164, for immediate-severity safety SMS), `is_admin` legacy staff flag + `role` ("admin" | "support" — see `lib/auth/rbac.ts`), `token_version` (session invalidation — "sign out everywhere" / password change) |
-| `children` | ChildDoc | Profile, DOB, SEND indicators, target exam window, child-chosen personalisation (`voice_id`, `accent`) |
+| `children` | ChildDoc | Profile, DOB, SEND indicators, target exam window, child-chosen personalisation (`voice_id`, `accent`, `narration_autoplay` — auto read-aloud, default on) |
 | `evaluation_records` | EvaluationDoc | Diagnostic/mock results, predicted grades |
 | `instructional_logs` | LessonLogDoc | Per-lesson logs (phase, attempts, hints, mastery) |
 | `lesson_progress` | LessonProgressDoc | Within-lesson autosave (interactive daily flow): one row per child per topic (`step`, `score`, `total`) so an interrupted child resumes at the exact step. Deleted on completion — a finished lesson never resumes; pedagogical state only, never analytics |
@@ -213,6 +213,12 @@ actively interactive. Steps are authored as **data**, not per-problem code.
 - **Focus mode** (`FocusFrame`): an active lesson fades the branding chrome and
   centres content to ≥85% of the mobile viewport; the exit + parent-gate stay
   reachable. All of the above hold under `prefers-reduced-motion` and WCAG AA.
+- **Auto-narration** (`lib/child/use-narration.ts`): when a step appears its
+  prompt is read aloud in the child's chosen voice via `POST /api/tts` (reused —
+  no second TTS path). One clip at a time; it stops the moment the child starts
+  answering; the next step is prefetched for instant playback. Controlled by
+  `ChildDoc.narration_autoplay` (default on) — a My-stuff toggle plus a one-tap
+  in-lesson mute — and degrades silently when ElevenLabs is unconfigured.
 
 ## Quality & Monitoring
 

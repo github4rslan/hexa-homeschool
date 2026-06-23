@@ -72,12 +72,21 @@ clinical or behavioural profiling.
 
 ## Lesson Narration (TTS)
 
-Route: `POST /api/tts` · Provider: ElevenLabs (`eleven_multilingual_v2`,
-default voice "Sarah — Mature, Reassuring, Confident")
+Route: `POST /api/tts` · Provider: ElevenLabs (`eleven_turbo_v2_5` — high quality
++ low latency for per-step auto-play; default voice "Sarah — Mature, Reassuring,
+Confident"; warm `ELEVENLABS_VOICE_SETTINGS` in `lib/ai/config.ts`)
 
 - Input capped at 1,200 characters (ElevenLabs bills per character)
-- Generated audio is cached in Cloudinary, deduplicated by a hash of text + voice
-  (`content_hash` on MediaDoc); without Cloudinary it streams bytes uncached
+- Generated audio is cached in Cloudinary, deduplicated by a hash of
+  model + voice + text (`content_hash` on MediaDoc); without Cloudinary it
+  streams bytes uncached
+- **Auto-narration (Wave 4):** the child daily flow auto-plays the prompt when a
+  step appears via the `useNarration` hook (one clip at a time; stops when the
+  child starts answering; prefetches the next step). It reuses this route as-is —
+  same rate-limit, tier-gate, cache and 503 fallback — so narration degrades
+  silently when ElevenLabs is unconfigured. Controlled by
+  `ChildDoc.narration_autoplay` (default on) via the My-stuff toggle and a
+  one-tap in-lesson mute. No analytics in `(child)`.
 
 ## Speak Your Answer (STT)
 
