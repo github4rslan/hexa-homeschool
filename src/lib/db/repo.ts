@@ -304,18 +304,20 @@ export async function insertEvaluations(
 
 /**
  * Set the diagnostic-completion timestamp ONCE — the first full completion is
- * the baseline; an existing value is never overwritten (idempotent against a
- * late or repeat submit). Returns the effective completion time. Ownership
- * enforced.
+ * the baseline; an existing value is never overwritten. `claimed` is true only
+ * for the request that acquired the atomic lock, so concurrent or late submits
+ * cannot both insert a baseline. Ownership enforced.
  */
 export async function markDiagnosticCompleted(
   parentId: string,
   childId: ObjectId,
-): Promise<Date | null> {
-  if (!(await assertOwnsChild(parentId, childId))) return null;
+): Promise<{ at: Date | null; claimed: boolean }> {
+  if (!(await assertOwnsChild(parentId, childId))) {
+    return { at: null, claimed: false };
+  }
   const col = await getCollection<ChildDoc>(Collections.children);
   const now = new Date();
-  await col.updateOne(
+  const result = await col.updateOne(
     {
       _id: childId,
       $or: [
@@ -326,7 +328,28 @@ export async function markDiagnosticCompleted(
     { $set: { diagnostic_completed_at: now, updated_at: now } },
   );
   const doc = await col.findOne({ _id: childId });
-  return doc?.diagnostic_completed_at ?? null;
+  return {
+    at: doc?.diagnostic_completed_at ?? null,
+    claimed: result.modifiedCount === 1,
+  };
+}
+
+/**
+ * Release a just-acquired diagnostic lock when its baseline write is rejected.
+ * Matching the exact timestamp prevents this request clearing another lock.
+ */
+export async function releaseDiagnosticCompletion(
+  parentId: string,
+  childId: ObjectId,
+  claimedAt: Date,
+): Promise<boolean> {
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+  const col = await getCollection<ChildDoc>(Collections.children);
+  const result = await col.updateOne(
+    { _id: childId, diagnostic_completed_at: claimedAt },
+    { $set: { diagnostic_completed_at: null, updated_at: new Date() } },
+  );
+  return result.modifiedCount === 1;
 }
 
 /**

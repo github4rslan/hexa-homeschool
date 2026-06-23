@@ -5,6 +5,7 @@ import {
   getActiveChild,
   insertEvaluations,
   markDiagnosticCompleted,
+  releaseDiagnosticCompletion,
   getDiagnosticCompletion,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
@@ -45,22 +46,35 @@ export async function saveDiagnosticResults(
     return { persisted: true, reason: "Already completed." };
   }
 
-  const ok = await insertEvaluations(
-    parentId,
-    child._id,
-    outcomes.map((o) => ({
-      subject: o.subject,
-      raw_score: o.readiness,
-      model_predicted_grade: gradeFromBand(o.workingGrade),
-      confidence_interval: Math.min(0.99, Math.max(0.5, o.readiness / 100)),
-      mock_exam: false,
-    })),
-  );
+  // Acquire the set-once lock BEFORE inserting. Only the request that claims it
+  // may write the baseline, closing the concurrent/late-submit race.
+  const claim = await markDiagnosticCompleted(parentId, child._id);
+  if (!claim.claimed || !claim.at) {
+    return { persisted: true, reason: "Already completed." };
+  }
+
+  let ok = false;
+  try {
+    ok = await insertEvaluations(
+      parentId,
+      child._id,
+      outcomes.map((o) => ({
+        subject: o.subject,
+        raw_score: o.readiness,
+        model_predicted_grade: gradeFromBand(o.workingGrade),
+        confidence_interval: Math.min(0.99, Math.max(0.5, o.readiness / 100)),
+        mock_exam: false,
+      })),
+    );
+  } catch {
+    await releaseDiagnosticCompletion(parentId, child._id, claim.at);
+    return { persisted: false, reason: "Write failed." };
+  }
 
   if (ok) {
-    // Lock the diagnostic: set the completion baseline ONCE (idempotent).
-    await markDiagnosticCompleted(parentId, child._id);
     captureServer(parentId, "diagnostic_completed");
+  } else {
+    await releaseDiagnosticCompletion(parentId, child._id, claim.at);
   }
 
   return ok
