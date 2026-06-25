@@ -802,6 +802,105 @@ export async function subjectMilestones(
   });
 }
 
+export interface DailySummaryData {
+  childFirstName: string;
+  today: {
+    lessonsCompleted: number;
+    topics: { title: string; mastered: boolean }[];
+  };
+  subjects: { label: string; certified: number; total: number }[];
+  streak: number;
+  /** Plain-English working stage ("primary level" …), or null when unknown. */
+  stageLabel: string | null;
+}
+
+/** Map a UK key stage to the plain-English working stage used in parent copy. */
+const STAGE_LABEL: Record<number, string> = {
+  2: "primary level",
+  3: "lower-secondary level",
+  4: "GCSE level",
+};
+
+/**
+ * Deterministic facts for the parent's daily progress summary: today's
+ * completed lessons (with per-topic mastery outcome), per-subject competence so
+ * far, the current streak, and the child's working stage. No AI, no comparison
+ * to other children. Ownership enforced; returns null when the caller doesn't
+ * own the child.
+ */
+export async function dailySummaryData(
+  parentId: string,
+  child: ChildDoc,
+): Promise<DailySummaryData | null> {
+  const childId = child._id!;
+  if (!(await assertOwnsChild(parentId, childId))) return null;
+
+  const logsCol = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+
+  const dayStart = new Date();
+  dayStart.setUTCHours(0, 0, 0, 0);
+
+  const [topics, comps, todayLogs, streak] = await Promise.all([
+    topicsCol.find({}).toArray(),
+    compCol.find({ child_id: childId }).toArray(),
+    logsCol
+      .find({
+        child_id: childId,
+        status: "completed",
+        timestamp_end: { $gte: dayStart },
+      })
+      .toArray(),
+    childStreak(childId),
+  ]);
+
+  const titleByTag = new Map(topics.map((t) => [t.topic_tag, t.title]));
+  const keyStageByTag = new Map(topics.map((t) => [t.topic_tag, t.key_stage]));
+
+  // Today's per-topic outcome: keep the best mastery seen per topic today.
+  const bestMastery = new Map<string, number>();
+  for (const l of todayLogs) {
+    const m = l.mastery_score ?? 0;
+    bestMastery.set(l.topic_tag, Math.max(bestMastery.get(l.topic_tag) ?? 0, m));
+  }
+  const todayTopics = [...bestMastery.entries()].map(([tag, mastery]) => ({
+    title: titleByTag.get(tag) ?? tag,
+    mastered: mastery >= 100,
+  }));
+
+  // Per-subject competence so far.
+  const certifiedTags = new Set(
+    comps.filter((c) => c.state === "certified").map((c) => c.topic_tag),
+  );
+  const subjectList: Subject[] = ["mathematics", "english", "science"];
+  const subjects = subjectList.map((subject) => {
+    const subjectTopics = topics.filter((t) => t.subject === subject);
+    return {
+      label: SUBJECT_DISPLAY[subject],
+      certified: subjectTopics.filter((t) => certifiedTags.has(t.topic_tag)).length,
+      total: subjectTopics.length,
+    };
+  });
+
+  // Working stage = highest key stage the child has reached (training/certified).
+  let highestStage = 0;
+  for (const c of comps) {
+    if (c.state === "training" || c.state === "certified") {
+      highestStage = Math.max(highestStage, keyStageByTag.get(c.topic_tag) ?? 0);
+    }
+  }
+  const stageLabel = STAGE_LABEL[highestStage] ?? null;
+
+  return {
+    childFirstName: child.full_name.split(" ")[0],
+    today: { lessonsCompleted: todayLogs.length, topics: todayTopics },
+    subjects,
+    streak: streak.current,
+    stageLabel,
+  };
+}
+
 export interface MasteryCertificate {
   childFirstName: string;
   subjectLabel: string;
@@ -3091,6 +3190,20 @@ export async function setWeeklyPlanEmailOptOut(
   return true;
 }
 
+export async function setDailySummaryOptOut(
+  parentId: string,
+  optOut: boolean,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  await col.updateOne(
+    { _id: oid },
+    { $set: { daily_summary_opt_out: optOut, updated_at: new Date() } },
+  );
+  return true;
+}
+
 export async function setParentPinHash(
   parentId: string,
   pinHash: string,
@@ -3307,6 +3420,36 @@ export async function releaseLifecycleEmail(
   await col.updateOne(
     { _id: oid },
     { $pull: { lifecycle_emails_sent: key } },
+  );
+}
+
+/**
+ * Atomically claim the daily progress summary for a child on a given UTC day,
+ * so it's sent at most once per child per day even if the child finishes more
+ * lessons or re-opens. Returns true only if THIS call set the day-key (i.e. the
+ * caller now owns the send); false if it was already sent today.
+ */
+export async function claimDailySummary(
+  childId: ObjectId,
+  dayKey: string,
+): Promise<boolean> {
+  const col = await getCollection<ChildDoc>(Collections.children);
+  const res = await col.updateOne(
+    { _id: childId, daily_summary_sent_on: { $ne: dayKey } },
+    { $set: { daily_summary_sent_on: dayKey, updated_at: new Date() } },
+  );
+  return res.modifiedCount > 0;
+}
+
+/** Release today's daily-summary claim (roll back if the send fails). */
+export async function releaseDailySummary(
+  childId: ObjectId,
+  dayKey: string,
+): Promise<void> {
+  const col = await getCollection<ChildDoc>(Collections.children);
+  await col.updateOne(
+    { _id: childId, daily_summary_sent_on: dayKey },
+    { $unset: { daily_summary_sent_on: "" }, $set: { updated_at: new Date() } },
   );
 }
 

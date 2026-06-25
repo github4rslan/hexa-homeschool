@@ -18,6 +18,8 @@ export interface ParentDoc {
   weekly_digest_opt_out?: boolean;
   /** Weekly plan email opt-out. Undefined/false = receives the plan email. */
   weekly_plan_email_opt_out?: boolean;
+  /** Daily progress summary opt-out. Undefined/false = receives the summary. */
+  daily_summary_opt_out?: boolean;
   /**
    * Lifecycle/marketing email opt-out (welcome is transactional and ignores
    * this; the diagnostic nudge and first-plan celebration respect it).
@@ -102,6 +104,12 @@ export interface ChildDoc {
    * as already completed (and back-filled). Absent/null ⇒ not yet completed.
    */
   diagnostic_completed_at?: Date | null;
+  /**
+   * UTC day-key ("YYYY-MM-DD") the parent's daily progress summary was last
+   * sent for this child — the once-per-child-per-day idempotency guard.
+   * Optional + legacy-safe: absent ⇒ none sent yet.
+   */
+  daily_summary_sent_on?: string;
   created_at: Date;
   updated_at: Date;
 }

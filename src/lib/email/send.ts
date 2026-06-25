@@ -37,6 +37,8 @@ export async function sendEmail(input: {
   to: string;
   subject: string;
   html: string;
+  /** Optional plain-text fallback (Brevo `textContent`). */
+  text?: string;
 }): Promise<SendResult> {
   const key = process.env.BREVO_API_KEY;
   if (!key) {
@@ -57,6 +59,7 @@ export async function sendEmail(input: {
         to: [{ email: input.to }],
         subject: input.subject,
         htmlContent: input.html,
+        ...(input.text ? { textContent: input.text } : {}),
       }),
     });
     if (!res.ok) {

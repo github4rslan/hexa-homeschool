@@ -203,6 +203,21 @@ export default async function SettingsPage({
               <label className="flex items-start gap-3 text-sm text-fog-200 cursor-pointer">
                 <input
                   type="checkbox"
+                  name="daily_summary"
+                  defaultChecked={!parent.daily_summary_opt_out}
+                  className="mt-0.5 rounded border-white/10 bg-white/5"
+                />
+                <span>
+                  Daily progress summary
+                  <span className="block text-xs text-fog-500 mt-0.5">
+                    A warm note on the days your child finishes their quests —
+                    today&apos;s results, progress so far and an encouraging word.
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 text-sm text-fog-200 cursor-pointer">
+                <input
+                  type="checkbox"
                   name="escalation_alerts"
                   defaultChecked={!parent.escalation_alert_opt_out}
                   className="mt-0.5 rounded border-white/10 bg-white/5"
