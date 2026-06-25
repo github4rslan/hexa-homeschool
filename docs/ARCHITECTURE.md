@@ -100,6 +100,12 @@ no-lessons activity feed offers "Start the diagnostic".
 - Trajectory empty state → "Start a mock exam" (`/learn/mock`).
 - Mock result → "See my journey" (`/learn/map`) plus a next-focus line.
 - Weekly-plan email → `/schedule`; escalation email + digest → `/tutoring#escalations`.
+- Daily progress summary: when a lesson completion clears **all of today's
+  quests** (`todayCard().allDone`), `logLessonCompletion` fires a warm,
+  deterministic parent email (`email/daily-summary.ts`) — today's per-topic
+  results, per-subject progress and an encouraging effort note. Sent at most
+  once per child per day (atomic `daily_summary_sent_on` claim), best-effort and
+  non-blocking, respecting `daily_summary_opt_out`; CTA → the child detail page.
 - Dashboard escalation banner → `/tutoring#escalations`, the parent-facing
   paused-lessons detail with the escalation messaging thread ready.
 - Child quests reflect the approved weekly plan: today's quest per subject is
@@ -150,7 +156,7 @@ linking).
 | engine | `engine/exam-decision.ts` | Pure deterministic exam-path engine (age 13+, Paths A–D) |
 | compliance | `compliance/portfolio.ts` | Verified portfolio / dossier generation with secure hash |
 | media | `media/cloudinary.ts` | Signed uploads, media registry |
-| email | `email/send.ts`, `email/templates.ts`, `email/verification.ts` | Brevo transactional email |
+| email | `email/send.ts`, `email/templates.ts`, `email/verification.ts`, `email/daily-summary.ts` | Brevo transactional email (incl. the once-per-child-per-day parent progress summary) |
 | billing | `billing/stripe.ts` | Stripe client + tier↔price↔status mapping; checkout/portal/webhook routes under `api/billing/` |
 | data | `data/*.ts` | Static content: curriculum seed, diagnostic, navigation, roadmap, safety copy |
 
@@ -162,8 +168,8 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 
 | Collection | Doc | Purpose |
 |---|---|---|
-| `parents` | ParentDoc | Account, password hash, subscription tier, billing status, Stripe customer/subscription ids (synced by `/api/billing/webhook` only), email prefs (`weekly_digest_opt_out`, `weekly_plan_email_opt_out`, `escalation_alert_opt_out`, `marketing_emails_opt_out` — toggles in `/settings`), `lifecycle_emails_sent` (idempotency keys for onboarding emails), `two_factor_enabled`, `phone` (E.164, for immediate-severity safety SMS), `is_admin` legacy staff flag + `role` ("admin" | "support" — see `lib/auth/rbac.ts`), `token_version` (session invalidation — "sign out everywhere" / password change) |
-| `children` | ChildDoc | Profile, DOB, SEND indicators, target exam window, child-chosen personalisation (`voice_id`, `accent`, `narration_autoplay` — auto read-aloud, default on), `diagnostic_completed_at` (one-time diagnostic lock — set once, legacy-safe) |
+| `parents` | ParentDoc | Account, password hash, subscription tier, billing status, Stripe customer/subscription ids (synced by `/api/billing/webhook` only), email prefs (`weekly_digest_opt_out`, `weekly_plan_email_opt_out`, `daily_summary_opt_out`, `escalation_alert_opt_out`, `marketing_emails_opt_out` — toggles in `/settings`), `lifecycle_emails_sent` (idempotency keys for onboarding emails), `two_factor_enabled`, `phone` (E.164, for immediate-severity safety SMS), `is_admin` legacy staff flag + `role` ("admin" | "support" — see `lib/auth/rbac.ts`), `token_version` (session invalidation — "sign out everywhere" / password change) |
+| `children` | ChildDoc | Profile, DOB, SEND indicators, target exam window, child-chosen personalisation (`voice_id`, `accent`, `narration_autoplay` — auto read-aloud, default on), `diagnostic_completed_at` (one-time diagnostic lock — set once, legacy-safe), `daily_summary_sent_on` (UTC day-key idempotency guard for the parent daily progress email — at most one per child per day) |
 | `evaluation_records` | EvaluationDoc | Diagnostic/mock results, predicted grades |
 | `instructional_logs` | LessonLogDoc | Per-lesson logs (phase, attempts, hints, mastery) |
 | `lesson_progress` | LessonProgressDoc | Within-lesson autosave (interactive daily flow): one row per child per topic (`step`, `score`, `total`) so an interrupted child resumes at the exact step. Deleted on completion — a finished lesson never resumes; pedagogical state only, never analytics |

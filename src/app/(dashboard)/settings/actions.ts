@@ -10,6 +10,7 @@ import {
   setParentPinHash,
   setWeeklyDigestOptOut,
   setWeeklyPlanEmailOptOut,
+  setDailySummaryOptOut,
   setEscalationAlertOptOut,
   setMarketingEmailsOptOut,
   setParentPhone,
@@ -45,10 +46,12 @@ export async function updateEmailPreferences(formData: FormData) {
   // Checkbox present = email on; absent = opted out.
   const digestOn = formData.get("weekly_digest") === "on";
   const planOn = formData.get("weekly_plan_email") === "on";
+  const dailyOn = formData.get("daily_summary") === "on";
   const alertsOn = formData.get("escalation_alerts") === "on";
   const onboardingOn = formData.get("onboarding_emails") === "on";
   await setWeeklyDigestOptOut(parentId, !digestOn);
   await setWeeklyPlanEmailOptOut(parentId, !planOn);
+  await setDailySummaryOptOut(parentId, !dailyOn);
   await setEscalationAlertOptOut(parentId, !alertsOn);
   await setMarketingEmailsOptOut(parentId, !onboardingOn);
   revalidatePath("/settings");

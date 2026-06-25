@@ -345,6 +345,107 @@ export function weeklyPlanTemplate(opts: {
   };
 }
 
+/**
+ * Daily progress summary — the warm parent email sent once per child per day
+ * when today's quests are all complete. Content is pre-built deterministically
+ * by `lib/engine/daily-summary.ts` (no AI, no inflation); this only lays it out.
+ */
+export interface DailySummaryEmailContent {
+  subject: string;
+  headline: string;
+  todayLine: string;
+  topicLines: { title: string; outcome: "Mastered" | "Needs another look" }[];
+  progressLines: { text: string }[];
+  streakLine: string | null;
+  stageLine: string | null;
+  effortNote: string;
+}
+
+export function dailySummaryTemplate(opts: {
+  parentName: string | null;
+  content: DailySummaryEmailContent;
+  childDetailUrl: string;
+  settingsUrl: string;
+}): { subject: string; html: string; text: string } {
+  const { content: c } = opts;
+  const greeting = opts.parentName
+    ? `Hi ${opts.parentName.split(" ")[0]},`
+    : "Hello,";
+
+  const topicRows = c.topicLines
+    .map((t) => {
+      const mastered = t.outcome === "Mastered";
+      const badge = mastered
+        ? `<span style="display:inline-block;background:rgba(35,66,49,0.10);color:${COLORS.forest};font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap;">✓ Mastered</span>`
+        : `<span style="display:inline-block;background:rgba(197,127,42,0.12);color:${COLORS.clayDeep};font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;white-space:nowrap;">Needs another look</span>`;
+      return `
+      <tr>
+        <td style="padding:10px 0;border-top:1px solid ${COLORS.line};font-size:14px;color:${COLORS.ink};">${t.title}</td>
+        <td style="padding:10px 0;border-top:1px solid ${COLORS.line};text-align:right;">${badge}</td>
+      </tr>`;
+    })
+    .join("");
+
+  const progressItems = c.progressLines
+    .map(
+      (p) =>
+        `<li style="margin:0 0 4px;color:${COLORS.ink};font-size:14px;">${p.text}</li>`,
+    )
+    .join("");
+
+  const subText = [c.stageLine, c.streakLine].filter(Boolean).join(" ");
+
+  const html = WRAP(`
+      ${heading(c.headline)}
+      <p style="margin:0 0 22px;">${greeting} ${c.todayLine}</p>
+
+      <!-- Today -->
+      <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:${COLORS.inkSoft};">Today</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;background:${COLORS.linenAlt};border:1px solid ${COLORS.line};border-radius:12px;">
+        <tr><td style="padding:6px 18px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${topicRows}</table>
+        </td></tr>
+      </table>
+
+      ${
+        progressItems
+          ? `
+      <!-- Progress -->
+      <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:${COLORS.inkSoft};">Progress so far</p>
+      <ul style="margin:0 0 ${subText ? "8" : "24"}px;padding-left:18px;">${progressItems}</ul>
+      ${subText ? `<p style="margin:0 0 24px;color:${COLORS.inkSoft};font-size:13px;">${subText}</p>` : ""}`
+          : ""
+      }
+
+      <!-- A warm note -->
+      <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:${COLORS.inkSoft};">A warm note</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 26px;background:rgba(35,66,49,0.05);border-left:3px solid ${COLORS.forest};border-radius:8px;">
+        <tr><td style="padding:14px 18px;font-family:${SERIF};font-style:italic;color:${COLORS.forest};font-size:15px;line-height:1.55;">${c.effortNote}</td></tr>
+      </table>
+
+      <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.childDetailUrl, "See today's progress")}</p>
+      <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">Prefer not to get a daily summary? Turn it off in <a href="${opts.settingsUrl}" style="color:${COLORS.clayDeep};">Settings &rarr; Email preferences</a>. You&rsquo;ll still get account and safety emails.</p>
+    `);
+
+  // Plain-text fallback (every client renders this when HTML is stripped).
+  const textLines = [
+    c.headline,
+    "",
+    c.todayLine,
+    "",
+    "TODAY",
+    ...c.topicLines.map((t) => `- ${t.title}: ${t.outcome}`),
+  ];
+  if (c.progressLines.length > 0) {
+    textLines.push("", "PROGRESS SO FAR", ...c.progressLines.map((p) => `- ${p.text}`));
+    if (subText) textLines.push(subText);
+  }
+  textLines.push("", "A WARM NOTE", c.effortNote, "", `See today's progress: ${opts.childDetailUrl}`, "", `Manage emails: ${opts.settingsUrl}`);
+  const text = textLines.join("\n");
+
+  return { subject: c.subject, html, text };
+}
+
 export function escalationAlertTemplate(opts: {
   parentName: string | null;
   childFirstName: string;

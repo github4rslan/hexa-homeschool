@@ -10,9 +10,11 @@ import {
   saveLessonProgress,
   clearLessonProgress,
   setChildPreferences,
+  todayCard,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { captureServer } from "@/lib/analytics/server";
+import { sendDailySummaryEmail } from "@/lib/email/daily-summary";
 
 export interface LessonLogInput {
   topicTag: string;
@@ -76,6 +78,19 @@ export async function logLessonCompletion(
 
   // The lesson is finished — drop any mid-lesson resume row so it never resumes.
   await clearLessonProgress(parentId, child._id, topicTag);
+
+  // When this completion clears ALL of today's planned quests, send the parent
+  // a warm daily summary — once per child per day (idempotent + opt-out aware).
+  // Best-effort: never throws and is a no-op without Brevo, so the child's
+  // lesson flow is never blocked or slowed.
+  try {
+    const card = await todayCard(parentId, child);
+    if (card.allDone) {
+      await sendDailySummaryEmail(parentId, child);
+    }
+  } catch (err) {
+    console.error("[daily-summary] trigger failed (non-fatal):", err);
+  }
 
   // A completed lesson changes data shown on the child hub + progress map
   // (quest done-state, certified nodes) and the parent dashboard (activity,
