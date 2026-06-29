@@ -7,8 +7,12 @@ interface HexaLogoProps {
 }
 
 /**
- * The HEXA mark — a six-faceted hexagonal sigil.
+ * The Edway mark — a six-faceted hexagonal sigil.
  * Each facet represents one of the six AI agents.
+ *
+ * NOTE: the hexagon shape is the inherited "HEXA" visual identity (hexa = six).
+ * Whether Edway keeps it is a brand decision for the owner — only the wordmark
+ * text has been rebranded here; the mark itself is intentionally unchanged.
  */
 export function HexaLogo({ className, size = 32, withText = false }: HexaLogoProps) {
   return (
@@ -20,7 +24,7 @@ export function HexaLogo({ className, size = 32, withText = false }: HexaLogoPro
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
         className="shrink-0"
-        aria-label="HEXA"
+        aria-label="Edway"
       >
         <defs>
           <linearGradient id="hexa-outer" x1="0" y1="0" x2="48" y2="48">
@@ -79,7 +83,7 @@ export function HexaLogo({ className, size = 32, withText = false }: HexaLogoPro
 
       {withText && (
         <span className="font-display text-lg font-semibold tracking-tight text-fog-50">
-          HEXA
+          Edway
         </span>
       )}
     </div>
