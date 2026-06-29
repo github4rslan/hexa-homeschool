@@ -171,6 +171,6 @@ export async function readTwoFactorSubject(token: string): Promise<string | null
 export function appUrl(): string {
   return (
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
-    "https://hexa-homeschool.vercel.app"
+    "https://edway.uk"
   );
 }

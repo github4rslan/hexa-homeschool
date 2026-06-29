@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
+import { SITE_HOST } from "@/lib/site";
 
 export const runtime = "edge";
-export const alt = "HEXA — GCSE-ready at 14. With proof.";
+export const alt = "Edway — GCSE-ready at 14. With proof.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -49,7 +50,7 @@ export default async function OpengraphImage() {
               letterSpacing: "-0.02em",
             }}
           >
-            HEXA
+            Edway
           </div>
         </div>
 
@@ -100,7 +101,7 @@ export default async function OpengraphImage() {
         >
           <span>UK GDPR · Children's Code · AWS London</span>
           <span>•</span>
-          <span style={{ color: "#C4B5FD" }}>hexa.education</span>
+          <span style={{ color: "#C4B5FD" }}>{SITE_HOST}</span>
         </div>
       </div>
     ),

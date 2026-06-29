@@ -23,7 +23,7 @@ const CHANNELS = [
   {
     icon: Headphones,
     title: "Support",
-    email: "support@hexa.education",
+    email: "support@edway.uk",
     sla: "Response under 24 hours",
     body: "Account help, billing, technical issues.",
     color: "violet" as const,
@@ -31,7 +31,7 @@ const CHANNELS = [
   {
     icon: MessageCircle,
     title: "Sales",
-    email: "hello@hexa.education",
+    email: "hello@edway.uk",
     sla: "Response under 12 hours (business days)",
     body: "Pricing, plans, demos, partnerships.",
     color: "cyan" as const,
@@ -39,7 +39,7 @@ const CHANNELS = [
   {
     icon: Building2,
     title: "Local Authority liaison",
-    email: "la@hexa.education",
+    email: "la@edway.uk",
     sla: "Response under 24 hours",
     body: "EHE officer queries, formal correspondence, audit access.",
     color: "neon" as const,
@@ -47,7 +47,7 @@ const CHANNELS = [
   {
     icon: ShieldAlert,
     title: "Safeguarding",
-    email: "safeguarding@hexa.education",
+    email: "safeguarding@edway.uk",
     sla: "Monitored 24/7",
     body: "Concerns about a child's welfare or safety.",
     color: "amber" as const,
@@ -55,7 +55,7 @@ const CHANNELS = [
   {
     icon: Newspaper,
     title: "Press & media",
-    email: "press@hexa.education",
+    email: "press@edway.uk",
     sla: "Response under 48 hours",
     body: "Interviews, quotes, media kit requests.",
     color: "violet" as const,
@@ -63,7 +63,7 @@ const CHANNELS = [
   {
     icon: Mail,
     title: "Privacy & data",
-    email: "privacy@hexa.education",
+    email: "privacy@edway.uk",
     sla: "Response under 24 hours",
     body: "Subject access requests, data rights, DPO queries.",
     color: "cyan" as const,

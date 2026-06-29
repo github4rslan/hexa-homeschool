@@ -10,7 +10,7 @@ import { defineConfig, devices } from "@playwright/test";
 const baseURL =
   process.env.SMOKE_BASE_URL ||
   process.env.NEXT_PUBLIC_APP_URL ||
-  "https://hexa.education";
+  "https://edway.uk";
 
 export default defineConfig({
   testDir: "./e2e",

@@ -100,7 +100,7 @@ export default function TermsPage() {
 
       <h2>11. Contact</h2>
       <p>
-        Questions about these Terms: <a href="mailto:legal@hexa.education">legal@hexa.education</a>
+        Questions about these Terms: <a href="mailto:legal@edway.uk">legal@edway.uk</a>
       </p>
     </LegalLayout>
   );

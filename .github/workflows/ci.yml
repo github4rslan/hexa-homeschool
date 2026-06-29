@@ -65,7 +65,7 @@ jobs:
 
       - name: Wait for the production deploy to be live
         run: |
-          URL="${SMOKE_BASE_URL:-https://hexa.education}/api/health"
+          URL="${SMOKE_BASE_URL:-https://edway.uk}/api/health"
           echo "Probing $URL …"
           for i in $(seq 1 18); do
             if curl -fsS --max-time 10 "$URL" >/dev/null 2>&1; then

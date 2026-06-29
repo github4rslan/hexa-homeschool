@@ -1,5 +1,7 @@
+import { SITE_URL, CONTACT_EMAIL } from "@/lib/site";
+
 /**
- * JSON-LD structured data for HEXA.
+ * JSON-LD structured data for Edway.
  * Renders Organization + WebSite + Product schema for richer SERP appearance.
  */
 export function StructuredData() {
@@ -8,10 +10,10 @@ export function StructuredData() {
     "@graph": [
       {
         "@type": "Organization",
-        "@id": "https://hexa.education/#organization",
-        name: "HEXA Education Ltd",
-        url: "https://hexa.education",
-        logo: "https://hexa.education/favicon.svg",
+        "@id": `${SITE_URL}/#organization`,
+        name: "Edway Education Ltd",
+        url: SITE_URL,
+        logo: `${SITE_URL}/favicon.svg`,
         description:
           "The AI assistant built for UK homeschooling families — daily lessons, transparent progress tracking, and Local Authority-compliant portfolios for Maths, English and Science.",
         foundingDate: "2026",
@@ -19,7 +21,7 @@ export function StructuredData() {
         contactPoint: [
           {
             "@type": "ContactPoint",
-            email: "hello@hexa.education",
+            email: CONTACT_EMAIL,
             contactType: "customer service",
             availableLanguage: "English",
             areaServed: "GB",
@@ -28,18 +30,18 @@ export function StructuredData() {
       },
       {
         "@type": "WebSite",
-        "@id": "https://hexa.education/#website",
-        url: "https://hexa.education",
-        name: "HEXA",
-        publisher: { "@id": "https://hexa.education/#organization" },
+        "@id": `${SITE_URL}/#website`,
+        url: SITE_URL,
+        name: "Edway",
+        publisher: { "@id": `${SITE_URL}/#organization` },
         inLanguage: "en-GB",
       },
       {
         "@type": "Product",
-        name: "HEXA Platform",
+        name: "Edway Platform",
         description:
           "Six specialised AI agents that plan, teach, track and protect — preparing UK students for GCSE Maths, English and Science at their own pace.",
-        brand: { "@id": "https://hexa.education/#organization" },
+        brand: { "@id": `${SITE_URL}/#organization` },
         offers: {
           "@type": "AggregateOffer",
           priceCurrency: "GBP",

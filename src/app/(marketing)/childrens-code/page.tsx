@@ -56,7 +56,7 @@ export default function ChildrensCodePage() {
       <h2>Reporting concerns</h2>
       <p>
         If you believe HEXA is not meeting any of these standards, please email{" "}
-        <a href="mailto:dpo@hexa.education">dpo@hexa.education</a>. You can also
+        <a href="mailto:dpo@edway.uk">dpo@edway.uk</a>. You can also
         complain directly to the <a href="https://ico.org.uk">ICO</a>.
       </p>
     </LegalLayout>

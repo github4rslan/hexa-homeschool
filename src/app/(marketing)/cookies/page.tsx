@@ -59,7 +59,7 @@ export default function CookiesPage() {
 
       <h2>Contact</h2>
       <p>
-        Questions: <a href="mailto:privacy@hexa.education">privacy@hexa.education</a>
+        Questions: <a href="mailto:privacy@edway.uk">privacy@edway.uk</a>
       </p>
     </LegalLayout>
   );

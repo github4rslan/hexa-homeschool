@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Fraunces } from "next/font/google";
 import "./globals.css";
+import { SITE_URL } from "@/lib/site";
 
 // Editorial serif for the warm marketing theme — heritage, high-trust,
 // "clean editorial typography" per the web brief. Used for marketing display
@@ -43,8 +44,8 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "en_GB",
-    url: "https://hexa.education",
-    siteName: "HEXA",
+    url: SITE_URL,
+    siteName: "Edway",
     title: "HEXA — Teach with confidence. Prove with evidence. Sit when ready.",
     description:
       "The AI assistant built for UK homeschooling families. Daily lessons, transparent progress tracking, and Local Authority-compliant portfolios. Full Local Authority compliance.",
@@ -83,7 +84,7 @@ export const metadata: Metadata = {
     apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.webmanifest",
-  alternates: { canonical: "https://hexa.education" },
+  alternates: { canonical: SITE_URL },
 };
 
 export const viewport: Viewport = {
