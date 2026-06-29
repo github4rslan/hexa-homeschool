@@ -2,7 +2,7 @@
   "name": "hexa-website",
   "version": "0.1.0",
   "private": true,
-  "description": "HEXA — AI-powered homeschooling platform preparing UK students for GCSEs by age 14",
+  "description": "Edway — AI-powered homeschooling platform preparing UK students for GCSEs by age 14",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -2,7 +2,7 @@
 
 [← README](../README.md)
 
-HEXA's AI is deliberately **bounded**: OpenAI explains and parses telemetry — it
+Edway's AI is deliberately **bounded**: OpenAI explains and parses telemetry — it
 never invents curriculum. All questions and canonical answers are human-authored
 ("vetted matrices"). Design principle from the Technical Brief: *Safety over
 Pacing Velocity* — every generative payload faces automated validation before it

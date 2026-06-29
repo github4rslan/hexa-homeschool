@@ -2,7 +2,7 @@
 
 [← README](../README.md) · see also [ARCHITECTURE](ARCHITECTURE.md), [API](API.md), [COMPLIANCE](COMPLIANCE.md)
 
-What to do when something breaks. HEXA deploys via **push-to-`main` → Vercel**;
+What to do when something breaks. Edway deploys via **push-to-`main` → Vercel**;
 there is no staging, so the fastest fix for most incidents is a **rollback on
 Vercel** (instant, no rebuild) followed by a proper revert commit.
 
