@@ -19,7 +19,7 @@ describe("lifecycle email templates", () => {
 
   it("welcome falls back gracefully with no name", () => {
     const t = welcomeTemplate({ name: null, dashboardUrl: "https://x/d" });
-    expect(t.html).toContain("Welcome to HEXA");
+    expect(t.html).toContain("Welcome to Edway");
   });
 
   it("diagnostic nudge personalises with the child name and links the diagnostic + settings", () => {
@@ -65,7 +65,7 @@ describe("lifecycle email templates", () => {
       }).html,
     ]) {
       expect(html).toContain("<!DOCTYPE html>");
-      expect(html).toContain("HEXA");
+      expect(html).toContain("Edway");
     }
   });
 });
