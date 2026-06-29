@@ -1,5 +1,5 @@
 /**
- * HEXA database seed — curriculum topics, question bank, and indexes.
+ * Edway database seed — curriculum topics, question bank, and indexes.
  *
  * Idempotent: upserts on natural keys, so it is safe to re-run after editing
  * src/lib/data/curriculum.seed.ts. Also creates all indexes (including for the

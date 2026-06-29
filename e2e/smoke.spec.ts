@@ -34,7 +34,7 @@ test.describe("public pages", () => {
   test("home renders with a visible primary CTA and no console errors", async ({ page }) => {
     const errors = trackConsoleErrors(page);
     await page.goto("/");
-    await expect(page).toHaveTitle(/HEXA/i);
+    await expect(page).toHaveTitle(/Edway/i);
     // At least one prominent call-to-action link is visible.
     await expect(page.getByRole("link", { name: /get started|start|sign up/i }).first()).toBeVisible();
     expect(errors, errors.join("\n")).toHaveLength(0);
