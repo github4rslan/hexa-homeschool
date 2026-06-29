@@ -38,8 +38,8 @@ export const dynamic = "force-dynamic";
 
 const TIER_LABEL: Record<string, string> = {
   diagnostic: "Diagnostic (free)",
-  standard: "HEXA Complete",
-  family: "HEXA Partner",
+  standard: "Edway Complete",
+  family: "Edway Partner",
 };
 
 const STATUS_CONTEXT: Record<string, string> = {

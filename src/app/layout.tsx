@@ -19,12 +19,12 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: {
-    default: "HEXA — Teach with confidence. Prove with evidence. Sit when ready.",
-    template: "%s · HEXA",
+    default: "Edway — Teach with confidence. Prove with evidence. Sit when ready.",
+    template: "%s · Edway",
   },
   description:
-    "HEXA is the AI assistant built for UK homeschooling families. It plans your child's learning, teaches daily lessons in Maths, English and Science, tracks every step, and generates the Local Authority-compliant evidence you need — all in one place. Not rushed. Not forced. Sit when ready.",
-  applicationName: "HEXA",
+    "Edway is the AI assistant built for UK homeschooling families. It plans your child's learning, teaches daily lessons in Maths, English and Science, tracks every step, and generates the Local Authority-compliant evidence you need — all in one place. Not rushed. Not forced. Sit when ready.",
+  applicationName: "Edway",
   keywords: [
     "GCSE",
     "early GCSE",
@@ -37,16 +37,16 @@ export const metadata: Metadata = {
     "Science GCSE",
     "Children's Code",
   ],
-  authors: [{ name: "HEXA Education Ltd" }],
-  creator: "HEXA",
-  publisher: "HEXA Education Ltd",
+  authors: [{ name: "Edway Education Ltd" }],
+  creator: "Edway",
+  publisher: "Edway Education Ltd",
   formatDetection: { telephone: false, email: false, address: false },
   openGraph: {
     type: "website",
     locale: "en_GB",
     url: SITE_URL,
     siteName: "Edway",
-    title: "HEXA — Teach with confidence. Prove with evidence. Sit when ready.",
+    title: "Edway — Teach with confidence. Prove with evidence. Sit when ready.",
     description:
       "The AI assistant built for UK homeschooling families. Daily lessons, transparent progress tracking, and Local Authority-compliant portfolios. Full Local Authority compliance.",
     images: [
@@ -54,13 +54,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "HEXA — Teach with confidence. Prove with evidence. Sit when ready.",
+        alt: "Edway — Teach with confidence. Prove with evidence. Sit when ready.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "HEXA — Teach with confidence. Prove with evidence. Sit when ready.",
+    title: "Edway — Teach with confidence. Prove with evidence. Sit when ready.",
     description:
       "The AI assistant built for UK homeschooling families. Daily lessons, progress tracking, and council-ready evidence.",
     images: ["/og-image.png"],

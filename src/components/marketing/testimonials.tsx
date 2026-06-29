@@ -19,7 +19,7 @@ const TESTIMONIALS: Testimonial[] = [
   },
   {
     quote:
-      "My son was bored at school. HEXA showed us he was ready for harder work. He chooses his pace. We choose when he is ready to sit exams.",
+      "My son was bored at school. Edway showed us he was ready for harder work. He chooses his pace. We choose when he is ready to sit exams.",
     name: "James K.",
     meta: "Parent of one. Bristol.",
   },

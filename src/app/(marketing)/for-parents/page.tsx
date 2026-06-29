@@ -21,7 +21,7 @@ const PAINS = [
   {
     pain: "The pacing problem",
     answer:
-      "Most homeschool curricula are linear and rigid. HEXA adapts daily — accelerating mastery topics and slowing on weak ones, balanced against a hard GCSE deadline.",
+      "Most homeschool curricula are linear and rigid. Edway adapts daily — accelerating mastery topics and slowing on weak ones, balanced against a hard GCSE deadline.",
     icon: Calendar,
   },
   {
@@ -46,12 +46,12 @@ const PAINS = [
 
 const FAQ = [
   {
-    q: "Is HEXA accepted by Local Authorities?",
-    a: "HEXA assembles portfolios in the statutory categories Local Authorities request — Breadth, Balance, Progression — with cryptographic signatures proving record integrity. Many UK LAs already accept structured digital portfolios; HEXA's are designed to be over the bar.",
+    q: "Is Edway accepted by Local Authorities?",
+    a: "Edway assembles portfolios in the statutory categories Local Authorities request — Breadth, Balance, Progression — with cryptographic signatures proving record integrity. Many UK LAs already accept structured digital portfolios; Edway's are designed to be over the bar.",
   },
   {
     q: "Can my child really be ready for GCSEs at 14?",
-    a: "GCSE specifications are content-based, not age-based. Private candidates can sit examinations at any age — many independent schools enter students early. HEXA's pacing model is built around the published specifications for Mathematics, English Language, English Literature and the three Sciences.",
+    a: "GCSE specifications are content-based, not age-based. Private candidates can sit examinations at any age — many independent schools enter students early. Edway's pacing model is built around the published specifications for Mathematics, English Language, English Literature and the three Sciences.",
   },
   {
     q: "What if my child has SEND?",
@@ -63,7 +63,7 @@ const FAQ = [
   },
   {
     q: "What happens at age 14?",
-    a: "HEXA guides you through Pearson, AQA or OCR private candidate entry at one of the verified regional assessment centres. We don't sit the exam for you, but we make the registration painless.",
+    a: "Edway guides you through Pearson, AQA or OCR private candidate entry at one of the verified regional assessment centres. We don't sit the exam for you, but we make the registration painless.",
   },
 ];
 
@@ -81,7 +81,7 @@ export default function ForParentsPage() {
               <span className="text-gradient-aurora">we couldn't ignore.</span>
             </>
           }
-          description="HEXA exists because UK homeschooling parents told us the same thing five different ways: 'I need proof, I need pacing, and I need someone in my corner with the LA.'"
+          description="Edway exists because UK homeschooling parents told us the same thing five different ways: 'I need proof, I need pacing, and I need someone in my corner with the LA.'"
         />
       </Section>
 

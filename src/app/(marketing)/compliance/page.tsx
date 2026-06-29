@@ -43,7 +43,7 @@ export default function CompliancePage() {
               <span className="text-gradient-violet">UK regulatory frontier.</span>
             </>
           }
-          description="HEXA is engineered to satisfy UK GDPR, the ICO Age-Appropriate Design Code (Children's Code), and Local Authority elective home education monitoring requirements — without compromise."
+          description="Edway is engineered to satisfy UK GDPR, the ICO Age-Appropriate Design Code (Children's Code), and Local Authority elective home education monitoring requirements — without compromise."
         />
       </Section>
 

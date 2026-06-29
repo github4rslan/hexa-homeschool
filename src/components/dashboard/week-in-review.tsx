@@ -14,7 +14,7 @@ const WeekInReviewModal = dynamic(
 );
 
 /**
- * "HEXA Wrapped" trigger card. Lightweight (no framer in the initial bundle);
+ * "Edway Wrapped" trigger card. Lightweight (no framer in the initial bundle);
  * tapping it lazy-loads the full-screen recap. Derived entirely from existing
  * data via repo.weekInReview.
  */

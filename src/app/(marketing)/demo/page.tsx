@@ -6,7 +6,7 @@ import { CTA } from "@/components/marketing/cta";
 export const metadata: Metadata = {
   title: "Live demo · Aisha's path to a Grade 8",
   description:
-    "Walk through 24 months of HEXA in 60 seconds. From Day 1 diagnostic to GCSE results day.",
+    "Walk through 24 months of Edway in 60 seconds. From Day 1 diagnostic to GCSE results day.",
 };
 
 export default function DemoPage() {
@@ -22,7 +22,7 @@ export default function DemoPage() {
               <span className="text-gradient-aurora">Grade 8 at 14.</span>
             </>
           }
-          description="A scripted walkthrough of one student's 24-month journey through the HEXA system — every agent invocation, every decision, every log line."
+          description="A scripted walkthrough of one student's 24-month journey through the Edway system — every agent invocation, every decision, every log line."
         />
       </Section>
       <Section padded={false} className="pb-32">

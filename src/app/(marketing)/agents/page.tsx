@@ -7,7 +7,7 @@ import { CTA } from "@/components/marketing/cta";
 export const metadata: Metadata = {
   title: "The AI agents",
   description:
-    "Six specialised autonomous agents with checker validators and a Meta Checker supervisor — the multi-agent architecture powering HEXA.",
+    "Six specialised autonomous agents with checker validators and a Meta Checker supervisor — the multi-agent architecture powering Edway.",
 };
 
 export default function AgentsPage() {
@@ -25,7 +25,7 @@ export default function AgentsPage() {
               One Meta Checker watching them all.
             </>
           }
-          description="HEXA runs on a strictly decoupled multi-agent architecture. Every output passes through a checker validator. Every transaction is sampled by the Meta Checker. Human operators only intervene when SLA-bound triggers fire."
+          description="Edway runs on a strictly decoupled multi-agent architecture. Every output passes through a checker validator. Every transaction is sampled by the Meta Checker. Human operators only intervene when SLA-bound triggers fire."
         />
       </Section>
 

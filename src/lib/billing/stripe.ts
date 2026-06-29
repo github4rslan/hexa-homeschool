@@ -6,8 +6,8 @@ import type { ParentDoc } from "@/lib/db/types";
  * Stripe billing configuration.
  *
  * Paid tiers map to Stripe Prices (recurring, GBP):
- *   subscription_tier "standard" → HEXA Complete (£49/mo) → STRIPE_PRICE_STANDARD
- *   subscription_tier "family"   → HEXA Partner  (£99/mo) → STRIPE_PRICE_FAMILY
+ *   subscription_tier "standard" → Edway Complete (£49/mo) → STRIPE_PRICE_STANDARD
+ *   subscription_tier "family"   → Edway Partner  (£99/mo) → STRIPE_PRICE_FAMILY
  * "diagnostic" is the free tier and never goes through Stripe.
  *
  * Missing env vars throw BillingConfigError so routes degrade to a clean

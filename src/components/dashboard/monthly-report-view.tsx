@@ -60,7 +60,7 @@ export function MonthlyReportView({
             <h1 className="text-2xl font-semibold text-fog-50">
               Monthly progress report
             </h1>
-            <span className="text-sm report-muted text-fog-400">HEXA</span>
+            <span className="text-sm report-muted text-fog-400">Edway</span>
           </div>
           <p className="mt-2 text-lg text-fog-100">{report.childName}</p>
           <p className="text-sm report-muted text-fog-400">

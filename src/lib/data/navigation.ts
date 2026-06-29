@@ -48,7 +48,7 @@ export const MARKETING_NAV_GROUPS: NavGroup[] = [
 
 export const MARKETING_JOURNEY_SEQUENCE: NavItem[] = [
   { label: "Understand the journey", href: "/how-it-works", description: "Start with the six steps from diagnostic to GCSE entry." },
-  { label: "Meet the agents", href: "/agents", description: "See how HEXA plans, teaches, checks and proves progress." },
+  { label: "Meet the agents", href: "/agents", description: "See how Edway plans, teaches, checks and proves progress." },
   { label: "Watch the demo", href: "/demo", description: "Follow a realistic student path through the platform." },
   { label: "Check safety", href: "/safety", description: "Review the safeguards behind child-mode learning." },
   { label: "Review compliance", href: "/compliance", description: "See how evidence, audit trails and portfolios are produced." },
@@ -74,7 +74,7 @@ export const FOOTER_NAV = {
     { label: "Cookies", href: "/cookies" },
   ],
   company: [
-    { label: "About HEXA", href: "/about" },
+    { label: "About Edway", href: "/about" },
     { label: "Why now", href: "/why-now" },
     { label: "For Parents", href: "/for-parents" },
     { label: "For Local Authorities", href: "/local-authorities" },

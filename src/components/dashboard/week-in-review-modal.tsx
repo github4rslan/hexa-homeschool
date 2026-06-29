@@ -101,7 +101,7 @@ export function WeekInReviewModal({
       const png = canvas.toDataURL("image/png");
       const a = document.createElement("a");
       a.href = png;
-      a.download = `hexa-week-${first.toLowerCase()}.png`;
+      a.download = `edway-week-${first.toLowerCase()}.png`;
       a.click();
     } catch {
       // Best-effort: a failed save should never break the celebration.
@@ -131,7 +131,7 @@ export function WeekInReviewModal({
 
         <div className="w-full max-w-md text-center">
           <span className="text-xs font-mono uppercase tracking-[0.3em] text-violet-300">
-            HEXA · Week in review
+            Edway · Week in review
           </span>
 
           <AnimatePresence mode="wait">

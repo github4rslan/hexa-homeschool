@@ -8,7 +8,7 @@ import { signup } from "./actions";
 import { TrackOnMount } from "@/components/analytics/analytics-provider";
 
 export const metadata: Metadata = {
-  title: "Create your HEXA account",
+  title: "Create your Edway account",
 };
 
 export default function SignupPage({

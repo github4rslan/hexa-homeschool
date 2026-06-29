@@ -1,5 +1,5 @@
 /**
- * HEXA curriculum + question bank — human-authored seed content.
+ * Edway curriculum + question bank — human-authored seed content.
  *
  * Source of truth for the `curriculum_topics` and `questions` collections.
  * Mapped to UK GCSE specifications (Pearson Edexcel Maths 1MA1, AQA English

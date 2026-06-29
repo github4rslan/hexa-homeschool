@@ -1,7 +1,7 @@
 /**
  * Diagnostic Agent — adaptive engine (rule-based, Phase-1).
  *
- * Per HEXA Technical Brief v2.0 (Agent 1): the Diagnostic Agent is a
+ * Per Edway Technical Brief v2.0 (Agent 1): the Diagnostic Agent is a
  * RULE-BASED Item Response Theory (IRT) engine — NOT generative AI. It starts
  * at age-expected GCSE benchmarks and adapts difficulty based on responses:
  * consistent correct answers step difficulty up; errors step it down.

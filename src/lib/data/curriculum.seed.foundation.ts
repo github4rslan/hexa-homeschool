@@ -4,7 +4,7 @@
  * instead of defaulting every child to GCSE.
  *
  * Why this file exists: the original `questions` bank is entirely GCSE
- * (`key_stage: 4`). HEXA serves ages 7–16, so a 7-year-old was being shown
+ * (`key_stage: 4`). Edway serves ages 7–16, so a 7-year-old was being shown
  * GCSE statistics. These items fill the missing KS2/KS3 bands.
  *
  * Authoring rules (identical to curriculum.seed.ts — Brief: "Honesty over

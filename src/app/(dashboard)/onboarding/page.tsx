@@ -12,7 +12,7 @@ import {
 import { readActiveChildId } from "@/lib/active-child";
 
 export const metadata: Metadata = {
-  title: "Welcome to HEXA",
+  title: "Welcome to Edway",
 };
 
 export const dynamic = "force-dynamic";
@@ -78,10 +78,10 @@ export default async function OnboardingPage() {
             Three quick steps to your child's learning plan
           </div>
           <h1 className="text-4xl md:text-5xl font-semibold tracking-tight text-fog-50 mb-4">
-            Welcome to <span className="text-gradient-aurora">HEXA</span>
+            Welcome to <span className="text-gradient-aurora">Edway</span>
           </h1>
           <p className="text-lg text-fog-300 max-w-xl mx-auto">
-            Setup takes about 10 minutes. Then HEXA does the rest — daily lessons,
+            Setup takes about 10 minutes. Then Edway does the rest — daily lessons,
             monthly mocks, and Local Authority paperwork on autopilot. Sit when ready.
           </p>
         </div>

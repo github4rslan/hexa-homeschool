@@ -9,7 +9,7 @@ import { CTA } from "@/components/marketing/cta";
 export const metadata: Metadata = {
   title: "Why now",
   description:
-    "Why HEXA, and why now? The UK homeschooling movement is at an inflection point. Here's the data.",
+    "Why Edway, and why now? The UK homeschooling movement is at an inflection point. Here's the data.",
 };
 
 const SIGNALS = [
@@ -34,7 +34,7 @@ const SIGNALS = [
     value: 4,
     suffix: "yrs",
     label: "Average GCSE preparation window",
-    sublabel: "HEXA compresses this to 2 years without compromising depth.",
+    sublabel: "Edway compresses this to 2 years without compromising depth.",
   },
 ];
 

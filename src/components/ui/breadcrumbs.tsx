@@ -8,7 +8,7 @@ export interface Crumb {
 }
 
 /**
- * Compact breadcrumb trail in HEXA's mono-uppercase label style.
+ * Compact breadcrumb trail in Edway's mono-uppercase label style.
  * The last item is rendered as the current (non-link) page.
  */
 export function Breadcrumbs({

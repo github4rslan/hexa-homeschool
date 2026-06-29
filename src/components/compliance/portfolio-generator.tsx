@@ -203,7 +203,7 @@ export function PortfolioGenerator({
                 <div className="flex items-center gap-2 mb-2">
                   <Building2 className="h-4 w-4 text-violet-300" />
                   <span className="text-[10px] font-mono uppercase tracking-widest text-fog-500">
-                    HEXA Compliance Portfolio
+                    Edway Compliance Portfolio
                   </span>
                 </div>
                 <h2 className="text-2xl font-semibold text-fog-50">
@@ -327,7 +327,7 @@ export function PortfolioGenerator({
                 <p className="mt-2 text-xs text-amber-400">{emailMsg}</p>
               )}
               <p className="mt-2 text-xs text-fog-500">
-                You control what&apos;s shared — HEXA never sends anything
+                You control what&apos;s shared — Edway never sends anything
                 automatically.
               </p>
             </div>

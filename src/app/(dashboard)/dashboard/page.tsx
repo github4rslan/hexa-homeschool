@@ -115,7 +115,7 @@ export default async function DashboardPage() {
   const parent = parentId ? await findParentById(parentId) : null;
   const greeting = parent?.full_name
     ? `Good to see you, ${parent.full_name.split(" ")[0]}`
-    : "Welcome to HEXA";
+    : "Welcome to Edway";
 
   const kids = parentId ? await listChildren(parentId) : [];
 
@@ -134,7 +134,7 @@ export default async function DashboardPage() {
             </h1>
             <p className="text-fog-400 leading-relaxed mb-8 max-w-md mx-auto">
               Add your child&apos;s profile, then run the 60-minute diagnostic.
-              From there, HEXA plans daily lessons and tracks real progress —
+              From there, Edway plans daily lessons and tracks real progress —
               everything you see here will be your family&apos;s own data.
             </p>
             <Button href="/dashboard/children/new" variant="primary" size="lg">
@@ -242,7 +242,7 @@ export default async function DashboardPage() {
     todayCards.find((c) => c.childId === activeId) ?? todayCards[0];
   const todaySummary = activeCard ? buildTodaySummary(activeCard) : "";
 
-  // Week in Review ("HEXA Wrapped") for the active child.
+  // Week in Review ("Edway Wrapped") for the active child.
   const review = activeChild ? await weekInReview(parentId!, activeChild) : null;
 
   // Birthday: one tasteful banner if any child has a birthday today.
@@ -274,7 +274,7 @@ export default async function DashboardPage() {
                   A lesson was paused for {nameById.get(escalations[0].child_id.toHexString()) ?? "your child"}.
                 </p>
                 <p className="text-xs text-fog-300 mt-1">
-                  HEXA detected your child may have been feeling stuck or upset and
+                  Edway detected your child may have been feeling stuck or upset and
                   paused the lesson. Please check in with them when you can. This
                   is an educational safeguard only — for any welfare concern, contact
                   your GP or relevant services.

@@ -1,7 +1,7 @@
 /**
- * The six HEXA AI agents.
- * Source of truth: HEXA Technical Brief v2.0, "Agent Infrastructure Specifications".
- * Plain summaries: HEXA Web Content, "The AI System".
+ * The six Edway AI agents.
+ * Source of truth: Edway Technical Brief v2.0, "Agent Infrastructure Specifications".
+ * Plain summaries: Edway Web Content, "The AI System".
  */
 
 export type AgentId =
@@ -18,7 +18,7 @@ export interface Agent {
   name: string;
   shortName: string;
   tagline: string;
-  /** Plain-English, parent-facing one-liner (source: HEXA Web Content). */
+  /** Plain-English, parent-facing one-liner (source: Edway Web Content). */
   plainSummary: string;
   purpose: string;
   ingests: string[];

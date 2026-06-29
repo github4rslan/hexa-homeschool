@@ -131,7 +131,7 @@ export default function UsersPage() {
     <>
       <AdminTopbar
         title="Parents & Children"
-        subtitle="All HEXA accounts with subscription state"
+        subtitle="All Edway accounts with subscription state"
       />
 
       <div className="flex-1 p-6 lg:p-10 max-w-[1600px]">

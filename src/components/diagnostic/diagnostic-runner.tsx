@@ -214,7 +214,7 @@ export function DiagnosticRunner({
                 <Activity className="h-7 w-7 text-violet-300" />
               </div>
               <h1 className="text-3xl font-semibold text-fog-50 mb-3">
-                The HEXA diagnostic
+                The Edway diagnostic
               </h1>
               <p className="text-fog-300 leading-relaxed mb-2">
                 An adaptive assessment that maps your child&apos;s current level

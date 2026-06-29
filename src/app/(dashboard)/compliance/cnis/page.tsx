@@ -96,7 +96,7 @@ export default async function CnisPrefillPage() {
             <Field label="Core subjects & current standing" value={subjectsLine} />
             <Field
               label="Provision"
-              value="Structured daily lessons (explainer, adaptive practice, mastery checks) mapped to GCSE specifications, with monthly assessment and quarterly verified portfolios via HEXA."
+              value="Structured daily lessons (explainer, adaptive practice, mastery checks) mapped to GCSE specifications, with monthly assessment and quarterly verified portfolios via Edway."
             />
             {child.send_indicators && child.send_indicators.length > 0 && (
               <Field
@@ -107,10 +107,10 @@ export default async function CnisPrefillPage() {
           </div>
 
           <p className="mt-6 text-xs text-fog-500 leading-relaxed">
-            This is a convenience pre-fill drawn from your HEXA account to speed
+            This is a convenience pre-fill drawn from your Edway account to speed
             up your Local Authority registration under the Children&apos;s
             Wellbeing and Schools Act 2026. Always check your council&apos;s
-            specific form and requirements before submitting. HEXA never submits
+            specific form and requirements before submitting. Edway never submits
             anything on your behalf — you remain in full control.
           </p>
         </Card>

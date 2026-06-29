@@ -1,5 +1,5 @@
 /**
- * HEXA transactional email templates.
+ * Edway transactional email templates.
  *
  * Inline-styled HTML (email clients ignore <style>/external CSS), built to match
  * the warm heritage brand: deep forest green, warm amber, soft linen, editorial
@@ -36,7 +36,7 @@ function WRAP(inner: string): string {
 
         <!-- Header band -->
         <tr><td style="background:${COLORS.forestDeep};padding:26px 36px;">
-          <span style="font-family:${SERIF};color:${COLORS.linen};font-size:24px;font-weight:600;letter-spacing:-0.01em;">HEXA</span>
+          <span style="font-family:${SERIF};color:${COLORS.linen};font-size:24px;font-weight:600;letter-spacing:-0.01em;">Edway</span>
           <span style="display:block;margin-top:2px;font-family:${SANS};color:#9DBCA8;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;">Home Education Expert Assistant</span>
         </td></tr>
 
@@ -49,7 +49,7 @@ function WRAP(inner: string): string {
         <tr><td style="background:${COLORS.linen};border-top:1px solid ${COLORS.line};padding:22px 36px;">
           <p style="margin:0;font-family:${SERIF};font-style:italic;color:${COLORS.forest};font-size:14px;">Teach with confidence. Prove with evidence. Sit when ready.</p>
           <p style="margin:10px 0 0;font-family:${SANS};color:${COLORS.inkSoft};font-size:11px;line-height:1.5;">
-            HEXA Education Ltd · UK GDPR compliant · Children&rsquo;s Code certified · AWS London
+            Edway Education Ltd · UK GDPR compliant · Children&rsquo;s Code certified · AWS London
           </p>
         </td></tr>
 
@@ -83,10 +83,10 @@ export function verifyCodeTemplate(opts: {
     .join("");
 
   return {
-    subject: `${opts.code} is your HEXA verification code`,
+    subject: `${opts.code} is your Edway verification code`,
     html: WRAP(`
       ${heading(greeting)}
-      <p style="margin:0 0 22px;">Thanks for joining HEXA. Enter this code to confirm your email and begin your child&rsquo;s diagnostic.</p>
+      <p style="margin:0 0 22px;">Thanks for joining Edway. Enter this code to confirm your email and begin your child&rsquo;s diagnostic.</p>
 
       <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 8px;"><tr>${cells}</tr></table>
 
@@ -96,7 +96,7 @@ export function verifyCodeTemplate(opts: {
           📩 Can&rsquo;t see this in your inbox next time? Check <strong style="color:${COLORS.ink};">Spam</strong> or <strong style="color:${COLORS.ink};">Promotions</strong> and mark it &ldquo;Not spam&rdquo; so future codes arrive safely.
         </p>
       </div>
-      <p style="margin:20px 0 0;color:${COLORS.inkSoft};font-size:12.5px;">If you didn&rsquo;t create a HEXA account, you can safely ignore this email.</p>
+      <p style="margin:20px 0 0;color:${COLORS.inkSoft};font-size:12.5px;">If you didn&rsquo;t create a Edway account, you can safely ignore this email.</p>
     `),
   };
 }
@@ -115,10 +115,10 @@ export function twoFactorCodeTemplate(opts: {
     .join("");
 
   return {
-    subject: `${opts.code} is your HEXA sign-in code`,
+    subject: `${opts.code} is your Edway sign-in code`,
     html: WRAP(`
       ${heading(greeting)}
-      <p style="margin:0 0 22px;">Here&rsquo;s your two-factor sign-in code. Enter it to finish signing in to HEXA.</p>
+      <p style="margin:0 0 22px;">Here&rsquo;s your two-factor sign-in code. Enter it to finish signing in to Edway.</p>
 
       <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin:0 auto 8px;"><tr>${cells}</tr></table>
 
@@ -134,12 +134,12 @@ export function verifyEmailTemplate(opts: {
 }): { subject: string; html: string } {
   const greeting = opts.name ? `Hi ${opts.name.split(" ")[0]},` : "Welcome,";
   return {
-    subject: "Confirm your HEXA account",
+    subject: "Confirm your Edway account",
     html: WRAP(`
       ${heading(greeting)}
-      <p style="margin:0 0 22px;">Thanks for joining HEXA. Please confirm your email to start your child&rsquo;s diagnostic and daily lessons.</p>
+      <p style="margin:0 0 22px;">Thanks for joining Edway. Please confirm your email to start your child&rsquo;s diagnostic and daily lessons.</p>
       <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.verifyUrl, "Confirm my email")}</p>
-      <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">This link expires in 48 hours. If you didn&rsquo;t create a HEXA account, you can ignore this email.</p>
+      <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">This link expires in 48 hours. If you didn&rsquo;t create a Edway account, you can ignore this email.</p>
     `),
   };
 }
@@ -150,12 +150,12 @@ export function welcomeTemplate(opts: {
   name: string | null;
   dashboardUrl: string;
 }): { subject: string; html: string } {
-  const greeting = opts.name ? `Welcome, ${opts.name.split(" ")[0]}.` : "Welcome to HEXA.";
+  const greeting = opts.name ? `Welcome, ${opts.name.split(" ")[0]}.` : "Welcome to Edway.";
   return {
-    subject: "Welcome to HEXA — here's how to begin",
+    subject: "Welcome to Edway — here's how to begin",
     html: WRAP(`
       ${heading(greeting)}
-      <p style="margin:0 0 18px;">Your account is ready. HEXA helps you teach with confidence, prove progress with evidence, and let your child sit exams only when they&rsquo;re truly ready.</p>
+      <p style="margin:0 0 18px;">Your account is ready. Edway helps you teach with confidence, prove progress with evidence, and let your child sit exams only when they&rsquo;re truly ready.</p>
       <p style="margin:0 0 10px;font-weight:600;color:${COLORS.forestDeep};">Your first three steps:</p>
       <ol style="margin:0 0 22px;padding-left:20px;color:${COLORS.ink};">
         <li style="margin-bottom:6px;">Add your child&rsquo;s profile.</li>
@@ -179,7 +179,7 @@ export function diagnosticNudgeTemplate(opts: {
     subject: `10 minutes to ${opts.childName}'s starting point`,
     html: WRAP(`
       ${heading(greeting)}
-      <p style="margin:0 0 18px;">You&rsquo;ve added ${opts.childName} to HEXA — the next step is the diagnostic. It takes about 10 minutes and finds exactly where ${opts.childName} is in Maths, English and Science, so every lesson after starts at the right level.</p>
+      <p style="margin:0 0 18px;">You&rsquo;ve added ${opts.childName} to Edway — the next step is the diagnostic. It takes about 10 minutes and finds exactly where ${opts.childName} is in Maths, English and Science, so every lesson after starts at the right level.</p>
       <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.diagnosticUrl, "Start the diagnostic")}</p>
       <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">Prefer not to get onboarding emails? <a href="${opts.settingsUrl}" style="color:${COLORS.clayDeep};">Turn them off in Settings</a>. Account and safety emails will still reach you.</p>
     `),
@@ -200,7 +200,7 @@ export function firstPlanTemplate(opts: {
       <p style="margin:0 0 18px;">You&rsquo;ve approved ${opts.childName}&rsquo;s first weekly plan. Here&rsquo;s what happens next:</p>
       <ul style="margin:0 0 22px;padding-left:20px;color:${COLORS.ink};">
         <li style="margin-bottom:6px;">${opts.childName} works through daily lessons in child mode — calm, paced, encouraging.</li>
-        <li style="margin-bottom:6px;">HEXA tracks every step and certifies each topic once it&rsquo;s securely learned.</li>
+        <li style="margin-bottom:6px;">Edway tracks every step and certifies each topic once it&rsquo;s securely learned.</li>
         <li>You&rsquo;ll get a weekly digest, and a Local Authority-ready portfolio builds itself as you go.</li>
       </ul>
       <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.learnUrl, "Open child mode")}</p>
@@ -272,7 +272,7 @@ export function weeklyDigestTemplate(opts: {
     .join("");
 
   return {
-    subject: `Your HEXA week — ${opts.weekLabel}`,
+    subject: `Your Edway week — ${opts.weekLabel}`,
     html: WRAP(`
       ${heading(greeting)}
       <p style="margin:0 0 22px;">Here&rsquo;s how learning went at home this week (${opts.weekLabel}).</p>
@@ -461,7 +461,7 @@ export function escalationAlertTemplate(opts: {
     html: WRAP(`
       ${heading(greeting)}
       <p style="margin:0 0 16px;">During today&rsquo;s lesson, something ${opts.childFirstName} wrote suggested they were finding things hard, so we gently paused the lesson. This is a precaution — our safety check prefers to pause too often rather than miss a moment that matters.</p>
-      <p style="margin:0 0 22px;">A calm break and a quick chat is usually all that&rsquo;s needed. The details are waiting in your dashboard (severity: ${opts.severity}), where you can also message the HEXA team — we don&rsquo;t include them in email.</p>
+      <p style="margin:0 0 22px;">A calm break and a quick chat is usually all that&rsquo;s needed. The details are waiting in your dashboard (severity: ${opts.severity}), where you can also message the Edway team — we don&rsquo;t include them in email.</p>
       <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.detailUrl, "Review &amp; message the team")}</p>
       <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">You can manage these alerts in <a href="${opts.settingsUrl}" style="color:${COLORS.clayDeep};">Settings &rarr; Email preferences</a>. Account and safety emails inside the dashboard are always available regardless.</p>
     `),
@@ -476,7 +476,7 @@ export function portfolioShareTemplate(opts: {
 }): { subject: string; html: string } {
   const from = opts.fromParent ? ` from ${opts.fromParent}` : "";
   return {
-    subject: `HEXA education portfolio — ${opts.childName}, ${opts.term}`,
+    subject: `Edway education portfolio — ${opts.childName}, ${opts.term}`,
     html: WRAP(`
       ${heading(`Education portfolio${from}`)}
       <p style="margin:0 0 12px;">A verified Local Authority education portfolio has been shared with you for:</p>

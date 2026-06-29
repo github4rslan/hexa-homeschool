@@ -4,7 +4,7 @@ import { LegalLayout } from "@/components/marketing/legal-layout";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description:
-    "How HEXA collects, uses, and protects your data. Designed for UK GDPR and ICO Age-Appropriate Design Code (Children's Code) compliance.",
+    "How Edway collects, uses, and protects your data. Designed for UK GDPR and ICO Age-Appropriate Design Code (Children's Code) compliance.",
 };
 
 export default function PrivacyPage() {
@@ -12,11 +12,11 @@ export default function PrivacyPage() {
     <LegalLayout
       title="Privacy Policy"
       lastUpdated="25 May 2026"
-      intro="This Privacy Policy explains how HEXA Education Ltd (we, us, our) collects, uses, retains and protects personal data when you use our platform. We are registered with the Information Commissioner's Office (ICO) and operate under UK GDPR and the Data Protection Act 2018."
+      intro="This Privacy Policy explains how Edway Education Ltd (we, us, our) collects, uses, retains and protects personal data when you use our platform. We are registered with the Information Commissioner's Office (ICO) and operate under UK GDPR and the Data Protection Act 2018."
     >
       <h2 id="who-we-are">Who we are</h2>
       <p>
-        HEXA Education Ltd is the data controller for all personal data processed
+        Edway Education Ltd is the data controller for all personal data processed
         through our platform. Our registered office is in the United Kingdom.
         All data is stored exclusively within the UK (AWS London, eu-west-2 region).
       </p>
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
 
       <h2 id="children">Children's data</h2>
       <p>
-        HEXA's primary users include children aged 10–13. We comply fully with
+        Edway's primary users include children aged 10–13. We comply fully with
         the ICO Age-Appropriate Design Code:
       </p>
       <ul>

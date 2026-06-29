@@ -5,7 +5,7 @@ import { CTA } from "@/components/marketing/cta";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 
 export const metadata: Metadata = {
-  title: "How HEXA works",
+  title: "How Edway works",
   description:
     "From the Day 1 diagnostic to sitting the exam when ready — the six-step end-to-end student journey.",
 };

@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "How to reach HEXA — by department, with response times.",
+  description: "How to reach Edway — by department, with response times.",
 };
 
 const CHANNELS = [

@@ -1,5 +1,5 @@
 /**
- * HEXA interactive practice steps — human-authored (Feature 1).
+ * Edway interactive practice steps — human-authored (Feature 1).
  *
  * A small, vetted set of interactive questions (tap_reveal / fill_blank /
  * drag_drop) across Maths, English and Science, attached to existing topics so

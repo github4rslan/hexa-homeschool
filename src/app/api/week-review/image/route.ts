@@ -83,12 +83,12 @@ export async function GET(request: Request) {
   </defs>
   <rect width="1080" height="1080" fill="url(#bg)"/>
   <rect x="40" y="40" width="1000" height="1000" rx="36" fill="none" stroke="#2A4A3A" stroke-width="2"/>
-  <text x="540" y="180" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="30" letter-spacing="6" fill="#D6B36A">HEXA · WEEK IN REVIEW</text>
+  <text x="540" y="180" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="30" letter-spacing="6" fill="#D6B36A">Edway · WEEK IN REVIEW</text>
   <text x="540" y="320" text-anchor="middle" font-family="Georgia, serif" font-size="96" font-weight="700" fill="#F4F1EA">${first}&#39;s week</text>
   <text x="540" y="400" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="36" fill="#A7C4B5">${esc(review.weekLabel)}</text>
   ${statBlocks}
   ${subjectLine}
-  <text x="540" y="1010" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#6E8478">Learning at home, every day · hexa</text>
+  <text x="540" y="1010" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="26" fill="#6E8478">Learning at home, every day · Edway</text>
 </svg>`;
 
   return new NextResponse(svg, {

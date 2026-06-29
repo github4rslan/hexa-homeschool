@@ -115,7 +115,7 @@ const DEMO: DemoStep[] = [
     time: "exam day",
     agent: "Planning Agent",
     icon: GraduationCap,
-    body: "Aisha sits her real GCSE Mathematics paper as a private candidate at her local assessment centre. HEXA guided the registration process; the centre confirms entry without issue.",
+    body: "Aisha sits her real GCSE Mathematics paper as a private candidate at her local assessment centre. Edway guided the registration process; the centre confirms entry without issue.",
     metric: { label: "Final result", value: "Grade 8" },
     log: [
       "[08:30] Private candidate entry · Pearson Edexcel 1MA1",
@@ -220,7 +220,7 @@ export function DemoWalkthrough() {
                     <span className="h-2.5 w-2.5 rounded-full bg-neon-500/60" />
                   </div>
                   <span className="font-mono text-[10px] uppercase tracking-widest text-fog-500 ml-2">
-                    hexa-system.log
+                    edway-system.log
                   </span>
                 </div>
                 <div className="p-4 font-mono text-xs leading-loose text-fog-300 space-y-1">

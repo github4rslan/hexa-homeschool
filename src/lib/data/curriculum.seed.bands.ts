@@ -4,7 +4,7 @@
  *
  * Why this file exists: the original `curriculum.seed*.ts` bank is GCSE/KS4
  * content (and the few topics once tagged KS3 are reclassified to KS4 — their
- * working grades are GCSE bands and their questions are GCSE-level). HEXA serves
+ * working grades are GCSE bands and their questions are GCSE-level). Edway serves
  * ages 7–16, so the weekly plan and daily lessons need genuine KS2 and KS3
  * topics with in-band lesson questions. These fill those bands so a young child
  * works at their level, never on GCSE material.

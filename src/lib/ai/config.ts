@@ -1,7 +1,7 @@
 /**
- * Central AI configuration for HEXA's bounded Phase-1 agents.
+ * Central AI configuration for Edway's bounded Phase-1 agents.
  *
- * Design constraints from HEXA Technical Brief v2.0:
+ * Design constraints from Edway Technical Brief v2.0:
  *  - "Safety over Pacing Velocity": every generative payload faces automated
  *    validation before it can reach a child's interface.
  *  - The Teaching Agent enforces a 95% factual-confidence threshold; the

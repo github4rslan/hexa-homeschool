@@ -8,7 +8,7 @@ import { cloudinaryThumb } from "@/lib/media/cloudinary";
 export const metadata: Metadata = {
   title: "Success gallery",
   description:
-    "Real moments from UK homeschooling families learning with HEXA.",
+    "Real moments from UK homeschooling families learning with Edway.",
 };
 
 export const dynamic = "force-dynamic";
@@ -28,7 +28,7 @@ export default async function GalleryPage() {
               <span className="text-gradient-aurora">Real learning.</span>
             </>
           }
-          description="A growing gallery of moments from UK homeschooling families on HEXA."
+          description="A growing gallery of moments from UK homeschooling families on Edway."
         />
       </Section>
 
@@ -43,7 +43,7 @@ export default async function GalleryPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={cloudinaryThumb(m.secure_url, 600)}
-                  alt="HEXA family moment"
+                  alt="Edway family moment"
                   className="h-full w-full object-cover"
                   loading="lazy"
                 />
@@ -57,7 +57,7 @@ export default async function GalleryPage() {
             </h3>
             <p className="text-sm text-fog-400 max-w-md mx-auto">
               We&apos;re collecting consented photos and stories from families on
-              HEXA. Check back shortly — or start your own journey today.
+              Edway. Check back shortly — or start your own journey today.
             </p>
           </Card>
         )}
