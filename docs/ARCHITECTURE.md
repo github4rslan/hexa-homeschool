@@ -195,7 +195,7 @@ must go through repo functions — never call `getCollection` from route handler
 
 ## Age-Banding & Cross-Band Progression
 
-HEXA serves ages 7–16, so the plan and daily lessons are **age-appropriate**, not
+Edway serves ages 7–16, so the plan and daily lessons are **age-appropriate**, not
 GCSE-by-default. The age→band policy lives in ONE place
 ([lib/engine/diagnostic-placement.ts](../src/lib/engine/diagnostic-placement.ts)):
 `placeChild(age)` maps age → key stage (≤10 → KS2, 11–13 → KS3, 14+ → KS4).

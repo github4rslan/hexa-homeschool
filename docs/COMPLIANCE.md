@@ -2,7 +2,7 @@
 
 [← README](../README.md)
 
-HEXA serves children's personal data in a UK regulatory context. This document maps
+Edway serves children's personal data in a UK regulatory context. This document maps
 the legal obligations to the code that implements them, so changes don't silently
 break a legal requirement.
 

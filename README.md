@@ -1,4 +1,4 @@
-# HEXA
+# Edway
 
 AI-powered homeschooling platform preparing UK students for GCSEs by age 14.
 
