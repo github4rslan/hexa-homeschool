@@ -22,7 +22,7 @@ export async function sendImmediateEscalationSms(
     if (!parent?.phone) return;
 
     const firstName = childName.split(" ")[0];
-    const body = `HEXA: ${firstName} may need you — please check on them and see your dashboard.`;
+    const body = `Edway: ${firstName} may need you — please check on them and see your dashboard.`;
     await sendSms(parent.phone, body);
   } catch (err) {
     console.error("[escalation sms] failed (non-fatal):", err);

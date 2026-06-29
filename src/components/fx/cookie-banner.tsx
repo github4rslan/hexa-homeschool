@@ -53,7 +53,7 @@ export function CookieBanner() {
                 </h4>
                 <p className="text-xs text-fog-400 leading-relaxed">
                   Cookies that keep you signed in, plus — only if you accept —
-                  privacy-respecting product analytics to improve HEXA for
+                  privacy-respecting product analytics to improve Edway for
                   parents. No advertising, and children are never tracked.{" "}
                   <Link href="/cookies" className="text-violet-300 hover:text-violet-200 underline underline-offset-2">
                     Read more

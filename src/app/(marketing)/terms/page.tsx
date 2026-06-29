@@ -4,7 +4,7 @@ import { LegalLayout } from "@/components/marketing/legal-layout";
 export const metadata: Metadata = {
   title: "Terms of Service",
   description:
-    "The terms under which HEXA Education Ltd provides its AI-powered homeschooling platform to UK families.",
+    "The terms under which Edway Education Ltd provides its AI-powered homeschooling platform to UK families.",
 };
 
 export default function TermsPage() {
@@ -12,19 +12,19 @@ export default function TermsPage() {
     <LegalLayout
       title="Terms of Service"
       lastUpdated="25 May 2026"
-      intro="These Terms govern your access to and use of HEXA. By creating an account, you agree to these Terms on behalf of yourself and any minor child enrolled under your account."
+      intro="These Terms govern your access to and use of Edway. By creating an account, you agree to these Terms on behalf of yourself and any minor child enrolled under your account."
     >
       <h2>1. Eligibility</h2>
       <p>
         You must be at least 18 years old and the parent or legal guardian of
-        any child enrolled. HEXA is not a replacement for legal compliance with
+        any child enrolled. Edway is not a replacement for legal compliance with
         UK elective home education requirements — you remain responsible for
         registering with your Local Authority where applicable.
       </p>
 
       <h2>2. The service</h2>
       <p>
-        HEXA provides an AI-powered learning platform preparing children for
+        Edway provides an AI-powered learning platform preparing children for
         GCSE Mathematics, English Language, English Literature, and Sciences.
         We provide instructional content, assessments, and progress documentation.
         We <strong>do not</strong>:
@@ -55,7 +55,7 @@ export default function TermsPage() {
 
       <h2>5. The safety net</h2>
       <p>
-        HEXA includes a Human Safety Net with SLA-bound escalation. We will
+        Edway includes a Human Safety Net with SLA-bound escalation. We will
         notify you immediately of any safeguarding event and may contact
         relevant statutory bodies (e.g. local safeguarding authorities, NSPCC,
         emergency services) without prior parental notice if we have a reasonable
@@ -65,14 +65,14 @@ export default function TermsPage() {
       <h2>6. Intellectual property</h2>
       <p>
         All platform content (lessons, drills, assessment materials, software) is
-        owned by HEXA Education Ltd or licensed to us. You retain ownership of
+        owned by Edway Education Ltd or licensed to us. You retain ownership of
         all data your child generates. We do not use customer data to train AI
         models.
       </p>
 
       <h2>7. Limitation of liability</h2>
       <p>
-        To the extent permitted by UK law, HEXA Education Ltd's total liability
+        To the extent permitted by UK law, Edway Education Ltd's total liability
         for any claim arising from these Terms is limited to the amount you paid
         us in the 12 months preceding the claim. Nothing in these Terms limits
         liability for death or personal injury caused by our negligence, or for

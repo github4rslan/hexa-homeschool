@@ -15,7 +15,7 @@ import { Reveal } from "@/components/fx/reveal";
 export const metadata: Metadata = {
   title: "For Local Authorities",
   description:
-    "Information for UK Local Authority EHE officers reviewing children registered on HEXA. Cryptographically signed, statutorily defensible portfolios.",
+    "Information for UK Local Authority EHE officers reviewing children registered on Edway. Cryptographically signed, statutorily defensible portfolios.",
 };
 
 const STATUTORY = [
@@ -79,7 +79,7 @@ export default function LocalAuthoritiesPage() {
             statutorily defensible.
           </p>
           <p className="mt-4 max-w-2xl text-base leading-relaxed text-ink-600">
-            HEXA generates portfolios in statutory format: Intent, Implementation,
+            Edway generates portfolios in statutory format: Intent, Implementation,
             Impact, Next Steps. Professional. Thorough. Ready for inspection.
           </p>
           <div className="mt-8">

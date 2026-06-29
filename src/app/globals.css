@@ -2,7 +2,7 @@
 
 @theme {
   /* ──────────────────────────────────────────────────────────
-     HEXA Brand Palette — Futuristic AI / Dark + Glow
+     Edway Brand Palette — Futuristic AI / Dark + Glow
      ────────────────────────────────────────────────────────── */
 
   /* Deep space foundation */
@@ -12,7 +12,7 @@
   --color-cosmos: #1A1D3A;
   --color-surface: #232752;
 
-  /* Primary — Electric Violet (HEXA signature) */
+  /* Primary — Electric Violet (Edway signature) */
   --color-violet-50: #F5F3FF;
   --color-violet-100: #EDE9FE;
   --color-violet-200: #DDD6FE;
@@ -57,7 +57,7 @@
   --color-fog-800: #24263D;
 
   /* ──────────────────────────────────────────────────────────
-     HEXA Warm Palette — Marketing site (heritage / editorial)
+     Edway Warm Palette — Marketing site (heritage / editorial)
      Deep forest greens, warm amber, soft linen. Scoped via .theme-warm.
      ────────────────────────────────────────────────────────── */
 
@@ -225,7 +225,7 @@
 }
 
 /* ──────────────────────────────────────────────────────────
-   Utility layer — HEXA-specific patterns
+   Utility layer — Edway-specific patterns
    ────────────────────────────────────────────────────────── */
 @layer utilities {
   /* Glass surfaces */

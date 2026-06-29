@@ -15,7 +15,7 @@ export function MarketingFooter() {
               <HexaLogo size={36} />
               <div className="leading-tight">
                 <div className="font-editorial text-xl font-semibold text-linen-50">
-                  HEXA
+                  Edway
                 </div>
                 <div className="text-[11px] uppercase tracking-wider text-forest-200">
                   Home Education Expert Assistant
@@ -35,7 +35,7 @@ export function MarketingFooter() {
             <div className="flex flex-col gap-1.5 text-xs text-forest-200/70">
               <span>hello@edway.uk</span>
               <span>
-                © {new Date().getFullYear()} HEXA Education Ltd. UK GDPR
+                © {new Date().getFullYear()} Edway Education Ltd. UK GDPR
                 compliant. Children&apos;s Code certified. AWS London.
               </span>
             </div>

@@ -72,7 +72,7 @@ export function Problem() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-12 font-editorial text-2xl md:text-3xl font-semibold text-gradient-forest"
         >
-          HEXA solves this.
+          Edway solves this.
         </motion.p>
       </div>
     </Section>

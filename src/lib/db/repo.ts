@@ -1934,7 +1934,7 @@ export async function getDiagnosticPool(
   keyStage = 4,
 ): Promise<QuestionDoc[]> {
   const col = await getCollection<QuestionDoc>(Collections.questions);
-  // Band + one harder band of headroom; clamp into HEXA's KS2–KS4 range.
+  // Band + one harder band of headroom; clamp into Edway's KS2–KS4 range.
   const base = Math.max(2, Math.min(4, keyStage));
   const bands = base >= 4 ? [4] : [base, base + 1];
 
@@ -2828,8 +2828,8 @@ export async function onboardingChecklist(
 // ── Tutor bookings (Stage 5) ─────────────────────────────
 const TIER_TUTOR_QUOTA: Record<ParentDoc["subscription_tier"], number> = {
   diagnostic: 0,
-  standard: 1, // HEXA Complete: 1/mo
-  family: 3, // HEXA Partner: 3/mo
+  standard: 1, // Edway Complete: 1/mo
+  family: 3, // Edway Partner: 3/mo
 };
 
 export async function tutorBookingsThisMonth(parentId: string): Promise<number> {

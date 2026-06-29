@@ -34,7 +34,7 @@ export function CompliancePreview() {
           The Children&apos;s Wellbeing and Schools Act 2026 will soon require all
           home-educated children to be registered with Local Authorities. Evidence
           of suitable education will be mandatory.{" "}
-          <span className="font-semibold text-forest-900">HEXA is ready.</span>
+          <span className="font-semibold text-forest-900">Edway is ready.</span>
         </p>
 
         <div className="mt-8 grid sm:grid-cols-2 gap-3">

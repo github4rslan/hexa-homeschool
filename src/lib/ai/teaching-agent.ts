@@ -1,7 +1,7 @@
 /**
  * Teaching Agent + Teaching Checker (bounded Phase-1 implementation).
  *
- * Pipeline (per HEXA Technical Brief v2.0, Agent 2):
+ * Pipeline (per Edway Technical Brief v2.0, Agent 2):
  *   1. Teaching Agent generates a contextual explanation grounded in the
  *      human-authored question + canonical answer (the "vetted matrix").
  *   2. Teaching Checker independently validates that explanation for factual
@@ -127,7 +127,7 @@ async function generateExplanation(req: TutorRequest): Promise<ChatResult> {
     : "The student answered incorrectly or is stuck. Gently explain the correct method without shaming.";
 
   const system = [
-    "You are HEXA's Teaching Agent — a UK GCSE tutor for a home-educated child.",
+    "You are Edway's Teaching Agent — a UK GCSE tutor for a home-educated child.",
     "Explain in clear, encouraging, age-appropriate British English.",
     "Be concise: 2–4 short sentences. Never condescend. Never shame.",
     "Ground every statement in the provided correct answer. Do not introduce facts beyond it.",
@@ -167,7 +167,7 @@ async function runChecker(
   explanation: string,
 ): Promise<CheckerRun> {
   const system = [
-    "You are HEXA's Teaching Checker — an independent safety validator.",
+    "You are Edway's Teaching Checker — an independent safety validator.",
     "You verify a tutor explanation BEFORE it reaches a child.",
     "Check two things strictly:",
     "1) Factual consistency: does the explanation agree with the canonical correct answer and contain no incorrect mathematical/scientific/grammatical claims?",

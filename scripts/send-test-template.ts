@@ -23,7 +23,7 @@ async function main() {
     method: "POST",
     headers: { "api-key": key, "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify({
-      sender: { name: "HEXA", email: "info@thekingdomedit.com" },
+      sender: { name: "Edway", email: "info@thekingdomedit.com" },
       to: [{ email: to }],
       subject: "[Preview] " + tmpl.subject,
       htmlContent: tmpl.html,

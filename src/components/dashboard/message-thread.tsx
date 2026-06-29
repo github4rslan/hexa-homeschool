@@ -74,7 +74,7 @@ export function MessageThread({
                 ].join(" ")}
               >
                 <div className="mb-0.5 text-[10px] uppercase tracking-wide text-fog-500">
-                  {m.sender === "parent" ? "You" : "HEXA team"} ·{" "}
+                  {m.sender === "parent" ? "You" : "Edway team"} ·{" "}
                   {new Date(m.createdAt).toLocaleDateString("en-GB", {
                     day: "numeric",
                     month: "short",
@@ -95,7 +95,7 @@ export function MessageThread({
           rows={2}
           maxLength={MAX_MESSAGE_CHARS}
           required
-          placeholder="Write a message to the HEXA team…"
+          placeholder="Write a message to the Edway team…"
           className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-fog-50 placeholder:text-fog-500 focus:border-violet-400/60 focus:outline-none focus:ring-2 focus:ring-violet-400/20"
         />
         {error && <p className="text-xs text-crimson-400">{error}</p>}

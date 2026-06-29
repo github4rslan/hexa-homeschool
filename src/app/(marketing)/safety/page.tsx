@@ -53,7 +53,7 @@ export default function SafetyPage() {
               <span className="text-gradient-aurora">structural humility.</span>
             </>
           }
-          description="HEXA is designed around the assumption that AI will eventually be wrong. Every workflow has a defined point at which it hands operational control to a human — and every gateway carries a published SLA."
+          description="Edway is designed around the assumption that AI will eventually be wrong. Every workflow has a defined point at which it hands operational control to a human — and every gateway carries a published SLA."
         />
       </Section>
 

@@ -21,7 +21,7 @@ import { diagnosticPageState } from "@/lib/diagnostic/page-state";
 export const metadata: Metadata = {
   title: "Diagnostic",
   description:
-    "The HEXA adaptive diagnostic — map your child's current level against GCSE standards.",
+    "The Edway adaptive diagnostic — map your child's current level against GCSE standards.",
 };
 
 export const dynamic = "force-dynamic";

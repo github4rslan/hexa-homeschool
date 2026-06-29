@@ -4,13 +4,13 @@ import { CTA } from "@/components/marketing/cta";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 
 export const metadata: Metadata = {
-  title: "About HEXA",
+  title: "About Edway",
   description:
-    "Meet Aziz — founder, father, believer in childhood. The story behind HEXA, written by the parent who built it.",
+    "Meet Aziz — founder, father, believer in childhood. The story behind Edway, written by the parent who built it.",
 };
 
 /**
- * Founder's Story — Section J. Verbatim from the approved HEXA Website
+ * Founder's Story — Section J. Verbatim from the approved Edway Website
  * Implementation Guide. Editorial feature layout: left-aligned, generous
  * margins, lead-in labels, signature sign-off. Wording is unchanged.
  */
@@ -47,21 +47,21 @@ const STORY: { lead: string; paragraphs: string[] }[] = [
     ],
   },
   {
-    lead: "Why I Built HEXA",
+    lead: "Why I Built Edway",
     paragraphs: [
       "I did not set out to build a company. I set out to build the life my family deserved. A way for my daughters to learn at their pace, in their way, without me losing sleep over paperwork. A way to prove to myself and any authority that my children were not just keeping up, but flourishing. A way to bring expert education within reach of normal families, without the crushing cost of private tutoring. And now, with new laws coming—registration, scrutiny, compliance—I want to protect parents who feel that same anxiety I felt. Who lie awake wondering if they are enough. You are enough. And you do not have to do it alone.",
     ],
   },
   {
-    lead: "What HEXA Means to Me",
+    lead: "What Edway Means to Me",
     paragraphs: [
-      "HEXA is the assistant I wished I had. It plans the lessons I used to plan at midnight. It teaches the concepts I was not sure how to explain. It tracks the progress I used to guess at. And when the letter comes—the one every homeschooling parent fears—it generates the proof that lets me sleep. Not because I am replacing myself as a parent. Because I am finally present as one.",
+      "Edway is the assistant I wished I had. It plans the lessons I used to plan at midnight. It teaches the concepts I was not sure how to explain. It tracks the progress I used to guess at. And when the letter comes—the one every homeschooling parent fears—it generates the proof that lets me sleep. Not because I am replacing myself as a parent. Because I am finally present as one.",
     ],
   },
   {
     lead: "To Every Parent Who Is Wondering",
     paragraphs: [
-      "Maybe you are where I was. Staring at a system that does not fit your child. Hearing stories that keep you up at night. Wanting something different but not knowing if you can pull it off. You can. You do not need to be a teacher. You need to be a parent who cares enough to try. HEXA handles the rest.",
+      "Maybe you are where I was. Staring at a system that does not fit your child. Hearing stories that keep you up at night. Wanting something different but not knowing if you can pull it off. You can. You do not need to be a teacher. You need to be a parent who cares enough to try. Edway handles the rest.",
     ],
   },
 ];
@@ -124,7 +124,7 @@ export default function AboutPage() {
               Aziz Ahmed
             </p>
             <p className="mt-1 text-sm text-ink-600">
-              Founder, HEXA · Father of three · Homeschooler · Jiu-jitsu dad
+              Founder, Edway · Father of three · Homeschooler · Jiu-jitsu dad
             </p>
           </div>
         </article>

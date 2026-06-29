@@ -1,6 +1,6 @@
 /**
- * The HEXA implementation roadmap.
- * Source: HEXA Technical Brief v1.0, Section 7.
+ * The Edway implementation roadmap.
+ * Source: Edway Technical Brief v1.0, Section 7.
  */
 
 export type PhaseStatus = "complete" | "in_progress" | "upcoming";

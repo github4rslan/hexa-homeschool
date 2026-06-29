@@ -106,7 +106,7 @@ export function MyStuffPanel({
 
       <h1 className="mb-2 text-4xl font-semibold text-fog-50">My stuff</h1>
       <p className="mb-8 text-xl text-fog-300">
-        Make HEXA feel like yours.
+        Make Edway feel like yours.
       </p>
 
       {/* Voice */}

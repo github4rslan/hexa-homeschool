@@ -85,7 +85,7 @@ export function Hero() {
             transition={{ duration: 0.7, delay: 0.6 }}
             className="text-lg md:text-xl text-ink-700 max-w-2xl leading-relaxed"
           >
-            HEXA plans your child&apos;s learning, teaches daily lessons, tracks
+            Edway plans your child&apos;s learning, teaches daily lessons, tracks
             every step, and generates the evidence Local Authorities need. All in
             one place.
           </motion.p>

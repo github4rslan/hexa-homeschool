@@ -100,7 +100,7 @@ export function FeatureGrid() {
             <span className="text-gradient-violet">Nothing you don't.</span>
           </>
         }
-        description="HEXA is purpose-built for one outcome — a transparent, verified path to GCSE readiness — and shipped with the exact toolkit to get there."
+        description="Edway is purpose-built for one outcome — a transparent, verified path to GCSE readiness — and shipped with the exact toolkit to get there."
       />
 
       <div className="mt-20 grid md:grid-cols-2 lg:grid-cols-3 gap-5">

@@ -22,7 +22,7 @@ export default function LoginPage({
           Welcome back
         </h1>
         <p className="text-sm text-fog-400">
-          Sign in to your HEXA parent account.
+          Sign in to your Edway parent account.
         </p>
       </div>
 
@@ -64,7 +64,7 @@ export default function LoginPage({
       </form>
 
       <div className="mt-6 pt-6 border-t border-white/5 text-center text-sm text-fog-400">
-        New to HEXA?{" "}
+        New to Edway?{" "}
         <Link href="/signup" className="font-medium text-violet-300 hover:text-violet-200">
           Create an account
         </Link>

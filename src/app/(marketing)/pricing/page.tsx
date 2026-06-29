@@ -10,7 +10,7 @@ import { TrackOnMount } from "@/components/analytics/analytics-provider";
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "HEXA Complete £49/mo, HEXA Partner £99/mo. Additional subjects £15/mo each. Annual payment saves 17%. 14-day free trial. Cancel anytime.",
+    "Edway Complete £49/mo, Edway Partner £99/mo. Additional subjects £15/mo each. Annual payment saves 17%. 14-day free trial. Cancel anytime.",
 };
 
 interface Tier {
@@ -25,7 +25,7 @@ interface Tier {
 
 const TIERS: Tier[] = [
   {
-    name: "HEXA Complete",
+    name: "Edway Complete",
     tier: "standard",
     price: 49,
     features: [
@@ -37,7 +37,7 @@ const TIERS: Tier[] = [
     ],
   },
   {
-    name: "HEXA Partner",
+    name: "Edway Partner",
     tier: "family",
     price: 99,
     features: [

@@ -3,7 +3,7 @@ import { LegalLayout } from "@/components/marketing/legal-layout";
 
 export const metadata: Metadata = {
   title: "Cookie Policy",
-  description: "How HEXA uses cookies and similar technologies.",
+  description: "How Edway uses cookies and similar technologies.",
 };
 
 export default function CookiesPage() {
@@ -11,7 +11,7 @@ export default function CookiesPage() {
     <LegalLayout
       title="Cookie Policy"
       lastUpdated="25 May 2026"
-      intro="HEXA uses the minimum number of cookies required to operate. We do not use cookies for advertising, behavioural profiling, or third-party tracking."
+      intro="Edway uses the minimum number of cookies required to operate. We do not use cookies for advertising, behavioural profiling, or third-party tracking."
     >
       <h2>Cookies we use</h2>
 

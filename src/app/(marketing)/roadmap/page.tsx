@@ -11,7 +11,7 @@ import { CTA } from "@/components/marketing/cta";
 export const metadata: Metadata = {
   title: "Roadmap",
   description:
-    "The four-phase HEXA roadmap — from internal trial to £2.5M+ ARR.",
+    "The four-phase Edway roadmap — from internal trial to £2.5M+ ARR.",
 };
 
 const statusMap: Record<

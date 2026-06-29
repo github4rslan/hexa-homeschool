@@ -1,6 +1,6 @@
 /**
  * The end-to-end student journey.
- * Source: HEXA Technical Brief v1.0, Section 1.
+ * Source: Edway Technical Brief v1.0, Section 1.
  */
 
 export interface JourneyStep {
@@ -74,7 +74,7 @@ export const JOURNEY: JourneyStep[] = [
     title: "Decide",
     timing: "When Ready",
     description:
-      "When your child reaches the standard, you choose when to sit the exam. At fourteen, fifteen, or sixteen. HEXA supports you either way.",
+      "When your child reaches the standard, you choose when to sit the exam. At fourteen, fifteen, or sixteen. Edway supports you either way.",
     detail:
       "No artificial deadlines. The decision is data-driven and entirely yours.",
     icon: "GraduationCap",

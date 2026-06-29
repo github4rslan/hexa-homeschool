@@ -6,7 +6,7 @@ import type { MasteryCertificate } from "@/lib/db/repo";
 
 /**
  * Print-beautiful mastery certificate — grandparent-fridge-worthy. Child's
- * first name, the achievement, the date and a HEXA seal, with the verification
+ * first name, the achievement, the date and a Edway seal, with the verification
  * hash in small print (tying delight to the compliance story). "Download as
  * PDF" uses the browser's print-to-PDF via print CSS — same pattern as the
  * monthly report, no PDF library. On-screen chrome is hidden when printing.
@@ -89,7 +89,7 @@ export function CertificateView({
 
         <div className="mt-10 border-t border-white/10 pt-6">
           <p className="text-xs text-fog-500">
-            Verified by HEXA · tamper-evident reference
+            Verified by Edway · tamper-evident reference
           </p>
           <p className="mt-1 break-all font-mono text-[10px] text-fog-600">
             {certificate.verificationHash}

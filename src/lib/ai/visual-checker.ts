@@ -78,7 +78,7 @@ async function relevanceCheck(
         {
           role: "system",
           content: [
-            "You are HEXA's automated Visual Checker.",
+            "You are Edway's automated Visual Checker.",
             "A child will see the image only if you approve it.",
             "Reject unless it is a clean, safe, age-appropriate educational diagram that matches the question concept.",
             "Reject if it contains text, letters, numerals, equations, labels, people, faces, misleading diagrams, or unsafe content.",

@@ -1,7 +1,7 @@
 /**
  * Compliance Agent — portfolio assembly + cryptographic verification.
  *
- * Per HEXA Technical Brief v2.0 (Agent 5 + Operational Flows): portfolios are
+ * Per Edway Technical Brief v2.0 (Agent 5 + Operational Flows): portfolios are
  * compiled into a tamper-evident document carrying an SHA-256 hash computed
  * over the underlying immutable records, in the statutory format:
  * Intent · Implementation · Impact · Next Steps.

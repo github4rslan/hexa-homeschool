@@ -1,6 +1,6 @@
 /**
  * Human Safety Net & Exception Gateways.
- * Source: HEXA Technical Brief v1.0, Section 4.
+ * Source: Edway Technical Brief v1.0, Section 4.
  */
 
 export type SeverityLevel = "immediate" | "critical" | "high" | "medium" | "low";

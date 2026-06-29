@@ -15,7 +15,7 @@ import { ageFromDob } from "@/lib/engine/exam-decision";
 
 export { ageFromDob };
 
-/** UK key stage HEXA covers: 2 (KS2, ages 7–10), 3 (KS3, 11–13), 4 (GCSE, 14–16). */
+/** UK key stage Edway covers: 2 (KS2, ages 7–10), 3 (KS3, 11–13), 4 (GCSE, 14–16). */
 export type KeyStage = 2 | 3 | 4;
 
 export interface Placement {

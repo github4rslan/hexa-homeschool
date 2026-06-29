@@ -126,8 +126,8 @@ export default async function TutoringPage({
               <h2 className="text-lg font-semibold text-fog-50">Paused lessons</h2>
             </div>
             <p className="mb-5 text-sm text-fog-400">
-              HEXA paused a lesson because your child may have been feeling stuck
-              or upset. Check in with them when you can, and message the HEXA team
+              Edway paused a lesson because your child may have been feeling stuck
+              or upset. Check in with them when you can, and message the Edway team
               here if you&apos;d like support. This is an educational safeguard
               only — for any welfare concern, contact your GP or relevant services.
             </p>
@@ -174,8 +174,8 @@ export default async function TutoringPage({
           {limit === 0 ? (
             <div className="rounded-xl border border-amber-400/20 bg-amber-500/5 p-4">
               <p className="text-sm text-fog-200">
-                Live tutor sessions are included on HEXA Complete (1/month) and
-                HEXA Partner (3/month). Upgrade your plan to book a session.
+                Live tutor sessions are included on Edway Complete (1/month) and
+                Edway Partner (3/month). Upgrade your plan to book a session.
               </p>
               <Button href="/pricing" variant="secondary" size="md" className="mt-4">
                 See plans

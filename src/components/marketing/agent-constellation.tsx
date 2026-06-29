@@ -26,7 +26,7 @@ interface ConstellationProps {
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 /**
- * Animated constellation of the six HEXA agents orbiting a central node.
+ * Animated constellation of the six Edway agents orbiting a central node.
  * Self-contained, no external state.
  */
 export function AgentConstellation({ size = 560, className }: ConstellationProps) {
@@ -155,7 +155,7 @@ export function AgentConstellation({ size = 560, className }: ConstellationProps
         })}
       </svg>
 
-      {/* Centre node (HEXA core) */}
+      {/* Centre node (Edway core) */}
       <motion.div
         className="absolute flex items-center justify-center"
         style={{

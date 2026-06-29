@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "HEXA — GCSE-ready at 14",
-    short_name: "HEXA",
+    name: "Edway — GCSE-ready at 14",
+    short_name: "Edway",
     description:
       "AI-powered homeschooling platform preparing UK students for GCSEs by age 14.",
     start_url: "/",

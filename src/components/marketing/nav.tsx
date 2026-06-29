@@ -53,12 +53,12 @@ export function MarketingNav() {
           <Link
             href="/"
             className="flex items-center gap-2.5 group transition-transform hover:scale-[1.02]"
-            aria-label="HEXA home"
+            aria-label="Edway home"
             aria-current={pathname === "/" ? "page" : undefined}
           >
             <HexaLogo size={32} />
             <span className="font-editorial text-xl font-semibold tracking-tight text-forest-900">
-              HEXA
+              Edway
             </span>
             <span className="hidden sm:inline-flex items-center rounded-full border border-clay-300 bg-clay-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-clay-700 ml-1">
               Home Education Expert Assistant

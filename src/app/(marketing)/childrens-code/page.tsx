@@ -4,7 +4,7 @@ import { LegalLayout } from "@/components/marketing/legal-layout";
 export const metadata: Metadata = {
   title: "Children's Code Compliance",
   description:
-    "How HEXA implements the 15 standards of the ICO Age-Appropriate Design Code.",
+    "How Edway implements the 15 standards of the ICO Age-Appropriate Design Code.",
 };
 
 const STANDARDS = [
@@ -21,7 +21,7 @@ const STANDARDS = [
   { num: 11, title: "Parental controls", body: "Comprehensive parent dashboard with full visibility and control." },
   { num: 12, title: "Profiling", body: "No profiling for advertising, monetisation, or engagement loops. Personalisation is strictly educational." },
   { num: 13, title: "Nudge techniques", body: "No dark patterns. No notifications designed to extend session time. No streak pressure." },
-  { num: 14, title: "Connected toys and devices", body: "Not applicable — HEXA is a web/app service only." },
+  { num: 14, title: "Connected toys and devices", body: "Not applicable — Edway is a web/app service only." },
   { num: 15, title: "Online tools", body: "Easy-to-use tools to exercise data rights (access, deletion, portability) directly from the parent dashboard." },
 ];
 
@@ -30,7 +30,7 @@ export default function ChildrensCodePage() {
     <LegalLayout
       title="Children's Code Compliance"
       lastUpdated="25 May 2026"
-      intro="The ICO Age-Appropriate Design Code (Children's Code) sets 15 standards for online services likely to be accessed by children. HEXA was designed from the ground up to meet — and in most cases exceed — every one of them."
+      intro="The ICO Age-Appropriate Design Code (Children's Code) sets 15 standards for online services likely to be accessed by children. Edway was designed from the ground up to meet — and in most cases exceed — every one of them."
     >
       <h2>The 15 standards, and how we meet them</h2>
 
@@ -55,7 +55,7 @@ export default function ChildrensCodePage() {
 
       <h2>Reporting concerns</h2>
       <p>
-        If you believe HEXA is not meeting any of these standards, please email{" "}
+        If you believe Edway is not meeting any of these standards, please email{" "}
         <a href="mailto:dpo@edway.uk">dpo@edway.uk</a>. You can also
         complain directly to the <a href="https://ico.org.uk">ICO</a>.
       </p>
