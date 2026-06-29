@@ -114,7 +114,7 @@ export default function PrivacyPage() {
         <li>Lodge a complaint with the <a href="https://ico.org.uk">Information Commissioner's Office</a>.</li>
       </ul>
       <p>
-        To exercise any of these rights, email <a href="mailto:privacy@hexa.education">privacy@hexa.education</a>.
+        To exercise any of these rights, email <a href="mailto:privacy@edway.uk">privacy@edway.uk</a>.
       </p>
 
       <h2 id="third-parties">Third-party processors</h2>
@@ -134,9 +134,9 @@ export default function PrivacyPage() {
 
       <h2 id="contact">Contact</h2>
       <p>
-        Data Protection Officer: <a href="mailto:dpo@hexa.education">dpo@hexa.education</a><br />
-        Privacy queries: <a href="mailto:privacy@hexa.education">privacy@hexa.education</a><br />
-        General: <a href="mailto:hello@hexa.education">hello@hexa.education</a>
+        Data Protection Officer: <a href="mailto:dpo@edway.uk">dpo@edway.uk</a><br />
+        Privacy queries: <a href="mailto:privacy@edway.uk">privacy@edway.uk</a><br />
+        General: <a href="mailto:hello@edway.uk">hello@edway.uk</a>
       </p>
     </LegalLayout>
   );

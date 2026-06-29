@@ -1,4 +1,6 @@
-const SITE = "https://hexa.education";
+import { SITE_URL } from "@/lib/site";
+
+const SITE = SITE_URL;
 
 /**
  * BreadcrumbList JSON-LD for marketing pages. Home is always position 1;

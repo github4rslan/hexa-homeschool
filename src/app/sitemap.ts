@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site";
 
-const BASE = process.env.NEXT_PUBLIC_APP_URL || "https://hexa.education";
+const BASE = SITE_URL;
 
 const ROUTES = [
   { path: "", priority: 1.0, changeFrequency: "weekly" as const },

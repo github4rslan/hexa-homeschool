@@ -19,12 +19,12 @@ export function emailConfigured(): boolean {
   return !!process.env.BREVO_API_KEY;
 }
 
-/** Parse EMAIL_FROM ("HEXA <hello@hexa.education>" or "hello@hexa.education"). */
+/** Parse EMAIL_FROM ("Edway <hello@edway.uk>" or "hello@edway.uk"). */
 function parseSender(): { name: string; email: string } {
-  const raw = process.env.EMAIL_FROM || "HEXA <hello@hexa.education>";
+  const raw = process.env.EMAIL_FROM || "Edway <hello@edway.uk>";
   const m = raw.match(/^\s*(.*?)\s*<\s*([^>]+)\s*>\s*$/);
-  if (m) return { name: m[1] || "HEXA", email: m[2] };
-  return { name: "HEXA", email: raw.trim() };
+  if (m) return { name: m[1] || "Edway", email: m[2] };
+  return { name: "Edway", email: raw.trim() };
 }
 
 export interface SendResult {

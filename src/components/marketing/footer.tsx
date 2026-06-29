@@ -33,7 +33,7 @@ export function MarketingFooter() {
               <Newsletter source="footer" />
             </div>
             <div className="flex flex-col gap-1.5 text-xs text-forest-200/70">
-              <span>hello@hexa.education</span>
+              <span>hello@edway.uk</span>
               <span>
                 © {new Date().getFullYear()} HEXA Education Ltd. UK GDPR
                 compliant. Children&apos;s Code certified. AWS London.
