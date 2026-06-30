@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Lightbulb,
   ListChecks,
+  Wind,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalmPause } from "@/components/child/calm-pause";
@@ -42,6 +43,10 @@ import {
   decideRemediation,
   selectMasteryAttempt,
 } from "@/lib/engine/remediation";
+import {
+  decideFeedback,
+  type FeedbackResponse,
+} from "@/lib/engine/feedback-matrix";
 import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
 
@@ -158,6 +163,12 @@ export function PracticePlayer({
   // Specific, targeted feedback on a wrong answer (Wave 7, Phase 3).
   // The human-authored misconception line for the exact wrong option (or null).
   const [misconceptionHint, setMisconceptionHint] = useState<string | null>(null);
+  // The adaptive-matrix decision (careless / concept gap / language / attention).
+  const [feedback, setFeedback] = useState<FeedbackResponse | null>(null);
+  // When this question first appeared — drives the matrix's time signals.
+  const questionShownAtRef = useRef<number>(Date.now());
+  // Clean first-try correct answers in a row (careless-slip signal).
+  const correctStreakRef = useRef(0);
 
   // Pedagogical counters for the lesson log (NOT analytics).
   const attemptsTotalRef = useRef(0);
@@ -280,6 +291,12 @@ export function PracticePlayer({
   useEffect(() => {
     prefetchQuestionVisual(activeQuestions[step + 1]?.id);
   }, [prefetchQuestionVisual, activeQuestions, step]);
+
+  // Stamp when each question appears, so the adaptive matrix can read time-on-
+  // question (a fast slip vs. a long, drifting pause). Pedagogical signal only.
+  useEffect(() => {
+    questionShownAtRef.current = Date.now();
+  }, [step, lessonPhase]);
 
   // Resume once on mount: reconcile the server copy (props) with a same-device
   // localStorage copy (which may be a step ahead if a server write lagged), then
@@ -488,6 +505,8 @@ export function PracticePlayer({
         setScore((s) => s + 1);
         setScoredThis(true);
       }
+      // A clean first-try correct extends the streak; needing retries breaks it.
+      correctStreakRef.current = attempts === 0 ? correctStreakRef.current + 1 : 0;
       setRevealed(true);
       return;
     }
@@ -496,13 +515,27 @@ export function PracticePlayer({
 
     // Specific feedback: the human-authored line for the EXACT wrong option the
     // child picked (mcq only; deterministic, no API). Null ⇒ no targeted line.
-    setMisconceptionHint(
-      pickMisconception({
-        misconceptions: question.misconceptions,
-        selectedIndex: interactionRef.current?.selectedIndex() ?? null,
-        correctIndex: question.correctIndex,
-      }),
-    );
+    const misconception = pickMisconception({
+      misconceptions: question.misconceptions,
+      selectedIndex: interactionRef.current?.selectedIndex() ?? null,
+      correctIndex: question.correctIndex,
+    });
+    setMisconceptionHint(misconception);
+
+    // Adaptive matrix: pick the RESPONSE from deterministic signals (no AI).
+    // Read the prior correct run, then break it — this question was missed.
+    const priorCorrectStreak = correctStreakRef.current;
+    correctStreakRef.current = 0;
+    const decision = decideFeedback({
+      attempts: nextAttempts,
+      maxAttempts: MAX_ATTEMPTS,
+      priorCorrectStreak,
+      msOnQuestion: Date.now() - questionShownAtRef.current,
+      hintsUsed: hintRung,
+      sessionElapsedMs: Date.now() - startedAtRef.current,
+      hasMisconceptionHint: misconception !== null,
+    });
+    setFeedback(decision);
 
     // Surface the next hint rung automatically on a wrong try.
     setHintRung((r) => {
@@ -511,8 +544,9 @@ export function PracticePlayer({
       return next;
     });
 
-    // After the final attempt, unfold the method before revealing the answer.
-    if (nextAttempts >= MAX_ATTEMPTS) {
+    // Concept gap (tries/hints exhausted) → unfold the method before the answer.
+    // This subsumes the old "final attempt" rule and also fires on heavy hinting.
+    if (decision.escalateReteach) {
       setHintRung(hintLadder.length);
       setStepByStepOpen(true);
     }
@@ -534,6 +568,7 @@ export function PracticePlayer({
     setScoredThis(false);
     setHintRung(0);
     setMisconceptionHint(null);
+    setFeedback(null);
     setStepByStepOpen(false);
     setSpoken(null);
     setSpokenSelect(null);
@@ -996,19 +1031,21 @@ export function PracticePlayer({
           </p>
         )}
 
-        {/* Specific, targeted feedback (Wave 7, Phase 3) — the human-authored
-            misconception line for the exact wrong option. Calm supportive
-            slide-in (no red, no shake); accent-tinted and distinct from hints. */}
+        {/* Specific & adaptive feedback (Wave 7, Phase 3) — the adaptive-matrix
+            line (careless / concept gap / language / attention) plus the
+            human-authored misconception for the exact wrong option, with an
+            optional gentle movement break. Calm supportive slide-in (no red, no
+            shake); accent-tinted and distinct from the hint ladder below. */}
         <AnimatePresence>
-          {misconceptionHint && !isCorrect && (
+          {feedback && !isCorrect && (
             <motion.div
-              key="misconception"
+              key="feedback"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
-                "mt-6 flex items-start gap-3 rounded-3xl border p-5 text-lg leading-relaxed text-fog-100",
+                "mt-6 flex items-start gap-3 rounded-3xl border p-5 leading-relaxed",
                 accent.bg,
                 accent.border,
               )}
@@ -1016,7 +1053,18 @@ export function PracticePlayer({
               aria-live="polite"
             >
               <Sparkles className={cn("mt-0.5 h-6 w-6 shrink-0", accent.text)} aria-hidden />
-              <span>{misconceptionHint}</span>
+              <div className="min-w-0 text-lg text-fog-100">
+                <p className="font-medium text-fog-50">{feedback.message}</p>
+                {misconceptionHint && (
+                  <p className="mt-2 text-fog-100/90">{misconceptionHint}</p>
+                )}
+                {feedback.suggestBreak && (
+                  <p className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-base text-fog-200">
+                    <Wind className={cn("h-5 w-5 shrink-0", accent.text)} aria-hidden />
+                    Stand up, stretch, and take three slow breaths.
+                  </p>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
