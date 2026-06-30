@@ -30,7 +30,7 @@ import type { SeedTopic, SeedQuestion } from "./curriculum.seed";
 // order values sit above the GCSE range (1–10) so the band filter sequences
 // them while global `firstTopic`/`nextTopicAfter` keep returning GCSE topics.
 
-export const SEED_TOPICS_BANDS: SeedTopic[] = [
+const BASE_SEED_TOPICS_BANDS: SeedTopic[] = [
   // ── Mathematics ──
   { subject: "mathematics", topic_tag: "maths_ks2_arithmetic", title: "Arithmetic", summary: "Times tables, addition and subtraction you can rely on.", key_stage: 2, working_grade_band: "Year 4", order: 101, prerequisite_tags: [] },
   { subject: "mathematics", topic_tag: "maths_ks2_fractions", title: "Fractions & Measures", summary: "Simple fractions of amounts, and everyday measures.", key_stage: 2, working_grade_band: "Year 5", order: 102, prerequisite_tags: ["maths_ks2_arithmetic"] },
@@ -49,6 +49,136 @@ export const SEED_TOPICS_BANDS: SeedTopic[] = [
   { subject: "science", topic_tag: "sci_ks3_cells", title: "Cells & Organisms", summary: "Cells, their parts and how living things are organised.", key_stage: 3, working_grade_band: "Year 7", order: 111, prerequisite_tags: ["sci_ks2_materials"] },
   { subject: "science", topic_tag: "sci_ks3_forces", title: "Forces & Energy", summary: "Forces, motion and energy stores.", key_stage: 3, working_grade_band: "Year 8", order: 112, prerequisite_tags: ["sci_ks3_cells"] },
 ];
+
+const WORKED_EXAMPLES_BY_TOPIC: Record<string, SeedTopic["worked_example"]> = {
+  maths_ks2_arithmetic: {
+    title: "Add 45 and 38",
+    scenario: "You have 45 stickers, then a friend gives you 38 more.",
+    steps: [
+      { line: "Split 38 into 30 and 8.", visual: { label: "Break apart", value: "38 = 30 + 8" } },
+      { line: "Add the tens first: 45 + 30 = 75.", visual: { label: "Tens", value: "75" } },
+      { line: "Add the ones: 75 + 8 = 83.", visual: { label: "Total", value: "83" } },
+    ],
+    yourTurn: "Try 52 + 27. Split 27 into tens and ones first.",
+  },
+  maths_ks2_fractions: {
+    title: "Find one quarter of 40",
+    scenario: "A tray has 40 grapes shared equally between 4 bowls.",
+    steps: [
+      { line: "One quarter means one of 4 equal parts.", visual: { label: "Parts", value: "4 equal bowls" } },
+      { line: "Share 40 into 4 equal groups: 40 divided by 4.", visual: { label: "Calculation", value: "40 / 4" } },
+      { line: "Each group has 10, so one quarter of 40 is 10.", visual: { label: "Answer", value: "10" } },
+    ],
+    yourTurn: "Try one quarter of 28. Share 28 into 4 equal parts.",
+  },
+  maths_ks3_negatives: {
+    title: "Work out -3 + 7",
+    scenario: "Start at -3 on a number line and move 7 places to the right.",
+    steps: [
+      { line: "Moving right means the number gets bigger.", visual: { label: "Direction", value: "right = add" } },
+      { line: "From -3, move 3 places to reach 0.", visual: { label: "To zero", value: "-3 + 3 = 0" } },
+      { line: "There are 4 moves left, so land on 4.", visual: { label: "Landing point", value: "4" } },
+    ],
+    yourTurn: "Try -5 + 8. Count to zero first, then use the moves left.",
+  },
+  maths_ks3_expressions: {
+    title: "Simplify 4x + 2x",
+    scenario: "Think of x as the same unknown tile each time.",
+    steps: [
+      { line: "Both terms are x terms, so they are like terms.", visual: { label: "Like terms", value: "x and x" } },
+      { line: "Add the coefficients: 4 + 2 = 6.", visual: { label: "Coefficients", value: "6" } },
+      { line: "Keep the x: 4x + 2x = 6x.", visual: { label: "Simplified", value: "6x" } },
+    ],
+    yourTurn: "Try 3a + 5a. Add the numbers in front and keep the letter.",
+  },
+  eng_ks2_reading: {
+    title: "Choose the correct spelling",
+    scenario: "You need the word because in a sentence.",
+    steps: [
+      { line: "Say the word slowly: be-cause.", visual: { label: "Sound it out", value: "be + cause" } },
+      { line: "Look for the spelling with 'cause' at the end.", visual: { label: "Check", value: "because" } },
+      { line: "The correct spelling is because.", visual: { label: "Word", value: "because" } },
+    ],
+    yourTurn: "Try happiness. Listen for the base word happy, then the ending ness.",
+  },
+  eng_ks2_writing: {
+    title: "Build a complete sentence",
+    scenario: "We want to write: We went to the park.",
+    steps: [
+      { line: "Start the sentence with a capital letter.", visual: { label: "Start", value: "We" } },
+      { line: "Make sure it tells a complete idea: who did what.", visual: { label: "Idea", value: "We went" } },
+      { line: "End with a full stop.", visual: { label: "End", value: "." } },
+    ],
+    yourTurn: "Try writing: My dog barked. Check the capital letter and full stop.",
+  },
+  eng_ks3_grammar: {
+    title: "Find the verb",
+    scenario: "In 'The athlete sprinted quickly', we need the action word.",
+    steps: [
+      { line: "Ask: what did someone do?", visual: { label: "Question", value: "did what?" } },
+      { line: "The athlete sprinted; sprinted is the action.", visual: { label: "Action", value: "sprinted" } },
+      { line: "So sprinted is the verb.", visual: { label: "Verb", value: "sprinted" } },
+    ],
+    yourTurn: "Try 'The dog barked loudly.' Ask what the dog did.",
+  },
+  eng_ks3_reading: {
+    title: "Spot personification",
+    scenario: "The sentence says: The sun smiled down on us.",
+    steps: [
+      { line: "Ask whether a non-human thing is doing a human action.", visual: { label: "Thing", value: "sun" } },
+      { line: "Smiling is something a person does.", visual: { label: "Human action", value: "smiled" } },
+      { line: "Giving the sun a human action is personification.", visual: { label: "Device", value: "personification" } },
+    ],
+    yourTurn: "Try 'The wind whispered.' Look for the human action.",
+  },
+  sci_ks2_living: {
+    title: "What plants need",
+    scenario: "A bean seed is planted in soil and needs to grow.",
+    steps: [
+      { line: "Plants make their own food using light.", visual: { label: "Need", value: "sunlight" } },
+      { line: "They also need water and air, but plastic and metal do not help them grow.", visual: { label: "Not needed", value: "plastic, metal" } },
+      { line: "So sunlight is the best choice here.", visual: { label: "Choice", value: "sunlight" } },
+    ],
+    yourTurn: "Try asking what roots take in from soil.",
+  },
+  sci_ks2_materials: {
+    title: "Choose a waterproof material",
+    scenario: "You need a cover that keeps rain away from a notebook.",
+    steps: [
+      { line: "Waterproof means water cannot pass through easily.", visual: { label: "Meaning", value: "keeps water out" } },
+      { line: "Paper, card and cotton soak up water.", visual: { label: "Soak up", value: "paper, card, cotton" } },
+      { line: "Plastic keeps water out, so plastic is waterproof.", visual: { label: "Material", value: "plastic" } },
+    ],
+    yourTurn: "Try choosing a transparent material. Ask what light passes through.",
+  },
+  sci_ks3_cells: {
+    title: "Name the basic unit of life",
+    scenario: "We are looking at what all living things are made from.",
+    steps: [
+      { line: "Organs and tissues are made from smaller living units.", visual: { label: "Smaller unit", value: "cell" } },
+      { line: "Atoms and molecules are not living on their own.", visual: { label: "Not alive", value: "atom, molecule" } },
+      { line: "The basic building block of living things is the cell.", visual: { label: "Answer", value: "cell" } },
+    ],
+    yourTurn: "Try naming the cell part that controls the cell.",
+  },
+  sci_ks3_forces: {
+    title: "Identify gravity",
+    scenario: "A ball is dropped and falls towards the ground.",
+    steps: [
+      { line: "Look for the force pulling objects towards Earth.", visual: { label: "Pull", value: "towards Earth" } },
+      { line: "Friction slows motion, but it does not pull everything down.", visual: { label: "Compare", value: "friction slows" } },
+      { line: "The pull towards Earth is gravity.", visual: { label: "Force", value: "gravity" } },
+    ],
+    yourTurn: "Try naming the unit of force. Remember: force is measured in newtons.",
+  },
+};
+
+export const SEED_TOPICS_BANDS: SeedTopic[] = BASE_SEED_TOPICS_BANDS.map((topic) => ({
+  ...topic,
+  ...(WORKED_EXAMPLES_BY_TOPIC[topic.topic_tag]
+    ? { worked_example: WORKED_EXAMPLES_BY_TOPIC[topic.topic_tag] }
+    : {}),
+}));
 
 // ── Questions ────────────────────────────────────────────────
 // [tier, kind, prompt, options, correctIndex, explanation]

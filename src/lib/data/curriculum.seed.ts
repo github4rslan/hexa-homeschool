@@ -55,7 +55,7 @@ export interface SeedQuestion {
 //  TOPICS
 // ════════════════════════════════════════════════════════════
 
-export const SEED_TOPICS: SeedTopic[] = [
+const BASE_SEED_TOPICS: SeedTopic[] = [
   // ── Mathematics (Pearson Edexcel 1MA1) ──
   { subject: "mathematics", topic_tag: "maths_number", title: "Number & Place Value", summary: "Place value, ordering, rounding, estimation and standard form.", key_stage: 4, working_grade_band: "Grade 1–3", order: 1, prerequisite_tags: [] },
   { subject: "mathematics", topic_tag: "maths_fractions", title: "Fractions, Decimals & Percentages", summary: "Converting and calculating with fractions, decimals and percentages.", key_stage: 4, working_grade_band: "Grade 2–4", order: 2, prerequisite_tags: ["maths_number"] },
@@ -92,6 +92,46 @@ export const SEED_TOPICS: SeedTopic[] = [
   { subject: "science", topic_tag: "sci_genetics", title: "Inheritance & Genetics", summary: "DNA, genes, variation and inheritance.", key_stage: 4, working_grade_band: "Grade 5–7", order: 9, prerequisite_tags: ["sci_cells"] },
   { subject: "science", topic_tag: "sci_ecology", title: "Ecology", summary: "Ecosystems, food chains and the carbon cycle.", key_stage: 4, working_grade_band: "Grade 3–5", order: 10, prerequisite_tags: ["sci_body"] },
 ];
+
+const WORKED_EXAMPLES_BY_TOPIC: Record<string, SeedTopic["worked_example"]> = {
+  maths_number: {
+    title: "Round 3,748 to the nearest hundred",
+    scenario: "A shop counted 3,748 items and wants a quick estimate.",
+    steps: [
+      { line: "Find the hundreds digit: in 3,748, the hundreds digit is 7.", visual: { label: "Hundreds", value: "7" } },
+      { line: "Look at the next digit, the tens digit. It is 4.", visual: { label: "Tens", value: "4" } },
+      { line: "Because 4 is less than 5, keep the hundreds digit the same and change tens and ones to zero.", visual: { label: "Rounded", value: "3,700" } },
+    ],
+    yourTurn: "Try rounding 6,382 to the nearest hundred. Check the tens digit.",
+  },
+  eng_spelling: {
+    title: "Choose a precise spelling",
+    scenario: "A sentence needs the word necessary.",
+    steps: [
+      { line: "Break the word into chunks: ne-ces-sar-y.", visual: { label: "Chunks", value: "ne / ces / sar / y" } },
+      { line: "Remember the pattern: one c and two s letters.", visual: { label: "Pattern", value: "1 c, 2 s" } },
+      { line: "So the spelling is necessary.", visual: { label: "Word", value: "necessary" } },
+    ],
+    yourTurn: "Try definitely. Break it into chunks before choosing.",
+  },
+  sci_cells: {
+    title: "Animal cell parts",
+    scenario: "A diagram labels the nucleus, cytoplasm and cell membrane.",
+    steps: [
+      { line: "The nucleus contains genetic information and controls the cell.", visual: { label: "Nucleus", value: "control" } },
+      { line: "The cytoplasm is where many chemical reactions happen.", visual: { label: "Cytoplasm", value: "reactions" } },
+      { line: "The cell membrane controls what enters and leaves.", visual: { label: "Membrane", value: "in and out" } },
+    ],
+    yourTurn: "Try naming the part that controls the cell.",
+  },
+};
+
+export const SEED_TOPICS: SeedTopic[] = BASE_SEED_TOPICS.map((topic) => ({
+  ...topic,
+  ...(WORKED_EXAMPLES_BY_TOPIC[topic.topic_tag]
+    ? { worked_example: WORKED_EXAMPLES_BY_TOPIC[topic.topic_tag] }
+    : {}),
+}));
 
 // ════════════════════════════════════════════════════════════
 //  QUESTIONS

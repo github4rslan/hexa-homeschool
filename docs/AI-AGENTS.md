@@ -115,6 +115,20 @@ Confident"; warm `ELEVENLABS_VOICE_SETTINGS` in `lib/ai/config.ts`)
   `ChildDoc.narration_autoplay` (default on) via the My-stuff toggle and a
   one-tap in-lesson mute. No analytics in `(child)`.
 
+### Worked Examples
+
+Daily child lessons can now carry an optional, human-authored
+`worked_example` on the curriculum topic. When present, the explainer phase
+uses that authored content before any question: one concrete step at a time,
+with pause, back and replay controls over the existing `/api/tts` narration.
+Topics without `worked_example` keep the legacy summary-and-points explainer.
+
+Practice and mastery questions may also carry an optional human-authored
+`worked_solution`. After a miss, the child can choose "Show me step by step";
+after the final try, the same reveal opens before the answer state is shown.
+If a question has no `worked_solution`, the reveal is built deterministically
+from its human-authored canonical `explanation`, never from AI output.
+
 ## Speak Your Answer (STT)
 
 Route: `POST /api/stt` · Provider: ElevenLabs Scribe (`scribe_v1`)
