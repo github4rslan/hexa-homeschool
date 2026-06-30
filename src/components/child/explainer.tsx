@@ -2,7 +2,14 @@
 
 import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Play, Pause, Loader2, ArrowRight, Lightbulb } from "lucide-react";
+import {
+  Play,
+  Pause,
+  Loader2,
+  ArrowRight,
+  Lightbulb,
+  HeartHandshake,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { accentPreset } from "@/lib/child/accents";
 import { useNarration } from "@/lib/child/use-narration";
@@ -26,6 +33,7 @@ export function Explainer({
   keyStage,
   accent: accentId,
   autoplay = true,
+  tutorNote,
 }: {
   title: string;
   summary: string;
@@ -40,10 +48,13 @@ export function Explainer({
   accent?: string | null;
   /** Whether to auto-read the explainer on appearance (child preference). */
   autoplay?: boolean;
+  /** A human tutor's note from a handoff session — shown warmly up top. */
+  tutorNote?: string | null;
 }) {
   if (workedExample) {
     return (
       <div className="mx-auto max-w-2xl">
+        <TutorNote note={tutorNote} accent={accentId} />
         <StepReveal
           example={workedExample}
           onDone={onContinue}
@@ -67,7 +78,39 @@ export function Explainer({
       keyStage={keyStage}
       accent={accentId}
       autoplay={autoplay}
+      tutorNote={tutorNote}
     />
+  );
+}
+
+/**
+ * Warm "your tutor's tip" banner shown when a logged handoff session left a note
+ * for this topic (Wave 7, Phase 4). Calm, accent-tinted, never clinical — it
+ * frames the human help as encouragement, not a flag. Renders nothing when no
+ * note exists, so every normal lesson is untouched.
+ */
+function TutorNote({ note, accent: accentId }: { note?: string | null; accent?: string | null }) {
+  const trimmed = note?.trim();
+  if (!trimmed) return null;
+  const accent = accentPreset(accentId);
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className={cn(
+        "mb-5 flex items-start gap-3 rounded-3xl border p-5 text-lg leading-relaxed text-fog-100",
+        accent.softBg,
+        accent.softBorder,
+      )}
+      role="note"
+    >
+      <HeartHandshake className={cn("mt-0.5 h-6 w-6 shrink-0", accent.text)} aria-hidden />
+      <span>
+        <span className="mr-1 font-semibold text-fog-50">A tip from your tutor:</span>
+        {trimmed}
+      </span>
+    </motion.div>
   );
 }
 
@@ -80,6 +123,7 @@ function LegacyExplainer({
   keyStage,
   accent: accentId,
   autoplay,
+  tutorNote,
 }: {
   title: string;
   summary: string;
@@ -89,6 +133,7 @@ function LegacyExplainer({
   keyStage?: number;
   accent?: string | null;
   autoplay: boolean;
+  tutorNote?: string | null;
 }) {
   const accent = accentPreset(accentId);
   const narration = useNarration(voiceId, keyStage);
@@ -116,6 +161,7 @@ function LegacyExplainer({
 
   return (
     <div className="mx-auto max-w-2xl">
+      <TutorNote note={tutorNote} accent={accentId} />
       <div className="child-panel p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">

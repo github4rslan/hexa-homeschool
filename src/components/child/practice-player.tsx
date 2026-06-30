@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalmPause } from "@/components/child/calm-pause";
+import { HandoffPause } from "@/components/child/handoff-pause";
 import { Celebration } from "@/components/fx/celebration";
 import { Interaction, type InteractionHandle } from "@/components/child/interaction";
 import {
@@ -104,6 +105,7 @@ export function PracticePlayer({
   questions,
   masteryQuestions,
   curriculumTopic,
+  topicTitle,
   voiceId,
   keyStage,
   accent: accentId,
@@ -116,6 +118,8 @@ export function PracticePlayer({
   /** Human-authored mastery bank for deterministic certification attempts. */
   masteryQuestions?: Question[];
   curriculumTopic: string;
+  /** Human-readable topic title, for the warm handoff pause copy. */
+  topicTitle?: string;
   /** Child-chosen narration voice; falls back to the server default when unset. */
   voiceId?: string | null;
   /** Child's UK key stage, used only as a narration pace hint. */
@@ -829,10 +833,11 @@ export function PracticePlayer({
 
   if (lessonPhase === "handoff") {
     return (
-      <CalmPause
-        message="Let's get you some extra help. A real tutor is being lined up, and this topic can rest for now."
-        exitHref="/learn"
-        exitLabel="Back to my subjects"
+      <HandoffPause
+        variant="queued"
+        topicTitle={topicTitle}
+        firstName={firstName}
+        accent={accentId}
       />
     );
   }
