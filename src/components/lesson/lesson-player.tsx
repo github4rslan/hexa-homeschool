@@ -23,6 +23,7 @@ import { fetchJsonWithRetry } from "@/lib/fetch-with-retry";
 import { Interaction as InteractionRenderer, type InteractionHandle } from "@/components/child/interaction";
 import type { Interaction } from "@/lib/child/interactions";
 import { accentPreset } from "@/lib/child/accents";
+import type { WorkedExample } from "@/lib/child/worked-examples";
 
 export interface Question {
   id: string;
@@ -38,6 +39,7 @@ export interface Question {
   interaction?: Interaction;
   /** Optional human-authored progressive hints (nudge → specific). */
   hints?: string[];
+  workedSolution?: WorkedExample;
 }
 
 /** Result shape returned by /api/tutor (Teaching Agent + Checker). */

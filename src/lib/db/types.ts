@@ -238,6 +238,11 @@ export interface CurriculumTopicDoc {
   order: number;
   /** topic_tags that should be mastered first. */
   prerequisite_tags: string[];
+  /**
+   * Optional human-authored teach-first worked example. Legacy-safe: topics
+   * without it keep the summary + points explainer.
+   */
+  worked_example?: unknown;
   created_at: Date;
 }
 
@@ -270,8 +275,13 @@ export interface QuestionDoc {
   /**
    * Optional human-authored progressive hints (nudge → specific). The full
    * worked rung always falls back to `explanation`. AI never authors these.
-   */
+  */
   hints?: string[];
+  /**
+   * Optional human-authored step-by-step solution for this exact question.
+   * Used after a miss; absent rows fall back to the canonical explanation.
+   */
+  worked_solution?: unknown;
   created_at: Date;
 }
 

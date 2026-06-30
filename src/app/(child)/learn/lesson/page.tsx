@@ -14,6 +14,7 @@ import {
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { normalizeInteraction } from "@/lib/child/interactions";
+import { normalizeWorkedExample } from "@/lib/child/worked-examples";
 import type { Question } from "@/components/lesson/lesson-player";
 
 export const metadata: Metadata = { title: "Lesson" };
@@ -62,6 +63,7 @@ export default async function ChildLessonPage({
     explanation: q.explanation,
     interaction: normalizeInteraction(q.interaction),
     hints: q.hints,
+    workedSolution: normalizeWorkedExample(q.worked_solution),
   });
 
   const questions: Question[] = docs
@@ -97,6 +99,7 @@ export default async function ChildLessonPage({
         title={topicDoc.title}
         summary={topicDoc.summary}
         points={points.length ? points : [topicDoc.summary]}
+        workedExample={normalizeWorkedExample(topicDoc.worked_example)}
         questions={questions}
         masteryQuestions={masteryQuestions}
         curriculumTopic={topicDoc.topic_tag}
