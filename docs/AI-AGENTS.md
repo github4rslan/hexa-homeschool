@@ -33,6 +33,27 @@ child answer ──► safety gate (checkDistress)            ◄── runs FIR
 Do not bypass the checker, lower the threshold, or serve raw completions in
 `(child)` routes.
 
+### Mastery Remediation
+
+The child lesson uses the Teaching Agent only to reteach after a missed mastery
+check. Certification remains deterministic: the engine scores the human-authored
+mastery questions, and only a perfect 3-question check calls
+`upsertCompetence(..., "certified")`. The AI never marks competence.
+
+On a non-perfect mastery attempt, the flow asks `/api/tutor` for a clearer,
+age-banded explanation of the first missed concept. That response follows the
+same generate -> Checker -> fallback pipeline above; if AI is unavailable or the
+Checker rejects it, the child sees the human-authored explanation instead. The
+client caches the checked reteach per question+band for the current lesson, and
+retakes pull fresh human-authored `kind: "mastery"` questions where the bank
+allows. If the bank only contains one 3-question check, the retake rotates order
+rather than inventing questions.
+
+The loop is capped at five mastery attempts. After that, the child sees a calm
+pause and the server creates one idempotent remediation tutor request for the
+child+topic, notifies the parent best-effort by existing email/SMS channels, and
+leaves other lessons available.
+
 **Mock exams use AI only for post-exam explanations.** A mock paper is scored
 **deterministically** against the human-authored canonical answers
 (`lib/engine/mock-exam.ts`) — AI is never involved in producing a score or

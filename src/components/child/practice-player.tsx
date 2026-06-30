@@ -21,6 +21,7 @@ import {
   saveLessonProgressAction,
   clearLessonProgressAction,
   setNarrationAutoplayAction,
+  triggerRemediationHandoffAction,
 } from "@/app/(dashboard)/lesson/actions";
 import {
   buildHintLadder,
@@ -33,6 +34,10 @@ import { accentPreset, type AccentPreset } from "@/lib/child/accents";
 import { useNarration } from "@/lib/child/use-narration";
 import { useQuestionVisual } from "@/lib/child/use-question-visual";
 import { buildQuestionNarration } from "@/lib/child/narration-copy";
+import {
+  decideRemediation,
+  selectMasteryAttempt,
+} from "@/lib/engine/remediation";
 import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
 
@@ -88,6 +93,7 @@ function matchSpokenOption(transcript: string, options: string[]): number | null
 
 export function PracticePlayer({
   questions,
+  masteryQuestions,
   curriculumTopic,
   voiceId,
   keyStage,
@@ -98,6 +104,8 @@ export function PracticePlayer({
   resumeKey,
 }: {
   questions: Question[];
+  /** Human-authored mastery bank for deterministic certification attempts. */
+  masteryQuestions?: Question[];
   curriculumTopic: string;
   /** Child-chosen narration voice; falls back to the server default when unset. */
   voiceId?: string | null;
@@ -116,14 +124,28 @@ export function PracticePlayer({
 }) {
   const accent: AccentPreset = accentPreset(accentId);
   const storageKey = `hexa_progress_${resumeKey ?? "anon"}_${curriculumTopic}`;
+  const masteryBank = masteryQuestions?.length ? masteryQuestions : questions;
 
   const [step, setStep] = useState(0);
+  const [lessonPhase, setLessonPhase] = useState<
+    "practice" | "mastery" | "reteach" | "handoff" | "complete"
+  >(questions.length ? "practice" : "mastery");
+  const [masteryAttempt, setMasteryAttempt] = useState(1);
+  const [usedMasteryIds, setUsedMasteryIds] = useState<string[]>([]);
+  const [masterySet, setMasterySet] = useState<Question[]>(() =>
+    selectMasteryAttempt(masteryBank, 1),
+  );
   const [attempts, setAttempts] = useState(0);
   const [ready, setReady] = useState(false);
   const [revealed, setRevealed] = useState(false); // worked solution shown
   const [outcome, setOutcome] = useState<"correct" | "incorrect" | null>(null);
   const [score, setScore] = useState(0);
   const [scoredThis, setScoredThis] = useState(false);
+  const [lastMasteryScore, setLastMasteryScore] = useState(0);
+  const missedThisAttemptRef = useRef<Question[]>([]);
+  const reteachCacheRef = useRef<Map<string, string>>(new Map());
+  const [reteachText, setReteachText] = useState<string | null>(null);
+  const [reteachLoading, setReteachLoading] = useState(false);
 
   // Progressive hint ladder (local, human-authored).
   const [hintRung, setHintRung] = useState(0); // 0 = none shown yet
@@ -164,8 +186,9 @@ export function PracticePlayer({
   const [resumed, setResumed] = useState(false);
   const resumeAppliedRef = useRef(false);
 
-  const question = questions[step];
-  const complete = step >= questions.length;
+  const activeQuestions = lessonPhase === "practice" ? questions : masterySet;
+  const question = activeQuestions[step];
+  const complete = lessonPhase === "complete";
   const narrationText = question
     ? buildQuestionNarration({
         prompt: question.prompt,
@@ -223,7 +246,7 @@ export function PracticePlayer({
   // At most one prefetch; respects the preference and the route's rate-limit.
   useEffect(() => {
     if (!autoplayOn) return;
-    const upcoming = questions[step + 1];
+    const upcoming = activeQuestions[step + 1];
     if (upcoming) {
       narration.prefetch(
         buildQuestionNarration({
@@ -234,20 +257,20 @@ export function PracticePlayer({
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, autoplayOn]);
+  }, [step, autoplayOn, activeQuestions]);
 
   // Generate/check the next visual while the child works on this question. The
   // hook caches results and keeps one in-flight request per next question.
   useEffect(() => {
-    prefetchQuestionVisual(questions[step + 1]?.id);
-  }, [prefetchQuestionVisual, questions, step]);
+    prefetchQuestionVisual(activeQuestions[step + 1]?.id);
+  }, [prefetchQuestionVisual, activeQuestions, step]);
 
   // Resume once on mount: reconcile the server copy (props) with a same-device
   // localStorage copy (which may be a step ahead if a server write lagged), then
   // land at the exact saved step. Pure math via resolveResumeStep keeps this
   // honest: a content change, a fresh start, or a finished lesson all → no resume.
   useEffect(() => {
-    if (resumeAppliedRef.current || questions.length === 0) return;
+    if (resumeAppliedRef.current || questions.length === 0 || lessonPhase !== "practice") return;
     resumeAppliedRef.current = true;
 
     let local: SavedProgress | null = null;
@@ -391,7 +414,7 @@ export function PracticePlayer({
 
   // Persist once on completion (attempts + hints come from the live counters).
   useEffect(() => {
-    if (!complete || loggedRef.current || questions.length === 0) return;
+    if (!complete || loggedRef.current || masterySet.length === 0) return;
     loggedRef.current = true;
     const timeSpentSeconds = Math.max(
       1,
@@ -400,13 +423,13 @@ export function PracticePlayer({
     void logLessonCompletion({
       topicTag: curriculumTopic,
       score,
-      total: questions.length,
+      total: masterySet.length,
       timeSpentSeconds,
       hintsUsed: hintsTotalRef.current,
     })
       .then((r) => setSaved(r.persisted))
       .catch(() => setSaved(false));
-  }, [complete, curriculumTopic, score, questions.length]);
+  }, [complete, curriculumTopic, score, masterySet.length]);
 
   /** Scan free-text answers for distress (fill_blank only). */
   async function guardFreeText(): Promise<boolean> {
@@ -476,16 +499,7 @@ export function PracticePlayer({
     });
   }
 
-  function next() {
-    narration.stop();
-    stopRecorder();
-    const nextStep = step + 1;
-    // Autosave the new position (or clear once the lesson is finished).
-    if (nextStep >= questions.length) clearProgress();
-    else persist(nextStep, score);
-
-    setStep(nextStep);
-    setResumed(false);
+  function resetStepState() {
     setAttempts(0);
     setReady(false);
     setRevealed(false);
@@ -495,6 +509,138 @@ export function PracticePlayer({
     setSpoken(null);
     setSpokenSelect(null);
     setSttNotice(null);
+    narratedStepRef.current = null;
+    silencedStepRef.current = null;
+  }
+
+  function startMasteryAttempt(attempt: number, priorUsedIds = usedMasteryIds) {
+    const nextSet = selectMasteryAttempt(masteryBank, attempt, priorUsedIds);
+    setMasteryAttempt(attempt);
+    setMasterySet(nextSet);
+    setLessonPhase("mastery");
+    setStep(0);
+    setScore(0);
+    setReteachText(null);
+    setReteachLoading(false);
+    missedThisAttemptRef.current = [];
+    resetStepState();
+  }
+
+  async function runReteach(missed: Question[]) {
+    const target = missed[0];
+    if (!target) {
+      setReteachText(
+        "Let's look at this another way. Read the worked answer, then try a fresh check.",
+      );
+      return;
+    }
+
+    const key = `${target.id}:${keyStage ?? "na"}`;
+    const cached = reteachCacheRef.current.get(key);
+    if (cached) {
+      setReteachText(cached);
+      return;
+    }
+
+    setReteachLoading(true);
+    const fallback = `Let's look at this another way. ${target.explanation}`;
+    try {
+      const res = await fetch("/api/tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: target.prompt,
+          correctAnswer: target.options[target.correctIndex],
+          topic: curriculumTopic,
+          wasCorrect: false,
+          keyStage,
+        }),
+      });
+      const data = (await res.json()) as {
+        explanation?: string;
+        aiVerified?: boolean;
+        frozen?: boolean;
+        message?: string;
+      };
+      if (data.frozen) {
+        setFrozen(data.message ?? "");
+        return;
+      }
+      const text =
+        res.ok && data.aiVerified && data.explanation
+          ? data.explanation
+          : fallback;
+      reteachCacheRef.current.set(key, text);
+      setReteachText(text);
+    } catch {
+      reteachCacheRef.current.set(key, fallback);
+      setReteachText(fallback);
+    } finally {
+      setReteachLoading(false);
+    }
+  }
+
+  async function finishMasteryAttempt(missed: Question[]) {
+    const finalScore = score;
+    setLastMasteryScore(finalScore);
+    const decision = decideRemediation({
+      score: finalScore,
+      total: masterySet.length,
+      attempt: masteryAttempt,
+    });
+
+    if (decision === "certified") {
+      setLessonPhase("complete");
+      return;
+    }
+
+    const missedList = missed.length ? missed : masterySet;
+    const nextUsed = [...usedMasteryIds, ...masterySet.map((q) => q.id)];
+    setUsedMasteryIds(nextUsed);
+
+    if (decision === "handoff") {
+      await triggerRemediationHandoffAction({
+        topicTag: curriculumTopic,
+        attempts: masteryAttempt,
+        missedPrompts: missedList.map((q) => q.prompt),
+      });
+      setLessonPhase("handoff");
+      return;
+    }
+
+    setLessonPhase("reteach");
+    setStep(0);
+    resetStepState();
+    await runReteach(missedList);
+  }
+
+  function next() {
+    narration.stop();
+    stopRecorder();
+    const nextStep = step + 1;
+    const missed =
+      lessonPhase === "mastery" && question && !scoredThis
+        ? [...missedThisAttemptRef.current, question]
+        : missedThisAttemptRef.current;
+    missedThisAttemptRef.current = missed;
+
+    if (nextStep >= activeQuestions.length) {
+      if (lessonPhase === "practice") {
+        clearProgress();
+        startMasteryAttempt(1, []);
+        return;
+      }
+      if (lessonPhase === "mastery") {
+        void finishMasteryAttempt(missed);
+        return;
+      }
+    } else if (lessonPhase === "practice") {
+      persist(nextStep, score);
+    }
+
+    setStep(nextStep);
+    setResumed(false);
+    resetStepState();
   }
 
   /** Replay (or pause) the current question — the manual "Listen" control. */
@@ -539,9 +685,64 @@ export function PracticePlayer({
     );
   }
 
+  if (lessonPhase === "handoff") {
+    return (
+      <CalmPause
+        message="Let's get you some extra help. A real tutor is being lined up, and this topic can rest for now."
+        exitHref="/learn"
+        exitLabel="Back to my subjects"
+      />
+    );
+  }
+
+  if (lessonPhase === "reteach") {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <div className="child-panel p-8 sm:p-12 text-center animate-child-pop">
+          <div
+            className={cn(
+              "mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border-2",
+              accent.bg,
+              accent.border,
+            )}
+          >
+            <Lightbulb className={cn("h-11 w-11", accent.text)} aria-hidden />
+          </div>
+          <h1 className="mb-4 text-4xl font-semibold text-fog-50">
+            Let&apos;s look at this another way
+          </h1>
+          <p className="mb-3 text-xl leading-relaxed text-fog-200">
+            You got {lastMasteryScore} out of {masterySet.length}. That shows
+            us exactly what to practise next.
+          </p>
+          <div
+            className={cn(
+              "my-6 rounded-3xl border p-5 text-left text-lg leading-relaxed text-fog-100",
+              accent.softBg,
+              accent.softBorder,
+            )}
+          >
+            {reteachLoading
+              ? "Getting a clearer explanation ready..."
+              : reteachText}
+          </div>
+          <Button
+            onClick={() => startMasteryAttempt(masteryAttempt + 1, usedMasteryIds)}
+            variant="child"
+            size="child"
+            disabled={reteachLoading}
+          >
+            Try a fresh check
+            <ArrowRight className="h-6 w-6" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   // ── Completion / mastery ──
   if (complete) {
-    const pct = Math.round((score / questions.length) * 100);
+    const pct = Math.round((score / masterySet.length) * 100);
     const mastered = pct >= 100;
     return (
       <div className="mx-auto max-w-2xl">
@@ -563,7 +764,7 @@ export function PracticePlayer({
             {mastered ? "Topic mastered!" : "Great effort!"}
           </h1>
           <p className="text-xl text-fog-300 mb-2">
-            You got {score} out of {questions.length} right.
+            You got {score} out of {masterySet.length} right.
           </p>
           <p className="text-fog-400 mb-8">
             {mastered
@@ -636,7 +837,8 @@ export function PracticePlayer({
       <div className="mb-6">
         <div className="mb-2 flex items-center justify-between">
           <span className="text-lg font-semibold text-fog-300">
-            {step + 1} of {questions.length}
+            {lessonPhase === "mastery" ? `Mastery check ${masteryAttempt}: ` : ""}
+            {step + 1} of {activeQuestions.length}
           </span>
           <div className="flex items-center gap-3">
             {speechSupported && isMcq && (
@@ -698,7 +900,7 @@ export function PracticePlayer({
           <motion.div
             className={cn("h-full rounded-full bg-gradient-to-r", accent.bar)}
             initial={false}
-            animate={{ width: `${(step / questions.length) * 100}%` }}
+            animate={{ width: `${(step / activeQuestions.length) * 100}%` }}
             transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           />
         </div>
@@ -846,7 +1048,11 @@ export function PracticePlayer({
           <div className="ml-auto">
             {revealed || isCorrect ? (
               <Button onClick={next} variant="child" size="child">
-                {step === questions.length - 1 ? "Finish" : "Keep going"}
+                {step === activeQuestions.length - 1
+                  ? lessonPhase === "practice"
+                    ? "Start mastery"
+                    : "Finish"
+                  : "Keep going"}
                 <ArrowRight className="h-6 w-6" />
               </Button>
             ) : (

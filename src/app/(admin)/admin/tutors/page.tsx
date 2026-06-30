@@ -5,6 +5,7 @@ import { MetricCard } from "@/components/admin/metric-card";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { listTutorBookingsAsStaff } from "@/lib/db/repo";
 
 export const metadata: Metadata = { title: "Admin · Tutor Marketplace" };
 
@@ -30,7 +31,9 @@ const ASSIGNMENTS = [
   { tutor: "Dr. K. Patel", child: "Theo K.", domain: "mathematics", scheduledAt: "in 2 days · 17:00", duration: 30 },
 ];
 
-export default function TutorsPage() {
+export default async function TutorsPage() {
+  const queue = await listTutorBookingsAsStaff(10);
+
   return (
     <>
       <AdminTopbar
@@ -66,6 +69,39 @@ export default function TutorsPage() {
             accent="violet"
           />
         </section>
+
+        {queue.length > 0 && (
+          <Card variant="glass-strong" padding="lg" className="mb-8">
+            <div className="mb-5 flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-amber-300" />
+              <h2 className="text-lg font-semibold text-fog-50">
+                Queued tutor requests
+              </h2>
+            </div>
+            <div className="flex flex-col gap-3">
+              {queue.map(({ booking, childName }) => (
+                <div
+                  key={booking._id?.toHexString()}
+                  className="rounded-xl border border-white/5 bg-white/[0.02] p-4"
+                >
+                  <div className="mb-2 flex items-center gap-3">
+                    <Badge
+                      variant={booking.source === "remediation" ? "amber" : "outline"}
+                      size="sm"
+                    >
+                      {booking.source === "remediation" ? "Remediation" : "Parent"}
+                    </Badge>
+                    <span className="font-semibold text-fog-50">{childName}</span>
+                    <span className="text-sm text-fog-400">
+                      {booking.topic_title ?? booking.subject ?? "General support"}
+                    </span>
+                  </div>
+                  <p className="text-sm text-fog-300">{booking.note}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         <section className="grid lg:grid-cols-3 gap-5 mb-8">
           <Card variant="glass" padding="lg" className="lg:col-span-2">

@@ -304,6 +304,10 @@ export interface TutorBookingDoc {
   parent_id: ObjectId;
   child_id: ObjectId;
   subject: Subject | null;
+  /** Optional topic context for automated support requests. */
+  topic_tag?: string;
+  topic_title?: string;
+  source?: "parent" | "remediation";
   note: string;
   requested_slot: string; // free-text preferred time for Phase 1
   status: "requested" | "scheduled" | "completed" | "cancelled";

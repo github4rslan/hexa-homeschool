@@ -80,7 +80,7 @@ the trajectory and the LA portfolio:
 |---|---|---|
 | Diagnostic | once per parent-authorised baseline cycle | `ChildDoc.diagnostic_completed_at` (atomic set-once lock; parent-PIN restart clears it deliberately) |
 | Mock exam | once **per period** (weekly) | `recordMockResult` refuses a second write for the same child + subject + period; `getMockState` / `hasMockThisPeriod` drive the hub tiles + run-page guard; cadence in `lib/engine/assessment-period.ts` |
-| Mastery check | **unlimited** | deliberately re-attemptable (fail → topic returns to rotation) — never locked |
+| Mastery check | capped remediation loop | non-perfect check -> checker-gated AI reteach + fresh human-authored retake; perfect 3-question check certifies; after 5 attempts, calm tutor handoff |
 
 A completed mock shows a calm read-only result (`MockResultView`, reusing the
 shared `MockGradeReveal`) with the next-available date and forward CTAs — no
@@ -179,7 +179,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 | `checkins` | CheckinDoc | Daily mood → difficulty throttle |
 | `media` | MediaDoc | Cloudinary registry (dedupe via content hash) |
 | `weekly_schedules` | WeeklyScheduleDoc | Parent-set weekly plan; each item carries a data-grounded `reason` (competence state + latest evaluation) shown on `/schedule` — optional on legacy docs |
-| `tutor_bookings` / `escalations` | — | Human safety net. Escalations carry an SLA workflow (`status` open→acknowledged→resolved, `acknowledged_at`, `resolved_at`, `staff_note` internal-only); the admin queue sorts by severity + age with live SLA timers (`lib/engine/escalation-sla.ts`), parents see only a reassuring status |
+| `tutor_bookings` / `escalations` | — | Human safety net. Tutor bookings may be parent-requested or automated remediation handoffs (`source`, optional `topic_tag`/`topic_title`) and are shown to parents + staff as a queue; live matching is deferred. Escalations carry an SLA workflow (`status` open→acknowledged→resolved, `acknowledged_at`, `resolved_at`, `staff_note` internal-only); the admin queue sorts by severity + age with live SLA timers (`lib/engine/escalation-sla.ts`), parents see only a reassuring status |
 | `messages` | MessageDoc | Parent ↔ staff threads on a booking/escalation; every parent read/write filters on `parent_id` for family isolation |
 | `staff_audit_log` | StaffAuditLogDoc | Append-only trail of staff WRITE actions + escalation-detail VIEWS (who, action, target, when). No update/delete repo functions exist |
 | `newsletter_subscribers` | — | Public lead capture |
@@ -261,6 +261,15 @@ actively interactive. Steps are authored as **data**, not per-problem code.
   answering; the next step is prefetched for instant playback. Controlled by
   `ChildDoc.narration_autoplay` (default on) — a My-stuff toggle plus a one-tap
   in-lesson mute — and degrades silently when ElevenLabs is unconfigured.
+- **Mastery remediation** (`lib/engine/remediation.ts`): practice and mastery
+  are separate phases. A topic is certified only by a perfect 3-question mastery
+  set, scored locally against human-authored answers and persisted through
+  `logLessonCompletion`/`upsertCompetence`. A non-perfect mastery check shows a
+  checker-gated Teaching Agent reteach (human-authored fallback) and starts a
+  fresh mastery retake; when the bank is small, order rotates and questions are
+  never AI-authored. The loop stops after five attempts and calls the
+  remediation handoff action, which queues a tutor request and shows the child a
+  calm pause.
 
 ## Quality & Monitoring
 

@@ -2873,12 +2873,54 @@ export async function createTutorBooking(
     parent_id: oid,
     child_id: childId,
     subject: input.subject,
+    source: "parent",
     note: input.note,
     requested_slot: input.requestedSlot,
     status: "requested",
     created_at: new Date(),
   } as TutorBookingDoc);
   return { ok: true };
+}
+
+export async function createRemediationTutorHandoff(
+  parentId: string,
+  childId: ObjectId,
+  input: {
+    subject: Subject | null;
+    topicTag: string;
+    topicTitle: string;
+    note: string;
+  },
+): Promise<{ ok: boolean; created: boolean; reason?: string }> {
+  if (!(await assertOwnsChild(parentId, childId))) {
+    return { ok: false, created: false, reason: "Child not found." };
+  }
+  const oid = toObjectId(parentId);
+  if (!oid) return { ok: false, created: false, reason: "Invalid parent." };
+
+  const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
+  const existing = await col.findOne({
+    parent_id: oid,
+    child_id: childId,
+    topic_tag: input.topicTag,
+    source: "remediation",
+    status: { $in: ["requested", "scheduled"] },
+  });
+  if (existing) return { ok: true, created: false };
+
+  await col.insertOne({
+    parent_id: oid,
+    child_id: childId,
+    subject: input.subject,
+    topic_tag: input.topicTag,
+    topic_title: input.topicTitle,
+    source: "remediation",
+    note: input.note,
+    requested_slot: "Queued by Edway after a tricky mastery check",
+    status: "requested",
+    created_at: new Date(),
+  } as TutorBookingDoc);
+  return { ok: true, created: true };
 }
 
 export async function listTutorBookings(
@@ -2888,6 +2930,35 @@ export async function listTutorBookings(
   if (!oid) return [];
   const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
   return col.find({ parent_id: oid }).sort({ created_at: -1 }).limit(20).toArray();
+}
+
+export interface StaffTutorRequest {
+  booking: TutorBookingDoc;
+  childName: string;
+}
+
+export async function listTutorBookingsAsStaff(
+  limit = 20,
+): Promise<StaffTutorRequest[]> {
+  const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
+  const bookings = await col
+    .find({ status: { $in: ["requested", "scheduled"] } })
+    .sort({ created_at: -1 })
+    .limit(limit)
+    .toArray();
+  if (bookings.length === 0) return [];
+
+  const childIds = bookings.map((b) => b.child_id);
+  const children = await (
+    await getCollection<ChildDoc>(Collections.children)
+  )
+    .find({ _id: { $in: childIds } })
+    .toArray();
+  const nameById = new Map(children.map((c) => [c._id!.toHexString(), c.full_name]));
+  return bookings.map((booking) => ({
+    booking,
+    childName: nameById.get(booking.child_id.toHexString()) ?? "Child",
+  }));
 }
 
 // ── Parent ↔ staff messaging ─────────────────────────────
