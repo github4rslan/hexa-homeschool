@@ -11,6 +11,7 @@ import {
   Sparkles,
   ArrowRight,
   Lightbulb,
+  ListChecks,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalmPause } from "@/components/child/calm-pause";
@@ -34,6 +35,8 @@ import { accentPreset, type AccentPreset } from "@/lib/child/accents";
 import { useNarration } from "@/lib/child/use-narration";
 import { useQuestionVisual } from "@/lib/child/use-question-visual";
 import { buildQuestionNarration } from "@/lib/child/narration-copy";
+import { StepReveal } from "@/components/child/step-reveal";
+import { workedSolutionFromExplanation } from "@/lib/child/worked-examples";
 import {
   decideRemediation,
   selectMasteryAttempt,
@@ -138,6 +141,7 @@ export function PracticePlayer({
   const [attempts, setAttempts] = useState(0);
   const [ready, setReady] = useState(false);
   const [revealed, setRevealed] = useState(false); // worked solution shown
+  const [stepByStepOpen, setStepByStepOpen] = useState(false);
   const [outcome, setOutcome] = useState<"correct" | "incorrect" | null>(null);
   const [score, setScore] = useState(0);
   const [scoredThis, setScoredThis] = useState(false);
@@ -207,6 +211,13 @@ export function PracticePlayer({
   const hintLadder = question
     ? buildHintLadder({ hints: question.hints, explanation: question.explanation })
     : [];
+  const workedSolution = question
+    ? (question.workedSolution ??
+      workedSolutionFromExplanation({
+        prompt: question.prompt,
+        explanation: question.explanation,
+      }))
+    : null;
 
   const stopRecorder = useCallback(() => {
     if (recordTimerRef.current) {
@@ -484,10 +495,10 @@ export function PracticePlayer({
       return next;
     });
 
-    // After the final attempt, unfold the full worked solution.
+    // After the final attempt, unfold the method before revealing the answer.
     if (nextAttempts >= MAX_ATTEMPTS) {
       setHintRung(hintLadder.length);
-      setRevealed(true);
+      setStepByStepOpen(true);
     }
   }
 
@@ -506,6 +517,7 @@ export function PracticePlayer({
     setOutcome(null);
     setScoredThis(false);
     setHintRung(0);
+    setStepByStepOpen(false);
     setSpoken(null);
     setSpokenSelect(null);
     setSttNotice(null);
@@ -1011,6 +1023,30 @@ export function PracticePlayer({
 
         {/* Correct moment — encouraging line; the burst is non-blocking. */}
         <AnimatePresence>
+          {stepByStepOpen && workedSolution && !isCorrect && (
+            <motion.div
+              key="step-by-step"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              className="mt-6"
+            >
+              <StepReveal
+                example={workedSolution}
+                onDone={() => setRevealed(true)}
+                doneLabel="Got it"
+                voiceId={voiceId}
+                keyStage={keyStage}
+                accent={accentId}
+                autoplay={autoplayOn}
+                className="border-white/10 bg-white/[0.02]"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
           {isCorrect && (
             <motion.div
               key="correct"
@@ -1030,17 +1066,39 @@ export function PracticePlayer({
         {/* Actions */}
         <div className="mt-8 flex items-center justify-between gap-4">
           {canHint ? (
-            <button
-              onClick={showHint}
-              className="inline-flex items-center gap-2 text-base text-fog-400 transition-colors hover:text-fog-200"
-            >
-              <Lightbulb className="h-5 w-5" />
-              {hintRung === 0 ? "Show a hint" : "Another hint"}
-            </button>
+            <div className="flex flex-wrap gap-4">
+              <button
+                onClick={showHint}
+                className="inline-flex items-center gap-2 text-base text-fog-400 transition-colors hover:text-fog-200"
+              >
+                <Lightbulb className="h-5 w-5" />
+                {hintRung === 0 ? "Show a hint" : "Another hint"}
+              </button>
+              {attempts > 0 && workedSolution && (
+                <button
+                  onClick={() => setStepByStepOpen(true)}
+                  className="inline-flex items-center gap-2 text-base text-fog-400 transition-colors hover:text-fog-200"
+                >
+                  <ListChecks className="h-5 w-5" />
+                  Show me step by step
+                </button>
+              )}
+            </div>
           ) : !revealed && !isCorrect && attempts > 0 ? (
-            <span className="text-base text-fog-400">
-              {attemptsLeft} {attemptsLeft === 1 ? "try" : "tries"} left
-            </span>
+            <div className="flex flex-wrap gap-4">
+              <span className="text-base text-fog-400">
+                {attemptsLeft} {attemptsLeft === 1 ? "try" : "tries"} left
+              </span>
+              {workedSolution && (
+                <button
+                  onClick={() => setStepByStepOpen(true)}
+                  className="inline-flex items-center gap-2 text-base text-fog-400 transition-colors hover:text-fog-200"
+                >
+                  <ListChecks className="h-5 w-5" />
+                  Show me step by step
+                </button>
+              )}
+            </div>
           ) : (
             <span />
           )}
@@ -1060,7 +1118,7 @@ export function PracticePlayer({
                 onClick={check}
                 variant="child"
                 size="child"
-                disabled={!ready}
+                disabled={!ready || stepByStepOpen}
               >
                 Check answer
               </Button>

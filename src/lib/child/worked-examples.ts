@@ -67,3 +67,23 @@ export function visibleWorkedStepCount(input: {
   if (input.reducedMotion) return input.totalSteps;
   return Math.min(Math.max(input.currentStep + 1, 1), input.totalSteps);
 }
+
+export function workedSolutionFromExplanation(input: {
+  prompt: string;
+  explanation: string;
+}): WorkedExample {
+  const sentences = input.explanation
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const steps = (sentences.length ? sentences : [input.explanation]).map((line) => ({
+    line,
+  }));
+
+  return {
+    title: "Let's walk through it together",
+    scenario: input.prompt,
+    steps,
+    yourTurn: "Try the next one using the same steps.",
+  };
+}
