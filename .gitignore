@@ -50,6 +50,7 @@ next-env.d.ts
 
 # Claude Code local artifacts
 .claude/
+.mcp.json
 CLAUDE.md
 dev-verify.log
 dev-*.log
