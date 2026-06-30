@@ -63,6 +63,36 @@ Checker), so they carry the identical safety guarantees; if the call is
 rate-limited, tier-gated, or unconfigured, the child sees the canonical
 human-authored explanation instead.
 
+### Specific & Adaptive Feedback (Wave 7, Phase 3)
+
+A wrong answer is never met with a generic "try again". Feedback is driven mostly
+by **human-authored content + deterministic signals** (cheap, no API); the AI
+reteach is the optional richer layer.
+
+- **Misconception hints (human-authored).** `QuestionDoc.misconceptions` is an
+  optional, index-aligned array: `misconceptions[i]` is a short line naming the
+  likely mistake behind choosing the wrong option `i` ("looks like you multiplied
+  instead of divided — let's see why"). `pickMisconception()`
+  (`lib/child/interactions.ts`) looks up the line for the option the child
+  actually picked (mcq only) — it never invents text. Legacy-safe (absent ⇒ no
+  targeted line). Authored in `curriculum.seed.ts`.
+- **Adaptive matrix (deterministic).** `decideFeedback()`
+  (`lib/engine/feedback-matrix.ts`) is a pure, unit-tested helper that maps cheap
+  local signals — attempts, time-on-question, hints used, prior correct streak,
+  session length — to one response: **careless** (fast slip after a correct run →
+  "slow down, re-read"), **concept_gap** (tries/hints exhausted → escalate to the
+  worked example + optional AI reteach), **language** (slower struggle / wording →
+  simpler wording + the concrete hint rung), **attention** (long pause / long
+  session → suggest a movement break), or the default **encourage** nudge. No AI,
+  identical on every device, builds no psychological profile of the child.
+- **Multi-modal delivery.** The chosen line is shown as a calm, accent-tinted,
+  reduced-motion-safe slide-in **and** narrated through the existing TTS engine —
+  never a silent wall of text, never red/shake/buzzer.
+- **Optional AI reteach.** Only on a concept gap, an opt-in "Explain it another
+  way" calls the same Checker-gated `/api/tutor` pipeline (AI text served ONLY
+  when `aiVerified`), **cached per question+band**, degrading to the
+  human-authored explanation when AI is unavailable or the Checker rejects it.
+
 ### Thresholds
 
 | Agent | Threshold | Constant |
