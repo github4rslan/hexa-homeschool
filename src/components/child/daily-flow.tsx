@@ -32,6 +32,7 @@ export function DailyFlow({
   savedProgress,
   firstName,
   resumeKey,
+  tutorNote,
 }: {
   title: string;
   summary: string;
@@ -40,6 +41,12 @@ export function DailyFlow({
   questions: Question[];
   masteryQuestions?: Question[];
   curriculumTopic: string;
+  /**
+   * A human tutor's note from a logged handoff session (Wave 7, Phase 4). When
+   * present it's surfaced warmly at the top of the explainer so the next lesson
+   * picks up where the tutor left off. Absent on every normal lesson.
+   */
+  tutorNote?: string | null;
   /** Child-chosen narration voice, threaded to both phases' TTS. */
   voiceId?: string | null;
   /** Child's UK key stage, used only as a narration pace hint. */
@@ -116,12 +123,14 @@ export function DailyFlow({
               keyStage={keyStage}
               accent={accentId}
               autoplay={narrationAutoplay}
+              tutorNote={tutorNote}
             />
           ) : (
             <PracticePlayer
               questions={questions}
               masteryQuestions={masteryQuestions}
               curriculumTopic={curriculumTopic}
+              topicTitle={title}
               voiceId={voiceId}
               keyStage={keyStage}
               accent={accentId}
