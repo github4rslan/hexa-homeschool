@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { listTutorBookingsAsStaff } from "@/lib/db/repo";
+import { TutorSessionForm } from "./tutor-session-form";
 
 export const metadata: Metadata = { title: "Admin · Tutor Marketplace" };
 
@@ -97,6 +98,18 @@ export default async function TutorsPage() {
                     </span>
                   </div>
                   <p className="text-sm text-fog-300">{booking.note}</p>
+
+                  {/* Log the (manually-run) session. For a remediation handoff
+                      the note feeds the child's next explanation and lifts the
+                      syllabus pause. Live scheduling is deferred. */}
+                  <TutorSessionForm
+                    bookingId={booking._id?.toHexString() ?? ""}
+                    placeholder={
+                      booking.source === "remediation" && booking.topic_title
+                        ? `A tip for ${childName} on ${booking.topic_title} — surfaces in their next lesson`
+                        : "Session notes"
+                    }
+                  />
                 </div>
               ))}
             </div>

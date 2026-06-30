@@ -13,6 +13,7 @@ import {
   todayCard,
   getTopic,
   createRemediationTutorHandoff,
+  pauseTopicForTutor,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { captureServer } from "@/lib/analytics/server";
@@ -179,6 +180,11 @@ export async function triggerRemediationHandoffAction(input: {
   });
   if (!res.ok) return res;
 
+  // Pause the topic in the syllabus (set aside without shame). Done on every
+  // trigger so a re-entry stays resting; never demotes competence state.
+  await pauseTopicForTutor(parentId, child._id, input.topicTag);
+
+  // Notify the parent only on a freshly-created request — one per struggle.
   if (res.created) {
     await notifyRemediationHandoff({
       parentId,

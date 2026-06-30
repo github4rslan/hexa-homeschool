@@ -260,6 +260,13 @@ export default async function TutoringPage({
                         {b.note}
                       </p>
                     )}
+                    {b.source === "remediation" && b.status === "requested" && (
+                      <p className="mt-1.5 text-xs text-fog-400">
+                        This topic is resting until a tutor helps — nothing is
+                        marked against your child, and their other lessons carry
+                        on as normal.
+                      </p>
+                    )}
                     <div className="mt-3">
                       <MessageThread
                         threadType="booking"

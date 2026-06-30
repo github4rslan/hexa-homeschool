@@ -15,6 +15,7 @@ import {
   nextReview,
   isReviewDue,
 } from "@/lib/engine/spaced-repetition";
+import { shouldQueueHandoff } from "@/lib/engine/remediation";
 import type {
   ParentDoc,
   ChildDoc,
@@ -1300,6 +1301,12 @@ export interface TodayCard {
   /** Subject just certified today, if any — drives the quiet "all done" line. */
   certifiedToday: string | null;
   allDone: boolean;
+  /**
+   * Topics resting for a five-attempt human handoff (Wave 7, Phase 4). Excluded
+   * from `quests` (the syllabus pauses them without shame) and surfaced
+   * separately so the parent sees "paused — a tutor is coming", not a failure.
+   */
+  pausedTopics: { topicTag: string; topicTitle: string }[];
 }
 
 /**
@@ -1328,8 +1335,19 @@ export async function todayCard(
   const titleByTag = new Map(topics.map((t) => [t.topic_tag, t.title]));
   const todayIndex = (new Date().getDay() + 6) % 7; // 0 = Monday
 
+  // Topics resting for a tutor handoff are set aside: excluded from today's
+  // quests (so "all done" / the daily summary never block on them) and surfaced
+  // separately as a calm "paused" signal.
+  const pausedTags = new Set(
+    comps.filter((c) => c.tutor_paused_at).map((c) => c.topic_tag),
+  );
+  const pausedTopics = [...pausedTags].map((tag) => ({
+    topicTag: tag,
+    topicTitle: titleByTag.get(tag) || tag,
+  }));
+
   const quests: TodayQuest[] = (schedule?.items ?? [])
-    .filter((it) => it.day === todayIndex)
+    .filter((it) => it.day === todayIndex && !pausedTags.has(it.topic_tag))
     .map((it) => ({
       subject: it.subject,
       topicTag: it.topic_tag,
@@ -1368,6 +1386,7 @@ export async function todayCard(
     openEscalations: escalations.length,
     certifiedToday,
     allDone,
+    pausedTopics,
   };
 }
 
@@ -2899,14 +2918,19 @@ export async function createRemediationTutorHandoff(
   if (!oid) return { ok: false, created: false, reason: "Invalid parent." };
 
   const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
-  const existing = await col.findOne({
-    parent_id: oid,
-    child_id: childId,
-    topic_tag: input.topicTag,
-    source: "remediation",
-    status: { $in: ["requested", "scheduled"] },
-  });
-  if (existing) return { ok: true, created: false };
+  // Idempotency: one handoff per child+topic per active struggle. The decision
+  // is pure (`shouldQueueHandoff`) so it's unit-tested apart from the DB.
+  const existing = await col
+    .find({
+      parent_id: oid,
+      child_id: childId,
+      topic_tag: input.topicTag,
+      source: "remediation",
+    })
+    .toArray();
+  if (!shouldQueueHandoff(existing.map((e) => e.status))) {
+    return { ok: true, created: false };
+  }
 
   await col.insertOne({
     parent_id: oid,
@@ -2921,6 +2945,56 @@ export async function createRemediationTutorHandoff(
     created_at: new Date(),
   } as TutorBookingDoc);
   return { ok: true, created: true };
+}
+
+/**
+ * Set a topic aside ("resting") for the five-attempt human handoff. Marks the
+ * child's competence row as tutor-paused WITHOUT demoting its state — the topic
+ * is never "failed", just paused until a tutor helps. Idempotent (re-pausing
+ * just refreshes the timestamp). Ownership enforced.
+ */
+export async function pauseTopicForTutor(
+  parentId: string,
+  childId: ObjectId,
+  topicTag: string,
+): Promise<boolean> {
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+  const col = await getCollection<CompetenceDoc>(Collections.competence);
+  await col.updateOne(
+    { child_id: childId, topic_tag: topicTag },
+    {
+      $set: { tutor_paused_at: new Date(), updated_at: new Date() },
+      $setOnInsert: { state: "training", certified_at: null },
+    },
+    { upsert: true },
+  );
+  return true;
+}
+
+/** Topic tags currently paused for a tutor handoff (child read; set aside). */
+export async function tutorPausedTags(childId: ObjectId): Promise<Set<string>> {
+  const col = await getCollection<CompetenceDoc>(Collections.competence);
+  const rows = await col
+    .find({ child_id: childId, tutor_paused_at: { $ne: null } })
+    .toArray();
+  return new Set(rows.filter((r) => r.tutor_paused_at).map((r) => r.topic_tag));
+}
+
+export interface TutorHandoffState {
+  /** True when this topic is resting, awaiting a tutor. */
+  paused: boolean;
+  /** The tutor's note from a logged session, surfaced to the next explanation. */
+  note: string | null;
+}
+
+/** This child's handoff state for one topic (paused? + any tutor note). */
+export async function getTutorHandoffState(
+  childId: ObjectId,
+  topicTag: string,
+): Promise<TutorHandoffState> {
+  const col = await getCollection<CompetenceDoc>(Collections.competence);
+  const row = await col.findOne({ child_id: childId, topic_tag: topicTag });
+  return { paused: !!row?.tutor_paused_at, note: row?.tutor_note ?? null };
 }
 
 export async function listTutorBookings(
@@ -2959,6 +3033,57 @@ export async function listTutorBookingsAsStaff(
     booking,
     childName: nameById.get(booking.child_id.toHexString()) ?? "Child",
   }));
+}
+
+/**
+ * Staff logs a (deferred, manually-run) tutor session against a queued request:
+ * marks the booking completed and — for a topic-scoped remediation handoff —
+ * writes the tutor's note onto the child's competence record and LIFTS the
+ * syllabus pause, so the next lesson surfaces the tip and the topic returns to
+ * rotation. Wires the human → next-explanation data path; the live session is
+ * deferred. Audited in the append-only staff trail. Staff-only (no parentId).
+ */
+export async function logTutorSessionAsStaff(input: {
+  staffId: string;
+  staffEmail: string;
+  bookingId: string;
+  note: string;
+}): Promise<{ ok: boolean; reason?: string }> {
+  const bookingOid = toObjectId(input.bookingId);
+  if (!bookingOid) return { ok: false, reason: "Invalid booking." };
+  const note = input.note.trim().slice(0, 1000);
+
+  const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
+  const booking = await col.findOne({ _id: bookingOid });
+  if (!booking) return { ok: false, reason: "Booking not found." };
+
+  await col.updateOne({ _id: bookingOid }, { $set: { status: "completed" } });
+
+  // Topic-scoped handoff: feed the note back to the child's record and lift the
+  // pause so the topic resumes (never demoting its competence state).
+  if (booking.topic_tag && note) {
+    const comp = await getCollection<CompetenceDoc>(Collections.competence);
+    await comp.updateOne(
+      { child_id: booking.child_id, topic_tag: booking.topic_tag },
+      {
+        $set: {
+          tutor_note: note,
+          tutor_session_at: new Date(),
+          tutor_paused_at: null,
+          updated_at: new Date(),
+        },
+      },
+    );
+  }
+
+  await recordStaffAction({
+    staffId: input.staffId,
+    staffEmail: input.staffEmail,
+    action: "tutor.session_logged",
+    targetCollection: Collections.tutorBookings,
+    targetId: input.bookingId,
+  });
+  return { ok: true };
 }
 
 // ── Parent ↔ staff messaging ─────────────────────────────

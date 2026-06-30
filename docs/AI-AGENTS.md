@@ -49,10 +49,37 @@ retakes pull fresh human-authored `kind: "mastery"` questions where the bank
 allows. If the bank only contains one 3-question check, the retake rotates order
 rather than inventing questions.
 
-The loop is capped at five mastery attempts. After that, the child sees a calm
-pause and the server creates one idempotent remediation tutor request for the
-child+topic, notifies the parent best-effort by existing email/SMS channels, and
-leaves other lessons available.
+The loop is capped at five mastery attempts. After that, the **five-attempt human
+handoff** (Wave 7, Phase 4) fires — the AI stops guessing and a human is brought
+in. The trigger and its idempotency are pure and unit-tested
+(`lib/engine/remediation.ts`): `decideRemediation()` returns `"handoff"` at the
+cap (`isHandoff()`), and `shouldQueueHandoff()` guarantees **one request per
+child+topic per active struggle** (an existing `requested`/`scheduled` request
+suppresses a duplicate). On trigger the server:
+
+- **Calm child pause** — `components/child/handoff-pause.tsx`: an accent-driven,
+  reduced-motion-safe, WCAG-AA pause ("Let's get you some extra help — a real
+  teacher is coming"). No "failed", no red, no buzzer. The same component guards
+  the lesson page so re-opening a resting topic shows the pause, not the lesson.
+- **Parent notification** — `notifyRemediationHandoff()` reuses the existing
+  Brevo email + Twilio SMS, warm and specific ("{child} is finding {topic}
+  tricky. We've paused it and lined up extra help."), respecting the existing
+  opt-outs (`escalation_alert_opt_out`, unverified email, no phone).
+- **Tutor-request queue** — `createRemediationTutorHandoff()` inserts an
+  ownership-checked `tutor_bookings` row (`source: "remediation"`, topic +
+  struggle context), surfaced on the parent `/tutoring` surface and the admin
+  Tutor Marketplace.
+- **Syllabus pause without shame** — `pauseTopicForTutor()` sets
+  `CompetenceDoc.tutor_paused_at` **without demoting state**. The topic is set
+  aside: excluded from today's quests (`todayCard`), shown as a calm "resting"
+  card on the child hub, and never marked against the child. Other topics carry
+  on.
+- **Tutor → next-explanation data path** — when staff log the (deferred,
+  manually-run) session (`logTutorSessionAsStaff`, audited), the note is written
+  to `CompetenceDoc.tutor_note`, the pause lifts (`tutor_paused_at = null`), and
+  the next explainer surfaces it as "a tip from your tutor". The **live** tutor
+  network / scheduling stays deferred — this is the trigger + notify + queue +
+  pause only.
 
 **Mock exams use AI only for post-exam explanations.** A mock paper is scored
 **deterministically** against the human-authored canonical answers
