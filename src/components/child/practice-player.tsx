@@ -165,6 +165,10 @@ export function PracticePlayer({
   const [misconceptionHint, setMisconceptionHint] = useState<string | null>(null);
   // The adaptive-matrix decision (careless / concept gap / language / attention).
   const [feedback, setFeedback] = useState<FeedbackResponse | null>(null);
+  // Optional richer reteach (concept gap) — Checker-gated `gpt-4o-mini`, cached
+  // per question+band, degrading to the human-authored explanation.
+  const [reteachInline, setReteachInline] = useState<string | null>(null);
+  const [reteachInlineLoading, setReteachInlineLoading] = useState(false);
   // When this question first appeared — drives the matrix's time signals.
   const questionShownAtRef = useRef<number>(Date.now());
   // Clean first-try correct answers in a row (careless-slip signal).
@@ -297,6 +301,20 @@ export function PracticePlayer({
   useEffect(() => {
     questionShownAtRef.current = Date.now();
   }, [step, lessonPhase]);
+
+  // Multi-modal delivery: speak the adaptive feedback (matrix line + the
+  // specific misconception) the moment it appears, so the support is voice +
+  // visual + motion — never a silent wall of text. Respects the mute toggle and
+  // degrades silently when TTS is unavailable. `feedback` changes identity per
+  // miss, so this fires once per wrong answer.
+  useEffect(() => {
+    if (!feedback || !autoplayOn) return;
+    const spoken = misconceptionHint
+      ? `${feedback.message} ${misconceptionHint}`
+      : feedback.message;
+    void narration.playText(spoken);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feedback]);
 
   // Resume once on mount: reconcile the server copy (props) with a same-device
   // localStorage copy (which may be a step ahead if a server write lagged), then
@@ -537,19 +555,23 @@ export function PracticePlayer({
     });
     setFeedback(decision);
 
-    // Surface the next hint rung automatically on a wrong try.
+    // Surface hints to match the matrix's response: a concept gap unfolds the
+    // full method, language support jumps to the concrete/simpler rung, and any
+    // other miss advances one gentle rung. The ladder only ever moves forward.
+    const targetRung = decision.escalateReteach
+      ? hintLadder.length
+      : decision.simplify
+        ? Math.min(2, hintLadder.length)
+        : 1;
     setHintRung((r) => {
-      const next = Math.min(r + 1, hintLadder.length);
-      if (next > r) hintsTotalRef.current += 1;
+      const next = Math.max(r, Math.min(targetRung, hintLadder.length));
+      if (next > r) hintsTotalRef.current += next - r;
       return next;
     });
 
-    // Concept gap (tries/hints exhausted) → unfold the method before the answer.
-    // This subsumes the old "final attempt" rule and also fires on heavy hinting.
-    if (decision.escalateReteach) {
-      setHintRung(hintLadder.length);
-      setStepByStepOpen(true);
-    }
+    // Concept gap (tries/hints exhausted) → unfold the worked method before the
+    // answer. Subsumes the old "final attempt" rule and also fires on heavy hinting.
+    if (decision.escalateReteach) setStepByStepOpen(true);
   }
 
   function showHint() {
@@ -569,6 +591,8 @@ export function PracticePlayer({
     setHintRung(0);
     setMisconceptionHint(null);
     setFeedback(null);
+    setReteachInline(null);
+    setReteachInlineLoading(false);
     setStepByStepOpen(false);
     setSpoken(null);
     setSpokenSelect(null);
@@ -641,6 +665,60 @@ export function PracticePlayer({
       setReteachText(fallback);
     } finally {
       setReteachLoading(false);
+    }
+  }
+
+  /**
+   * Optional richer reteach for a concept gap, in-practice. Calls the existing
+   * Checker-gated `/api/tutor` (AI text is served ONLY when `aiVerified`), caches
+   * per question+band so a re-ask is free, and degrades to the human-authored
+   * explanation when AI is unavailable or the Checker rejects it. Opt-in — the
+   * child taps for it; it never auto-fires or streams raw model output.
+   */
+  async function fetchInlineReteach() {
+    if (!question || reteachInlineLoading) return;
+    const key = `${question.id}:${keyStage ?? "na"}`;
+    const fallback = `Let's look at this another way. ${question.explanation}`;
+    const cached = reteachCacheRef.current.get(key);
+    if (cached) {
+      setReteachInline(cached);
+      return;
+    }
+    setReteachInlineLoading(true);
+    try {
+      const res = await fetch("/api/tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: question.prompt,
+          correctAnswer: question.options[question.correctIndex],
+          topic: curriculumTopic,
+          wasCorrect: false,
+          keyStage,
+        }),
+      });
+      const data = (await res.json()) as {
+        explanation?: string;
+        aiVerified?: boolean;
+        frozen?: boolean;
+        message?: string;
+      };
+      if (data.frozen) {
+        narration.stop();
+        setFrozen(data.message ?? "");
+        return;
+      }
+      const text =
+        res.ok && data.aiVerified && data.explanation
+          ? data.explanation
+          : fallback;
+      reteachCacheRef.current.set(key, text);
+      setReteachInline(text);
+    } catch {
+      reteachCacheRef.current.set(key, fallback);
+      setReteachInline(fallback);
+    } finally {
+      setReteachInlineLoading(false);
     }
   }
 
@@ -1064,6 +1142,30 @@ export function PracticePlayer({
                     Stand up, stretch, and take three slow breaths.
                   </p>
                 )}
+
+                {/* Optional richer reteach (concept gap) — Checker-gated +
+                    cached, opt-in. Degrades to the human-authored explanation. */}
+                {feedback.escalateReteach &&
+                  (reteachInline ? (
+                    <p className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-base text-fog-100">
+                      {reteachInline}
+                    </p>
+                  ) : (
+                    <button
+                      onClick={fetchInlineReteach}
+                      disabled={reteachInlineLoading}
+                      className="mt-3 inline-flex items-center gap-2 text-base text-fog-300 transition-colors hover:text-fog-100 disabled:opacity-60"
+                    >
+                      {reteachInlineLoading ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-5 w-5" />
+                      )}
+                      {reteachInlineLoading
+                        ? "Getting a clearer explanation…"
+                        : "Explain it another way"}
+                    </button>
+                  ))}
               </div>
             </motion.div>
           )}
