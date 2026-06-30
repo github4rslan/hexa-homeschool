@@ -39,6 +39,11 @@ export interface Question {
   interaction?: Interaction;
   /** Optional human-authored progressive hints (nudge → specific). */
   hints?: string[];
+  /**
+   * Optional per-option misconception lines, index-aligned with `options`
+   * (Wave 7, Phase 3). Shown when the child picks that specific wrong option.
+   */
+  misconceptions?: string[];
   workedSolution?: WorkedExample;
 }
 

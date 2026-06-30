@@ -36,6 +36,7 @@ export default async function LessonPage({
       explanation: q.explanation,
       interaction: normalizeInteraction(q.interaction),
       hints: q.hints,
+      misconceptions: q.misconceptions,
     }));
 
   // Where "Continue" goes: the next topic in this subject's sequence, or the

@@ -45,6 +45,11 @@ export interface InteractionHandle {
   isCorrect: () => boolean;
   /** A readable form of the child's answer (for the distress gate + logging). */
   answerText: () => string;
+  /**
+   * The chosen option index for `mcq` (drives per-option misconception hints),
+   * or null for other interaction types where there is no single option index.
+   */
+  selectedIndex: () => number | null;
 }
 
 interface InteractionProps {
@@ -155,6 +160,7 @@ const Mcq = forwardRef<
   useImperativeHandle(ref, () => ({
     isCorrect: () => checkMcq(selected, correctIndex),
     answerText: () => (selected !== null ? options[selected] ?? "" : ""),
+    selectedIndex: () => selected,
   }));
 
   return (
@@ -230,6 +236,7 @@ const TapReveal = forwardRef<
     isCorrect: () => checkTapReveal(it, selected),
     answerText: () =>
       selected !== null ? it.cards[selected]?.reveal ?? "" : "",
+    selectedIndex: () => null,
   }));
 
   function tap(i: number) {
@@ -320,6 +327,7 @@ const FillBlank = forwardRef<
   useImperativeHandle(ref, () => ({
     isCorrect: () => checkFillBlank(it, values),
     answerText: () => values.join(" ").trim(),
+    selectedIndex: () => null,
   }));
 
   function setBlank(i: number, v: string) {
@@ -412,6 +420,7 @@ const DragDrop = forwardRef<
           return `${s.label}: ${chip !== null ? it.chips[chip] : "—"}`;
         })
         .join("; "),
+    selectedIndex: () => null,
   }));
 
   function placeChip(slotIdx: number, chipIdx: number) {

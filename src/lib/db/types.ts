@@ -278,6 +278,16 @@ export interface QuestionDoc {
   */
   hints?: string[];
   /**
+   * Optional human-authored, per-option misconception hints (Wave 7, Phase 3).
+   * Index-aligned with `options`: `misconceptions[i]` is the short, supportive
+   * line shown when the child picks the WRONG option `i` ("looks like you
+   * multiplied instead of divided — let's see why"). The correct option's slot
+   * is ignored. Sparse arrays are fine — a missing/empty entry just means no
+   * targeted line for that distractor (the generic adaptive feedback shows
+   * instead). Legacy-safe (absent ⇒ no targeted hints). AI never authors these.
+   */
+  misconceptions?: string[];
+  /**
    * Optional human-authored step-by-step solution for this exact question.
    * Used after a miss; absent rows fall back to the canonical explanation.
    */
