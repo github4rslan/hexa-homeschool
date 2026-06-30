@@ -26,6 +26,7 @@ import {
 } from "@/app/(dashboard)/lesson/actions";
 import {
   buildHintLadder,
+  pickMisconception,
   resolveResumeStep,
   clampResumeScore,
   type Interaction as InteractionDef,
@@ -153,6 +154,10 @@ export function PracticePlayer({
 
   // Progressive hint ladder (local, human-authored).
   const [hintRung, setHintRung] = useState(0); // 0 = none shown yet
+
+  // Specific, targeted feedback on a wrong answer (Wave 7, Phase 3).
+  // The human-authored misconception line for the exact wrong option (or null).
+  const [misconceptionHint, setMisconceptionHint] = useState<string | null>(null);
 
   // Pedagogical counters for the lesson log (NOT analytics).
   const attemptsTotalRef = useRef(0);
@@ -488,6 +493,17 @@ export function PracticePlayer({
     }
 
     setOutcome("incorrect");
+
+    // Specific feedback: the human-authored line for the EXACT wrong option the
+    // child picked (mcq only; deterministic, no API). Null ⇒ no targeted line.
+    setMisconceptionHint(
+      pickMisconception({
+        misconceptions: question.misconceptions,
+        selectedIndex: interactionRef.current?.selectedIndex() ?? null,
+        correctIndex: question.correctIndex,
+      }),
+    );
+
     // Surface the next hint rung automatically on a wrong try.
     setHintRung((r) => {
       const next = Math.min(r + 1, hintLadder.length);
@@ -517,6 +533,7 @@ export function PracticePlayer({
     setOutcome(null);
     setScoredThis(false);
     setHintRung(0);
+    setMisconceptionHint(null);
     setStepByStepOpen(false);
     setSpoken(null);
     setSpokenSelect(null);
@@ -978,6 +995,31 @@ export function PracticePlayer({
             {sttNotice}
           </p>
         )}
+
+        {/* Specific, targeted feedback (Wave 7, Phase 3) — the human-authored
+            misconception line for the exact wrong option. Calm supportive
+            slide-in (no red, no shake); accent-tinted and distinct from hints. */}
+        <AnimatePresence>
+          {misconceptionHint && !isCorrect && (
+            <motion.div
+              key="misconception"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className={cn(
+                "mt-6 flex items-start gap-3 rounded-3xl border p-5 text-lg leading-relaxed text-fog-100",
+                accent.bg,
+                accent.border,
+              )}
+              role="status"
+              aria-live="polite"
+            >
+              <Sparkles className={cn("mt-0.5 h-6 w-6 shrink-0", accent.text)} aria-hidden />
+              <span>{misconceptionHint}</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Progressive hints (muted accent tint, distinct from the answer) */}
         <AnimatePresence>

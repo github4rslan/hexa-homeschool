@@ -48,6 +48,12 @@ export interface SeedQuestion {
   interaction?: unknown;
   /** Optional human-authored progressive hints (nudge → specific). */
   hints?: string[];
+  /**
+   * Optional per-option misconception lines, index-aligned with `options`
+   * (Wave 7, Phase 3). Each entry targets the WRONG option at that index; the
+   * correct slot is ignored. Sparse arrays are fine.
+   */
+  misconceptions?: string[];
   worked_solution?: unknown;
 }
 
@@ -346,6 +352,82 @@ const QUESTIONS_BY_TOPIC: Record<string, QTuple[]> = {
   ],
 };
 
+// ════════════════════════════════════════════════════════════
+//  MISCONCEPTION HINTS (Wave 7, Phase 3 — specific feedback)
+//  Per-option, human-authored lines keyed by `${topic_tag}::${prompt}`.
+//  Each array is index-aligned with the question's `options`; the WRONG
+//  option's slot names the likely mistake warmly ("looks like you…"), and the
+//  correct slot is left as "" (ignored at render time). These are the cheap,
+//  deterministic layer that replaces a generic "try again" — AI never writes
+//  them. Sparse/empty entries simply fall back to the adaptive feedback line.
+// ════════════════════════════════════════════════════════════
+
+const MISCONCEPTIONS_BY_PROMPT: Record<string, string[]> = {
+  // ── Maths ──
+  "maths_number::Round 486 to the nearest 100.": [
+    "Looks like you rounded down — but 486 is past halfway (450), so it rounds up to 500.",
+    "That's 486 to the nearest ten. We want the nearest hundred, so check the tens digit instead.",
+    "",
+    "Nearly! That's the nearest ten. For the nearest hundred, look at whether the tens digit reaches 50.",
+  ],
+  "maths_number::Estimate 39 × 21 by rounding.": [
+    "Looks like you rounded 39 down to 30. It's closer to 40 — round it up.",
+    "",
+    "A little high — round 21 down to 20, not up. Then 40 × 20.",
+    "Looks like you used 40 × 10. Round 21 to 20, not to 10.",
+  ],
+  "maths_fractions::What is 20% of 150?": [
+    "Looks like that's a rough guess — find 10% first (15), then double it for 20%.",
+    "",
+    "That's 10% of 150. We want 20%, so double it.",
+    "Close — but find 10% (15) and double it to get 20%.",
+  ],
+  "maths_fractions::Increase £80 by 15%.": [
+    "",
+    "Looks like you added a bit too much — 15% of 80 is £12, so the total is £92.",
+    "Looks like you only added 10% (£8). We need 15%, which is £12.",
+    "Looks like you added 12.5%. 15% of 80 is £12, giving £92.",
+  ],
+  "maths_algebra_linear::Solve 3x + 7 = 22.": [
+    "Looks like a slip in the subtraction — 22 − 7 is 15, then 15 ÷ 3 = 5.",
+    "",
+    "Looks like you divided before subtracting the 7. Take 7 off first, then ÷ 3.",
+    "Looks like you stopped at 3x = 15. One more step: divide by 3 to get x = 5.",
+  ],
+  "maths_algebra_linear::Expand 2(x + 3).": [
+    "Looks like only the x was multiplied. The 2 multiplies BOTH terms, so 3 becomes 6 too.",
+    "",
+    "Looks like the 2 was dropped from the x. Multiply each term inside by 2.",
+    "Close — multiply the 3 by 2 as well: 2 × 3 = 6, not 5.",
+  ],
+  // ── English ──
+  "eng_spelling::Choose the correct spelling.": [
+    "A common slip! Remember there's 'a rat' in the middle: sep-a-rat-e.",
+    "Not quite — say it in chunks: sep-a-rat-e.",
+    "",
+    "Close — the start is 'sep', not 'sap': sep-a-rat-e.",
+  ],
+  "eng_grammar::Which sentence uses the past tense correctly?": [
+    "Looks like a regular '-ed' ending — but 'go' is irregular: it becomes 'went'.",
+    "",
+    "'Gone' needs a helper word (have gone). On its own, the past tense is 'went'.",
+    "That's the present continuous. The simple past of 'go' is 'went'.",
+  ],
+  // ── Science ──
+  "sci_cells::Where is genetic material found in a cell?": [
+    "The cytoplasm is where reactions happen — the DNA is kept in the nucleus.",
+    "",
+    "The membrane is the cell's gatekeeper — the genetic material sits in the nucleus.",
+    "Ribosomes build proteins. The genetic instructions are stored in the nucleus.",
+  ],
+  "sci_forces::Speed is calculated as:": [
+    "Looks like the operation is flipped — speed is distance ÷ time, not multiplied.",
+    "",
+    "That's time ÷ distance, which is upside down. Speed = distance ÷ time.",
+    "Looks like a mix-up — we divide distance by time, not add them.",
+  ],
+};
+
 /** Flattened question list ready to seed. */
 export const SEED_QUESTIONS: SeedQuestion[] = Object.entries(
   QUESTIONS_BY_TOPIC,
@@ -353,16 +435,20 @@ export const SEED_QUESTIONS: SeedQuestion[] = Object.entries(
   const topic = SEED_TOPICS.find((t) => t.topic_tag === topicTag);
   if (!topic) throw new Error(`Seed question references unknown topic: ${topicTag}`);
   return tuples.map(
-    ([tier, kind, prompt, options, correct_index, explanation]): SeedQuestion => ({
-      topic_tag: topicTag,
-      subject: topic.subject,
-      tier,
-      key_stage: 4, // existing bank is GCSE; backfilled so legacy rows are explicit
-      kind,
-      prompt,
-      options,
-      correct_index,
-      explanation,
-    }),
+    ([tier, kind, prompt, options, correct_index, explanation]): SeedQuestion => {
+      const misconceptions = MISCONCEPTIONS_BY_PROMPT[`${topicTag}::${prompt}`];
+      return {
+        topic_tag: topicTag,
+        subject: topic.subject,
+        tier,
+        key_stage: 4, // existing bank is GCSE; backfilled so legacy rows are explicit
+        kind,
+        prompt,
+        options,
+        correct_index,
+        explanation,
+        ...(misconceptions ? { misconceptions } : {}),
+      };
+    },
   );
 });

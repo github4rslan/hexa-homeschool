@@ -7,6 +7,7 @@ import {
   checkTapReveal,
   clampResumeScore,
   normalizeInteraction,
+  pickMisconception,
   resolveResumeStep,
   type DragDropInteraction,
   type FillBlankInteraction,
@@ -147,6 +148,58 @@ describe("buildHintLadder (nudge → specific → full)", () => {
     const ladder = buildHintLadder({ explanation: "Just one sentence" });
     expect(ladder).toHaveLength(3);
     expect(ladder[2]).toBe("Just one sentence");
+  });
+});
+
+describe("pickMisconception (specific, targeted feedback)", () => {
+  const misconceptions = [
+    "You rounded down — it rounds up.",
+    "", // correct slot, ignored
+    "That's the nearest ten.",
+  ];
+
+  it("returns the authored line for the exact wrong option chosen", () => {
+    expect(
+      pickMisconception({ misconceptions, selectedIndex: 0, correctIndex: 1 }),
+    ).toBe("You rounded down — it rounds up.");
+    expect(
+      pickMisconception({ misconceptions, selectedIndex: 2, correctIndex: 1 }),
+    ).toBe("That's the nearest ten.");
+  });
+
+  it("never returns a line for the correct option or a null selection", () => {
+    expect(
+      pickMisconception({ misconceptions, selectedIndex: 1, correctIndex: 1 }),
+    ).toBeNull();
+    expect(
+      pickMisconception({ misconceptions, selectedIndex: null, correctIndex: 1 }),
+    ).toBeNull();
+  });
+
+  it("falls back to null for missing, blank, or absent entries", () => {
+    // Blank slot (no authored line for that distractor).
+    expect(
+      pickMisconception({
+        misconceptions: ["", "", "  "],
+        selectedIndex: 2,
+        correctIndex: 0,
+      }),
+    ).toBeNull();
+    // Index past the end of a sparse array.
+    expect(
+      pickMisconception({ misconceptions, selectedIndex: 9, correctIndex: 1 }),
+    ).toBeNull();
+    // No misconceptions authored at all (legacy question).
+    expect(
+      pickMisconception({ selectedIndex: 0, correctIndex: 1 }),
+    ).toBeNull();
+    expect(
+      pickMisconception({
+        misconceptions: null,
+        selectedIndex: 0,
+        correctIndex: 1,
+      }),
+    ).toBeNull();
   });
 });
 

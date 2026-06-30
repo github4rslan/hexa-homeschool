@@ -243,6 +243,37 @@ export function buildHintLadder({ hints, explanation }: HintLadderInput): string
   return [nudge, specific, full];
 }
 
+// ── Misconception-targeted feedback (Wave 7, Phase 3) ────────
+
+export interface MisconceptionInput {
+  /** Per-option, index-aligned human-authored misconception lines (sparse OK). */
+  misconceptions?: string[] | null;
+  /** The wrong option the child actually chose (mcq), or null for other types. */
+  selectedIndex: number | null;
+  /** The canonical correct option index (never returns its slot). */
+  correctIndex: number;
+}
+
+/**
+ * Pick the human-authored misconception line for the specific wrong option a
+ * child chose, or null when there isn't a targeted one. Pure + deterministic —
+ * this never invents text (AI never authors curriculum), it only looks up an
+ * authored line. Guards the correct slot, out-of-range/blank entries, and the
+ * non-mcq case (selectedIndex null) so a bad authoring row can't mislead.
+ */
+export function pickMisconception({
+  misconceptions,
+  selectedIndex,
+  correctIndex,
+}: MisconceptionInput): string | null {
+  if (selectedIndex === null || selectedIndex === correctIndex) return null;
+  if (!Array.isArray(misconceptions)) return null;
+  const line = misconceptions[selectedIndex];
+  if (typeof line !== "string") return null;
+  const trimmed = line.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 // ── Resume math (Feature 3) ──────────────────────────────────
 
 export interface SavedProgress {

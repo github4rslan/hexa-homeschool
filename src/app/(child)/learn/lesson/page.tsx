@@ -63,6 +63,7 @@ export default async function ChildLessonPage({
     explanation: q.explanation,
     interaction: normalizeInteraction(q.interaction),
     hints: q.hints,
+    misconceptions: q.misconceptions,
     workedSolution: normalizeWorkedExample(q.worked_solution),
   });
 
