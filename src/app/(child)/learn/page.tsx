@@ -18,6 +18,7 @@ import {
   dueReviewWarmup,
   getWeeklySchedule,
   weekInReview,
+  tutorPausedTags,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { accentPreset } from "@/lib/child/accents";
@@ -53,6 +54,7 @@ export default async function LearnHubPage() {
   const doneTags = await todaysCompletedTopicTags(child._id);
   const warmupCount = (await dueReviewWarmup(child._id, 3)).length;
   const review = await weekInReview(parentId, child);
+  const pausedTags = await tutorPausedTags(child._id);
 
   // Map each completed-today tag to its subject so a subject's quest reads as
   // "done today" once any lesson in it is completed.
@@ -91,6 +93,10 @@ export default async function LearnHubPage() {
     const done = certified[s.id] ?? 0;
     const planned = plannedTodayBySubject.get(s.id);
     const topicTag = planned?.tag ?? firstTopics[i]?.topic_tag;
+    // A topic resting for a tutor handoff shows as a calm "resting" card rather
+    // than a normal quest — the child isn't pushed back into it (no advancement
+    // past an unmastered topic), other subjects stay open.
+    const resting = !!topicTag && pausedTags.has(topicTag);
     return {
       id: s.id,
       label: s.label,
@@ -98,6 +104,7 @@ export default async function LearnHubPage() {
       ring: s.ring,
       href: topicTag ? `/learn/lesson?topic=${topicTag}` : "/learn/lesson",
       done: doneSubjects.has(s.id),
+      resting,
       progressLabel: `${done}/${TOPICS_PER_SUBJECT}`,
       progressPct: Math.round((done / TOPICS_PER_SUBJECT) * 100),
     };

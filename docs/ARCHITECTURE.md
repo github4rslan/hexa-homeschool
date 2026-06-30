@@ -270,6 +270,19 @@ actively interactive. Steps are authored as **data**, not per-problem code.
   never AI-authored. The loop stops after five attempts and calls the
   remediation handoff action, which queues a tutor request and shows the child a
   calm pause.
+- **Five-attempt human handoff** (Wave 7, Phase 4 — `lib/engine/remediation.ts`,
+  `lib/email/remediation-handoff.ts`): the cap fires an enterprise handoff. Pure,
+  unit-tested trigger + idempotency (`isHandoff`, `shouldQueueHandoff` — one
+  request per child+topic per active struggle). The child sees a calm,
+  accent-driven pause (`components/child/handoff-pause.tsx`, reused as a
+  lesson-page guard for resting topics); the parent is notified via the existing
+  Brevo/Twilio channels (opt-outs respected); an ownership-checked
+  `tutor_bookings` row (`source: "remediation"`) is queued for parent + admin. The
+  **syllabus pauses** the topic via `CompetenceDoc.tutor_paused_at` (no demotion):
+  excluded from `todayCard` quests, shown as a "resting" card on the child hub.
+  Staff logging the (deferred) session (`logTutorSessionAsStaff`, audited) writes
+  `CompetenceDoc.tutor_note`, lifts the pause, and the next explainer surfaces the
+  tutor's tip. Live tutoring/scheduling is deferred.
 
 ## Quality & Monitoring
 

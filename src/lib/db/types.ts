@@ -174,6 +174,23 @@ export interface CompetenceDoc {
    */
   next_review_at?: Date | null;
   review_interval_days?: number;
+  /**
+   * Five-attempt human handoff (Wave 7, Phase 4). When the mastery loop hits
+   * the attempt cap on this concept without certifying, the topic is set aside
+   * ("resting") awaiting a human tutor — NEVER demoted, failed, or marked
+   * against the child. The syllabus pauses it (excluded from today's quests)
+   * until a tutor session is logged. Cleared (back to null) when the session is
+   * logged. Optional + legacy-safe: absent/null ⇒ not paused.
+   */
+  tutor_paused_at?: Date | null;
+  /**
+   * The tutor's note from a logged handoff session. Fed to the NEXT explanation
+   * for this topic ("a tip from your tutor"), wiring the human → AI data path.
+   * Absent until a session is logged.
+   */
+  tutor_note?: string | null;
+  /** When the tutor session note was logged (the moment the pause lifts). */
+  tutor_session_at?: Date | null;
 }
 
 export interface CheckinDoc {

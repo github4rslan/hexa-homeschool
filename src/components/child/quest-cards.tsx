@@ -3,7 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Calculator, BookText, FlaskConical, ArrowRight, Check } from "lucide-react";
+import {
+  Calculator,
+  BookText,
+  FlaskConical,
+  ArrowRight,
+  Check,
+  HeartHandshake,
+} from "lucide-react";
 import { Celebration } from "@/components/fx/celebration";
 
 /**
@@ -28,6 +35,8 @@ export interface Quest {
   ring: string;
   href: string;
   done: boolean;
+  /** Resting for a five-attempt tutor handoff — shown calmly, never as failure. */
+  resting?: boolean;
   progressLabel: string;
   progressPct: number;
 }
@@ -67,7 +76,7 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
               className={`relative flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br ${q.accent} text-white`}
             >
               <Icon className="h-9 w-9" />
-              {q.done && (
+              {q.done && !q.resting && (
                 <motion.span
                   initial={reduce ? false : { scale: 0 }}
                   animate={{ scale: 1 }}
@@ -77,27 +86,44 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
                   <Check className="h-4 w-4" strokeWidth={3} />
                 </motion.span>
               )}
+              {q.resting && (
+                <span className="absolute -bottom-1.5 -right-1.5 flex h-8 w-8 items-center justify-center rounded-full border-2 border-void bg-amber-400 text-void">
+                  <HeartHandshake className="h-4 w-4" strokeWidth={2.5} />
+                </span>
+              )}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 text-2xl font-semibold text-fog-50">
                 {q.label}
-                {q.done && (
-                  <span className="text-sm font-medium text-neon-300">
-                    done today
+                {q.resting ? (
+                  <span className="text-sm font-medium text-amber-300">
+                    resting
                   </span>
+                ) : (
+                  q.done && (
+                    <span className="text-sm font-medium text-neon-300">
+                      done today
+                    </span>
+                  )
                 )}
               </div>
-              <div className="mt-2 flex items-center gap-3">
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-500 to-neon-400"
-                    style={{ width: `${q.progressPct}%` }}
-                  />
+              {q.resting ? (
+                <p className="mt-2 text-base text-fog-300">
+                  A tutor is coming to help — pick this back up soon. 💛
+                </p>
+              ) : (
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-violet-500 to-neon-400"
+                      style={{ width: `${q.progressPct}%` }}
+                    />
+                  </div>
+                  <span className={`text-sm font-semibold ${q.ring}`}>
+                    {q.progressLabel}
+                  </span>
                 </div>
-                <span className={`text-sm font-semibold ${q.ring}`}>
-                  {q.progressLabel}
-                </span>
-              </div>
+              )}
             </div>
             <ArrowRight className="h-7 w-7 text-fog-400 transition-transform group-hover:translate-x-1" />
           </Link>

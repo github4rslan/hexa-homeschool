@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { DailyFlow } from "@/components/child/daily-flow";
 import { FocusFrame } from "@/components/child/focus-frame";
+import { HandoffPause } from "@/components/child/handoff-pause";
 import {
   getTopic,
   firstTopic,
@@ -11,6 +12,7 @@ import {
   currentParentId,
   getActiveChild,
   getLessonProgress,
+  getTutorHandoffState,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { normalizeInteraction } from "@/lib/child/interactions";
@@ -49,6 +51,27 @@ export default async function ChildLessonPage({
         )
       : await firstTopic("mathematics");
   if (!topicDoc) redirect("/learn");
+
+  const firstName = child?.full_name.split(" ")[0] ?? "";
+
+  // Five-attempt handoff (Wave 7, Phase 4): if this topic is resting awaiting a
+  // tutor, never re-serve the lesson — show the calm pause instead. A logged
+  // tutor session lifts the pause and leaves a note surfaced in the explainer.
+  const handoff = child?._id
+    ? await getTutorHandoffState(child._id, topicDoc.topic_tag)
+    : { paused: false, note: null };
+  if (handoff.paused) {
+    return (
+      <FocusFrame>
+        <HandoffPause
+          variant="resting"
+          topicTitle={topicDoc.title}
+          firstName={firstName}
+          accent={accent}
+        />
+      </FocusFrame>
+    );
+  }
 
   // Daily lessons stay in the topic's band (legacy topics treated as GCSE).
   const docs = await getQuestions(
@@ -91,7 +114,6 @@ export default async function ChildLessonPage({
     parentId && child?._id
       ? await getLessonProgress(parentId, child._id, topicDoc.topic_tag)
       : null;
-  const firstName = child?.full_name.split(" ")[0] ?? "";
   const resumeKey = child?._id?.toHexString() ?? "anon";
 
   return (
@@ -111,6 +133,7 @@ export default async function ChildLessonPage({
         savedProgress={savedProgress}
         firstName={firstName}
         resumeKey={resumeKey}
+        tutorNote={handoff.note}
       />
     </FocusFrame>
   );
