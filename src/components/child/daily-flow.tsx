@@ -21,6 +21,7 @@ export function DailyFlow({
   summary,
   points,
   questions,
+  masteryQuestions,
   curriculumTopic,
   voiceId,
   keyStage,
@@ -34,6 +35,7 @@ export function DailyFlow({
   summary: string;
   points: string[];
   questions: Question[];
+  masteryQuestions?: Question[];
   curriculumTopic: string;
   /** Child-chosen narration voice, threaded to both phases' TTS. */
   voiceId?: string | null;
@@ -114,6 +116,7 @@ export function DailyFlow({
           ) : (
             <PracticePlayer
               questions={questions}
+              masteryQuestions={masteryQuestions}
               curriculumTopic={curriculumTopic}
               voiceId={voiceId}
               keyStage={keyStage}

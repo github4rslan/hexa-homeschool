@@ -252,6 +252,14 @@ export default async function TutoringPage({
                         {b.status}
                       </Badge>
                     </div>
+                    {(b.topic_title || b.note) && (
+                      <p className="mt-2 text-sm text-fog-300">
+                        {b.source === "remediation" && b.topic_title
+                          ? `Queued by Edway for ${b.topic_title}. `
+                          : ""}
+                        {b.note}
+                      </p>
+                    )}
                     <div className="mt-3">
                       <MessageThread
                         threadType="booking"

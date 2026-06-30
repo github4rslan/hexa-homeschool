@@ -54,17 +54,22 @@ export default async function ChildLessonPage({
     { topicTag: topicDoc.topic_tag, keyStage: topicDoc.key_stage ?? 4 },
     50,
   );
+  const toQuestion = (q: (typeof docs)[number]): Question => ({
+    id: q._id!.toHexString(),
+    prompt: q.prompt,
+    options: q.options,
+    correctIndex: q.correct_index,
+    explanation: q.explanation,
+    interaction: normalizeInteraction(q.interaction),
+    hints: q.hints,
+  });
+
   const questions: Question[] = docs
-    .filter((q) => q.kind === "practice" || q.kind === "mastery")
-    .map((q) => ({
-      id: q._id!.toHexString(),
-      prompt: q.prompt,
-      options: q.options,
-      correctIndex: q.correct_index,
-      explanation: q.explanation,
-      interaction: normalizeInteraction(q.interaction),
-      hints: q.hints,
-    }));
+    .filter((q) => q.kind === "practice")
+    .map(toQuestion);
+  const masteryQuestions: Question[] = docs
+    .filter((q) => q.kind === "mastery")
+    .map(toQuestion);
 
   // Build the explainer "points" from real practice-question explanations —
   // these are human-authored, so they're genuine teaching content, not mock.
@@ -73,7 +78,7 @@ export default async function ChildLessonPage({
     .slice(0, 3)
     .map((q) => q.explanation);
 
-  if (questions.length === 0) {
+  if (questions.length === 0 && masteryQuestions.length === 0) {
     redirect("/learn");
   }
 
@@ -93,6 +98,7 @@ export default async function ChildLessonPage({
         summary={topicDoc.summary}
         points={points.length ? points : [topicDoc.summary]}
         questions={questions}
+        masteryQuestions={masteryQuestions}
         curriculumTopic={topicDoc.topic_tag}
         voiceId={voiceId}
         keyStage={topicDoc.key_stage ?? 4}

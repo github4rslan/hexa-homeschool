@@ -11,10 +11,13 @@ import {
   clearLessonProgress,
   setChildPreferences,
   todayCard,
+  getTopic,
+  createRemediationTutorHandoff,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { captureServer } from "@/lib/analytics/server";
 import { sendDailySummaryEmail } from "@/lib/email/daily-summary";
+import { notifyRemediationHandoff } from "@/lib/email/remediation-handoff";
 
 export interface LessonLogInput {
   topicTag: string;
@@ -153,4 +156,39 @@ export async function clearLessonProgressAction(
   if (!child?._id) return { cleared: false };
   await clearLessonProgress(parentId, child._id, topicTag);
   return { cleared: true };
+}
+
+export async function triggerRemediationHandoffAction(input: {
+  topicTag: string;
+  attempts: number;
+  missedPrompts: string[];
+}): Promise<{ ok: boolean; created?: boolean; reason?: string }> {
+  const parentId = await currentParentId();
+  if (!parentId) return { ok: false, reason: "Not signed in." };
+  const child = await getActiveChild(parentId, await readActiveChildId());
+  if (!child?._id) return { ok: false, reason: "No child profile yet." };
+
+  const topic = await getTopic(input.topicTag);
+  const topicTitle = topic?.title ?? input.topicTag;
+  const missed = input.missedPrompts.slice(0, 3).join("; ");
+  const res = await createRemediationTutorHandoff(parentId, child._id, {
+    subject: topic?.subject ?? null,
+    topicTag: input.topicTag,
+    topicTitle,
+    note: `${child.full_name.split(" ")[0]} found ${topicTitle} tricky after ${input.attempts} mastery attempts.${missed ? ` Missed concepts: ${missed}` : ""}`,
+  });
+  if (!res.ok) return res;
+
+  if (res.created) {
+    await notifyRemediationHandoff({
+      parentId,
+      childName: child.full_name,
+      topicTitle,
+    });
+  }
+
+  await clearLessonProgress(parentId, child._id, input.topicTag);
+  revalidatePath("/tutoring");
+  revalidatePath("/learn");
+  return res;
 }
