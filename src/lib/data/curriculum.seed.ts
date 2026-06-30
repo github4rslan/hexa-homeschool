@@ -26,6 +26,7 @@ export interface SeedTopic {
   working_grade_band: string;
   order: number;
   prerequisite_tags: string[];
+  worked_example?: unknown;
 }
 
 export interface SeedQuestion {
@@ -47,6 +48,7 @@ export interface SeedQuestion {
   interaction?: unknown;
   /** Optional human-authored progressive hints (nudge → specific). */
   hints?: string[];
+  worked_solution?: unknown;
 }
 
 // ════════════════════════════════════════════════════════════

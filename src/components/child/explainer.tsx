@@ -8,6 +8,8 @@ import { accentPreset } from "@/lib/child/accents";
 import { useNarration } from "@/lib/child/use-narration";
 import { buildExplainerNarration } from "@/lib/child/narration-copy";
 import { cn } from "@/lib/utils";
+import { StepReveal } from "./step-reveal";
+import type { WorkedExample } from "@/lib/child/worked-examples";
 
 /**
  * Explainer step (Brief: Daily Flow step 2). Phase-1 uses a clear written
@@ -18,6 +20,7 @@ export function Explainer({
   title,
   summary,
   points,
+  workedExample,
   onContinue,
   voiceId,
   keyStage,
@@ -27,6 +30,7 @@ export function Explainer({
   title: string;
   summary: string;
   points: string[];
+  workedExample?: WorkedExample;
   onContinue: () => void;
   /** Child-chosen narration voice; falls back to the server default when unset. */
   voiceId?: string | null;
@@ -36,6 +40,55 @@ export function Explainer({
   accent?: string | null;
   /** Whether to auto-read the explainer on appearance (child preference). */
   autoplay?: boolean;
+}) {
+  if (workedExample) {
+    return (
+      <div className="mx-auto max-w-2xl">
+        <StepReveal
+          example={workedExample}
+          onDone={onContinue}
+          doneLabel="I'm ready - let's practise"
+          voiceId={voiceId}
+          keyStage={keyStage}
+          accent={accentId}
+          autoplay={autoplay}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <LegacyExplainer
+      title={title}
+      summary={summary}
+      points={points}
+      onContinue={onContinue}
+      voiceId={voiceId}
+      keyStage={keyStage}
+      accent={accentId}
+      autoplay={autoplay}
+    />
+  );
+}
+
+function LegacyExplainer({
+  title,
+  summary,
+  points,
+  onContinue,
+  voiceId,
+  keyStage,
+  accent: accentId,
+  autoplay,
+}: {
+  title: string;
+  summary: string;
+  points: string[];
+  onContinue: () => void;
+  voiceId?: string | null;
+  keyStage?: number;
+  accent?: string | null;
+  autoplay: boolean;
 }) {
   const accent = accentPreset(accentId);
   const narration = useNarration(voiceId, keyStage);

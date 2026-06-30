@@ -8,6 +8,7 @@ import { accentPreset } from "@/lib/child/accents";
 import { resolveResumeStep, type SavedProgress } from "@/lib/child/interactions";
 import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
+import type { WorkedExample } from "@/lib/child/worked-examples";
 
 /**
  * Sequences the child's lesson: Explainer → Practice/Mastery.
@@ -20,6 +21,7 @@ export function DailyFlow({
   title,
   summary,
   points,
+  workedExample,
   questions,
   masteryQuestions,
   curriculumTopic,
@@ -34,6 +36,7 @@ export function DailyFlow({
   title: string;
   summary: string;
   points: string[];
+  workedExample?: WorkedExample;
   questions: Question[];
   masteryQuestions?: Question[];
   curriculumTopic: string;
@@ -107,6 +110,7 @@ export function DailyFlow({
               title={title}
               summary={summary}
               points={points}
+              workedExample={workedExample}
               onContinue={() => setPhase("practice")}
               voiceId={voiceId}
               keyStage={keyStage}
