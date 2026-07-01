@@ -7,7 +7,6 @@ import {
   Clock,
   FileCheck,
   Plus,
-  Sparkles,
   TrendingUp,
   UserPlus,
 } from "lucide-react";
@@ -33,6 +32,7 @@ import {
   todayCard,
   type TodayCard as TodayCardData,
   weekInReview,
+  listActivityFeed,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { isOnboardingDismissed } from "@/lib/onboarding-dismiss";
@@ -42,6 +42,7 @@ import { GettingStarted, type ChecklistStep } from "@/components/dashboard/getti
 import { TodayCard } from "@/components/dashboard/today-card";
 import { TodayBriefingHeader } from "@/components/dashboard/today-briefing-header";
 import { WeekInReview } from "@/components/dashboard/week-in-review";
+import { ActivityFeed, type ActivityFeedRow } from "@/components/dashboard/activity-feed";
 import { dismissGettingStarted } from "./actions";
 import { ShieldAlert } from "lucide-react";
 
@@ -58,13 +59,6 @@ interface ChildView {
   competenceCertified: number;
   competenceTotal: number;
   status: "on_track" | "behind" | "ahead" | "needs_review";
-}
-
-interface ActivityItem {
-  time: string;
-  child: string;
-  event: string;
-  detail: string;
 }
 
 function ageFromDob(dob: string): number {
@@ -199,11 +193,16 @@ export default async function DashboardPage() {
   const escalations = await openEscalations(childIds);
 
   const nameById = new Map(kids.map((k) => [k._id!.toHexString(), k.full_name]));
-  const activity: ActivityItem[] = logs.slice(0, 6).map((l) => ({
-    time: relativeTime(l.timestamp_start),
-    child: nameById.get(l.child_id.toHexString()) ?? "Child",
-    event: l.status === "completed" ? "Completed a lesson" : "Started a lesson",
-    detail: `${l.topic_tag.replace(/_/g, " ")} lesson`,
+
+  // Unified activity feed (Wave 7, Phase 5): milestone events (mastery /
+  // handoff / inactivity) merged with recent lesson activity, newest first.
+  const feedItems = await listActivityFeed(parentId!, 8);
+  const feedRows: ActivityFeedRow[] = feedItems.map((f) => ({
+    kind: f.kind,
+    childName: f.childName,
+    topicTitle: f.topicTitle,
+    attempts: f.attempts,
+    time: relativeTime(f.at),
   }));
 
   // Compliance: real check for a dossier this quarter (active child).
@@ -395,33 +394,8 @@ export default async function DashboardPage() {
                 Live feed
               </Badge>
             </div>
-            {activity.length > 0 ? (
-              <ul className="flex flex-col gap-4">
-                {activity.map((a, i) => (
-                  <li
-                    key={i}
-                    className="flex items-start gap-4 pb-4 border-b border-white/5 last:border-0 last:pb-0"
-                  >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 border border-violet-400/20">
-                      <Sparkles className="h-4 w-4 text-violet-300" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-fog-100">
-                          {a.event}
-                        </span>
-                        <span className="text-xs text-fog-500">· {a.child}</span>
-                      </div>
-                      <span className="text-xs text-fog-400 capitalize">
-                        {a.detail}
-                      </span>
-                    </div>
-                    <span className="text-xs text-fog-500 whitespace-nowrap">
-                      {a.time}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+            {feedRows.length > 0 ? (
+              <ActivityFeed rows={feedRows} />
             ) : (
               <div className="py-8 text-center">
                 {diagnosticDone ? (

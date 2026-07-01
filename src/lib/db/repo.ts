@@ -3611,6 +3611,15 @@ export async function listActivityFeed(
       .toArray(),
   ]);
 
+  // Resolve lesson topic tags to proper human titles (global reference content),
+  // so the feed reads consistently Title-Cased rather than "fractions_intro".
+  const logTags = [...new Set(logs.map((l) => l.topic_tag))];
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const topicDocs = logTags.length
+    ? await topicsCol.find({ topic_tag: { $in: logTags } }).toArray()
+    : [];
+  const titleByTag = new Map(topicDocs.map((t) => [t.topic_tag, t.title]));
+
   const items: ActivityFeedItem[] = [
     ...events.map((e) => ({
       kind: e.type,
@@ -3624,7 +3633,8 @@ export async function listActivityFeed(
         | "lesson_completed"
         | "lesson_started",
       childName: nameById.get(l.child_id.toHexString()) ?? "Your child",
-      topicTitle: l.topic_tag.replace(/_/g, " "),
+      topicTitle:
+        titleByTag.get(l.topic_tag) ?? l.topic_tag.replace(/_/g, " "),
       attempts: null,
       at: (l.timestamp_end as Date | null) ?? l.timestamp_start,
     })),

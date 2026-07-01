@@ -108,6 +108,23 @@ no-lessons activity feed offers "Start the diagnostic".
   non-blocking, respecting `daily_summary_opt_out`; CTA → the child detail page.
 - Dashboard escalation banner → `/tutoring#escalations`, the parent-facing
   paused-lessons detail with the escalation messaging thread ready.
+- **Real-time parent engagement (Wave 7, Phase 5)** — event-driven milestone
+  notifications keep the parent in the loop at the moments that matter, all
+  deterministic (no AI, no child profiling). `lib/notify/parent-event.ts` records
+  a `parent_events` row (deduped) and best-effort pushes email (+ SMS where
+  enabled): **mastery** on certification (from `logLessonCompletion`, honest
+  attempts count), **struggle/handoff** mirrored onto the feed (the email/SMS is
+  the remediation-handoff notifier's, following `escalation_alert_opt_out`), and
+  an evening **inactivity** reminder (`/api/notify/inactivity` cron) for children
+  active recently but idle today — a *parent* reminder, never a child engagement
+  loop. Copy is built by the pure `lib/engine/parent-events.ts`. The mastery +
+  inactivity push respects `event_notifications_opt_out`; the dashboard activity
+  feed (`components/dashboard/activity-feed.tsx`, fed by `listActivityFeed`)
+  always shows the events, merged with recent lesson activity. The **weekly
+  digest** (`/api/digest/weekly`) leads with qualitative observations — mastered
+  vs finding-tricky, a per-concept "strong / growing / starting" read
+  (`classifyTopicStanding`) and a recommended focus — built deterministically by
+  `lib/engine/weekly-summary.ts`, not progress bars.
 - Child quests reflect the approved weekly plan: today's quest per subject is
   the topic the plan assigned to today (same topic, same day as `/schedule`),
   falling back to the next uncertified topic when the plan has none for today.
@@ -168,7 +185,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 
 | Collection | Doc | Purpose |
 |---|---|---|
-| `parents` | ParentDoc | Account, password hash, subscription tier, billing status, Stripe customer/subscription ids (synced by `/api/billing/webhook` only), email prefs (`weekly_digest_opt_out`, `weekly_plan_email_opt_out`, `daily_summary_opt_out`, `escalation_alert_opt_out`, `marketing_emails_opt_out` — toggles in `/settings`), `lifecycle_emails_sent` (idempotency keys for onboarding emails), `two_factor_enabled`, `phone` (E.164, for immediate-severity safety SMS), `is_admin` legacy staff flag + `role` ("admin" | "support" — see `lib/auth/rbac.ts`), `token_version` (session invalidation — "sign out everywhere" / password change) |
+| `parents` | ParentDoc | Account, password hash, subscription tier, billing status, Stripe customer/subscription ids (synced by `/api/billing/webhook` only), email prefs (`weekly_digest_opt_out`, `weekly_plan_email_opt_out`, `daily_summary_opt_out`, `escalation_alert_opt_out`, `event_notifications_opt_out`, `marketing_emails_opt_out` — toggles in `/settings`), `lifecycle_emails_sent` (idempotency keys for onboarding emails), `two_factor_enabled`, `phone` (E.164, for immediate-severity safety SMS), `is_admin` legacy staff flag + `role` ("admin" | "support" — see `lib/auth/rbac.ts`), `token_version` (session invalidation — "sign out everywhere" / password change) |
 | `children` | ChildDoc | Profile, DOB, SEND indicators, target exam window, child-chosen personalisation (`voice_id`, `accent`, `narration_autoplay` — auto read-aloud, default on), `diagnostic_completed_at` (one-time diagnostic lock — set once, legacy-safe), `daily_summary_sent_on` (UTC day-key idempotency guard for the parent daily progress email — at most one per child per day) |
 | `evaluation_records` | EvaluationDoc | Diagnostic/mock results, predicted grades |
 | `instructional_logs` | LessonLogDoc | Per-lesson logs (phase, attempts, hints, mastery) |
@@ -182,6 +199,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 | `tutor_bookings` / `escalations` | — | Human safety net. Tutor bookings may be parent-requested or automated remediation handoffs (`source`, optional `topic_tag`/`topic_title`) and are shown to parents + staff as a queue; live matching is deferred. Escalations carry an SLA workflow (`status` open→acknowledged→resolved, `acknowledged_at`, `resolved_at`, `staff_note` internal-only); the admin queue sorts by severity + age with live SLA timers (`lib/engine/escalation-sla.ts`), parents see only a reassuring status |
 | `messages` | MessageDoc | Parent ↔ staff threads on a booking/escalation; every parent read/write filters on `parent_id` for family isolation |
 | `staff_audit_log` | StaffAuditLogDoc | Append-only trail of staff WRITE actions + escalation-detail VIEWS (who, action, target, when). No update/delete repo functions exist |
+| `parent_events` | ParentEventDoc | Wave 7, Phase 5 parent-engagement feed: one idempotent row per milestone (mastery / handoff / inactivity), unique per `parent_id` + `dedupe_key`, driving both the dashboard activity feed and the once-per-event email/SMS push. Deterministic, parent-scoped, ownership-checked; no analytics/profiling |
 | `newsletter_subscribers` | — | Public lead capture |
 | `ai_invocations` | AiInvocationDoc | Per-call AI telemetry (powers admin console) |
 
