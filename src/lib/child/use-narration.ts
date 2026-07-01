@@ -1,19 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 
 /**
- * Auto-narration audio engine (Wave 4, Phase 1).
+ * Auto-narration audio engine (Wave 4, Phase 1; single-controller rewrite).
  *
- * A tiny client hook that fetches lesson narration from the EXISTING /api/tts
- * endpoint (its rate-limit, tier-gate, Cloudinary cache and 503 fallback are the
- * contract — we never call ElevenLabs directly) and plays it through a single
- * reused <audio> element. It:
- *  - keeps ONE clip playing at a time (a new play stops the previous),
- *  - caches fetched clips by text so repeats + prefetched steps are instant,
- *  - degrades SILENTLY on any error (no key → 503, rate-limit → 429, autoplay
- *    blocked) so the lesson always works without audio and a child never sees
- *    an error.
+ * Fetches lesson narration from the EXISTING /api/tts endpoint (its rate-limit,
+ * tier-gate, Cloudinary cache and 503 fallback are the contract — we never call
+ * ElevenLabs directly) and plays it through **one** shared <audio> element.
+ *
+ * WHY A MODULE SINGLETON: every `useNarration` call used to create its OWN
+ * <audio>, so a component that rendered another narration-owning component (e.g.
+ * the practice player showing a worked-example StepReveal) had TWO elements that
+ * could play at once → two overlapping voices. There is now exactly ONE audio
+ * element for the whole app, so only one clip can ever play; a new `playText`
+ * cleanly supersedes the previous one.
+ *
+ * PLAY-TOKEN GUARD: `playText` awaits a network fetch before it can play. A
+ * generation token, bumped on every `playText`/`toggle`/`stop`, lets a stale
+ * async play() (resolved after a newer request, or after the child started
+ * answering and we called `stop()`) detect that it was superseded and bail — so
+ * narration never resumes over a working child and clips don't cut each other
+ * off by racing.
+ *
+ * It still: caches fetched clips by voice+stage+text (repeats + prefetched steps
+ * are instant), and degrades SILENTLY on any error (no key → 503, rate-limit →
+ * 429, autoplay blocked) so the lesson always works without audio.
  *
  * Policy (when to auto-play, prefetch, mute) lives in the calling component;
  * this hook is just the engine and works regardless of the child's preference.
@@ -21,6 +33,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 /** Matches the route's MAX_TTS_CHARS — keep narration lesson-sized. */
 const NARRATION_MAX_CHARS = 1200;
+
+interface FetchOpts {
+  voiceId?: string | null;
+  keyStage?: number;
+}
 
 export interface NarrationApi {
   /** Fetch (or reuse) and play the clip for `text` from the start. */
@@ -37,137 +54,204 @@ export interface NarrationApi {
   loading: boolean;
 }
 
+/**
+ * The single app-wide narration engine. Exactly one <audio> element exists, so
+ * only one clip can ever play — this is what removes the two-voice overlap. The
+ * `token` supersede guard removes the stale-async races. Exported for unit tests
+ * (a fresh instance per test); the app always uses the module singleton below.
+ */
+export class NarrationController {
+  private audio: HTMLAudioElement | null = null;
+  /** voice:stage:text → object URL of the fetched MP3. */
+  private cache = new Map<string, string>();
+  /** key → in-flight fetch, so concurrent play+prefetch share one request. */
+  private inflight = new Map<string, Promise<string | null>>();
+  /** Monotonic play generation — a play whose token is stale must not start. */
+  private token = 0;
+  private currentText: string | null = null;
+  private playingState = false;
+  private loadingState = false;
+  private listeners = new Set<() => void>();
+
+  subscribe = (cb: () => void): (() => void) => {
+    this.listeners.add(cb);
+    return () => {
+      this.listeners.delete(cb);
+    };
+  };
+
+  getPlaying = (): boolean => this.playingState;
+  getLoading = (): boolean => this.loadingState;
+
+  private emit() {
+    for (const l of this.listeners) l();
+  }
+
+  private setPlaying(v: boolean) {
+    if (this.playingState !== v) {
+      this.playingState = v;
+      this.emit();
+    }
+  }
+
+  private setLoading(v: boolean) {
+    if (this.loadingState !== v) {
+      this.loadingState = v;
+      this.emit();
+    }
+  }
+
+  private getAudio(): HTMLAudioElement | null {
+    if (!this.audio && typeof Audio !== "undefined") {
+      const a = new Audio();
+      a.preload = "auto";
+      a.onplay = () => this.setPlaying(true);
+      a.onpause = () => this.setPlaying(false);
+      a.onended = () => this.setPlaying(false);
+      this.audio = a;
+    }
+    return this.audio;
+  }
+
+  private key(text: string, opts: FetchOpts): string {
+    return `${opts.voiceId ?? ""}:${opts.keyStage ?? ""}:${text}`;
+  }
+
+  private fetchUrl(text: string, opts: FetchOpts): Promise<string | null> {
+    const key = this.key(text, opts);
+    const cached = this.cache.get(key);
+    if (cached) return Promise.resolve(cached);
+    const existing = this.inflight.get(key);
+    if (existing) return existing;
+
+    const p = (async (): Promise<string | null> => {
+      try {
+        const res = await fetch("/api/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: text.slice(0, NARRATION_MAX_CHARS),
+            ...(opts.voiceId ? { voiceId: opts.voiceId } : {}),
+            ...(opts.keyStage ? { keyStage: opts.keyStage } : {}),
+          }),
+        });
+        if (!res.ok) return null; // 503/429/502 → silently unavailable
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        this.cache.set(key, url);
+        return url;
+      } catch {
+        return null;
+      } finally {
+        this.inflight.delete(key);
+      }
+    })();
+    this.inflight.set(key, p);
+    return p;
+  }
+
+  prefetch(text: string, opts: FetchOpts = {}): void {
+    const t = text.trim();
+    if (!t) return;
+    void this.fetchUrl(t, opts);
+  }
+
+  async playText(text: string, opts: FetchOpts = {}): Promise<void> {
+    const t = text.trim();
+    if (!t) return;
+    // Claim this generation up front. Any older in-flight play is now stale, and
+    // `stop()` (which also bumps the token) will invalidate THIS one.
+    const myToken = ++this.token;
+    this.setLoading(true);
+    const url = await this.fetchUrl(t, opts);
+    // Superseded by a newer play, or cancelled by stop(), while we were fetching.
+    if (myToken !== this.token) return;
+    this.setLoading(false);
+    if (!url) return; // unavailable — stay silent
+    const a = this.getAudio();
+    if (!a) return;
+    a.pause();
+    a.src = url;
+    a.currentTime = 0;
+    this.currentText = t;
+    try {
+      await a.play();
+    } catch {
+      // Autoplay blocked or interrupted by a newer play — silent; the visible
+      // replay control remains the affordance.
+    }
+  }
+
+  async toggle(text: string, opts: FetchOpts = {}): Promise<void> {
+    const t = text.trim();
+    if (!t) return;
+    const a = this.audio;
+    if (a && this.currentText === t && a.src) {
+      if (!a.paused) {
+        a.pause();
+        return;
+      }
+      // Resuming the same, already-fetched clip — no fetch race to guard, but
+      // bump the token so any unrelated in-flight play can't hijack the element.
+      this.token++;
+      try {
+        await a.play();
+        return;
+      } catch {
+        return;
+      }
+    }
+    await this.playText(t, opts);
+  }
+
+  stop(): void {
+    // Invalidate any in-flight play so it can't start after we stop.
+    this.token++;
+    this.audio?.pause();
+    this.setPlaying(false);
+    this.setLoading(false);
+  }
+}
+
+/**
+ * The one shared engine for the whole app. A module singleton (not per-hook) is
+ * what guarantees a single <audio> element and therefore a single voice.
+ */
+const controller = new NarrationController();
+
 export function useNarration(
   voiceId?: string | null,
   keyStage?: number,
 ): NarrationApi {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  /** text → object URL of the fetched MP3 (revoked on unmount). */
-  const cacheRef = useRef<Map<string, string>>(new Map());
-  /** text → in-flight fetch, so concurrent play+prefetch share one request. */
-  const inflightRef = useRef<Map<string, Promise<string | null>>>(new Map());
-  const currentTextRef = useRef<string | null>(null);
-
-  const [playing, setPlaying] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const getAudio = useCallback(() => {
-    if (!audioRef.current && typeof Audio !== "undefined") {
-      const a = new Audio();
-      a.preload = "auto";
-      a.onplay = () => setPlaying(true);
-      a.onpause = () => setPlaying(false);
-      a.onended = () => setPlaying(false);
-      audioRef.current = a;
-    }
-    return audioRef.current;
-  }, []);
-
-  const fetchUrl = useCallback(
-    (text: string): Promise<string | null> => {
-      const key = text;
-      const cached = cacheRef.current.get(key);
-      if (cached) return Promise.resolve(cached);
-      const existing = inflightRef.current.get(key);
-      if (existing) return existing;
-
-      const p = (async (): Promise<string | null> => {
-        try {
-          const res = await fetch("/api/tts", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              text: text.slice(0, NARRATION_MAX_CHARS),
-              ...(voiceId ? { voiceId } : {}),
-              ...(keyStage ? { keyStage } : {}),
-            }),
-          });
-          if (!res.ok) return null; // 503/429/502 → silently unavailable
-          const blob = await res.blob();
-          const url = URL.createObjectURL(blob);
-          cacheRef.current.set(key, url);
-          return url;
-        } catch {
-          return null;
-        } finally {
-          inflightRef.current.delete(key);
-        }
-      })();
-      inflightRef.current.set(key, p);
-      return p;
-    },
-    [voiceId, keyStage],
+  const playing = useSyncExternalStore(
+    controller.subscribe,
+    controller.getPlaying,
+    () => false,
   );
-
-  const stop = useCallback(() => {
-    audioRef.current?.pause();
-    setPlaying(false);
-  }, []);
+  const loading = useSyncExternalStore(
+    controller.subscribe,
+    controller.getLoading,
+    () => false,
+  );
 
   const playText = useCallback(
-    async (text: string) => {
-      const t = text.trim();
-      if (!t) return;
-      setLoading(true);
-      const url = await fetchUrl(t);
-      setLoading(false);
-      if (!url) return; // unavailable — stay silent
-      const a = getAudio();
-      if (!a) return;
-      a.pause();
-      a.src = url;
-      a.currentTime = 0;
-      currentTextRef.current = t;
-      try {
-        await a.play();
-      } catch {
-        // Autoplay blocked or interrupted by a newer play — silent; the visible
-        // replay control remains the affordance.
-      }
-    },
-    [fetchUrl, getAudio],
+    (text: string) => controller.playText(text, { voiceId, keyStage }),
+    [voiceId, keyStage],
   );
-
   const toggle = useCallback(
-    async (text: string) => {
-      const t = text.trim();
-      if (!t) return;
-      const a = audioRef.current;
-      if (a && currentTextRef.current === t && a.src) {
-        if (!a.paused) {
-          a.pause();
-          return;
-        }
-        try {
-          await a.play();
-          return;
-        } catch {
-          return;
-        }
-      }
-      await playText(t);
-    },
-    [playText],
+    (text: string) => controller.toggle(text, { voiceId, keyStage }),
+    [voiceId, keyStage],
   );
-
   const prefetch = useCallback(
-    (text: string) => {
-      const t = text.trim();
-      if (!t) return;
-      void fetchUrl(t);
-    },
-    [fetchUrl],
+    (text: string) => controller.prefetch(text, { voiceId, keyStage }),
+    [voiceId, keyStage],
   );
+  const stop = useCallback(() => controller.stop(), []);
 
-  // Revoke object URLs + stop audio on unmount.
-  useEffect(() => {
-    const cache = cacheRef.current;
-    return () => {
-      audioRef.current?.pause();
-      for (const url of cache.values()) URL.revokeObjectURL(url);
-      cache.clear();
-    };
-  }, []);
+  // Stop (but never revoke the SHARED cache) when a consuming view unmounts, so
+  // audio never bleeds past leaving the lesson. The cache is app-lifetime and
+  // bounded to lesson-sized clips; dedupe by voice+stage+text keeps it small.
+  useEffect(() => () => controller.stop(), []);
 
   return { playText, toggle, stop, prefetch, playing, loading };
 }
