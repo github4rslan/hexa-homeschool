@@ -313,6 +313,11 @@ export function PracticePlayer({
   // miss, so this fires once per wrong answer.
   useEffect(() => {
     if (!feedback || !autoplayOn) return;
+    // When a concept-gap miss also opens the worked example, let StepReveal's
+    // narration own the voice — don't speak the feedback line over it. (With the
+    // single shared audio controller there is no overlap either way; this just
+    // picks the more useful clip instead of superseding it a beat later.)
+    if (stepByStepOpen) return;
     const spoken = misconceptionHint
       ? `${feedback.message} ${misconceptionHint}`
       : feedback.message;
