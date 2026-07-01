@@ -679,6 +679,9 @@ export function PracticePlayer({
         message?: string;
       };
       if (data.frozen) {
+        // Match the other freeze paths: the calm pause must be silent.
+        narration.stop();
+        stopRecorder();
         setFrozen(data.message ?? "");
         return;
       }
@@ -1100,7 +1103,7 @@ export function PracticePlayer({
               <img
                 src={questionVisual.url}
                 alt={questionVisual.alt}
-                className="aspect-[3/2] w-full rounded-2xl object-cover"
+                className="aspect-[3/2] w-full rounded-2xl object-contain"
                 loading="eager"
                 decoding="async"
               />
