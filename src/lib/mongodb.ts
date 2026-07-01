@@ -92,4 +92,6 @@ export const Collections = {
   messages: "messages",
   // Operations — append-only audit trail of staff WRITE actions + sensitive views
   staffAuditLog: "staff_audit_log",
+  // Wave 7, Phase 5 — parent engagement: event-driven milestone feed + dedupe
+  parentEvents: "parent_events",
 } as const;

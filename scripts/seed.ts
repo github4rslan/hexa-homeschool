@@ -152,6 +152,15 @@ async function main() {
     await db.collection("staff_audit_log").createIndex({ staff_email: 1, created_at: -1 });
     await db.collection("staff_audit_log").createIndex({ action: 1, created_at: -1 });
 
+    // Parent milestone events (Wave 7, Phase 5): once-per-moment idempotency +
+    // newest-first feed reads. The unique (parent_id, dedupe_key) guarantees an
+    // event is recorded and notified at most once.
+    await db.collection("parent_events").createIndex(
+      { parent_id: 1, dedupe_key: 1 },
+      { unique: true },
+    );
+    await db.collection("parent_events").createIndex({ parent_id: 1, created_at: -1 });
+
     console.log("✓ Indexes ensured.");
     console.log("\n✅ Seed complete.");
   } finally {

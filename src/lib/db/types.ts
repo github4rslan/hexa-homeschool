@@ -60,6 +60,14 @@ export interface ParentDoc {
   /** Escalation alert email opt-out. Undefined/false = receives alerts. */
   escalation_alert_opt_out?: boolean;
   /**
+   * Event-driven milestone notifications opt-out (Wave 7, Phase 5): the warm,
+   * specific mastery-achieved and inactivity-reminder emails/SMS. Undefined/false
+   * = receives them. The dashboard activity feed always shows the events
+   * regardless — this only governs the push. Struggle/handoff notifications keep
+   * following `escalation_alert_opt_out` (they are a safety-adjacent signal).
+   */
+  event_notifications_opt_out?: boolean;
+  /**
    * Parent mobile in E.164 (e.g. "+447700900123"), for immediate-severity
    * safety SMS alerts. Absent = no SMS (email + dashboard remain the baseline).
    */
@@ -405,6 +413,33 @@ export interface EscalationDoc {
   resolved_at?: Date | null;
   /** Internal staff note — NEVER shown to parents. */
   staff_note?: string | null;
+}
+
+/**
+ * Wave 7, Phase 5 — a parent-facing milestone event. One row per notable moment
+ * in a child's learning (a topic mastered, a five-attempt handoff, an
+ * inactivity nudge), created deterministically from the child's OWN record — no
+ * AI, no profiling, no analytics. It powers two things at once: the dashboard
+ * activity feed (always visible) and the once-per-event email/SMS push
+ * (opt-out-gated). `dedupe_key` is unique per parent so a moment is recorded and
+ * notified at most once. Child name/topic are denormalised snapshots so the feed
+ * renders without re-joining. Parent-scoped; ownership enforced in repo.ts.
+ */
+export interface ParentEventDoc {
+  _id?: ObjectId;
+  parent_id: ObjectId;
+  child_id: ObjectId;
+  /** Snapshot of the child's full name at event time (feed rendering). */
+  child_name: string;
+  type: "mastery" | "handoff" | "inactivity";
+  /** Human topic title for mastery/handoff events; absent for inactivity. */
+  topic_title?: string | null;
+  subject?: Subject | null;
+  /** Mastery only: how many attempts it took to certify (≥ 1). */
+  attempts?: number | null;
+  /** Idempotency key, unique per (parent_id, dedupe_key). */
+  dedupe_key: string;
+  created_at: Date;
 }
 
 /**

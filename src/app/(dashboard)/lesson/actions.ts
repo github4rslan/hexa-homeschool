@@ -19,6 +19,10 @@ import { readActiveChildId } from "@/lib/active-child";
 import { captureServer } from "@/lib/analytics/server";
 import { sendDailySummaryEmail } from "@/lib/email/daily-summary";
 import { notifyRemediationHandoff } from "@/lib/email/remediation-handoff";
+import {
+  emitMasteryEvent,
+  recordHandoffEvent,
+} from "@/lib/notify/parent-event";
 
 export interface LessonLogInput {
   topicTag: string;
@@ -79,6 +83,24 @@ export async function logLessonCompletion(
     masteryPct >= 100 ? "certified" : masteryPct >= 50 ? "training" : "locked";
 
   await upsertCompetence(parentId, child._id, topicTag, state);
+
+  // Event-driven parent notification: a topic reaching certification is a warm,
+  // specific moment worth surfacing (feed + email/SMS, deduped once per topic,
+  // opt-out aware). Best-effort — never blocks or slows the child's flow.
+  if (state === "certified") {
+    try {
+      const topic = await getTopic(topicTag);
+      await emitMasteryEvent({
+        parentId,
+        child,
+        topicTag,
+        topicTitle: topic?.title ?? topicTag,
+        subject: topic?.subject ?? null,
+      });
+    } catch (err) {
+      console.error("[mastery event] trigger failed (non-fatal):", err);
+    }
+  }
 
   // The lesson is finished — drop any mid-lesson resume row so it never resumes.
   await clearLessonProgress(parentId, child._id, topicTag);
@@ -190,6 +212,16 @@ export async function triggerRemediationHandoffAction(input: {
       parentId,
       childName: child.full_name,
       topicTitle,
+    });
+    // Mirror the struggle onto the parent activity feed (feed only — the
+    // email/SMS above already pushed it). Deduped per active pause via a day key.
+    await recordHandoffEvent({
+      parentId,
+      child,
+      topicTag: input.topicTag,
+      topicTitle,
+      subject: topic?.subject ?? null,
+      pausedAtKey: new Date().toISOString().slice(0, 10),
     });
   }
 

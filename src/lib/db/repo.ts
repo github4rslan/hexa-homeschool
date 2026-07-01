@@ -36,6 +36,7 @@ import type {
   AiInvocationDoc,
   MessageDoc,
   StaffAuditLogDoc,
+  ParentEventDoc,
   Subject,
 } from "./types";
 import { resolveRole, type StaffRole } from "@/lib/auth/rbac";
@@ -3286,6 +3287,22 @@ export async function listDigestRecipients(): Promise<ParentDoc[]> {
 }
 
 /**
+ * Parents eligible for event-driven milestone pushes (mastery / inactivity):
+ * verified email, not opted out, not the CI smoke account. The inactivity cron
+ * iterates these; the per-send path re-checks opt-out defensively.
+ */
+export async function listEventNotificationRecipients(): Promise<ParentDoc[]> {
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  return col
+    .find({
+      email_verified: { $ne: false },
+      event_notifications_opt_out: { $ne: true },
+      is_smoke_account: { $ne: true },
+    })
+    .toArray();
+}
+
+/**
  * Per-child summary of the last week for one parent. The data-silo holds by
  * construction: every query is filtered to child ids owned by this parent.
  * Returns [] when the parent has no children.
@@ -3398,6 +3415,193 @@ export async function setDailySummaryOptOut(
     { $set: { daily_summary_opt_out: optOut, updated_at: new Date() } },
   );
   return true;
+}
+
+export async function setEventNotificationsOptOut(
+  parentId: string,
+  optOut: boolean,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  await col.updateOne(
+    { _id: oid },
+    { $set: { event_notifications_opt_out: optOut, updated_at: new Date() } },
+  );
+  return true;
+}
+
+// ── Parent milestone events (Wave 7, Phase 5) ────────────
+
+export interface ParentEventInput {
+  type: ParentEventDoc["type"];
+  topicTitle?: string | null;
+  subject?: Subject | null;
+  attempts?: number | null;
+  /** Idempotency key; the event is recorded (and notified) at most once. */
+  dedupeKey: string;
+}
+
+/**
+ * Record a parent milestone event idempotently. Ownership enforced. The unique
+ * (parent_id, dedupe_key) index guarantees a moment is stored once; the atomic
+ * upsert makes the FIRST caller the one that gets `created: true` (so exactly
+ * one email/SMS is ever dispatched for it). Returns `{ created: false }` on a
+ * duplicate, a bad id, or a non-owned child.
+ */
+export async function recordParentEvent(
+  parentId: string,
+  child: ChildDoc,
+  input: ParentEventInput,
+): Promise<{ created: boolean }> {
+  const parentOid = toObjectId(parentId);
+  if (!parentOid || !child._id) return { created: false };
+  if (!(await assertOwnsChild(parentId, child._id))) return { created: false };
+
+  const col = await getCollection<ParentEventDoc>(Collections.parentEvents);
+  const now = new Date();
+  const res = await col.updateOne(
+    { parent_id: parentOid, dedupe_key: input.dedupeKey },
+    {
+      $setOnInsert: {
+        parent_id: parentOid,
+        child_id: child._id,
+        child_name: child.full_name,
+        type: input.type,
+        topic_title: input.topicTitle ?? null,
+        subject: input.subject ?? null,
+        attempts: input.attempts ?? null,
+        dedupe_key: input.dedupeKey,
+        created_at: now,
+      },
+    },
+    { upsert: true },
+  );
+  return { created: res.upsertedCount > 0 };
+}
+
+/**
+ * How many completed lessons a child has logged on a topic — the honest
+ * "attempts it took" figure for the mastery celebration. At least 1 for a topic
+ * that has just been certified.
+ */
+export async function masteryAttemptCount(
+  childId: ObjectId,
+  topicTag: string,
+): Promise<number> {
+  const col = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+  const n = await col.countDocuments({
+    child_id: childId,
+    topic_tag: topicTag,
+    status: "completed",
+  });
+  return Math.max(1, n);
+}
+
+export interface ActivityFeedItem {
+  kind: "mastery" | "handoff" | "inactivity" | "lesson_completed" | "lesson_started";
+  childName: string;
+  /** Topic title (events) or humanised topic tag (lessons); may be null. */
+  topicTitle: string | null;
+  attempts: number | null;
+  at: Date;
+}
+
+/**
+ * Unified parent activity feed: milestone events (mastery / handoff /
+ * inactivity) merged with recent lesson activity, newest first. The data-silo
+ * holds by construction — parent_events is filtered by parent_id and lesson
+ * logs by the parent's own child ids. Returns [] when the parent has no
+ * children. Read-only.
+ */
+export async function listActivityFeed(
+  parentId: string,
+  limit = 8,
+): Promise<ActivityFeedItem[]> {
+  const parentOid = toObjectId(parentId);
+  if (!parentOid) return [];
+  const children = await listChildren(parentId);
+  if (children.length === 0) return [];
+  const childIds = children.map((c) => c._id!).filter(Boolean);
+  const nameById = new Map(
+    children.map((c) => [c._id!.toHexString(), c.full_name]),
+  );
+
+  const eventsCol = await getCollection<ParentEventDoc>(Collections.parentEvents);
+  const logsCol = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+
+  const [events, logs] = await Promise.all([
+    eventsCol
+      .find({ parent_id: parentOid })
+      .sort({ created_at: -1 })
+      .limit(limit)
+      .toArray(),
+    logsCol
+      .find({ child_id: { $in: childIds }, status: { $in: ["completed", "in_progress"] } })
+      .sort({ timestamp_start: -1 })
+      .limit(limit)
+      .toArray(),
+  ]);
+
+  const items: ActivityFeedItem[] = [
+    ...events.map((e) => ({
+      kind: e.type,
+      childName: e.child_name,
+      topicTitle: e.topic_title ?? null,
+      attempts: e.attempts ?? null,
+      at: e.created_at,
+    })),
+    ...logs.map((l) => ({
+      kind: (l.status === "completed" ? "lesson_completed" : "lesson_started") as
+        | "lesson_completed"
+        | "lesson_started",
+      childName: nameById.get(l.child_id.toHexString()) ?? "Your child",
+      topicTitle: l.topic_tag.replace(/_/g, " "),
+      attempts: null,
+      at: (l.timestamp_end as Date | null) ?? l.timestamp_start,
+    })),
+  ];
+
+  items.sort((a, b) => b.at.getTime() - a.at.getTime());
+  return items.slice(0, limit);
+}
+
+/**
+ * Children of a parent who have NOT completed a lesson today (UTC) but were
+ * active in the last 14 days — the honest signal for a gentle parent
+ * inactivity reminder. A child who has never started is excluded (nothing to
+ * nudge back to); so is one who already learned today. Ownership holds by
+ * construction (queries are scoped to this parent's own children).
+ */
+export async function inactivityNudgeChildren(
+  parentId: string,
+): Promise<ChildDoc[]> {
+  const children = await listChildren(parentId);
+  if (children.length === 0) return [];
+
+  const dayStart = new Date();
+  dayStart.setUTCHours(0, 0, 0, 0);
+  const since14 = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const logsCol = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+
+  const result: ChildDoc[] = [];
+  for (const child of children) {
+    if (!child._id) continue;
+    const [doneToday, activeRecently] = await Promise.all([
+      logsCol.countDocuments({
+        child_id: child._id,
+        status: "completed",
+        timestamp_end: { $gte: dayStart },
+      }),
+      logsCol.countDocuments({
+        child_id: child._id,
+        status: "completed",
+        timestamp_end: { $gte: since14 },
+      }),
+    ]);
+    if (doneToday === 0 && activeRecently > 0) result.push(child);
+  }
+  return result;
 }
 
 export async function setParentPinHash(
