@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { listDigestRecipients, weeklyDigestForParent } from "@/lib/db/repo";
 import { sendEmail, emailConfigured } from "@/lib/email/send";
-import { weeklyDigestTemplate } from "@/lib/email/templates";
+import { weeklyDigestTemplate, type DigestChild } from "@/lib/email/templates";
+import { buildWeeklySummary } from "@/lib/engine/weekly-summary";
 import { appUrl } from "@/lib/email/verification";
 
 export const runtime = "nodejs";
@@ -63,10 +64,31 @@ export async function GET(request: Request) {
         quiet++;
         continue;
       }
+      // Turn each child's real data into warm, actionable observations (not
+      // bars) — deterministic, no AI. The template lays these strings out.
+      const digestChildren: DigestChild[] = children.map((c) => {
+        const summary = buildWeeklySummary({
+          childFirstName: c.childName.split(" ")[0],
+          lessonsCompleted: c.lessonsCompleted,
+          masteredTopics: c.topicsCertified,
+          struggledTopics: c.struggledTopics,
+          standings: c.standings,
+          recommendedFocus: c.recommendedFocus,
+        });
+        return {
+          childName: c.childName,
+          lessonsCompleted: c.lessonsCompleted,
+          topicsCertified: c.topicsCertified,
+          escalations: c.escalations,
+          observation: summary.observation,
+          focusLine: summary.focusLine,
+          standingLine: summary.standingLine,
+        };
+      });
       const tmpl = weeklyDigestTemplate({
         parentName: parent.full_name,
         weekLabel,
-        children,
+        children: digestChildren,
         dashboardUrl: `${appUrl()}/dashboard`,
         escalationsUrl: `${appUrl()}/tutoring#escalations`,
         settingsUrl: `${appUrl()}/settings`,
