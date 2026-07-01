@@ -63,15 +63,12 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
 
       {quests.map((q) => {
         const Icon = ICONS[q.id];
-        return (
-          <Link
-            key={q.id}
-            href={q.href}
-            className={[
-              "child-touch child-panel group flex items-center gap-5 p-6 transition-all hover:scale-[1.01]",
-              q.done ? "opacity-90" : "",
-            ].join(" ")}
-          >
+        // A resting topic has nothing to do — tapping it only bounced the child
+        // into a "nothing here right now" pause and back. Render it as a calm,
+        // non-interactive card (no link, no arrow, no hover) instead of a
+        // dead-end. Active quests stay full links.
+        const inner = (
+          <>
             <div
               className={`relative flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br ${q.accent} text-white`}
             >
@@ -125,7 +122,34 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
                 </div>
               )}
             </div>
-            <ArrowRight className="h-7 w-7 text-fog-400 transition-transform group-hover:translate-x-1" />
+            {!q.resting && (
+              <ArrowRight className="h-7 w-7 text-fog-400 transition-transform group-hover:translate-x-1" />
+            )}
+          </>
+        );
+
+        if (q.resting) {
+          return (
+            <div
+              key={q.id}
+              className="child-panel flex items-center gap-5 p-6 opacity-90"
+              aria-label={`${q.label} is resting while a tutor is lined up`}
+            >
+              {inner}
+            </div>
+          );
+        }
+
+        return (
+          <Link
+            key={q.id}
+            href={q.href}
+            className={[
+              "child-touch child-panel group flex items-center gap-5 p-6 transition-all hover:scale-[1.01]",
+              q.done ? "opacity-90" : "",
+            ].join(" ")}
+          >
+            {inner}
           </Link>
         );
       })}
