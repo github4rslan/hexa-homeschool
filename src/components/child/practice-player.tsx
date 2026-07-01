@@ -515,16 +515,35 @@ export function PracticePlayer({
     return false;
   }
 
-  function check() {
+  /** Re-entry guard so a double-tap during the async distress gate can't score twice. */
+  const checkingRef = useRef(false);
+
+  async function check() {
+    if (!ready || !question || revealed || outcome === "correct") return;
+    if (checkingRef.current) return;
+    checkingRef.current = true;
+    try {
+      // Child-safety rule 2: on the only free-text surface (fill_blank), the
+      // distress gate must resolve BEFORE any feedback is shown or the child can
+      // advance — a match freezes the lesson first, not a beat later. Selection-
+      // only types have no free text to scan, so they stay instant.
+      if (interaction.type === "fill_blank") {
+        const frozenNow = await guardFreeText();
+        if (frozenNow) return; // UI is now the calm pause
+      }
+      runCheckCore();
+    } finally {
+      checkingRef.current = false;
+    }
+  }
+
+  function runCheckCore() {
     if (!ready || !question || revealed || outcome === "correct") return;
 
     const correct = interactionRef.current?.isCorrect() ?? false;
     const nextAttempts = attempts + 1;
     setAttempts(nextAttempts);
     attemptsTotalRef.current += 1;
-
-    // Free-text gets a distress scan in the background — feedback stays instant.
-    void guardFreeText();
 
     if (correct) {
       setOutcome("correct");
