@@ -51,6 +51,7 @@ next-env.d.ts
 # Claude Code local artifacts
 .claude/
 .mcp.json
+.playwright-mcp/
 CLAUDE.md
 dev-verify.log
 dev-*.log
