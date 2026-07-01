@@ -468,6 +468,55 @@ export function escalationAlertTemplate(opts: {
   };
 }
 
+/**
+ * Parent milestone event email (Wave 7, Phase 5) — mastery celebration or a
+ * gentle inactivity reminder. Copy is pre-built deterministically by
+ * `lib/engine/parent-events.ts`; this only lays it out. A mastery event gets the
+ * warm forest accent; the inactivity nudge stays quiet and low-key.
+ */
+export function parentEventTemplate(opts: {
+  parentName: string | null;
+  kind: "mastery" | "inactivity";
+  subject: string;
+  headline: string;
+  body: string;
+  ctaLabel: string;
+  ctaUrl: string;
+  settingsUrl: string;
+}): { subject: string; html: string; text: string } {
+  const greeting = opts.parentName
+    ? `Hi ${opts.parentName.split(" ")[0]},`
+    : "Hello,";
+  const celebrate = opts.kind === "mastery";
+  const accentBlock = celebrate
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 26px;background:rgba(35,66,49,0.05);border-left:3px solid ${COLORS.forest};border-radius:8px;">
+        <tr><td style="padding:14px 18px;font-family:${SERIF};font-style:italic;color:${COLORS.forest};font-size:15px;line-height:1.55;">${opts.body}</td></tr>
+      </table>`
+    : `<p style="margin:0 0 26px;">${opts.body}</p>`;
+
+  const html = WRAP(`
+      ${heading(opts.headline)}
+      <p style="margin:0 0 22px;">${greeting}</p>
+      ${accentBlock}
+      <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.ctaUrl, opts.ctaLabel)}</p>
+      <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">Prefer not to get these updates? Turn them off in <a href="${opts.settingsUrl}" style="color:${COLORS.clayDeep};">Settings &rarr; Email preferences</a>. You&rsquo;ll still get account and safety emails.</p>
+    `);
+
+  const text = [
+    opts.headline,
+    "",
+    greeting,
+    "",
+    opts.body,
+    "",
+    `${opts.ctaLabel}: ${opts.ctaUrl}`,
+    "",
+    `Manage emails: ${opts.settingsUrl}`,
+  ].join("\n");
+
+  return { subject: opts.subject, html, text };
+}
+
 export function portfolioShareTemplate(opts: {
   childName: string;
   term: string;

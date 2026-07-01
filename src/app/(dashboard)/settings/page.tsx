@@ -218,6 +218,22 @@ export default async function SettingsPage({
               <label className="flex items-start gap-3 text-sm text-fog-200 cursor-pointer">
                 <input
                   type="checkbox"
+                  name="event_notifications"
+                  defaultChecked={!parent.event_notifications_opt_out}
+                  className="mt-0.5 rounded border-white/10 bg-white/5"
+                />
+                <span>
+                  Milestone notifications
+                  <span className="block text-xs text-fog-500 mt-0.5">
+                    Warm, in-the-moment updates — a topic mastered, or a gentle
+                    reminder on a day your child hasn&apos;t logged in yet. Always
+                    shown on your dashboard feed regardless.
+                  </span>
+                </span>
+              </label>
+              <label className="flex items-start gap-3 text-sm text-fog-200 cursor-pointer">
+                <input
+                  type="checkbox"
                   name="escalation_alerts"
                   defaultChecked={!parent.escalation_alert_opt_out}
                   className="mt-0.5 rounded border-white/10 bg-white/5"
