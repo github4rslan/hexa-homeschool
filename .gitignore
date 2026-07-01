@@ -57,3 +57,7 @@ dev-*.log
 
 # Private project briefs / source material (root-level PDFs)
 /*.pdf
+
+# Local-only bug/audit findings reports (never publish to the public repo)
+docs/bug-audit.md
+docs/bug-fix.md
