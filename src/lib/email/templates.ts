@@ -209,12 +209,23 @@ export function firstPlanTemplate(opts: {
   };
 }
 
-/** Kept structurally identical to repo.ts → ChildWeekSummary (no server-only import here). */
+/**
+ * Digest row for one child. The counts stay for the header line; the qualitative
+ * observation/focus/standing strings are pre-built by
+ * `lib/engine/weekly-summary.ts` in the digest route (actionable observations,
+ * not progress bars — Wave 7, Phase 5). No server-only import here.
+ */
 export interface DigestChild {
   childName: string;
   lessonsCompleted: number;
   topicsCertified: string[];
   escalations: number;
+  /** One-line qualitative read of the week. */
+  observation: string;
+  /** Actionable "recommended focus" line, or null. */
+  focusLine: string | null;
+  /** Per-concept "strong / growing / starting" read, or null. */
+  standingLine: string | null;
 }
 
 export function weeklyDigestTemplate(opts: {
@@ -250,12 +261,23 @@ export function weeklyDigestTemplate(opts: {
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;background:${COLORS.linenAlt};border:1px solid ${COLORS.line};border-radius:12px;">
         <tr><td style="padding:18px 20px;">
           <p style="margin:0 0 10px;font-family:${SERIF};color:${COLORS.forestDeep};font-size:18px;font-weight:600;">${child.childName}</p>
-          <p style="margin:0 0 6px;font-size:14px;color:${COLORS.ink};">
+          <p style="margin:0 0 10px;font-size:14.5px;color:${COLORS.ink};line-height:1.55;">${child.observation}</p>
+          <p style="margin:0 0 6px;font-size:13px;color:${COLORS.inkSoft};">
             <strong style="color:${COLORS.forest};">${child.lessonsCompleted}</strong> lesson${child.lessonsCompleted === 1 ? "" : "s"} completed
             &nbsp;·&nbsp;
             <strong style="color:${COLORS.forest};">${child.topicsCertified.length}</strong> topic${child.topicsCertified.length === 1 ? "" : "s"} certified
           </p>
           ${topics ? `<ul style="margin:8px 0 0;padding-left:18px;">${topics}</ul>` : ""}
+          ${
+            child.standingLine
+              ? `<p style="margin:10px 0 0;color:${COLORS.inkSoft};font-size:13px;">${child.standingLine}</p>`
+              : ""
+          }
+          ${
+            child.focusLine
+              ? `<p style="margin:12px 0 0;padding:10px 12px;background:rgba(35,66,49,0.06);border-left:3px solid ${COLORS.forest};border-radius:8px;color:${COLORS.forest};font-size:13.5px;line-height:1.5;">${child.focusLine}</p>`
+              : ""
+          }
           ${
             quietWeek
               ? `<p style="margin:8px 0 0;color:${COLORS.inkSoft};font-size:13px;">A quiet week — a gentle nudge can help get back into the rhythm.</p>`

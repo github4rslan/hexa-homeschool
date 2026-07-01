@@ -6,6 +6,7 @@ import { computeStreak } from "@/lib/engine/streak";
 import { sha256Hex } from "@/lib/compliance/portfolio";
 import {
   buildInsights,
+  classifyTopicStanding,
   type Insight,
   type LessonSample,
   type MoodSample,
@@ -3270,6 +3271,12 @@ export interface ChildWeekSummary {
   topicsCertified: string[];
   /** Escalations raised this week (count only — details stay in the dashboard). */
   escalations: number;
+  /** Qualitative signal (Wave 7, Phase 5): topics attempted but not yet secure. */
+  struggledTopics: string[];
+  /** Per-concept standing tallies across the child's topics. */
+  standings: { strong: number; growing: number; starting: number };
+  /** The single topic worth revisiting next, or null. */
+  recommendedFocus: string | null;
 }
 
 /**
@@ -3319,41 +3326,62 @@ export async function weeklyDigestForParent(
   const compCol = await getCollection<CompetenceDoc>(Collections.competence);
   const escCol = await getCollection<EscalationDoc>(Collections.escalations);
 
-  const [lessonGroups, certRows, escGroups] = await Promise.all([
-    logsCol
-      .aggregate<{ _id: ObjectId; count: number }>([
-        {
-          $match: {
-            child_id: { $in: childIds },
-            status: "completed",
-            timestamp_start: { $gte: since },
+  const [lessonGroups, certRows, escGroups, allComps, weekLogs] =
+    await Promise.all([
+      logsCol
+        .aggregate<{ _id: ObjectId; count: number }>([
+          {
+            $match: {
+              child_id: { $in: childIds },
+              status: "completed",
+              timestamp_start: { $gte: since },
+            },
           },
-        },
-        { $group: { _id: "$child_id", count: { $sum: 1 } } },
-      ])
-      .toArray(),
-    compCol
-      .find({
-        child_id: { $in: childIds },
-        state: "certified",
-        certified_at: { $gte: since },
-      })
-      .toArray(),
-    escCol
-      .aggregate<{ _id: ObjectId; count: number }>([
-        { $match: { child_id: { $in: childIds }, created_at: { $gte: since } } },
-        { $group: { _id: "$child_id", count: { $sum: 1 } } },
-      ])
-      .toArray(),
-  ]);
+          { $group: { _id: "$child_id", count: { $sum: 1 } } },
+        ])
+        .toArray(),
+      compCol
+        .find({
+          child_id: { $in: childIds },
+          state: "certified",
+          certified_at: { $gte: since },
+        })
+        .toArray(),
+      escCol
+        .aggregate<{ _id: ObjectId; count: number }>([
+          { $match: { child_id: { $in: childIds }, created_at: { $gte: since } } },
+          { $group: { _id: "$child_id", count: { $sum: 1 } } },
+        ])
+        .toArray(),
+      // Full competence picture (all states) → per-concept standings.
+      compCol.find({ child_id: { $in: childIds } }).toArray(),
+      // This week's completed lessons → what was attempted but not yet secure.
+      logsCol
+        .find({
+          child_id: { $in: childIds },
+          status: "completed",
+          timestamp_end: { $gte: since },
+        })
+        .project<{ child_id: ObjectId; topic_tag: string; mastery_score: number | null }>(
+          { child_id: 1, topic_tag: 1, mastery_score: 1 },
+        )
+        .toArray(),
+    ]);
 
-  // Resolve certified topic tags to human titles (global reference content).
-  const tags = [...new Set(certRows.map((r) => r.topic_tag))];
+  // Resolve every involved topic tag to a human title (global reference content).
+  const tags = [
+    ...new Set([
+      ...certRows.map((r) => r.topic_tag),
+      ...allComps.map((c) => c.topic_tag),
+      ...weekLogs.map((l) => l.topic_tag),
+    ]),
+  ];
   const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
   const topics = tags.length
     ? await topicsCol.find({ topic_tag: { $in: tags } }).toArray()
     : [];
   const titleByTag = new Map(topics.map((t) => [t.topic_tag, t.title]));
+  const title = (tag: string) => titleByTag.get(tag) ?? tag;
 
   const lessonsByChild = new Map(
     lessonGroups.map((g) => [g._id.toHexString(), g.count]),
@@ -3364,13 +3392,53 @@ export async function weeklyDigestForParent(
 
   return children.map((child) => {
     const id = child._id!.toHexString();
+    const comps = allComps.filter((c) => c.child_id.toHexString() === id);
+    const logs = weekLogs.filter((l) => l.child_id.toHexString() === id);
+
+    // Best mastery seen this week per topic (for the standing refinement).
+    const weekBestByTag = new Map<string, number>();
+    for (const l of logs) {
+      const m = l.mastery_score ?? 0;
+      weekBestByTag.set(l.topic_tag, Math.max(weekBestByTag.get(l.topic_tag) ?? 0, m));
+    }
+    const certifiedTags = new Set(
+      comps.filter((c) => c.state === "certified").map((c) => c.topic_tag),
+    );
+
+    // Per-concept standings across every topic the child has a row for.
+    const standings = { strong: 0, growing: 0, starting: 0 };
+    for (const c of comps) {
+      const standing = classifyTopicStanding({
+        state: c.state,
+        paused: !!c.tutor_paused_at,
+        weekBestMastery: weekBestByTag.get(c.topic_tag) ?? null,
+      });
+      if (standing) standings[standing] += 1;
+    }
+
+    // Topics attempted this week but not yet secure — worst mastery first.
+    const struggled = [...weekBestByTag.entries()]
+      .filter(([tag]) => !certifiedTags.has(tag))
+      .sort((a, b) => a[1] - b[1]);
+    // Any handoff-paused topic is a struggle worth naming even without a log.
+    const pausedTags = comps
+      .filter((c) => c.tutor_paused_at && !certifiedTags.has(c.topic_tag))
+      .map((c) => c.topic_tag);
+    const struggledTags = [
+      ...new Set([...pausedTags, ...struggled.map(([tag]) => tag)]),
+    ];
+    const struggledTopics = struggledTags.map(title);
+
     return {
       childName: child.full_name,
       lessonsCompleted: lessonsByChild.get(id) ?? 0,
       topicsCertified: certRows
         .filter((r) => r.child_id.toHexString() === id)
-        .map((r) => titleByTag.get(r.topic_tag) ?? r.topic_tag),
+        .map((r) => title(r.topic_tag)),
       escalations: escalationsByChild.get(id) ?? 0,
+      struggledTopics,
+      standings,
+      recommendedFocus: struggledTopics[0] ?? null,
     };
   });
 }

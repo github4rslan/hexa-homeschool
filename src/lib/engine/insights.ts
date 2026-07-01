@@ -112,6 +112,44 @@ export function moodInsight(moods: MoodSample[]): Insight | null {
 }
 
 /**
+ * A warm, honest per-concept read for the parent (Wave 7, Phase 5 — folds in
+ * "where my child struggles"). Deterministic; three kind bands, never a
+ * "behind"/deficit label, never a comparison to other children:
+ *  - "strong"   — certified (secure).
+ *  - "growing"  — in training and progressing.
+ *  - "starting" — just begun, finding it tricky, or resting for a tutor handoff.
+ */
+export type TopicStanding = "strong" | "growing" | "starting";
+
+/** Minimal per-topic signal for a standing read, all from the child's record. */
+export interface TopicSignal {
+  state: "locked" | "training" | "certified";
+  /** Topic set aside for a five-attempt tutor handoff. */
+  paused?: boolean;
+  /** Best mastery seen for this topic in the window (0–100), or null if none. */
+  weekBestMastery?: number | null;
+}
+
+/**
+ * Classify one topic into a warm standing, or null when there's nothing honest
+ * to say yet (locked with no attempt). A certified topic is always "strong"; a
+ * handoff-paused topic is "starting" (finding it tricky — help is lined up); an
+ * in-training topic is "growing" unless a low recent mastery says it's still
+ * "starting".
+ */
+export function classifyTopicStanding(s: TopicSignal): TopicStanding | null {
+  if (s.state === "certified") return "strong";
+  if (s.paused) return "starting";
+  if (s.state === "training") {
+    if (s.weekBestMastery != null && s.weekBestMastery < 50) return "starting";
+    return "growing";
+  }
+  // locked / untouched: attempted (has a mastery reading) counts as starting.
+  if (s.weekBestMastery != null) return "starting";
+  return null;
+}
+
+/**
  * Build the full insight set. Returns `{ insights, learning }` — when `learning`
  * is true there isn't enough data yet and the caller shows the "still learning
  * their rhythm" message instead of an empty panel.
