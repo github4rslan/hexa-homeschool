@@ -14,6 +14,7 @@ import {
 import { verifyCodeTemplate, twoFactorCodeTemplate } from "@/lib/email/templates";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/auth/client-ip";
+import { isStaff } from "@/lib/auth/rbac";
 import { TWOFA_COOKIE } from "./twofa-cookie";
 
 export async function login(formData: FormData) {
@@ -103,5 +104,10 @@ export async function login(formData: FormData) {
     email: parent.email,
     tokenVersion: parent.token_version ?? 0,
   });
-  redirect("/dashboard");
+  // Staff land on the admin surface; everyone else on the parent dashboard.
+  redirect(
+    isStaff({ role: parent.role, is_admin: parent.is_admin })
+      ? "/admin"
+      : "/dashboard",
+  );
 }
