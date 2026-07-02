@@ -164,8 +164,9 @@ export default async function AdminOverviewPage() {
                 Metrics shown are live from the database
               </h3>
               <p className="text-xs text-fog-400">
-                Agent telemetry, finance, and A/B experiment dashboards activate
-                in later phases as those systems come online.
+                Overview, Users and Finance figures are computed from live data.
+                Anything not yet computable (A/B experiments, churn, LA access)
+                is clearly labelled &ldquo;Illustrative — not live&rdquo; on its page.
               </p>
             </div>
           </div>

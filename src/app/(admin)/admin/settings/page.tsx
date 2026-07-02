@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Settings, Sparkles, Volume2, Shield } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/sidebar";
+import { IllustrativeNote } from "@/components/admin/illustrative";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -53,6 +54,13 @@ export default function SettingsPage() {
       />
 
       <div className="flex-1 p-6 lg:p-10 max-w-[1600px]">
+        <IllustrativeNote className="mb-6">
+          These flags are a UI placeholder — they are not wired to runtime
+          behaviour and toggling them changes nothing in production. The only
+          live feature gate today is the <code className="font-mono">AI_VISUALS_ENABLED</code>{" "}
+          environment variable. A real feature-flag store is a later-phase item
+          (see docs/METRICS.md).
+        </IllustrativeNote>
         <div className="flex flex-col gap-3">
           {flags.map((f) => {
             const c = categoryColor[f.category];
