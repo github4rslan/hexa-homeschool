@@ -21,7 +21,14 @@ export async function GET(request: Request) {
     );
   }
 
-  await markEmailVerified(parentId);
+  // Single-use for session minting: the token is a stateless 48h JWT that is
+  // never invalidated, so a leaked/replayed verification URL must NOT hand out a
+  // fresh authenticated session. Only mint one when THIS call actually flips the
+  // account to verified; a replay falls through to the sign-in page.
+  const justVerified = await markEmailVerified(parentId);
+  if (!justVerified) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
   captureServer(parentId, "signup_completed", { verification: "link" });
   const parent = await findParentById(parentId);
   if (parent?._id) {
