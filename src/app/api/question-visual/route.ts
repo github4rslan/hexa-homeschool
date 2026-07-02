@@ -210,6 +210,22 @@ export async function DELETE(request: Request) {
     );
   }
 
+  // Flagging hides a SHARED, cross-family visual for everyone, so an ownership
+  // check does not apply — the abuse is a single parent iterating question ids
+  // to suppress visuals globally. Bound it with the same per-parent limit as the
+  // POST; a genuine "this picture is wrong" report is well under the ceiling.
+  const limited = await rateLimit(
+    `question-visual-flag:${parentId}`,
+    RATE_LIMIT_REQUESTS,
+    RATE_LIMIT_WINDOW_MS,
+  );
+  if (!limited.ok) {
+    return NextResponse.json(
+      { ok: true, flagged: 0 },
+      { headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const question = await getQuestionById(questionId);
   if (!question?._id) {
     return NextResponse.json({ ok: true, flagged: 0 });
