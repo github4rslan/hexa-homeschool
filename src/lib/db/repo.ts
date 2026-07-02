@@ -48,6 +48,7 @@ import {
 } from "@/lib/engine/diagnostic-placement";
 import { currentBandFrom } from "@/lib/engine/band-progression";
 import { periodWindowFromWeekStart } from "@/lib/engine/assessment-period";
+import { isDuplicateKeyError } from "@/lib/db/mongo-errors";
 
 /**
  * Data-access layer over MongoDB.
@@ -2571,8 +2572,20 @@ export async function getOrCreateWeeklySchedule(
     approved_by_parent: false,
     generated_at: new Date(),
   };
-  const res = await col.insertOne(doc as WeeklyScheduleDoc);
-  return { schedule: { ...doc, _id: res.insertedId }, created: true };
+  try {
+    const res = await col.insertOne(doc as WeeklyScheduleDoc);
+    return { schedule: { ...doc, _id: res.insertedId }, created: true };
+  } catch (err) {
+    // Concurrent first access (double-tap / prefetch + navigate): the unique
+    // (child_id, week_start) index rejects the losing insert with E11000.
+    // Return the row the winner created instead of throwing a 500 — and report
+    // created:false so the one-time plan email is sent only by the winner.
+    if (isDuplicateKeyError(err)) {
+      const winner = await col.findOne({ child_id: childId, week_start: weekStart });
+      if (winner) return { schedule: winner, created: false };
+    }
+    throw err;
+  }
 }
 
 /**
