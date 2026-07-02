@@ -41,6 +41,11 @@ import type {
   Subject,
 } from "./types";
 import { resolveRole, type StaffRole } from "@/lib/auth/rbac";
+import type {
+  BillingRow,
+  BillingStatus,
+  SubscriptionTier,
+} from "@/lib/metrics/finance";
 import {
   ageFromDob,
   placeChild,
@@ -2040,6 +2045,169 @@ export async function adminRecentLogs(limit = 8): Promise<LessonLogDoc[]> {
 export async function adminOpenEscalations(limit = 50): Promise<EscalationDoc[]> {
   const col = await getCollection<EscalationDoc>(Collections.escalations);
   return col.find({ status: "open" }).sort({ created_at: -1 }).limit(limit).toArray();
+}
+
+// ── Admin finance / users / compliance aggregates ─────────
+//
+// Cross-family read surfaces for staff only (reached through the (admin) layout,
+// gated on `is_admin`/`role`). These are aggregate or minimal-PII by design —
+// no per-child learning detail, no analytics — and are cached at the metrics
+// layer (`lib/metrics/server.ts`) so they stay off the request hot path.
+
+/**
+ * Parents grouped by (subscription_tier, billing_status) → counts. Feeds the
+ * pure `summarizeBilling()` in `lib/metrics/finance.ts` for real MRR/ARR/mix.
+ * A single `$group` — never loads parent documents into memory.
+ */
+export async function adminBillingBreakdown(): Promise<BillingRow[]> {
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const raw = await col
+    .aggregate<{ _id: { tier?: string; status?: string }; count: number }>([
+      {
+        $group: {
+          _id: { tier: "$subscription_tier", status: "$billing_status" },
+          count: { $sum: 1 },
+        },
+      },
+    ])
+    .toArray();
+
+  const tiers = new Set<SubscriptionTier>(["diagnostic", "standard", "family"]);
+  const statuses = new Set<BillingStatus>([
+    "trialing",
+    "active",
+    "past_due",
+    "canceled",
+    "paused",
+  ]);
+
+  const rows: BillingRow[] = [];
+  for (const r of raw) {
+    const tier = r._id.tier as SubscriptionTier;
+    const status = r._id.status as BillingStatus;
+    // Legacy/undefined rows: default a missing tier to the free tier and a
+    // missing status to trialing so counts never silently vanish, but only
+    // emit rows the pure layer recognises (it also guards, belt-and-braces).
+    const safeTier = tiers.has(tier) ? tier : "diagnostic";
+    const safeStatus = statuses.has(status) ? status : "trialing";
+    rows.push({ tier: safeTier, status: safeStatus, count: r.count });
+  }
+  return rows;
+}
+
+export interface AdminParentRow {
+  id: string;
+  name: string;
+  email: string;
+  tier: SubscriptionTier;
+  status: BillingStatus;
+  joinedAt: string; // ISO date (yyyy-mm-dd)
+  childCount: number;
+}
+
+/**
+ * Real parent accounts for the admin Users table, newest first, with a per-
+ * parent child COUNT (never child names/details on this cross-family surface).
+ * Two aggregate reads: a children `$group` for counts, then a bounded parents
+ * page — no N+1.
+ */
+export async function adminListParents(limit = 100): Promise<AdminParentRow[]> {
+  const childrenCol = await getCollection<ChildDoc>(Collections.children);
+  const counts = await childrenCol
+    .aggregate<{ _id: ObjectId; count: number }>([
+      { $group: { _id: "$parent_id", count: { $sum: 1 } } },
+    ])
+    .toArray();
+  const childCountByParent = new Map<string, number>();
+  for (const c of counts) {
+    if (c._id) childCountByParent.set(c._id.toHexString(), c.count);
+  }
+
+  const parentsCol = await getCollection<ParentDoc>(Collections.parents);
+  const parents = await parentsCol
+    .find(
+      {},
+      {
+        projection: {
+          full_name: 1,
+          email: 1,
+          subscription_tier: 1,
+          billing_status: 1,
+          created_at: 1,
+        },
+      },
+    )
+    .sort({ created_at: -1 })
+    .limit(limit)
+    .toArray();
+
+  return parents.map((p) => {
+    const id = p._id!.toHexString();
+    return {
+      id,
+      name: p.full_name ?? "—",
+      email: p.email,
+      tier: (p.subscription_tier ?? "diagnostic") as SubscriptionTier,
+      status: (p.billing_status ?? "trialing") as BillingStatus,
+      joinedAt: p.created_at
+        ? new Date(p.created_at).toISOString().slice(0, 10)
+        : "—",
+      childCount: childCountByParent.get(id) ?? 0,
+    };
+  });
+}
+
+export interface AdminDossierRow {
+  id: string;
+  childName: string;
+  period: string;
+  generatedAt: string; // ISO date
+  hashShort: string;
+  hasHash: boolean;
+}
+
+/**
+ * Real compliance dossiers, newest first, for the admin Compliance page. Shows
+ * the child's first name only (staff compliance ops must identify the child)
+ * plus the reporting period and secure-hash fingerprint — the fields a dossier
+ * actually carries. No fabricated LA/access-count data.
+ */
+export async function adminListDossiers(limit = 20): Promise<AdminDossierRow[]> {
+  const col = await getCollection<DossierDoc>(Collections.dossiers);
+  const dossiers = await col
+    .find({})
+    .sort({ generated_at: -1 })
+    .limit(limit)
+    .toArray();
+
+  const childIds = [...new Set(dossiers.map((d) => d.child_id?.toHexString()).filter(Boolean))];
+  const firstNameById = new Map<string, string>();
+  if (childIds.length > 0) {
+    const childrenCol = await getCollection<ChildDoc>(Collections.children);
+    const kids = await childrenCol
+      .find(
+        { _id: { $in: childIds.map((id) => new ObjectId(id!)) } },
+        { projection: { full_name: 1 } },
+      )
+      .toArray();
+    for (const k of kids) {
+      firstNameById.set(k._id!.toHexString(), (k.full_name ?? "").split(" ")[0] || "Child");
+    }
+  }
+
+  return dossiers.map((d) => {
+    const hash = d.secure_hash ?? "";
+    return {
+      id: d._id!.toHexString(),
+      childName: firstNameById.get(d.child_id?.toHexString() ?? "") ?? "Child",
+      period: d.reporting_period ?? "—",
+      generatedAt: d.generated_at
+        ? new Date(d.generated_at).toISOString().slice(0, 10)
+        : "—",
+      hashShort: hash ? `${hash.slice(0, 6)}…${hash.slice(-4)}` : "—",
+      hasHash: hash.length > 0,
+    };
+  });
 }
 
 // ── Staff roles + audit trail (operations) ────────────────
