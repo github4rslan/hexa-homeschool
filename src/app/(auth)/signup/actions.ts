@@ -9,6 +9,8 @@ import { emailConfigured, sendEmail } from "@/lib/email/send";
 import { generateCode, createCodeToken } from "@/lib/email/verification";
 import { verifyCodeTemplate } from "@/lib/email/templates";
 import { captureServer } from "@/lib/analytics/server";
+import { rateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/auth/client-ip";
 import { CODE_COOKIE } from "./verify-cookie";
 
 export async function signup(formData: FormData) {
@@ -18,6 +20,16 @@ export async function signup(formData: FormData) {
 
   if (!email || !password) {
     redirect(`/signup?error=${encodeURIComponent("Email and password are required.")}`);
+  }
+
+  // Throttle per IP: unbounded signup is a mass-account-creation / verification-
+  // email-spam (Brevo cost) and email-enumeration surface. Trip → generic error.
+  const ip = await clientIp();
+  const gate = await rateLimit(`signup-ip:${ip}`, 8, 60_000);
+  if (!gate.ok) {
+    redirect(
+      `/signup?error=${encodeURIComponent("Too many attempts. Please wait a moment and try again.")}`,
+    );
   }
   if (password.length < 8) {
     redirect(`/signup?error=${encodeURIComponent("Password must be at least 8 characters.")}`);
