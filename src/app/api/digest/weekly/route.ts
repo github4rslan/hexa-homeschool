@@ -4,6 +4,7 @@ import { sendEmail, emailConfigured } from "@/lib/email/send";
 import { weeklyDigestTemplate, type DigestChild } from "@/lib/email/templates";
 import { buildWeeklySummary } from "@/lib/engine/weekly-summary";
 import { appUrl } from "@/lib/email/verification";
+import { cronAuthorized } from "@/lib/auth/cron-auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +29,7 @@ export async function GET(request: Request) {
       { status: 503 },
     );
   }
-  if (request.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!cronAuthorized(request, secret)) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
   if (!emailConfigured()) {
