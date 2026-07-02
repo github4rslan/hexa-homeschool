@@ -2,95 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  Activity,
-  AlertOctagon,
-  BookOpen,
-  ClipboardList,
-  FlaskConical,
-  Gauge,
-  GraduationCap,
-  LogOut,
-  Network,
-  PoundSterling,
-  Settings,
-  ShieldAlert,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import { Activity, LogOut, Settings, Sparkles } from "lucide-react";
 import { HexaLogo } from "@/components/ui/hexa-logo";
 import { Badge } from "@/components/ui/badge";
+import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
+import { NAV, isAdminNavActive } from "@/components/admin/nav-items";
 import { cn } from "@/lib/utils";
-
-interface NavGroup {
-  label: string;
-  items: NavItem[];
-}
-
-interface NavItem {
-  label: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  badge?: { value: string; variant: "violet" | "neon" | "amber" | "crimson" };
-}
-
-const NAV: NavGroup[] = [
-  {
-    label: "Operations",
-    items: [
-      { label: "Overview", href: "/admin", icon: Gauge },
-      {
-        label: "Escalations",
-        href: "/admin/escalations",
-        icon: ShieldAlert,
-        badge: { value: "7", variant: "crimson" },
-      },
-      { label: "Agent activity", href: "/admin/agents", icon: Network },
-      { label: "Audit log", href: "/admin/audit", icon: ClipboardList },
-    ],
-  },
-  {
-    label: "People",
-    items: [
-      {
-        label: "Parents & children",
-        href: "/admin/users",
-        icon: Users,
-      },
-      {
-        label: "Tutors",
-        href: "/admin/tutors",
-        icon: GraduationCap,
-        badge: { value: "3", variant: "amber" },
-      },
-    ],
-  },
-  {
-    label: "Compliance",
-    items: [
-      {
-        label: "Dossiers & DSARs",
-        href: "/admin/compliance",
-        icon: AlertOctagon,
-        badge: { value: "2", variant: "violet" },
-      },
-    ],
-  },
-  {
-    label: "Product",
-    items: [
-      { label: "Curriculum CMS", href: "/admin/curriculum", icon: BookOpen },
-      { label: "Experiments", href: "/admin/experiments", icon: FlaskConical },
-      { label: "Feature flags", href: "/admin/settings", icon: Settings },
-    ],
-  },
-  {
-    label: "Business",
-    items: [
-      { label: "Finance", href: "/admin/finance", icon: PoundSterling },
-    ],
-  },
-];
 
 type AdminIdentity = {
   name: string;
@@ -128,9 +45,7 @@ export function AdminSidebar({ identity }: { identity?: AdminIdentity }) {
             </span>
             {group.items.map((item) => {
               const Icon = item.icon;
-              const active =
-                pathname === item.href ||
-                (item.href !== "/admin" && pathname.startsWith(item.href));
+              const active = isAdminNavActive(pathname, item.href);
               return (
                 <Link
                   key={item.href}
@@ -194,10 +109,12 @@ export function AdminSidebar({ identity }: { identity?: AdminIdentity }) {
 
 export function AdminTopbar({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
-    <header className="h-16 border-b border-white/5 bg-abyss/70 backdrop-blur-xl flex items-center justify-between px-6 lg:px-10 sticky top-0 z-30">
-      <div>
+    <header className="h-16 border-b border-white/5 bg-abyss/70 backdrop-blur-xl flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-10 sticky top-0 z-30">
+      <div className="flex items-center gap-3 min-w-0">
+        <AdminMobileNav />
+        <div className="min-w-0">
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-fog-50">{title}</h1>
+          <h1 className="truncate text-base sm:text-lg font-semibold text-fog-50">{title}</h1>
           <Badge variant="outline" size="sm">
             <span className="relative flex h-1.5 w-1.5 mr-1">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon-400 opacity-75" />
@@ -207,11 +124,12 @@ export function AdminTopbar({ title, subtitle }: { title: string; subtitle?: str
           </Badge>
         </div>
         {subtitle && (
-          <span className="text-xs text-fog-500">{subtitle}</span>
+          <span className="block truncate text-xs text-fog-500">{subtitle}</span>
         )}
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        <button className="flex h-9 items-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 px-3 text-xs font-mono text-fog-300 transition-all">
+      <div className="flex shrink-0 items-center gap-3">
+        <button className="hidden sm:flex h-9 items-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 px-3 text-xs font-mono text-fog-300 transition-all">
           <Activity className="h-3.5 w-3.5" />
           API · 142ms
         </button>
