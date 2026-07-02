@@ -1033,14 +1033,15 @@ export function PracticePlayer({
         )}
       </AnimatePresence>
 
-      {/* Progress — slim accent-gradient bar, "N of M". */}
+      {/* Progress — slim accent-gradient bar, "N of M". Controls wrap under the
+          label on narrow phones so nothing is clipped at 360px. */}
       <div className="mb-6">
-        <div className="mb-2 flex items-center justify-between">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <span className="text-lg font-semibold text-fog-300">
             {lessonPhase === "mastery" ? `Mastery check ${masteryAttempt}: ` : ""}
             {step + 1} of {activeQuestions.length}
           </span>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {speechSupported && isMcq && (
               <button
                 onClick={toggleSpeak}
@@ -1070,7 +1071,7 @@ export function PracticePlayer({
                 autoplayOn ? "Mute reading aloud" : "Unmute reading aloud"
               }
               className={cn(
-                "child-touch inline-flex items-center justify-center rounded-2xl border px-4 text-base",
+                "child-touch inline-flex min-w-[64px] items-center justify-center rounded-2xl border px-4 text-base",
                 autoplayOn
                   ? "border-white/10 bg-white/[0.03] text-fog-200 hover:border-white/30"
                   : "border-amber-400/40 bg-amber-500/10 text-amber-200",
