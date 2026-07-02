@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { currentWeekStart, londonParts } from "@/lib/db/repo";
+import { currentWeekStart, londonParts, londonDayStart } from "@/lib/db/repo";
 
 // Day/week math is pinned to Europe/London (audit MEDIUM #2). Tests pass an
 // explicit instant so they are deterministic regardless of the CI runner's TZ.
@@ -11,6 +11,25 @@ describe("londonParts", () => {
     const p = londonParts(new Date("2026-06-14T23:30:00Z"));
     expect(p.day).toBe(15);
     expect(p.weekday).toBe(0); // Monday
+  });
+});
+
+describe("londonDayStart", () => {
+  it("returns London midnight (23:00Z prev day) during BST", () => {
+    // 00:30 BST on Mon 15 June → the day started at 23:00Z on Sun 14 June.
+    const start = londonDayStart(new Date("2026-06-14T23:30:00Z"));
+    expect(start.toISOString()).toBe("2026-06-14T23:00:00.000Z");
+  });
+
+  it("returns London midnight (00:00Z) during GMT/winter", () => {
+    const start = londonDayStart(new Date("2026-01-15T10:00:00Z"));
+    expect(start.toISOString()).toBe("2026-01-15T00:00:00.000Z");
+  });
+
+  it("buckets a late-BST-evening instant into the correct local day", () => {
+    // 22:30 BST Sunday 14 June is still Sunday in London → day start is Sun 00:00 BST.
+    const start = londonDayStart(new Date("2026-06-14T21:30:00Z"));
+    expect(start.toISOString()).toBe("2026-06-13T23:00:00.000Z");
   });
 });
 

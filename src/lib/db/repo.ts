@@ -843,8 +843,7 @@ export async function dailySummaryData(
   const compCol = await getCollection<CompetenceDoc>(Collections.competence);
   const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
 
-  const dayStart = new Date();
-  dayStart.setUTCHours(0, 0, 0, 0);
+  const dayStart = londonDayStart();
 
   const [topics, comps, todayLogs, streak] = await Promise.all([
     topicsCol.find({}).toArray(),
@@ -1250,8 +1249,7 @@ export async function competenceMapForChild(
 export async function todaysCompletedTopicTags(
   childId: ObjectId,
 ): Promise<Set<string>> {
-  const start = new Date();
-  start.setUTCHours(0, 0, 0, 0);
+  const start = londonDayStart();
   const col = await getCollection<LessonLogDoc>(Collections.lessonLogs);
   const logs = await col
     .find({
@@ -1363,8 +1361,7 @@ export async function todayCard(
   ).length;
 
   // A subject certified today (for the quiet celebration line).
-  const start = new Date();
-  start.setUTCHours(0, 0, 0, 0);
+  const start = londonDayStart();
   let certifiedToday: string | null = null;
   for (const c of comps) {
     if (
@@ -3670,8 +3667,7 @@ export async function inactivityNudgeChildren(
   const children = await listChildren(parentId);
   if (children.length === 0) return [];
 
-  const dayStart = new Date();
-  dayStart.setUTCHours(0, 0, 0, 0);
+  const dayStart = londonDayStart();
   const since14 = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
   const logsCol = await getCollection<LessonLogDoc>(Collections.lessonLogs);
 
