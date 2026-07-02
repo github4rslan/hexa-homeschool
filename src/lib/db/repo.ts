@@ -47,7 +47,10 @@ import {
   type KeyStage,
 } from "@/lib/engine/diagnostic-placement";
 import { currentBandFrom } from "@/lib/engine/band-progression";
-import { periodWindowFromWeekStart } from "@/lib/engine/assessment-period";
+import {
+  periodWindowFromWeekStart,
+  mockPeriodKey,
+} from "@/lib/engine/assessment-period";
 import { isDuplicateKeyError } from "@/lib/db/mongo-errors";
 
 /**
@@ -1485,16 +1488,25 @@ export async function recordMockResult(
   // browser-back can't chase a better grade). The first attempt is the record.
   if (await hasMockThisPeriodInternal(childId, input.subject)) return false;
   const col = await getCollection<EvaluationDoc>(Collections.evaluations);
-  await col.insertOne({
-    child_id: childId,
-    subject: input.subject,
-    raw_score: input.scorePct,
-    model_predicted_grade: input.indicativeGrade,
-    confidence_interval: Math.min(0.99, Math.max(0.5, input.scorePct / 100)),
-    mock_exam: true,
-    created_at: new Date(),
-  } as EvaluationDoc);
-  return true;
+  // The read-check above is advisory; two concurrent submits can both pass it.
+  // mock_period + the unique (child_id, subject, mock_period) index make the
+  // insert the real arbiter: the losing racer gets E11000 and we return false.
+  try {
+    await col.insertOne({
+      child_id: childId,
+      subject: input.subject,
+      raw_score: input.scorePct,
+      model_predicted_grade: input.indicativeGrade,
+      confidence_interval: Math.min(0.99, Math.max(0.5, input.scorePct / 100)),
+      mock_exam: true,
+      mock_period: mockPeriodKey(currentWeekStart()),
+      created_at: new Date(),
+    } as EvaluationDoc);
+    return true;
+  } catch (err) {
+    if (isDuplicateKeyError(err)) return false; // already recorded this period
+    throw err;
+  }
 }
 
 // ── Mock attempt lock (one honest attempt per subject per period) ──

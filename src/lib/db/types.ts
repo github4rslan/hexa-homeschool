@@ -131,6 +131,13 @@ export interface EvaluationDoc {
   model_predicted_grade: string | null;
   confidence_interval: number | null;
   mock_exam: boolean;
+  /**
+   * For mock_exam docs only: the period key (period-start ISO date) this
+   * attempt counts against. Backs the unique (child_id, subject, mock_period)
+   * index that enforces one attempt per subject per period. Absent on legacy
+   * mocks and on all non-mock evaluations.
+   */
+  mock_period?: string;
   created_at: Date;
 }
 
