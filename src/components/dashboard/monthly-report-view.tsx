@@ -117,12 +117,13 @@ export function MonthlyReportView({
                 Assessments
               </h2>
               {report.evaluations.length > 0 ? (
-                <table className="w-full text-left text-sm">
+                <div className="-mx-1 overflow-x-auto px-1 print:overflow-visible">
+                <table className="w-full min-w-[20rem] text-left text-sm">
                   <thead>
                     <tr className="report-muted text-fog-500">
                       <th className="pb-2 font-medium">Subject</th>
                       <th className="pb-2 font-medium">Type</th>
-                      <th className="pb-2 font-medium">Working grade</th>
+                      <th className="whitespace-nowrap pb-2 font-medium">Working grade</th>
                       <th className="pb-2 font-medium">Date</th>
                     </tr>
                   </thead>
@@ -144,6 +145,7 @@ export function MonthlyReportView({
                     ))}
                   </tbody>
                 </table>
+                </div>
               ) : (
                 <p className="text-sm report-muted text-fog-400">
                   No assessments were taken this month.
