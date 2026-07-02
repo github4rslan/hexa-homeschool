@@ -6,6 +6,7 @@ import {
   getChildById,
   insertDossier,
 } from "@/lib/db/repo";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -41,6 +42,22 @@ async function persistDossier(
 }
 
 export async function POST(request: Request) {
+  // Require a session before generating: an unauthenticated caller could
+  // otherwise mint fully-rendered, SHA-256-verified portfolios (documents a
+  // Local Authority reads as authoritative) for arbitrary free-text names, and
+  // burn CPU doing it. A per-parent rate limit bounds the compute.
+  const authParentId = await currentParentId();
+  if (!authParentId) {
+    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+  const limited = await rateLimit(`portfolio:${authParentId}`, 20, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment and try again." },
+      { status: 429 },
+    );
+  }
+
   let body: { childName?: unknown; childId?: unknown; term?: unknown };
   try {
     body = (await request.json()) as {
