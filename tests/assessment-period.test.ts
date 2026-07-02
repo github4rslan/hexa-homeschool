@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   MOCK_PERIOD_DAYS,
   periodWindowFromWeekStart,
+  mockPeriodKey,
 } from "@/lib/engine/assessment-period";
 
 describe("mock assessment period", () => {
@@ -19,6 +20,14 @@ describe("mock assessment period", () => {
     const { start, next } = periodWindowFromWeekStart("2026-01-05");
     const days = (next.getTime() - start.getTime()) / (24 * 60 * 60 * 1000);
     expect(days).toBe(MOCK_PERIOD_DAYS);
+  });
+
+  it("derives a stable per-period key (period-start ISO date)", () => {
+    // The key backs the unique (child_id, subject, mock_period) index. Same
+    // period → same key (dedupe); next Monday → a new key (attempt unlocks).
+    expect(mockPeriodKey("2026-06-22")).toBe("2026-06-22");
+    expect(mockPeriodKey("2026-06-29")).toBe("2026-06-29");
+    expect(mockPeriodKey("2026-06-22")).not.toBe(mockPeriodKey("2026-06-29"));
   });
 
   it("classifies a result inside vs. outside the window", () => {

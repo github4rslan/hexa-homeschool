@@ -109,6 +109,19 @@ async function main() {
     // Child-scoped progress indexes (recent-first reads).
     await db.collection("instructional_logs").createIndex({ child_id: 1, timestamp_start: -1 });
     await db.collection("evaluation_records").createIndex({ child_id: 1, created_at: -1 });
+    // Mock integrity: at most one mock attempt per child + subject + period.
+    // Partial + $type:"string" so it only governs new docs carrying mock_period;
+    // legacy mocks (no field) are excluded, keeping index creation legacy-safe.
+    await db.collection("evaluation_records").createIndex(
+      { child_id: 1, subject: 1, mock_period: 1 },
+      {
+        unique: true,
+        partialFilterExpression: {
+          mock_exam: true,
+          mock_period: { $type: "string" },
+        },
+      },
+    );
     await db.collection("competence_matrix").createIndex({ child_id: 1, topic_tag: 1 }, { unique: true });
     // Week-in-review / certificates: certified topics in a date window.
     await db.collection("competence_matrix").createIndex({ child_id: 1, state: 1, certified_at: -1 });

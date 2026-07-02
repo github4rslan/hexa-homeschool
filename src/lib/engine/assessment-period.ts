@@ -26,3 +26,14 @@ export function periodWindowFromWeekStart(weekStartIso: string): {
   const next = new Date(start.getTime() + MOCK_PERIOD_DAYS * 24 * 60 * 60 * 1000);
   return { start, next };
 }
+
+/**
+ * Stable identifier for the current mock-attempt period: the period start's ISO
+ * date ("YYYY-MM-DD"). Stored on mock EvaluationDocs so a unique index can
+ * enforce "one attempt per subject per period" atomically, rather than relying
+ * on a read-then-write check that two concurrent submits can both pass. Derived
+ * from the period window so it stays correct if the cadence changes.
+ */
+export function mockPeriodKey(weekStartIso: string): string {
+  return periodWindowFromWeekStart(weekStartIso).start.toISOString().slice(0, 10);
+}
