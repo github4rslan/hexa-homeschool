@@ -34,6 +34,10 @@ import {
   type Interaction as InteractionDef,
   type SavedProgress,
 } from "@/lib/child/interactions";
+import {
+  interpretSafetyResponse,
+  type GuardOutcome,
+} from "@/lib/safety/free-text-gate";
 import { accentPreset, type AccentPreset } from "@/lib/child/accents";
 import { useNarration } from "@/lib/child/use-narration";
 import { useQuestionVisual } from "@/lib/child/use-question-visual";
@@ -491,28 +495,42 @@ export function PracticePlayer({
       .catch(() => setSaved(false));
   }, [complete, curriculumTopic, score, masterySet.length]);
 
-  /** Scan free-text answers for distress (fill_blank only). */
-  async function guardFreeText(): Promise<boolean> {
-    if (interaction.type !== "fill_blank") return false;
+  /**
+   * Scan free-text answers for distress (fill_blank only). Returns a gate
+   * outcome: "frozen" (session frozen, calm pause shown), "clear" (safe to
+   * score), or "unavailable" (could not confirm — the caller MUST NOT advance).
+   * Child-safety rule 2: we fail SAFE, never open. One retry absorbs a transient
+   * blip; a persistent failure blocks the submit rather than letting unverified
+   * free text through.
+   */
+  async function guardFreeText(): Promise<GuardOutcome> {
+    if (interaction.type !== "fill_blank") return "clear";
     const text = interactionRef.current?.answerText() ?? "";
-    if (!text) return false;
-    try {
-      const res = await fetch("/api/safety-check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      const data = (await res.json()) as { frozen?: boolean; message?: string };
-      if (data.frozen) {
-        stopRecorder();
-        narration.stop();
-        setFrozen(data.message ?? "");
-        return true;
+    if (!text) return "clear";
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const res = await fetch("/api/safety-check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+        const body = (await res.json().catch(() => null)) as
+          | { frozen?: boolean; message?: string }
+          | null;
+        const outcome = interpretSafetyResponse(res.ok, body);
+        if (outcome === "frozen") {
+          stopRecorder();
+          narration.stop();
+          setFrozen(body?.message ?? "");
+          return "frozen";
+        }
+        if (outcome === "clear") return "clear";
+        // "unavailable" — fall through to a single retry, then give up as blocked.
+      } catch {
+        /* network error — retry once, then fail safe below */
       }
-    } catch {
-      /* safety-check is best-effort; never block on a network error */
     }
-    return false;
+    return "unavailable";
   }
 
   /** Re-entry guard so a double-tap during the async distress gate can't score twice. */
@@ -528,8 +546,16 @@ export function PracticePlayer({
       // advance — a match freezes the lesson first, not a beat later. Selection-
       // only types have no free text to scan, so they stay instant.
       if (interaction.type === "fill_blank") {
-        const frozenNow = await guardFreeText();
-        if (frozenNow) return; // UI is now the calm pause
+        const outcome = await guardFreeText();
+        if (outcome === "frozen") return; // UI is now the calm pause
+        if (outcome === "unavailable") {
+          // Fail safe: we could not confirm the answer is clear, so we do NOT
+          // score or advance. A gentle inline nudge, not a scary freeze.
+          setSttNotice(
+            "I couldn't check that just now — let's pause a moment and try again.",
+          );
+          return;
+        }
       }
       runCheckCore();
     } finally {
