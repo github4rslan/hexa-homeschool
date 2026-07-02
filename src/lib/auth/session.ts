@@ -60,7 +60,7 @@ export async function getSession(): Promise<SessionUser | null> {
   if (!token) return null;
 
   try {
-    const { payload } = await jwtVerify(token, getSecret());
+    const { payload } = await jwtVerify(token, getSecret(), { algorithms: ["HS256"] });
     if (!payload.sub) return null;
     return {
       id: payload.sub,
@@ -87,7 +87,7 @@ export const SESSION_COOKIE_NAME = COOKIE_NAME;
 export async function verifyToken(token: string | undefined): Promise<string | null> {
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, getSecret());
+    const { payload } = await jwtVerify(token, getSecret(), { algorithms: ["HS256"] });
     return payload.sub ?? null;
   } catch {
     return null;
