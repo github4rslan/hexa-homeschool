@@ -26,7 +26,7 @@ export async function verifyVerificationToken(
   token: string,
 ): Promise<string | null> {
   try {
-    const { payload } = await jwtVerify(token, secret());
+    const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });
     if (payload.purpose !== "email_verify" || !payload.sub) return null;
     return payload.sub;
   } catch {
@@ -71,7 +71,7 @@ export async function verifyCodeToken(
   code: string,
 ): Promise<string | null> {
   try {
-    const { payload } = await jwtVerify(token, secret());
+    const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });
     if (payload.purpose !== "email_code" || !payload.sub) return null;
     const expected = payload.h;
     if (typeof expected !== "string") return null;
@@ -120,7 +120,7 @@ export async function checkTwoFactorToken(
 ): Promise<TwoFactorCheck> {
   let payload;
   try {
-    ({ payload } = await jwtVerify(token, secret()));
+    ({ payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] }));
   } catch {
     return { status: "invalid" };
   }
@@ -160,7 +160,7 @@ export async function checkTwoFactorToken(
 /** ParentId carried by a (possibly attempt-spent) 2FA token, for resends. */
 export async function readTwoFactorSubject(token: string): Promise<string | null> {
   try {
-    const { payload } = await jwtVerify(token, secret());
+    const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });
     if (payload.purpose !== "twofa_code" || !payload.sub) return null;
     return payload.sub;
   } catch {
