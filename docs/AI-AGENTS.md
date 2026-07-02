@@ -148,6 +148,13 @@ The matcher is intentionally simple and auditable. **Over-triggering is acceptab
 missing real distress is not.** Strict scope: educational safeguarding only — no
 clinical or behavioural profiling.
 
+The interactive practice player scans free-text (`fill_blank`) answers via
+`POST /api/safety-check` **before** scoring or advancing. That client gate
+**fails safe**: if the check cannot be confirmed (offline, 5xx, malformed body)
+it retries once, and on persistent failure it does **not** advance — it shows a
+gentle pause instead of letting an unverified answer through
+([src/lib/safety/free-text-gate.ts](../src/lib/safety/free-text-gate.ts)).
+
 ## Lesson Narration (TTS)
 
 Route: `POST /api/tts` · Provider: ElevenLabs (`eleven_turbo_v2_5` — high quality
