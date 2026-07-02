@@ -110,12 +110,14 @@ export function AdminSidebar({ identity }: { identity?: AdminIdentity }) {
 export function AdminTopbar({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <header className="h-16 border-b border-white/5 bg-abyss/70 backdrop-blur-xl flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-10 sticky top-0 z-30">
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
         <AdminMobileNav />
-        <div className="min-w-0">
-        <div className="flex items-center gap-3">
-          <h1 className="truncate text-base sm:text-lg font-semibold text-fog-50">{title}</h1>
-          <Badge variant="outline" size="sm">
+        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <h1 className="min-w-0 truncate text-base sm:text-lg font-semibold text-fog-50">{title}</h1>
+          {/* Non-essential status pill: hidden below sm so the title never
+              competes for width on a phone. */}
+          <Badge variant="outline" size="sm" className="hidden shrink-0 sm:inline-flex">
             <span className="relative flex h-1.5 w-1.5 mr-1">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neon-400 opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-neon-400" />
@@ -128,17 +130,18 @@ export function AdminTopbar({ title, subtitle }: { title: string; subtitle?: str
         )}
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         <button className="hidden sm:flex h-9 items-center gap-2 rounded-xl bg-white/5 hover:bg-white/10 px-3 text-xs font-mono text-fog-300 transition-all">
           <Activity className="h-3.5 w-3.5" />
           API · 142ms
         </button>
-        <button
-          className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-fog-300 hover:text-fog-50 transition-all"
+        <Link
+          href="/admin/settings"
+          className="flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-fog-300 hover:text-fog-50 transition-all"
           aria-label="Settings"
         >
           <Settings className="h-4 w-4" />
-        </button>
+        </Link>
       </div>
     </header>
   );
