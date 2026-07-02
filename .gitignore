@@ -11,6 +11,12 @@
 # testing
 /coverage
 
+# playwright artifacts + saved auth state (never commit a live admin session)
+/test-results
+/playwright-report
+/e2e/.auth
+/e2e/screenshots
+
 # next.js
 /.next/
 /out/
