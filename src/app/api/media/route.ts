@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { currentParentId, parentOwnsChild, recordMedia } from "@/lib/db/repo";
+import { isAllowedMediaUrl } from "@/lib/media/media-url";
 import type { MediaDoc, MediaUseCase } from "@/lib/db/types";
 
 export const runtime = "nodejs";
@@ -45,6 +46,15 @@ export async function POST(request: Request) {
   if (!publicId || !secureUrl) {
     return NextResponse.json(
       { error: "publicId and secureUrl are required." },
+      { status: 400 },
+    );
+  }
+  // Uploads go client → Cloudinary, so only an https Cloudinary URL is a valid
+  // asset to record. Reject arbitrary client-supplied URLs (an authenticated
+  // parent could otherwise persist any origin as a trusted media URL).
+  if (!isAllowedMediaUrl(secureUrl)) {
+    return NextResponse.json(
+      { error: "secureUrl must be a Cloudinary URL." },
       { status: 400 },
     );
   }
