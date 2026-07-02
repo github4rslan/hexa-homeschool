@@ -12,6 +12,8 @@ import {
   createTwoFactorToken,
 } from "@/lib/email/verification";
 import { verifyCodeTemplate, twoFactorCodeTemplate } from "@/lib/email/templates";
+import { rateLimit } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/auth/client-ip";
 import { TWOFA_COOKIE } from "./twofa-cookie";
 
 export async function login(formData: FormData) {
@@ -20,6 +22,22 @@ export async function login(formData: FormData) {
 
   if (!email || !password) {
     redirect(`/login?error=${encodeURIComponent("Email and password are required.")}`);
+  }
+
+  // Throttle credential verification: unbounded POSTs here are a
+  // credential-stuffing + bcrypt-CPU-DoS surface on the accounts that gate
+  // children's data. Per-IP is the primary control; a looser per-email bucket
+  // (short window, so it self-heals) blunts single-account brute force. Trip →
+  // the same generic message, so nothing about account existence leaks.
+  const ip = await clientIp();
+  const [ipGate, emailGate] = await Promise.all([
+    rateLimit(`login-ip:${ip}`, 10, 60_000),
+    rateLimit(`login-email:${email}`, 10, 15 * 60_000),
+  ]);
+  if (!ipGate.ok || !emailGate.ok) {
+    redirect(
+      `/login?error=${encodeURIComponent("Too many attempts. Please wait a moment and try again.")}`,
+    );
   }
 
   const parent = await findParentByEmail(email);
