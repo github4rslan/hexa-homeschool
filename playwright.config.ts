@@ -14,6 +14,10 @@ const baseURL =
 
 export default defineConfig({
   testDir: "./e2e",
+  // Only the public smoke suite. The authenticated admin harness lives in its
+  // own config (playwright.admin.config.ts) so a full-admin session never runs
+  // here — see `npm run test:admin-mobile`.
+  testMatch: /smoke\.spec\.ts/,
   timeout: 30_000,
   expect: { timeout: 10_000 },
   retries: 2,
