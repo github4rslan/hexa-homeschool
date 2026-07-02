@@ -10,13 +10,14 @@ import { readActiveChildId } from "@/lib/active-child";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Minimal XML escaping for text rendered into the SVG. */
+/** Minimal XML escaping for text rendered into the SVG (covers the quote too). */
 function esc(s: string): string {
   return s
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 /**
