@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import { findParentById } from "@/lib/db/repo";
 import { createSession } from "@/lib/auth/session";
+import { isStaff } from "@/lib/auth/rbac";
 import { sendEmail } from "@/lib/email/send";
 import {
   generateCode,
@@ -61,7 +62,12 @@ export async function verifyTwoFactor(formData: FormData) {
       email: parent!.email,
       tokenVersion: parent!.token_version ?? 0,
     });
-    redirect("/dashboard");
+    // Staff land on the admin surface; everyone else on the parent dashboard.
+    redirect(
+      isStaff({ role: parent!.role, is_admin: parent!.is_admin })
+        ? "/admin"
+        : "/dashboard",
+    );
   }
 
   if (result.status === "bad_code") {
