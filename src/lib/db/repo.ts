@@ -683,7 +683,10 @@ export async function weekInReview(
   if (!(await assertOwnsChild(parentId, childId))) return null;
 
   const weekStart = currentWeekStart();
-  const start = new Date(`${weekStart}T00:00:00`);
+  // Parse as UTC (matching periodWindowFromWeekStart and the London-anchored
+  // week math); a bare "T00:00:00" would parse in the server's local tz and
+  // mis-slice the week window on a non-UTC host.
+  const start = new Date(`${weekStart}T00:00:00.000Z`);
   const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
 
   const logsCol = await getCollection<LessonLogDoc>(Collections.lessonLogs);
