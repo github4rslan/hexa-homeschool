@@ -103,15 +103,21 @@ export async function createParent(input: {
   return res.insertedId.toHexString();
 }
 
+/**
+ * Mark a parent's email verified. Returns true only when this call actually
+ * flipped an unverified account to verified — so a caller can treat the
+ * transition as single-use (the stateless verification link must not mint a
+ * fresh session on replay). Idempotent: a second call returns false.
+ */
 export async function markEmailVerified(parentId: string): Promise<boolean> {
   const oid = toObjectId(parentId);
   if (!oid) return false;
   const col = await getCollection<ParentDoc>(Collections.parents);
-  await col.updateOne(
-    { _id: oid },
+  const res = await col.updateOne(
+    { _id: oid, email_verified: { $ne: true } },
     { $set: { email_verified: true, updated_at: new Date() } },
   );
-  return true;
+  return res.modifiedCount > 0;
 }
 
 /**
