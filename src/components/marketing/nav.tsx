@@ -111,7 +111,7 @@ export function MarketingNav() {
 
           <button
             type="button"
-            className="lg:hidden text-forest-800"
+            className="lg:hidden -mr-2 flex h-11 w-11 items-center justify-center text-forest-800"
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
             aria-expanded={mobileOpen}
@@ -141,7 +141,7 @@ export function MarketingNav() {
               <HexaLogo size={28} withText />
               <button
                 onClick={closeMobile}
-                className="text-ink-600 hover:text-forest-800"
+                className="-mr-2 flex h-11 w-11 items-center justify-center text-ink-600 hover:text-forest-800"
                 aria-label="Close menu"
               >
                 <X className="h-6 w-6" />
