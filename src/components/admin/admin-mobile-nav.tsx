@@ -46,7 +46,7 @@ export function AdminMobileNav() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="lg:hidden flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-fog-200 transition-all"
+        className="lg:hidden flex h-11 w-11 items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-fog-200 transition-all"
         aria-label="Open menu"
         aria-expanded={open}
       >
@@ -86,7 +86,7 @@ export function AdminMobileNav() {
                 <button
                   type="button"
                   onClick={close}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-fog-300 transition-all"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg bg-white/5 hover:bg-white/10 text-fog-300 transition-all"
                   aria-label="Close menu"
                 >
                   <X className="h-5 w-5" />
