@@ -38,8 +38,14 @@ import type {
   MessageDoc,
   StaffAuditLogDoc,
   ParentEventDoc,
+  FeedbackDoc,
   Subject,
 } from "./types";
+import type {
+  FeedbackPromptState,
+  FeedbackMilestoneSignal,
+  FeedbackTrigger,
+} from "@/lib/engine/feedback-eligibility";
 import { resolveRole, type StaffRole } from "@/lib/auth/rbac";
 import {
   evaluateRoleChange,
@@ -4987,5 +4993,254 @@ export async function adminSearchParents(opts: {
         verified: p.email_verified !== false,
       };
     }),
+  };
+}
+
+// ── Parent sentiment feedback (voluntary star + comment) ─────────────────
+//
+// PARENT-SIDE ONLY. Every function is keyed on the session parent's OWN id, so
+// the data-silo holds by construction (a parent can only ever read/write their
+// own prompt state + submissions; the admin reads are staff-gated by the
+// (admin) layout). No child data is ever touched here. The pure decision +
+// validation live in `lib/engine/feedback-eligibility.ts` (unit-tested).
+
+/**
+ * Gather the raw prompt state + milestone signal for a parent, for the pure
+ * `shouldShowFeedbackPrompt` decision. Cheap counts over the family's own
+ * records; returns a "never eligible" zero signal for an unknown/childless
+ * parent so the prompt simply never shows.
+ */
+export async function getFeedbackPromptContext(
+  parentId: string,
+): Promise<{ state: FeedbackPromptState; signal: FeedbackMilestoneSignal }> {
+  const empty = {
+    state: {
+      lastShownAt: null,
+      lastSubmittedAt: null,
+      lastDismissedAt: null,
+      optedOut: false,
+    } satisfies FeedbackPromptState,
+    signal: { completedLessons: 0, certifiedTopics: 0 } satisfies FeedbackMilestoneSignal,
+  };
+
+  const parentOid = toObjectId(parentId);
+  if (!parentOid) return empty;
+  const parent = await findParentById(parentId);
+  if (!parent) return empty;
+
+  const childCol = await getCollection<ChildDoc>(Collections.children);
+  const childIds = (
+    await childCol
+      .find({ parent_id: parentOid })
+      .project<{ _id: ObjectId }>({ _id: 1 })
+      .toArray()
+  ).map((d) => d._id);
+
+  let completedLessons = 0;
+  let certifiedTopics = 0;
+  if (childIds.length) {
+    const logCol = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+    const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+    [completedLessons, certifiedTopics] = await Promise.all([
+      logCol.countDocuments({ child_id: { $in: childIds }, status: "completed" }),
+      compCol.countDocuments({ child_id: { $in: childIds }, state: "certified" }),
+    ]);
+  }
+
+  return {
+    state: {
+      lastShownAt: parent.feedback_last_shown_at ?? null,
+      lastSubmittedAt: parent.feedback_last_submitted_at ?? null,
+      lastDismissedAt: parent.feedback_last_dismissed_at ?? null,
+      optedOut: parent.feedback_opt_out === true,
+    },
+    signal: { completedLessons, certifiedTopics },
+  };
+}
+
+/**
+ * Record a feedback submission (parent-scoped) and stamp the long post-submit
+ * cooldown on the parent so the milestone prompt can't re-nag. `stars` MUST be a
+ * validated 1–5 integer and `comment` an already-sanitized string|null (the
+ * caller — /api/feedback — enforces this via the pure validators). Returns the
+ * new row id, or null if the parent id is invalid.
+ */
+export async function submitFeedback(
+  parentId: string,
+  input: {
+    stars: number;
+    comment: string | null;
+    trigger: FeedbackTrigger;
+    context?: string | null;
+  },
+): Promise<string | null> {
+  const parentOid = toObjectId(parentId);
+  if (!parentOid) return null;
+  // Defence in depth — never persist an out-of-range rating.
+  if (!Number.isInteger(input.stars) || input.stars < 1 || input.stars > 5) {
+    return null;
+  }
+  const parent = await findParentById(parentId);
+  if (!parent) return null;
+
+  const now = new Date();
+  const col = await getCollection<FeedbackDoc>(Collections.feedback);
+  const res = await col.insertOne({
+    parent_id: parentOid,
+    parent_name: parent.full_name ?? null,
+    parent_email: parent.email,
+    stars: input.stars,
+    comment: input.comment,
+    trigger: input.trigger,
+    context: input.context ?? null,
+    created_at: now,
+  } as FeedbackDoc);
+
+  const parentsCol = await getCollection<ParentDoc>(Collections.parents);
+  await parentsCol.updateOne(
+    { _id: parentOid },
+    { $set: { feedback_last_submitted_at: now, updated_at: now } },
+  );
+
+  return res.insertedId.toHexString();
+}
+
+/**
+ * Persist a prompt-state transition for the milestone widget:
+ *   - "shown"     → stamp last_shown_at (audit only; doesn't gate re-show)
+ *   - "dismissed" → start the shorter cool-down
+ *   - "opt_out"   → "don't ask again", durable suppression
+ */
+export async function markFeedbackPrompt(
+  parentId: string,
+  action: "shown" | "dismissed" | "opt_out",
+): Promise<void> {
+  const parentOid = toObjectId(parentId);
+  if (!parentOid) return;
+  const now = new Date();
+  const set: Record<string, unknown> = { updated_at: now };
+  if (action === "shown") set.feedback_last_shown_at = now;
+  else if (action === "dismissed") set.feedback_last_dismissed_at = now;
+  else if (action === "opt_out") set.feedback_opt_out = true;
+
+  const parentsCol = await getCollection<ParentDoc>(Collections.parents);
+  await parentsCol.updateOne({ _id: parentOid }, { $set: set });
+}
+
+export interface FeedbackRow {
+  id: string;
+  parentId: string;
+  parentName: string | null;
+  parentEmail: string;
+  stars: number;
+  comment: string | null;
+  trigger: FeedbackTrigger;
+  createdAt: Date;
+}
+
+/**
+ * Admin read: most recent feedback submissions, newest first. `maxStars` filters
+ * for triage (e.g. surface all ≤ 3-star responses). Staff-gated by the (admin)
+ * layout; returns real rows only (no mock).
+ */
+export async function recentFeedback(
+  limit = 50,
+  opts?: { maxStars?: number },
+): Promise<FeedbackRow[]> {
+  const col = await getCollection<FeedbackDoc>(Collections.feedback);
+  const query: Record<string, unknown> = {};
+  if (typeof opts?.maxStars === "number") {
+    query.stars = { $lte: opts.maxStars };
+  }
+  const docs = await col
+    .find(query)
+    .sort({ created_at: -1 })
+    .limit(limit)
+    .toArray();
+  return docs.map((d) => ({
+    id: d._id!.toHexString(),
+    parentId: d.parent_id.toHexString(),
+    parentName: d.parent_name ?? null,
+    parentEmail: d.parent_email,
+    stars: d.stars,
+    comment: d.comment ?? null,
+    trigger: d.trigger,
+    createdAt: d.created_at,
+  }));
+}
+
+export interface FeedbackStats {
+  total: number;
+  /** Mean stars across all responses, 1 d.p.; null when there are none. */
+  average: number | null;
+  /** Count of ≤ 3-star responses (the triage/outreach bucket). */
+  lowCount: number;
+  /** Responses per star, index 0 = 1★ … index 4 = 5★. */
+  distribution: [number, number, number, number, number];
+  /** Oldest → newest weekly buckets (last 8 ISO weeks) for the trend line. */
+  weeklyTrend: { weekStart: string; average: number | null; count: number }[];
+}
+
+/** Admin read: platform-wide sentiment — average, distribution, weekly trend. */
+export async function feedbackStats(): Promise<FeedbackStats> {
+  const col = await getCollection<FeedbackDoc>(Collections.feedback);
+
+  const WEEKS = 8;
+  const now = new Date();
+  // Monday-anchored week starts (UTC), oldest first.
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const dayIdx = (now.getUTCDay() + 6) % 7; // 0 = Monday
+  const thisWeekStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - dayIdx),
+  );
+  const buckets: { weekStart: string; start: number; sum: number; count: number }[] = [];
+  for (let i = WEEKS - 1; i >= 0; i--) {
+    const start = thisWeekStart.getTime() - i * msPerWeek;
+    buckets.push({
+      weekStart: new Date(start).toISOString().slice(0, 10),
+      start,
+      sum: 0,
+      count: 0,
+    });
+  }
+  const windowStart = buckets[0].start;
+
+  const distribution: [number, number, number, number, number] = [0, 0, 0, 0, 0];
+  let total = 0;
+  let sum = 0;
+  let lowCount = 0;
+
+  // Single pass over all feedback (small volume at this scale). Only fields we
+  // need are projected; no PII beyond stars/created_at is read here.
+  const cursor = col
+    .find({}, { projection: { stars: 1, created_at: 1 } })
+    .sort({ created_at: -1 });
+  for await (const d of cursor) {
+    const stars = d.stars;
+    if (!Number.isInteger(stars) || stars < 1 || stars > 5) continue;
+    total += 1;
+    sum += stars;
+    distribution[stars - 1] += 1;
+    if (stars <= 3) lowCount += 1;
+    const t = new Date(d.created_at).getTime();
+    if (t >= windowStart) {
+      const idx = Math.min(WEEKS - 1, Math.floor((t - windowStart) / msPerWeek));
+      if (idx >= 0) {
+        buckets[idx].sum += stars;
+        buckets[idx].count += 1;
+      }
+    }
+  }
+
+  return {
+    total,
+    average: total ? Math.round((sum / total) * 10) / 10 : null,
+    lowCount,
+    distribution,
+    weeklyTrend: buckets.map((b) => ({
+      weekStart: b.weekStart,
+      average: b.count ? Math.round((b.sum / b.count) * 10) / 10 : null,
+      count: b.count,
+    })),
   };
 }

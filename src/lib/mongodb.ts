@@ -96,4 +96,7 @@ export const Collections = {
   parentEvents: "parent_events",
   // Operations — persisted app settings (feature flags), a single fixed doc
   settings: "app_settings",
+  // Parent sentiment: voluntary star + comment feedback (parent-scoped). Powers
+  // the admin sentiment view. NEVER written for/by a child.
+  feedback: "feedback",
 } as const;

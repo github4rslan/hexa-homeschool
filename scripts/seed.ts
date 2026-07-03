@@ -174,6 +174,12 @@ async function main() {
     );
     await db.collection("parent_events").createIndex({ parent_id: 1, created_at: -1 });
 
+    // Parent sentiment feedback: newest-first admin reads (trend + stream) and
+    // per-parent history lookups. Parent-scoped, ownership-safe in repo.ts.
+    await db.collection("feedback").createIndex({ created_at: -1 });
+    await db.collection("feedback").createIndex({ parent_id: 1, created_at: -1 });
+    await db.collection("feedback").createIndex({ stars: 1, created_at: -1 });
+
     console.log("✓ Indexes ensured.");
     console.log("\n✅ Seed complete.");
   } finally {
