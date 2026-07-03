@@ -221,6 +221,9 @@ export class NarrationController {
     try {
       await a.play();
     } catch {
+      if (myToken === this.token) {
+        this.playSpeechFallback(t, myToken);
+      }
       // Autoplay blocked or interrupted by a newer play — silent; the visible
       // replay control remains the affordance.
     }
