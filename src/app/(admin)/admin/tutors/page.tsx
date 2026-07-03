@@ -9,6 +9,7 @@ import { listTutorBookingsAsStaff } from "@/lib/db/repo";
 import { TutorSessionForm } from "./tutor-session-form";
 
 export const metadata: Metadata = { title: "Admin · Tutor Marketplace" };
+export const dynamic = "force-dynamic";
 
 const TUTORS = [
   { id: "tut_001", name: "Dr. K. Patel", domains: ["mathematics"], status: "active", rating: 4.9, responseTime: 7, sessions: 142, dbsExpiry: "2027-08-12" },
