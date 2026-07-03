@@ -3,8 +3,15 @@ import { Activity } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/sidebar";
 import { MetricCard } from "@/components/admin/metric-card";
 import { Card } from "@/components/ui/card";
-import { adminEscalationQueue, escalationStats } from "@/lib/db/repo";
-import { EscalationRow } from "@/components/admin/escalation-row";
+import {
+  adminEscalationQueue,
+  escalationStats,
+  listThreadMessagesAsStaff,
+} from "@/lib/db/repo";
+import {
+  EscalationRow,
+  type AdminThreadMessage,
+} from "@/components/admin/escalation-row";
 import { slaState } from "@/lib/engine/escalation-sla";
 
 export const metadata: Metadata = { title: "Admin · Escalations" };
@@ -40,6 +47,22 @@ export default async function EscalationsPage() {
       slaState({ severity: e.severity, status: e.status, created_at: e.createdAt })
         .alarm,
   ).length;
+
+  const messagesByEscalation = new Map<string, AdminThreadMessage[]>();
+  await Promise.all(
+    sorted.map(async (e) => {
+      const messages = await listThreadMessagesAsStaff("escalation", e.id);
+      messagesByEscalation.set(
+        e.id,
+        messages.map((m) => ({
+          id: m._id!.toHexString(),
+          sender: m.sender,
+          body: m.body,
+          createdAt: m.created_at.toISOString(),
+        })),
+      );
+    }),
+  );
 
   return (
     <>
@@ -86,7 +109,11 @@ export default async function EscalationsPage() {
           {sorted.length > 0 ? (
             <div className="divide-y divide-white/5">
               {sorted.map((e) => (
-                <EscalationRow key={e.id} esc={e} />
+                <EscalationRow
+                  key={e.id}
+                  esc={e}
+                  initialMessages={messagesByEscalation.get(e.id) ?? []}
+                />
               ))}
             </div>
           ) : (
