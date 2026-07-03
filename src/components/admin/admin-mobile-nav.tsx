@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
@@ -23,8 +24,12 @@ export function AdminMobileNav() {
   const pathname = usePathname();
   const identity = useAdminIdentity();
   const [open, setOpen] = useState(false);
+  // Portal target only exists after mount (avoids SSR/hydration mismatch).
+  const [mounted, setMounted] = useState(false);
   const drawerRef = useRef<HTMLElement>(null);
   const close = useCallback(() => setOpen(false), []);
+
+  useEffect(() => setMounted(true), []);
 
   useFocusTrap(drawerRef, open, close);
 
@@ -55,9 +60,15 @@ export function AdminMobileNav() {
         <Menu className="h-5 w-5" />
       </button>
 
-      <AnimatePresence>
-        {open && (
-          <div className="lg:hidden fixed inset-0 z-[60]">
+      {/* Portal to <body>: the AdminTopbar header has backdrop-blur, which makes
+          it the containing block for fixed descendants — a nested drawer would be
+          clipped to the 64px header. Rendering under <body> lets `fixed inset-0`
+          resolve against the viewport (full-height drawer). */}
+      {mounted &&
+        createPortal(
+          <AnimatePresence>
+            {open && (
+              <div className="lg:hidden fixed inset-0 z-[60]">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -158,7 +169,9 @@ export function AdminMobileNav() {
             </motion.aside>
           </div>
         )}
-      </AnimatePresence>
+          </AnimatePresence>,
+          document.body,
+        )}
     </>
   );
 }
