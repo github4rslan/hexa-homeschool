@@ -326,8 +326,8 @@ export default async function DashboardPage() {
         {review && <WeekInReview review={review} variant="parent" />}
 
         <section className="mb-10">
-          <div className="flex items-center justify-between mb-6">
-            <div>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+            <div className="min-w-0">
               <h2 className="text-2xl font-semibold text-fog-50">This week</h2>
               <p className="text-sm text-fog-400 mt-1">
                 Snapshot of household activity and compliance status
