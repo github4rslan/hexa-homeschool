@@ -2011,6 +2011,36 @@ export async function getQuestions(
   return col.find(query).limit(limit).toArray();
 }
 
+export async function createQuestion(input: {
+  topicTag: string;
+  subject: Subject;
+  tier: number;
+  keyStage: number;
+  kind: QuestionDoc["kind"];
+  prompt: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}): Promise<QuestionDoc | null> {
+  const topic = await getTopic(input.topicTag);
+  if (!topic || topic.subject !== input.subject) return null;
+  const col = await getCollection<QuestionDoc>(Collections.questions);
+  const doc: QuestionDoc = {
+    topic_tag: input.topicTag,
+    subject: input.subject,
+    tier: input.tier,
+    key_stage: input.keyStage,
+    kind: input.kind,
+    prompt: input.prompt,
+    options: input.options,
+    correct_index: input.correctIndex,
+    explanation: input.explanation,
+    created_at: new Date(),
+  };
+  const res = await col.insertOne(doc);
+  return { ...doc, _id: res.insertedId };
+}
+
 export async function getQuestionById(
   questionId: string,
 ): Promise<QuestionDoc | null> {
