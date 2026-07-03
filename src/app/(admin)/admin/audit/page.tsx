@@ -95,13 +95,6 @@ export default async function AuditPage({
             </button>
           </form>
 
-          <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-white/5 bg-white/[0.02] text-[10px] font-mono uppercase tracking-widest text-fog-500">
-            <div className="col-span-3">Timestamp</div>
-            <div className="col-span-4">Staff</div>
-            <div className="col-span-3">Action</div>
-            <div className="col-span-2">Target</div>
-          </div>
-
           {entries.length === 0 ? (
             <div className="px-6 py-16 text-center">
               <FileText className="mx-auto mb-3 h-6 w-6 text-fog-600" />
@@ -110,27 +103,44 @@ export default async function AuditPage({
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-white/5 font-mono text-xs">
+            <ul className="divide-y divide-white/5">
               {entries.map((e) => (
-                <div
+                <li
                   key={e.id}
-                  className="px-6 py-3 hover:bg-white/[0.02] transition-colors grid grid-cols-12 gap-4 items-center"
+                  className="px-4 sm:px-6 py-4 hover:bg-white/[0.02] transition-colors"
                 >
-                  <div className="col-span-3 text-fog-500 tabular-nums">
-                    {e.createdAt.toLocaleString("en-GB")}
-                  </div>
-                  <div className="col-span-4 text-fog-100 truncate">{e.staffEmail}</div>
-                  <div className="col-span-3">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="violet" size="sm">
                       {e.action}
                     </Badge>
+                    <span className="text-xs text-fog-100 font-mono truncate max-w-full">
+                      {e.staffEmail}
+                    </span>
+                    <span className="ml-auto text-[11px] text-fog-500 font-mono tabular-nums">
+                      {e.createdAt.toLocaleString("en-GB")}
+                    </span>
                   </div>
-                  <div className="col-span-2 text-fog-500 truncate">
-                    {e.targetId ?? "—"}
-                  </div>
-                </div>
+                  {(e.before || e.after) && (
+                    <div className="mt-1.5 text-xs text-fog-400 font-mono break-words">
+                      <span className="text-fog-600">{e.before ?? "—"}</span>
+                      <span className="mx-1.5 text-fog-600">→</span>
+                      <span className="text-fog-200">{e.after ?? "—"}</span>
+                    </div>
+                  )}
+                  {e.reason && (
+                    <div className="mt-1 text-xs text-fog-300 break-words">
+                      <span className="text-fog-600">Reason: </span>
+                      {e.reason}
+                    </div>
+                  )}
+                  {e.targetId && (
+                    <div className="mt-1 text-[10px] text-fog-600 font-mono truncate">
+                      target: {e.targetCollection ?? "—"} / {e.targetId}
+                    </div>
+                  )}
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </Card>
         <p className="mt-3 text-xs text-fog-500">

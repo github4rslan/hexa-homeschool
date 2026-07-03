@@ -9,6 +9,7 @@ import {
   PoundSterling,
   Settings,
   ShieldAlert,
+  UserCog,
   Users,
 } from "lucide-react";
 
@@ -35,7 +36,6 @@ export const NAV: NavGroup[] = [
         label: "Escalations",
         href: "/admin/escalations",
         icon: ShieldAlert,
-        badge: { value: "7", variant: "crimson" },
       },
       { label: "Agent activity", href: "/admin/agents", icon: Network },
       { label: "Audit log", href: "/admin/audit", icon: ClipboardList },
@@ -50,10 +50,14 @@ export const NAV: NavGroup[] = [
         icon: Users,
       },
       {
+        label: "Staff & access",
+        href: "/admin/staff",
+        icon: UserCog,
+      },
+      {
         label: "Tutors",
         href: "/admin/tutors",
         icon: GraduationCap,
-        badge: { value: "3", variant: "amber" },
       },
     ],
   },
@@ -64,7 +68,6 @@ export const NAV: NavGroup[] = [
         label: "Dossiers & DSARs",
         href: "/admin/compliance",
         icon: AlertOctagon,
-        badge: { value: "2", variant: "violet" },
       },
     ],
   },
