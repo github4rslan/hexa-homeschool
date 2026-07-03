@@ -54,6 +54,16 @@ export async function login(formData: FormData) {
     redirect(invalid);
   }
 
+  // Suspended accounts are refused sign-in (reversible — staff can unsuspend).
+  // Checked after the password so it doesn't leak suspension state to attackers.
+  if (parent.suspended === true) {
+    redirect(
+      `/login?error=${encodeURIComponent(
+        "This account is suspended. Please contact support.",
+      )}`,
+    );
+  }
+
   // Require a verified email — but only when email sending is actually
   // configured, and only for accounts explicitly marked unverified. Legacy
   // rows (email_verified === undefined) are treated as verified. Send a fresh

@@ -46,6 +46,26 @@ export interface ParentDoc {
    */
   role?: "admin" | "support";
   /**
+   * Staff-role provenance (accountability): the admin account id that last
+   * granted/changed this account's staff role, and when. Absent on legacy
+   * grants made by editing Atlas directly. Set by the audited admin UI.
+   */
+  role_granted_by?: ObjectId | null;
+  role_granted_at?: Date | null;
+  /**
+   * Account suspension (reversible). When true, login is refused with a support
+   * message; unsuspending restores access. Set only via the audited admin UI;
+   * never self-serve. Absent/false = active.
+   */
+  suspended?: boolean;
+  suspended_at?: Date | null;
+  /**
+   * Manual (comp/override) billing flag. True when staff set the tier/status
+   * directly rather than via Stripe Checkout/webhook — surfaced in the admin UI
+   * as "manual — not Stripe-synced" so billing state is never silently desynced.
+   */
+  billing_manual_override?: boolean;
+  /**
    * Dedicated post-deploy smoke-test account. Excluded from PostHog analytics
    * and ALL lifecycle/onboarding emails so CI runs don't pollute product data
    * or send real email. Set only by `npm run smoke:setup`.
@@ -458,10 +478,21 @@ export interface StaffAuditLogDoc {
   _id?: ObjectId;
   staff_id: ObjectId;
   staff_email: string;
-  /** e.g. "escalation.acknowledge", "escalation.view", "message.reply". */
+  /** e.g. "escalation.acknowledge", "staff.role.grant", "family.delete". */
   action: string;
   /** Canonical collection the action targeted, when applicable. */
   target_collection?: string | null;
   target_id?: string | null;
+  /**
+   * Operator-supplied justification. REQUIRED for every privileged family/staff
+   * mutation (role change, tier change, suspend, delete); optional for the
+   * lower-risk escalation transitions that predate it.
+   */
+  reason?: string | null;
+  /** Human-readable before → after snapshot of the changed field(s). */
+  before?: string | null;
+  after?: string | null;
+  /** Best-effort request IP (accountability); never used to profile a child. */
+  ip?: string | null;
   created_at: Date;
 }
