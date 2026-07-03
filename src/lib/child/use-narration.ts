@@ -69,6 +69,7 @@ export class NarrationController {
   /** Monotonic play generation — a play whose token is stale must not start. */
   private token = 0;
   private currentText: string | null = null;
+  private usingSpeechFallback = false;
   private playingState = false;
   private loadingState = false;
   private listeners = new Set<() => void>();
@@ -111,6 +112,44 @@ export class NarrationController {
       this.audio = a;
     }
     return this.audio;
+  }
+
+  private stopSpeechFallback(): void {
+    if (typeof speechSynthesis !== "undefined") {
+      speechSynthesis.cancel();
+    }
+    this.usingSpeechFallback = false;
+  }
+
+  private playSpeechFallback(text: string, token: number): void {
+    if (
+      typeof speechSynthesis === "undefined" ||
+      typeof SpeechSynthesisUtterance === "undefined"
+    ) {
+      return;
+    }
+    this.stopSpeechFallback();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.92;
+    utterance.pitch = 1;
+    utterance.onstart = () => {
+      if (token === this.token) this.setPlaying(true);
+    };
+    utterance.onend = () => {
+      if (token === this.token) {
+        this.usingSpeechFallback = false;
+        this.setPlaying(false);
+      }
+    };
+    utterance.onerror = () => {
+      if (token === this.token) {
+        this.usingSpeechFallback = false;
+        this.setPlaying(false);
+      }
+    };
+    this.currentText = text;
+    this.usingSpeechFallback = true;
+    speechSynthesis.speak(utterance);
   }
 
   private key(text: string, opts: FetchOpts): string {
@@ -162,12 +201,17 @@ export class NarrationController {
     // Claim this generation up front. Any older in-flight play is now stale, and
     // `stop()` (which also bumps the token) will invalidate THIS one.
     const myToken = ++this.token;
+    this.stopSpeechFallback();
+    this.audio?.pause();
     this.setLoading(true);
     const url = await this.fetchUrl(t, opts);
     // Superseded by a newer play, or cancelled by stop(), while we were fetching.
     if (myToken !== this.token) return;
     this.setLoading(false);
-    if (!url) return; // unavailable — stay silent
+    if (!url) {
+      this.playSpeechFallback(t, myToken);
+      return;
+    }
     const a = this.getAudio();
     if (!a) return;
     a.pause();
@@ -185,6 +229,12 @@ export class NarrationController {
   async toggle(text: string, opts: FetchOpts = {}): Promise<void> {
     const t = text.trim();
     if (!t) return;
+    if (this.usingSpeechFallback && this.currentText === t) {
+      this.token++;
+      this.stopSpeechFallback();
+      this.setPlaying(false);
+      return;
+    }
     const a = this.audio;
     if (a && this.currentText === t && a.src) {
       if (!a.paused) {
@@ -207,6 +257,7 @@ export class NarrationController {
   stop(): void {
     // Invalidate any in-flight play so it can't start after we stop.
     this.token++;
+    this.stopSpeechFallback();
     this.audio?.pause();
     this.setPlaying(false);
     this.setLoading(false);
