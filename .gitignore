@@ -68,3 +68,6 @@ dev-*.log
 # Local-only bug/audit findings reports (never publish to the public repo)
 docs/bug-audit.md
 docs/bug-fix.md
+
+# Root-level screenshot artifacts (harness output; regenerable)
+/marketing-*.png
