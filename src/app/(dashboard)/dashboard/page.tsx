@@ -33,7 +33,10 @@ import {
   type TodayCard as TodayCardData,
   weekInReview,
   listActivityFeed,
+  getFeedbackPromptContext,
 } from "@/lib/db/repo";
+import { shouldShowFeedbackPrompt } from "@/lib/engine/feedback-eligibility";
+import { FeedbackPrompt, FeedbackButton } from "@/components/dashboard/feedback-widget";
 import { readActiveChildId } from "@/lib/active-child";
 import { isOnboardingDismissed } from "@/lib/onboarding-dismiss";
 import { birthdayAge } from "@/lib/child/birthday";
@@ -244,6 +247,12 @@ export default async function DashboardPage() {
   // Week in Review ("Edway Wrapped") for the active child.
   const review = activeChild ? await weekInReview(parentId!, activeChild) : null;
 
+  // Voluntary sentiment prompt — shown ONLY after a real milestone, at most once
+  // per cooldown, always dismissible (pure decision, unit-tested). Parent-side
+  // only; the widget is never mounted in any (child) route.
+  const fbContext = await getFeedbackPromptContext(parentId!);
+  const feedbackDecision = shouldShowFeedbackPrompt(fbContext.state, fbContext.signal);
+
   // Birthday: one tasteful banner if any child has a birthday today.
   const birthdayChild = kids
     .map((k) => ({ name: k.full_name.split(" ")[0], age: birthdayAge(k.date_of_birth) }))
@@ -324,10 +333,13 @@ export default async function DashboardPage() {
                 Snapshot of household activity and compliance status
               </p>
             </div>
-            <Button href="/dashboard/children/new" variant="primary" size="md">
-              <Plus className="h-4 w-4" />
-              Add child
-            </Button>
+            <div className="flex items-center gap-3">
+              <FeedbackButton />
+              <Button href="/dashboard/children/new" variant="primary" size="md">
+                <Plus className="h-4 w-4" />
+                Add child
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -455,6 +467,10 @@ export default async function DashboardPage() {
           </Card>
         </section>
       </div>
+
+      {feedbackDecision.show && feedbackDecision.trigger && (
+        <FeedbackPrompt trigger={feedbackDecision.trigger} />
+      )}
     </>
   );
 }
