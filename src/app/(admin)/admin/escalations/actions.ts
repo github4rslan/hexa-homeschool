@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
 import {
   findParentById,
+  postMessageAsStaff,
   updateEscalationStatus,
   recordStaffAction,
 } from "@/lib/db/repo";
 import { resolveRole, can } from "@/lib/auth/rbac";
+import { validateMessageBody } from "@/lib/messaging/validate";
 
 export interface EscalationActionResult {
   ok: boolean;
@@ -25,6 +27,21 @@ async function requireManage(): Promise<
     : null;
   if (!can(role, "escalation.manage")) {
     return { error: "You don't have permission to manage escalations." };
+  }
+  return { staffId: session.id, staffEmail: session.email ?? "staff" };
+}
+
+async function requireReply(): Promise<
+  { staffId: string; staffEmail: string } | { error: string }
+> {
+  const session = await getSession();
+  if (!session) return { error: "Not signed in." };
+  const parent = await findParentById(session.id);
+  const role = parent
+    ? resolveRole({ role: parent.role, is_admin: parent.is_admin })
+    : null;
+  if (!can(role, "messaging.reply")) {
+    return { error: "You don't have permission to reply to escalation messages." };
   }
   return { staffId: session.id, staffEmail: session.email ?? "staff" };
 }
@@ -65,6 +82,33 @@ export async function resolveEscalation(
     note: String(formData.get("note") || "") || undefined,
   });
   if (!ok) return { ok: false, error: "Could not update." };
+  revalidatePath("/admin/escalations");
+  return { ok: true };
+}
+
+export async function sendStaffEscalationMessage(
+  formData: FormData,
+): Promise<EscalationActionResult> {
+  const auth = await requireReply();
+  if ("error" in auth) return { ok: false, error: auth.error };
+
+  const escalationId = String(formData.get("escalationId") || "");
+  if (!escalationId) return { ok: false, error: "Missing escalation." };
+
+  const valid = validateMessageBody(formData.get("body"));
+  if (!valid.ok) return { ok: false, error: valid.error };
+
+  const posted = await postMessageAsStaff("escalation", escalationId, valid.body);
+  if (!posted) return { ok: false, error: "Could not find that escalation thread." };
+
+  await recordStaffAction({
+    staffId: auth.staffId,
+    staffEmail: auth.staffEmail,
+    action: "escalation.message.reply",
+    targetCollection: "escalations",
+    targetId: escalationId,
+  });
+
   revalidatePath("/admin/escalations");
   return { ok: true };
 }
