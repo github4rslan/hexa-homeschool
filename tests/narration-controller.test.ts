@@ -17,6 +17,7 @@ import { NarrationController } from "@/lib/child/use-narration";
 /** Resolvers keyed by the narration text, so a test can resolve out of order. */
 let resolvers: Map<string, (v: { ok: boolean; blob: () => Promise<string> }) => void>;
 let audios: FakeAudio[];
+let spoken: FakeUtterance[];
 
 class FakeAudio {
   src = "";
@@ -39,9 +40,22 @@ class FakeAudio {
   }
 }
 
+class FakeUtterance {
+  text: string;
+  rate = 1;
+  pitch = 1;
+  onstart: (() => void) | null = null;
+  onend: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  constructor(text: string) {
+    this.text = text;
+  }
+}
+
 beforeEach(() => {
   resolvers = new Map();
   audios = [];
+  spoken = [];
 
   vi.stubGlobal(
     "fetch",
@@ -59,6 +73,17 @@ beforeEach(() => {
   // blob (which is the text) into the url so assertions can read it back.
   const fakeURL = { createObjectURL: (blob: string) => `blob:${blob}` };
   vi.stubGlobal("URL", fakeURL);
+  vi.stubGlobal("SpeechSynthesisUtterance", FakeUtterance);
+  vi.stubGlobal("speechSynthesis", {
+    speak: vi.fn((utterance: FakeUtterance) => {
+      spoken.push(utterance);
+      utterance.onstart?.();
+    }),
+    cancel: vi.fn(() => {
+      const current = spoken.at(-1);
+      current?.onend?.();
+    }),
+  });
 });
 
 afterEach(() => {
@@ -70,6 +95,12 @@ function resolveTts(text: string) {
   const r = resolvers.get(text);
   if (!r) throw new Error(`no pending fetch for "${text}"`);
   r({ ok: true, blob: async () => text });
+}
+
+function rejectTts(text: string) {
+  const r = resolvers.get(text);
+  if (!r) throw new Error(`no pending fetch for "${text}"`);
+  r({ ok: false, blob: async () => text });
 }
 
 /** Let queued microtasks (the awaited fetch/play chain) settle. */
@@ -136,5 +167,29 @@ describe("NarrationController", () => {
 
     expect((fetch as unknown as { mock: { calls: unknown[] } }).mock.calls).toHaveLength(1);
     expect(audios[0].src).toBe("blob:A");
+  });
+
+  it("falls back to browser speech when /api/tts is unavailable", async () => {
+    const c = new NarrationController();
+
+    void c.playText("A");
+    rejectTts("A");
+    await flush();
+
+    expect(spoken).toHaveLength(1);
+    expect(spoken[0].text).toBe("A");
+    expect(c.getPlaying()).toBe(true);
+  });
+
+  it("stops browser speech fallback", async () => {
+    const c = new NarrationController();
+
+    void c.playText("A");
+    rejectTts("A");
+    await flush();
+    c.stop();
+
+    expect(speechSynthesis.cancel).toHaveBeenCalled();
+    expect(c.getPlaying()).toBe(false);
   });
 });
