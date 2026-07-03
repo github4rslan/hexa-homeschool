@@ -25,6 +25,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith("/dashboard") ||
     path.startsWith("/onboarding") ||
     path.startsWith("/admin") ||
+    path.startsWith("/tutor") ||
     path.startsWith("/lesson") ||
     path.startsWith("/portfolio") ||
     path.startsWith("/settings") ||

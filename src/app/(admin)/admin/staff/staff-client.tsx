@@ -14,6 +14,7 @@ import {
 const roleBadge = {
   admin: { label: "Admin", variant: "violet" as const },
   support: { label: "Support", variant: "cyan" as const },
+  tutor: { label: "Tutor", variant: "neon" as const },
 };
 
 function Feedback({ result }: { result: ActionResult | null }) {
@@ -100,6 +101,7 @@ function GrantForm() {
               className="h-11 rounded-lg bg-white/[0.03] border border-white/10 px-3 text-sm text-fog-50 focus:outline-none focus:border-violet-400/60"
             >
               <option value="support">Support</option>
+              <option value="tutor">Tutor</option>
               <option value="admin">Admin</option>
             </select>
           </label>
@@ -193,6 +195,7 @@ function StaffRow({ member, isSelf }: { member: StaffMember; isSelf: boolean }) 
               className="h-10 rounded-lg bg-white/[0.03] border border-white/10 px-3 text-sm text-fog-50 focus:outline-none focus:border-violet-400/60"
             >
               <option value="support">Support</option>
+              <option value="tutor">Tutor</option>
               <option value="admin">Admin</option>
               <option value="none">Revoke (normal parent)</option>
             </select>

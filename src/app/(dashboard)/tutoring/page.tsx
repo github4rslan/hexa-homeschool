@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Users, Check, Clock, ShieldAlert } from "lucide-react";
+import { Users, Check, Clock, ShieldAlert, Video } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -265,6 +265,30 @@ export default async function TutoringPage({
                         This topic is resting until a tutor helps — nothing is
                         marked against your child, and their other lessons carry
                         on as normal.
+                      </p>
+                    )}
+                    {b.status === "scheduled" && (
+                      <div className="mt-3 rounded-xl border border-violet-400/20 bg-violet-500/5 p-3">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <div className="flex-1 text-sm text-fog-200">
+                            {b.scheduled_at
+                              ? new Date(b.scheduled_at).toLocaleString("en-GB", {
+                                  dateStyle: "medium",
+                                  timeStyle: "short",
+                                })
+                              : "Tutor session scheduled"}
+                            {b.duration_minutes ? ` · ${b.duration_minutes} min` : ""}
+                          </div>
+                          <Button href={`/tutoring/session/${id}`} variant="secondary" size="sm">
+                            <Video className="h-4 w-4" />
+                            Join room
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    {b.status === "completed" && b.tutor_note && (
+                      <p className="mt-3 rounded-xl border border-neon-400/20 bg-neon-500/5 p-3 text-sm text-fog-200">
+                        Tutor note: {b.tutor_note}
                       </p>
                     )}
                     <div className="mt-3">

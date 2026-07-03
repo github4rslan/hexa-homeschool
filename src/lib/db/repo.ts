@@ -1,7 +1,9 @@
 import "server-only";
+import { randomUUID } from "crypto";
 import { ObjectId } from "mongodb";
 import { getCollection, Collections } from "@/lib/mongodb";
 import { getSession } from "@/lib/auth/session";
+import { hashPassword } from "@/lib/auth/password";
 import { computeStreak } from "@/lib/engine/streak";
 import { sha256Hex } from "@/lib/compliance/portfolio";
 import {
@@ -3388,6 +3390,18 @@ export async function listTutorBookings(
 export interface StaffTutorRequest {
   booking: TutorBookingDoc;
   childName: string;
+  parentName: string;
+  parentEmail: string;
+  tutorName: string | null;
+  tutorEmail: string | null;
+}
+
+export interface TutorAccount {
+  id: string;
+  name: string;
+  email: string;
+  active: boolean;
+  createdAt: Date;
 }
 
 export async function listTutorBookingsAsStaff(
@@ -3402,16 +3416,248 @@ export async function listTutorBookingsAsStaff(
   if (bookings.length === 0) return [];
 
   const childIds = bookings.map((b) => b.child_id);
+  const parentIds = bookings.map((b) => b.parent_id);
+  const tutorIds = bookings
+    .map((b) => b.assigned_tutor_id)
+    .filter((id): id is ObjectId => !!id);
   const children = await (
     await getCollection<ChildDoc>(Collections.children)
   )
     .find({ _id: { $in: childIds } })
     .toArray();
-  const nameById = new Map(children.map((c) => [c._id!.toHexString(), c.full_name]));
+  const parentsCol = await getCollection<ParentDoc>(Collections.parents);
+  const parents = await parentsCol.find({ _id: { $in: parentIds } }).toArray();
+  const tutors =
+    tutorIds.length > 0
+      ? await parentsCol.find({ _id: { $in: tutorIds } }).toArray()
+      : [];
+  const childNameById = new Map(children.map((c) => [c._id!.toHexString(), c.full_name]));
+  const parentById = new Map(parents.map((p) => [p._id!.toHexString(), p]));
+  const tutorById = new Map(tutors.map((p) => [p._id!.toHexString(), p]));
   return bookings.map((booking) => ({
     booking,
-    childName: nameById.get(booking.child_id.toHexString()) ?? "Child",
+    childName: childNameById.get(booking.child_id.toHexString()) ?? "Child",
+    parentName: parentById.get(booking.parent_id.toHexString())?.full_name ?? "Parent",
+    parentEmail: parentById.get(booking.parent_id.toHexString())?.email ?? "",
+    tutorName: booking.assigned_tutor_id
+      ? tutorById.get(booking.assigned_tutor_id.toHexString())?.full_name ?? null
+      : null,
+    tutorEmail: booking.assigned_tutor_id
+      ? tutorById.get(booking.assigned_tutor_id.toHexString())?.email ?? null
+      : null,
   }));
+}
+
+export async function listTutorAccounts(): Promise<TutorAccount[]> {
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const rows = await col
+    .find({ role: "tutor" })
+    .sort({ full_name: 1, email: 1 })
+    .toArray();
+  return rows.map((r) => ({
+    id: r._id!.toHexString(),
+    name: r.full_name ?? r.email,
+    email: r.email,
+    active: r.suspended !== true,
+    createdAt: r.created_at,
+  }));
+}
+
+export async function createTutorAccountAsAdmin(input: {
+  actorId: string;
+  actorEmail: string;
+  email: string;
+  fullName: string;
+  temporaryPassword: string;
+  reason: string;
+  ip?: string | null;
+}): Promise<{ ok: boolean; error?: string; tutorId?: string }> {
+  const reasonCheck = requireReason(input.reason);
+  if (!reasonCheck.ok) return reasonCheck;
+  const email = input.email.trim().toLowerCase();
+  const fullName = input.fullName.trim();
+  if (!email || !email.includes("@")) return { ok: false, error: "Valid tutor email is required." };
+  if (!fullName) return { ok: false, error: "Tutor name is required." };
+  if (input.temporaryPassword.length < 8) {
+    return { ok: false, error: "Temporary password must be at least 8 characters." };
+  }
+
+  const actor = await findParentById(input.actorId);
+  const actorRole = actor
+    ? resolveRole({ role: actor.role, is_admin: actor.is_admin })
+    : null;
+  if (actorRole !== "admin") return { ok: false, error: "Only an admin can create tutor accounts." };
+
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const existing = await col.findOne({ email });
+  if (existing) return { ok: false, error: "An account already exists with that email." };
+
+  const now = new Date();
+  const res = await col.insertOne({
+    email,
+    full_name: fullName,
+    password_hash: await hashPassword(input.temporaryPassword),
+    email_verified: true,
+    role: "tutor",
+    role_granted_by: toObjectId(input.actorId),
+    role_granted_at: now,
+    subscription_tier: "diagnostic",
+    billing_status: "trialing",
+    created_at: now,
+    updated_at: now,
+  } as ParentDoc);
+
+  await recordStaffAction({
+    staffId: input.actorId,
+    staffEmail: input.actorEmail,
+    action: "tutor.account.create",
+    targetCollection: Collections.parents,
+    targetId: res.insertedId.toHexString(),
+    reason: input.reason,
+    after: "tutor",
+    ip: input.ip ?? null,
+  });
+  return { ok: true, tutorId: res.insertedId.toHexString() };
+}
+
+function makeJitsiRoomName(bookingId: string): string {
+  return `edway-${bookingId}-${randomUUID().replace(/-/g, "").slice(0, 12)}`;
+}
+
+export async function scheduleTutorBookingAsStaff(input: {
+  staffId: string;
+  staffEmail: string;
+  bookingId: string;
+  tutorId: string;
+  scheduledAt: Date;
+  durationMinutes: number;
+  reason: string;
+  ip?: string | null;
+}): Promise<{ ok: boolean; error?: string }> {
+  const reasonCheck = requireReason(input.reason);
+  if (!reasonCheck.ok) return reasonCheck;
+  const bookingOid = toObjectId(input.bookingId);
+  const tutorOid = toObjectId(input.tutorId);
+  if (!bookingOid || !tutorOid) return { ok: false, error: "Invalid booking or tutor." };
+  if (!Number.isFinite(input.scheduledAt.getTime())) {
+    return { ok: false, error: "Choose a valid date and time." };
+  }
+  if (input.durationMinutes < 15 || input.durationMinutes > 120) {
+    return { ok: false, error: "Duration must be between 15 and 120 minutes." };
+  }
+
+  const actor = await findParentById(input.staffId);
+  const actorRole = actor
+    ? resolveRole({ role: actor.role, is_admin: actor.is_admin })
+    : null;
+  if (actorRole !== "admin") return { ok: false, error: "Only an admin can schedule tutor sessions." };
+
+  const tutor = await findParentById(input.tutorId);
+  if (!tutor || resolveRole({ role: tutor.role, is_admin: tutor.is_admin }) !== "tutor") {
+    return { ok: false, error: "Choose a tutor account." };
+  }
+
+  const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
+  const booking = await col.findOne({ _id: bookingOid });
+  if (!booking) return { ok: false, error: "Booking not found." };
+  if (booking.status === "completed" || booking.status === "cancelled") {
+    return { ok: false, error: "This booking is already closed." };
+  }
+
+  const before = `${booking.status}:${booking.assigned_tutor_id?.toHexString() ?? "unassigned"}`;
+  const roomName = booking.video_room_name || makeJitsiRoomName(input.bookingId);
+  await col.updateOne(
+    { _id: bookingOid },
+    {
+      $set: {
+        assigned_tutor_id: tutorOid,
+        scheduled_at: input.scheduledAt,
+        duration_minutes: input.durationMinutes,
+        video_provider: "jitsi",
+        video_room_name: roomName,
+        status: "scheduled",
+      },
+    },
+  );
+
+  await recordStaffAction({
+    staffId: input.staffId,
+    staffEmail: input.staffEmail,
+    action: "tutor.session.schedule",
+    targetCollection: Collections.tutorBookings,
+    targetId: input.bookingId,
+    reason: input.reason,
+    before,
+    after: `scheduled:${input.tutorId}:${input.scheduledAt.toISOString()}`,
+    ip: input.ip ?? null,
+  });
+  return { ok: true };
+}
+
+export interface TutorSessionDetail {
+  booking: TutorBookingDoc;
+  childName: string;
+  parentName: string;
+  parentEmail: string;
+  tutorName: string | null;
+  tutorEmail: string | null;
+}
+
+async function hydrateTutorBooking(booking: TutorBookingDoc): Promise<TutorSessionDetail> {
+  const [child, parent, tutor] = await Promise.all([
+    (await getCollection<ChildDoc>(Collections.children)).findOne({ _id: booking.child_id }),
+    (await getCollection<ParentDoc>(Collections.parents)).findOne({ _id: booking.parent_id }),
+    booking.assigned_tutor_id
+      ? (await getCollection<ParentDoc>(Collections.parents)).findOne({ _id: booking.assigned_tutor_id })
+      : Promise.resolve(null),
+  ]);
+  return {
+    booking,
+    childName: child?.full_name ?? "Child",
+    parentName: parent?.full_name ?? "Parent",
+    parentEmail: parent?.email ?? "",
+    tutorName: tutor?.full_name ?? null,
+    tutorEmail: tutor?.email ?? null,
+  };
+}
+
+export async function getTutorBookingForParent(
+  parentId: string,
+  bookingId: string,
+): Promise<TutorSessionDetail | null> {
+  const parentOid = toObjectId(parentId);
+  const bookingOid = toObjectId(bookingId);
+  if (!parentOid || !bookingOid) return null;
+  const booking = await (await getCollection<TutorBookingDoc>(Collections.tutorBookings)).findOne({
+    _id: bookingOid,
+    parent_id: parentOid,
+  });
+  return booking ? hydrateTutorBooking(booking) : null;
+}
+
+export async function listTutorSessionsForTutor(tutorId: string): Promise<TutorSessionDetail[]> {
+  const tutorOid = toObjectId(tutorId);
+  if (!tutorOid) return [];
+  const bookings = await (await getCollection<TutorBookingDoc>(Collections.tutorBookings))
+    .find({ assigned_tutor_id: tutorOid, status: { $in: ["scheduled", "completed"] } })
+    .sort({ scheduled_at: 1, created_at: -1 })
+    .limit(50)
+    .toArray();
+  return Promise.all(bookings.map(hydrateTutorBooking));
+}
+
+export async function getTutorSessionForTutor(
+  tutorId: string,
+  bookingId: string,
+): Promise<TutorSessionDetail | null> {
+  const tutorOid = toObjectId(tutorId);
+  const bookingOid = toObjectId(bookingId);
+  if (!tutorOid || !bookingOid) return null;
+  const booking = await (await getCollection<TutorBookingDoc>(Collections.tutorBookings)).findOne({
+    _id: bookingOid,
+    assigned_tutor_id: tutorOid,
+  });
+  return booking ? hydrateTutorBooking(booking) : null;
 }
 
 /**
@@ -3427,6 +3673,7 @@ export async function logTutorSessionAsStaff(input: {
   staffEmail: string;
   bookingId: string;
   note: string;
+  tutorScoped?: boolean;
 }): Promise<{ ok: boolean; reason?: string }> {
   const bookingOid = toObjectId(input.bookingId);
   if (!bookingOid) return { ok: false, reason: "Invalid booking." };
@@ -3435,8 +3682,20 @@ export async function logTutorSessionAsStaff(input: {
   const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
   const booking = await col.findOne({ _id: bookingOid });
   if (!booking) return { ok: false, reason: "Booking not found." };
+  if (input.tutorScoped && booking.assigned_tutor_id?.toHexString() !== input.staffId) {
+    return { ok: false, reason: "This session is not assigned to you." };
+  }
 
-  await col.updateOne({ _id: bookingOid }, { $set: { status: "completed" } });
+  await col.updateOne(
+    { _id: bookingOid },
+    {
+      $set: {
+        status: "completed",
+        tutor_note: note,
+        completed_at: new Date(),
+      },
+    },
+  );
 
   // Topic-scoped handoff: feed the note back to the child's record and lift the
   // pause so the topic resumes (never demoting its competence state).
@@ -4743,11 +5002,11 @@ export interface StaffMember {
   grantedAt: Date | null;
 }
 
-/** All staff accounts (admin/support), with who granted the role and when. */
+/** All staff accounts (admin/support/tutor), with who granted the role and when. */
 export async function listStaff(): Promise<StaffMember[]> {
   const col = await getCollection<ParentDoc>(Collections.parents);
   const rows = await col
-    .find({ $or: [{ role: { $in: ["admin", "support"] } }, { is_admin: true }] })
+    .find({ $or: [{ role: { $in: ["admin", "support", "tutor"] } }, { is_admin: true }] })
     .sort({ email: 1 })
     .toArray();
 

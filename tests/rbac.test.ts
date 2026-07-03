@@ -11,6 +11,7 @@ describe("resolveRole", () => {
   it("prefers an explicit role", () => {
     expect(resolveRole({ role: "support" })).toBe("support");
     expect(resolveRole({ role: "admin" })).toBe("admin");
+    expect(resolveRole({ role: "tutor" })).toBe("tutor");
   });
 
   it("treats legacy is_admin as admin", () => {
@@ -57,6 +58,15 @@ describe("can (default-deny matrix)", () => {
     }
   });
 
+  it("tutor can only use assigned tutoring capabilities", () => {
+    expect(can("tutor", "tutor.session.read")).toBe(true);
+    expect(can("tutor", "tutor.session.complete")).toBe(true);
+    expect(can("tutor", "messaging.reply")).toBe(true);
+    expect(can("tutor", "admin.read")).toBe(false);
+    expect(can("tutor", "escalation.manage")).toBe(false);
+    expect(can("tutor", "finance.write")).toBe(false);
+  });
+
   it("a null (non-staff) role is denied everything", () => {
     expect(can(null, "admin.read")).toBe(false);
     expect(can(null, "finance.write")).toBe(false);
@@ -66,6 +76,7 @@ describe("can (default-deny matrix)", () => {
 describe("isStaff / parentCan", () => {
   it("isStaff reflects resolveRole", () => {
     expect(isStaff({ role: "support" })).toBe(true);
+    expect(isStaff({ role: "tutor" })).toBe(true);
     expect(isStaff({ is_admin: true })).toBe(true);
     expect(isStaff({})).toBe(false);
   });

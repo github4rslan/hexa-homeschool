@@ -7,7 +7,7 @@
  * absent `role` with `is_admin === true` is treated as "admin".
  */
 
-export type StaffRole = "admin" | "support";
+export type StaffRole = "admin" | "support" | "tutor";
 
 /** A capability a staff member may or may not have. */
 export type Permission =
@@ -20,7 +20,11 @@ export type Permission =
   // Write curriculum, finance, experiments, admin settings.
   | "curriculum.write"
   | "finance.write"
-  | "settings.write";
+  | "settings.write"
+  // Tutor-only session surface. Tutors can see assigned sessions, message the
+  // family on those sessions, and complete their own sessions.
+  | "tutor.session.read"
+  | "tutor.session.complete";
 
 const ADMIN_PERMS: ReadonlySet<Permission> = new Set<Permission>([
   "admin.read",
@@ -29,6 +33,8 @@ const ADMIN_PERMS: ReadonlySet<Permission> = new Set<Permission>([
   "curriculum.write",
   "finance.write",
   "settings.write",
+  "tutor.session.read",
+  "tutor.session.complete",
 ]);
 
 const SUPPORT_PERMS: ReadonlySet<Permission> = new Set<Permission>([
@@ -37,12 +43,20 @@ const SUPPORT_PERMS: ReadonlySet<Permission> = new Set<Permission>([
   "escalation.manage",
 ]);
 
+const TUTOR_PERMS: ReadonlySet<Permission> = new Set<Permission>([
+  "messaging.reply",
+  "tutor.session.read",
+  "tutor.session.complete",
+]);
+
 /** Resolve the effective role from a parent doc's fields. Null = not staff. */
 export function resolveRole(input: {
   role?: StaffRole;
   is_admin?: boolean;
 }): StaffRole | null {
-  if (input.role === "admin" || input.role === "support") return input.role;
+  if (input.role === "admin" || input.role === "support" || input.role === "tutor") {
+    return input.role;
+  }
   if (input.is_admin === true) return "admin"; // legacy
   return null;
 }
@@ -56,6 +70,7 @@ export function isStaff(input: { role?: StaffRole; is_admin?: boolean }): boolea
 export function can(role: StaffRole | null, permission: Permission): boolean {
   if (role === "admin") return ADMIN_PERMS.has(permission);
   if (role === "support") return SUPPORT_PERMS.has(permission);
+  if (role === "tutor") return TUTOR_PERMS.has(permission);
   return false;
 }
 
