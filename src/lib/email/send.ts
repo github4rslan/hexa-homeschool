@@ -39,6 +39,12 @@ export async function sendEmail(input: {
   html: string;
   /** Optional plain-text fallback (Brevo `textContent`). */
   text?: string;
+  /**
+   * Optional custom SMTP headers (Brevo `headers`). Used to attach a
+   * `List-Unsubscribe` / `List-Unsubscribe-Post` pair to marketing email so
+   * Gmail/Apple Mail render a native one-click unsubscribe (RFC 8058).
+   */
+  headers?: Record<string, string>;
 }): Promise<SendResult> {
   const key = process.env.BREVO_API_KEY;
   if (!key) {
@@ -60,6 +66,7 @@ export async function sendEmail(input: {
         subject: input.subject,
         htmlContent: input.html,
         ...(input.text ? { textContent: input.text } : {}),
+        ...(input.headers ? { headers: input.headers } : {}),
       }),
     });
     if (!res.ok) {

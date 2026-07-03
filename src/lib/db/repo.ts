@@ -38,9 +38,11 @@ import type {
   MessageDoc,
   StaffAuditLogDoc,
   ParentEventDoc,
+  ReengagementEventDoc,
   FeedbackDoc,
   Subject,
 } from "./types";
+import type { ReengStage, ReengTrack } from "@/lib/engine/reengagement";
 import type {
   FeedbackPromptState,
   FeedbackMilestoneSignal,
@@ -152,7 +154,45 @@ export async function currentParentId(): Promise<string | null> {
   const parent = await findParentById(session.id);
   if (!parent) return null;
   if ((session.tokenVersion ?? 0) !== (parent.token_version ?? 0)) return null;
+  // Throttled parent-activity heartbeat (drives the re-engagement series). At
+  // most one write/hour, gated on the already-loaded doc so hot requests skip
+  // the DB entirely. Best-effort: a write hiccup must never sign a parent out.
+  await touchParentActivity(parent).catch(() => {});
   return session.id;
+}
+
+/** At most once/hour, advance the parent's `last_active` heartbeat. */
+const ACTIVITY_THROTTLE_MS = 60 * 60 * 1000;
+async function touchParentActivity(parent: ParentDoc): Promise<void> {
+  if (!parent._id) return;
+  const now = Date.now();
+  const last = parent.last_active ? parent.last_active.getTime() : 0;
+  if (now - last < ACTIVITY_THROTTLE_MS) return; // still fresh — no write
+  const cutoff = new Date(now - ACTIVITY_THROTTLE_MS);
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  // Conditional on staleness so concurrent requests race to a single write.
+  await col.updateOne(
+    {
+      _id: parent._id,
+      $or: [
+        { last_active: { $exists: false } },
+        { last_active: { $lte: cutoff } },
+      ],
+    },
+    { $set: { last_active: new Date(now) } },
+  );
+}
+
+/** Advance `last_active` to now unconditionally (test/seed/smoke helper). */
+export async function setParentLastActive(
+  parentId: string,
+  when: Date = new Date(),
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne({ _id: oid }, { $set: { last_active: when } });
+  return res.matchedCount > 0;
 }
 
 /** Bump token_version (kills every existing session); returns the new version. */
@@ -4285,6 +4325,251 @@ export async function findDiagnosticNudgeCandidates(
   return candidates;
 }
 
+// ── Lifecycle re-engagement (win-back / upsell) ──────────
+
+export interface ReengagementCandidate {
+  parent: ParentDoc;
+  /** First name of a child, for personalisation. */
+  childFirstName: string;
+}
+
+/**
+ * Parents eligible for a re-engagement evaluation: verified, NOT opted out of
+ * marketing, not the CI smoke account, idle at least `minIdleMs`, AND already
+ * ACTIVATED (≥1 child with a recorded diagnostic evaluation). Never-activated
+ * accounts are the onboarding-rescue segment (welcome / diagnostic nudge), not
+ * this series, so they are excluded here by construction. Bounded by `limit`,
+ * oldest-idle first. The pure `decideReengagement` still re-checks every guard;
+ * this query only narrows the working set. No child is queried for behaviour —
+ * only "has this family ever started" (a parent-activation fact).
+ */
+export async function findReengagementCandidates(
+  minIdleMs: number,
+  limit = 500,
+): Promise<ReengagementCandidate[]> {
+  const parentCol = await getCollection<ParentDoc>(Collections.parents);
+  const childCol = await getCollection<ChildDoc>(Collections.children);
+  const evalCol = await getCollection<EvaluationDoc>(Collections.evaluations);
+
+  const cutoff = new Date(Date.now() - minIdleMs);
+  const parents = await parentCol
+    .find({
+      email_verified: { $ne: false },
+      is_smoke_account: { $ne: true },
+      marketing_emails_opt_out: { $ne: true },
+      last_active: { $exists: true, $lte: cutoff },
+    })
+    .sort({ last_active: 1 })
+    .limit(limit)
+    .toArray();
+
+  const candidates: ReengagementCandidate[] = [];
+  for (const parent of parents) {
+    if (!parent._id) continue;
+    const children = await childCol
+      .find({ parent_id: parent._id })
+      .sort({ created_at: 1 })
+      .toArray();
+    if (children.length === 0) continue; // no child to talk about
+
+    const childIds = children.map((c) => c._id!).filter(Boolean);
+    const hasDiagnostic = await evalCol.countDocuments({
+      child_id: { $in: childIds },
+    });
+    if (hasDiagnostic === 0) continue; // never activated — onboarding owns them
+
+    candidates.push({
+      parent,
+      childFirstName: children[0].full_name.split(" ")[0] || children[0].full_name,
+    });
+  }
+  return candidates;
+}
+
+/**
+ * Claim one re-engagement stage for a parent so it is sent at most once per idle
+ * cycle, even under overlapping cron runs — the same claim-first pattern as
+ * `claimLifecycleEmail`. `$addToSet` is idempotent, so a losing racer sees
+ * modifiedCount 0 and stands down. The smoke account never claims (never mailed).
+ * `claimKey` embeds the anchoring `last_active`, so a new cycle resets naturally.
+ */
+export async function claimReengagementStage(
+  parentId: string,
+  claimKey: string,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne(
+    {
+      _id: oid,
+      reengagement_sent: { $ne: claimKey },
+      is_smoke_account: { $ne: true },
+    },
+    {
+      $addToSet: { reengagement_sent: claimKey },
+      $set: { reengagement_last_sent_at: new Date() },
+    },
+  );
+  return res.modifiedCount > 0;
+}
+
+/** Roll back a re-engagement claim if the send fails, so a later run retries. */
+export async function releaseReengagementStage(
+  parentId: string,
+  claimKey: string,
+): Promise<void> {
+  const oid = toObjectId(parentId);
+  if (!oid) return;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  await col.updateOne({ _id: oid }, { $pull: { reengagement_sent: claimKey } });
+}
+
+/** Record a sent re-engagement email for the admin measurement panel. */
+export async function recordReengagementEvent(input: {
+  parentId: string;
+  stage: ReengStage;
+  track: ReengTrack;
+  tier: ParentDoc["subscription_tier"];
+  billingStatus: ParentDoc["billing_status"];
+  idleSince: Date;
+  reactivationWindowMs: number;
+}): Promise<void> {
+  const oid = toObjectId(input.parentId);
+  if (!oid) return;
+  const now = new Date();
+  const col = await getCollection<ReengagementEventDoc>(
+    Collections.reengagementEvents,
+  );
+  await col.insertOne({
+    parent_id: oid,
+    stage: input.stage,
+    track: input.track,
+    tier: input.tier,
+    billing_status: input.billingStatus,
+    idle_since: input.idleSince,
+    sent_at: now,
+    reactivate_by: new Date(now.getTime() + input.reactivationWindowMs),
+  } as ReengagementEventDoc);
+}
+
+export interface ReengagementStageStat {
+  stage: ReengStage;
+  sent: number;
+  /** Sends where the parent became active again before `reactivate_by`. */
+  reactivated: number;
+}
+
+export interface ReengagementStats {
+  totalSent: number;
+  byStage: ReengagementStageStat[];
+  byTrack: { upsell: number; reengage: number };
+  /** Re-activated sends / total sends (the KPI), 0–1, or null when no sends. */
+  reactivationRate: number | null;
+  /** Distinct parents emailed who are now opted out / distinct emailed, 0–1. */
+  unsubscribeRate: number | null;
+  distinctParents: number;
+  optedOutParents: number;
+  recent: {
+    stage: ReengStage;
+    track: ReengTrack;
+    tier: string;
+    sentAt: Date;
+    reactivated: boolean;
+  }[];
+}
+
+/**
+ * Real re-engagement measurement for the admin panel. Re-activation is honest:
+ * a send counts as re-activated only when the parent's CURRENT `last_active`
+ * advanced past the send AND landed before that send's attribution deadline
+ * (`reactivate_by`). Unsubscribe rate is the share of emailed parents now opted
+ * out of marketing. All computed from real rows — nothing illustrative.
+ */
+export async function reengagementStats(): Promise<ReengagementStats> {
+  const eventsCol = await getCollection<ReengagementEventDoc>(
+    Collections.reengagementEvents,
+  );
+  const events = await eventsCol.find({}).sort({ sent_at: -1 }).toArray();
+
+  const empty: ReengagementStats = {
+    totalSent: 0,
+    byStage: ([1, 2, 3] as ReengStage[]).map((stage) => ({
+      stage,
+      sent: 0,
+      reactivated: 0,
+    })),
+    byTrack: { upsell: 0, reengage: 0 },
+    reactivationRate: null,
+    unsubscribeRate: null,
+    distinctParents: 0,
+    optedOutParents: 0,
+    recent: [],
+  };
+  if (events.length === 0) return empty;
+
+  // Current activity + opt-out for every emailed parent (one indexed batch read).
+  const parentIds = [...new Set(events.map((e) => e.parent_id.toHexString()))];
+  const parentCol = await getCollection<ParentDoc>(Collections.parents);
+  const parents = await parentCol
+    .find({ _id: { $in: parentIds.map((id) => new ObjectId(id)) } })
+    .project({ last_active: 1, marketing_emails_opt_out: 1 })
+    .toArray();
+  const lastActiveById = new Map<string, Date | null>();
+  const optedOutById = new Map<string, boolean>();
+  for (const p of parents) {
+    lastActiveById.set(p._id!.toHexString(), (p.last_active as Date) ?? null);
+    optedOutById.set(
+      p._id!.toHexString(),
+      Boolean((p as ParentDoc).marketing_emails_opt_out),
+    );
+  }
+
+  const reactivated = (e: ReengagementEventDoc): boolean => {
+    const la = lastActiveById.get(e.parent_id.toHexString());
+    if (!la) return false;
+    return la.getTime() > e.sent_at.getTime() && la <= e.reactivate_by;
+  };
+
+  const byStageMap = new Map<ReengStage, ReengagementStageStat>(
+    ([1, 2, 3] as ReengStage[]).map((s) => [
+      s,
+      { stage: s, sent: 0, reactivated: 0 },
+    ]),
+  );
+  let reactCount = 0;
+  const byTrack = { upsell: 0, reengage: 0 };
+  for (const e of events) {
+    const row = byStageMap.get(e.stage);
+    if (row) {
+      row.sent++;
+      if (reactivated(e)) row.reactivated++;
+    }
+    if (reactivated(e)) reactCount++;
+    if (e.track === "upsell") byTrack.upsell++;
+    else byTrack.reengage++;
+  }
+
+  const optedOutParents = parentIds.filter((id) => optedOutById.get(id)).length;
+
+  return {
+    totalSent: events.length,
+    byStage: [...byStageMap.values()],
+    byTrack,
+    reactivationRate: events.length ? reactCount / events.length : null,
+    unsubscribeRate: parentIds.length ? optedOutParents / parentIds.length : null,
+    distinctParents: parentIds.length,
+    optedOutParents,
+    recent: events.slice(0, 20).map((e) => ({
+      stage: e.stage,
+      track: e.track,
+      tier: e.tier,
+      sentAt: e.sent_at,
+      reactivated: reactivated(e),
+    })),
+  };
+}
+
 // ── Data rights: export + erasure (UK GDPR) ──────────────
 
 /** Child-scoped collections cascaded on export/erasure. */
@@ -4378,6 +4663,12 @@ export async function deleteFamilyData(
   const mediaCol = await getCollection<MediaDoc>(Collections.media);
   deleted[`${Collections.media}_owned`] = (
     await mediaCol.deleteMany({ owner_id: parentOid })
+  ).deletedCount;
+  const reengCol = await getCollection<ReengagementEventDoc>(
+    Collections.reengagementEvents,
+  );
+  deleted[Collections.reengagementEvents] = (
+    await reengCol.deleteMany({ parent_id: parentOid })
   ).deletedCount;
 
   // Children, then the parent account itself — last, so a partial failure

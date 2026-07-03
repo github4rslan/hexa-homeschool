@@ -94,6 +94,9 @@ export const Collections = {
   staffAuditLog: "staff_audit_log",
   // Wave 7, Phase 5 — parent engagement: event-driven milestone feed + dedupe
   parentEvents: "parent_events",
+  // Lifecycle re-engagement (win-back / upsell) — one row per send, for the
+  // admin measurement panel (sends by stage/segment, re-activation, unsubscribe).
+  reengagementEvents: "reengagement_events",
   // Operations — persisted app settings (feature flags), a single fixed doc
   settings: "app_settings",
   // Parent sentiment: voluntary star + comment feedback (parent-scoped). Powers

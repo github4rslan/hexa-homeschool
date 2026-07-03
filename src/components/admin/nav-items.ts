@@ -6,6 +6,7 @@ import {
   Gauge,
   GraduationCap,
   Mail,
+  MailWarning,
   MessageSquareHeart,
   Network,
   PoundSterling,
@@ -87,6 +88,7 @@ export const NAV: NavGroup[] = [
     items: [
       { label: "Finance", href: "/admin/finance", icon: PoundSterling },
       { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
+      { label: "Re-engagement", href: "/admin/reengagement", icon: MailWarning },
     ],
   },
 ];
