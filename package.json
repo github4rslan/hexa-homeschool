@@ -14,7 +14,8 @@
     "seed:admin": "tsx scripts/seed-admin.ts",
     "smoke:setup": "tsx scripts/smoke-setup.ts",
     "smoke": "playwright test",
-    "test:admin-mobile": "playwright test --config playwright.admin.config.ts"
+    "test:admin-mobile": "playwright test --config playwright.admin.config.ts",
+    "test:e2e": "playwright test --config playwright.e2e.config.ts"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.57.0",
