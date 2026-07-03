@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { computeStreak, utcDayIndex } from "@/lib/engine/streak";
+import { computeStreak } from "@/lib/engine/streak";
 
 const DAY = 24 * 60 * 60 * 1000;
 // A fixed "now": 2026-06-13T12:00:00Z (mid-day so day bucketing is stable).
 const NOW = Date.UTC(2026, 5, 13, 12, 0, 0);
-const today = utcDayIndex(NOW);
 
 /** Helper: ms timestamp for `daysAgo` whole UTC days before NOW. */
 function daysAgo(n: number): number {
