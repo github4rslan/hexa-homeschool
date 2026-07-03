@@ -100,6 +100,18 @@ export interface ParentDoc {
    * Undefined/false = password only.
    */
   two_factor_enabled?: boolean;
+  /**
+   * Parent-feedback prompt state (voluntary sentiment widget). Drives the pure
+   * eligibility function (`lib/engine/feedback-eligibility.ts`) so the milestone
+   * prompt can never re-nag: `feedback_last_shown_at` (audit of when it last
+   * appeared), `feedback_last_submitted_at` (long cooldown), `feedback_last_
+   * dismissed_at` (short cooldown), `feedback_opt_out` ("don't ask again",
+   * durable). All optional + legacy-safe (absent = never shown/actioned).
+   */
+  feedback_last_shown_at?: Date | null;
+  feedback_last_submitted_at?: Date | null;
+  feedback_last_dismissed_at?: Date | null;
+  feedback_opt_out?: boolean;
   subscription_tier: "diagnostic" | "standard" | "family";
   billing_status: "trialing" | "active" | "past_due" | "canceled" | "paused";
   /** Stripe linkage — absent until the parent first goes through Checkout. */
@@ -466,6 +478,33 @@ export interface ParentEventDoc {
   attempts?: number | null;
   /** Idempotency key, unique per (parent_id, dedupe_key). */
   dedupe_key: string;
+  created_at: Date;
+}
+
+/**
+ * Voluntary parent sentiment: one row per feedback submission (a required 1–5
+ * star rating + an optional free-text comment). Parent-scoped and ownership-safe
+ * by construction — always written with the session parent's own id, never a
+ * child's. `parent_name`/`parent_email` are contact snapshots so admin staff can
+ * follow up on a low rating without re-joining (minimum PII, contact only). The
+ * comment is sanitized on write and rendered XSS-safe (React-escaped) on the
+ * admin side. NO child data is ever stored here. See the Children's Code note:
+ * this feature is parent-side only and never runs in `(child)` routes.
+ */
+export interface FeedbackDoc {
+  _id?: ObjectId;
+  parent_id: ObjectId;
+  /** Contact snapshot for staff follow-up (name may be null on the account). */
+  parent_name: string | null;
+  parent_email: string;
+  /** Required rating, 1 (unhappy) … 5 (delighted). */
+  stars: number;
+  /** Optional comment, sanitized + capped (≤ 1000 chars). Null when omitted. */
+  comment: string | null;
+  /** What surfaced the prompt: a milestone ("first_week"/"mastery") or "manual". */
+  trigger: "first_week" | "mastery" | "manual";
+  /** Optional page/path the feedback was given from (context only, no PII). */
+  context?: string | null;
   created_at: Date;
 }
 

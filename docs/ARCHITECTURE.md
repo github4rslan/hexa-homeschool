@@ -202,6 +202,7 @@ document shapes in [src/lib/db/types.ts](../src/lib/db/types.ts). The seed scrip
 | `parent_events` | ParentEventDoc | Wave 7, Phase 5 parent-engagement feed: one idempotent row per milestone (mastery / handoff / inactivity), unique per `parent_id` + `dedupe_key`, driving both the dashboard activity feed and the once-per-event email/SMS push. Deterministic, parent-scoped, ownership-checked; no analytics/profiling |
 | `newsletter_subscribers` | — | Public lead capture |
 | `ai_invocations` | AiInvocationDoc | Per-call AI telemetry (powers admin console) |
+| `feedback` | FeedbackDoc | Voluntary parent sentiment: a required 1–5 star rating + optional sanitized comment, parent-scoped (contact snapshot for staff follow-up only). Shown to **parents** after a milestone via a dismissible, frequency-capped widget (pure eligibility in `lib/engine/feedback-eligibility.ts`); surfaced on the admin sentiment view (`/admin/feedback`). NEVER rendered in or written by a `(child)` route (Children's Code). Comments render XSS-safe (React-escaped) |
 
 ### Ownership enforcement (critical)
 
