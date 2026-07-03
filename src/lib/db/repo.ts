@@ -41,6 +41,14 @@ import type {
   Subject,
 } from "./types";
 import { resolveRole, type StaffRole } from "@/lib/auth/rbac";
+import {
+  evaluateRoleChange,
+  evaluateAccountAction,
+  confirmationMatches,
+  requireReason,
+  type NextRole,
+  type GuardResult,
+} from "@/lib/auth/staff-guards";
 import type {
   BillingRow,
   BillingStatus,
@@ -2231,6 +2239,10 @@ export async function recordStaffAction(input: {
   action: string;
   targetCollection?: string | null;
   targetId?: string | null;
+  reason?: string | null;
+  before?: string | null;
+  after?: string | null;
+  ip?: string | null;
 }): Promise<void> {
   try {
     const oid = toObjectId(input.staffId);
@@ -2242,6 +2254,10 @@ export async function recordStaffAction(input: {
       action: input.action,
       target_collection: input.targetCollection ?? null,
       target_id: input.targetId ?? null,
+      reason: input.reason ?? null,
+      before: input.before ?? null,
+      after: input.after ?? null,
+      ip: input.ip ?? null,
       created_at: new Date(),
     } as StaffAuditLogDoc);
   } catch (err) {
@@ -2255,6 +2271,9 @@ export interface StaffAuditEntry {
   action: string;
   targetCollection: string | null;
   targetId: string | null;
+  reason: string | null;
+  before: string | null;
+  after: string | null;
   createdAt: Date;
 }
 
@@ -2279,6 +2298,9 @@ export async function listStaffAudit(
     action: r.action,
     targetCollection: r.target_collection ?? null,
     targetId: r.target_id ?? null,
+    reason: r.reason ?? null,
+    before: r.before ?? null,
+    after: r.after ?? null,
     createdAt: r.created_at,
   }));
 }
@@ -4288,4 +4310,629 @@ export async function deleteFamilyData(
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// ── Admin operations console (staff mgmt + full family control) ───────────
+//
+// Every mutation here is admin-gated and audited-with-reason. The privileged
+// guards (last-admin, self-lockout, reason required, typed confirmation) live in
+// lib/auth/staff-guards.ts as pure functions and are enforced HERE server-side
+// as well as in the UI — the UI can never substitute for these checks.
+
+/** Count accounts that currently resolve to the admin role (role or legacy is_admin). */
+export async function countAdmins(): Promise<number> {
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  return col.countDocuments({
+    $or: [{ role: "admin" }, { role: { $exists: false }, is_admin: true }],
+  });
+}
+
+export interface StaffMember {
+  id: string;
+  name: string;
+  email: string;
+  role: StaffRole;
+  grantedByEmail: string | null;
+  grantedAt: Date | null;
+}
+
+/** All staff accounts (admin/support), with who granted the role and when. */
+export async function listStaff(): Promise<StaffMember[]> {
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const rows = await col
+    .find({ $or: [{ role: { $in: ["admin", "support"] } }, { is_admin: true }] })
+    .sort({ email: 1 })
+    .toArray();
+
+  const granterIds = [
+    ...new Set(rows.map((r) => r.role_granted_by?.toHexString()).filter(Boolean)),
+  ] as string[];
+  const granterEmail = new Map<string, string>();
+  if (granterIds.length > 0) {
+    const granters = await col
+      .find(
+        { _id: { $in: granterIds.map((id) => new ObjectId(id)) } },
+        { projection: { email: 1 } },
+      )
+      .toArray();
+    for (const g of granters) granterEmail.set(g._id!.toHexString(), g.email);
+  }
+
+  return rows
+    .map((r) => {
+      const role = resolveRole({ role: r.role, is_admin: r.is_admin });
+      if (!role) return null;
+      return {
+        id: r._id!.toHexString(),
+        name: r.full_name ?? "—",
+        email: r.email,
+        role,
+        grantedByEmail: r.role_granted_by
+          ? granterEmail.get(r.role_granted_by.toHexString()) ?? null
+          : null,
+        grantedAt: r.role_granted_at ?? null,
+      } satisfies StaffMember;
+    })
+    .filter((x): x is StaffMember => x !== null);
+}
+
+/**
+ * Grant / change / revoke a staff role. Gathers the live facts, runs the pure
+ * guard (admin-only, reason required, no self-lockout, no last-admin removal),
+ * applies the change, then writes an audit row with before→after + reason.
+ * Revoking clears both `role` and the legacy `is_admin` flag.
+ */
+export async function setStaffRole(input: {
+  actorId: string;
+  actorEmail: string;
+  targetId: string;
+  nextRole: NextRole;
+  reason: string;
+  ip?: string | null;
+}): Promise<GuardResult> {
+  const actor = await findParentById(input.actorId);
+  const actorRole = actor
+    ? resolveRole({ role: actor.role, is_admin: actor.is_admin })
+    : null;
+  const target = await findParentById(input.targetId);
+  if (!target?._id) return { ok: false, error: "Target account not found." };
+  const targetCurrentRole = resolveRole({
+    role: target.role,
+    is_admin: target.is_admin,
+  });
+  const adminCount = await countAdmins();
+
+  const decision = evaluateRoleChange({
+    actorRole,
+    actorId: input.actorId,
+    targetId: input.targetId,
+    targetCurrentRole,
+    nextRole: input.nextRole,
+    reason: input.reason,
+    adminCount,
+  });
+  if (!decision.ok) return decision;
+
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const now = new Date();
+  const actorOid = toObjectId(input.actorId);
+  if (input.nextRole === null) {
+    await col.updateOne(
+      { _id: target._id },
+      {
+        $unset: { role: "", is_admin: "" },
+        $set: { role_granted_by: actorOid, role_granted_at: now, updated_at: now },
+      },
+    );
+  } else {
+    await col.updateOne(
+      { _id: target._id },
+      {
+        $set: {
+          role: input.nextRole,
+          role_granted_by: actorOid,
+          role_granted_at: now,
+          updated_at: now,
+        },
+        $unset: { is_admin: "" },
+      },
+    );
+  }
+
+  await recordStaffAction({
+    staffId: input.actorId,
+    staffEmail: input.actorEmail,
+    action: input.nextRole === null ? "staff.role.revoke" : "staff.role.grant",
+    targetCollection: Collections.parents,
+    targetId: input.targetId,
+    reason: input.reason,
+    before: targetCurrentRole ?? "parent",
+    after: input.nextRole ?? "parent",
+    ip: input.ip ?? null,
+  });
+  return { ok: true };
+}
+
+export interface AdminChildSummary {
+  id: string;
+  name: string;
+  dateOfBirth: string;
+  joinedAt: string;
+}
+
+export interface AdminParentDetail {
+  id: string;
+  name: string;
+  email: string;
+  tier: SubscriptionTier;
+  status: BillingStatus;
+  role: StaffRole | null;
+  verified: boolean;
+  suspended: boolean;
+  manualOverride: boolean;
+  hasStripe: boolean;
+  joinedAt: string;
+  children: AdminChildSummary[];
+}
+
+/** Minimum-PII account detail for a specific family being acted on by staff. */
+export async function getAdminParentDetail(
+  parentId: string,
+): Promise<AdminParentDetail | null> {
+  const parent = await findParentById(parentId);
+  if (!parent?._id) return null;
+  const children = await listChildren(parentId);
+  return {
+    id: parent._id.toHexString(),
+    name: parent.full_name ?? "—",
+    email: parent.email,
+    tier: (parent.subscription_tier ?? "diagnostic") as SubscriptionTier,
+    status: (parent.billing_status ?? "trialing") as BillingStatus,
+    role: resolveRole({ role: parent.role, is_admin: parent.is_admin }),
+    verified: parent.email_verified !== false,
+    suspended: parent.suspended === true,
+    manualOverride: parent.billing_manual_override === true,
+    hasStripe: Boolean(parent.stripe_customer_id),
+    joinedAt: parent.created_at
+      ? new Date(parent.created_at).toISOString().slice(0, 10)
+      : "—",
+    children: children.map((c) => ({
+      id: c._id!.toHexString(),
+      name: c.full_name,
+      dateOfBirth: c.date_of_birth,
+      joinedAt: c.created_at
+        ? new Date(c.created_at).toISOString().slice(0, 10)
+        : "—",
+    })),
+  };
+}
+
+/**
+ * Suspend / unsuspend an account (reversible). Guarded (admin-only, reason,
+ * not-self, not-last-admin). Suspending bumps token_version so existing
+ * sessions are invalidated immediately. Audited with reason.
+ */
+export async function setAccountSuspended(input: {
+  actorId: string;
+  actorEmail: string;
+  targetId: string;
+  suspend: boolean;
+  reason: string;
+  ip?: string | null;
+}): Promise<GuardResult> {
+  const actor = await findParentById(input.actorId);
+  const actorRole = actor
+    ? resolveRole({ role: actor.role, is_admin: actor.is_admin })
+    : null;
+  const target = await findParentById(input.targetId);
+  if (!target?._id) return { ok: false, error: "Target account not found." };
+  const targetIsAdmin =
+    resolveRole({ role: target.role, is_admin: target.is_admin }) === "admin";
+  const adminCount = await countAdmins();
+
+  const decision = evaluateAccountAction({
+    actorRole,
+    actorId: input.actorId,
+    targetId: input.targetId,
+    targetIsAdmin,
+    reason: input.reason,
+    adminCount,
+  });
+  if (!decision.ok) return decision;
+
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const now = new Date();
+  await col.updateOne(
+    { _id: target._id },
+    {
+      $set: {
+        suspended: input.suspend,
+        suspended_at: input.suspend ? now : null,
+        updated_at: now,
+      },
+      ...(input.suspend ? { $inc: { token_version: 1 } } : {}),
+    },
+  );
+
+  await recordStaffAction({
+    staffId: input.actorId,
+    staffEmail: input.actorEmail,
+    action: input.suspend ? "account.suspend" : "account.unsuspend",
+    targetCollection: Collections.parents,
+    targetId: input.targetId,
+    reason: input.reason,
+    before: target.suspended === true ? "suspended" : "active",
+    after: input.suspend ? "suspended" : "active",
+    ip: input.ip ?? null,
+  });
+  return { ok: true };
+}
+
+/**
+ * Apply a MANUAL plan override (comp/grant/downgrade) — sets the tier + status
+ * directly and flags the account `billing_manual_override` so the UI shows
+ * "manual — not Stripe-synced". Never mutates Stripe (the webhook stays the
+ * source of truth for Stripe-driven changes). Admin-only, reason required,
+ * audited with before→after.
+ */
+export async function adminSetBilling(input: {
+  actorId: string;
+  actorEmail: string;
+  targetId: string;
+  tier: SubscriptionTier;
+  status: BillingStatus;
+  reason: string;
+  ip?: string | null;
+}): Promise<GuardResult> {
+  const actor = await findParentById(input.actorId);
+  const actorRole = actor
+    ? resolveRole({ role: actor.role, is_admin: actor.is_admin })
+    : null;
+  if (actorRole !== "admin") {
+    return { ok: false, error: "Only an admin can change a plan." };
+  }
+  const reasonCheck = requireReason(input.reason);
+  if (!reasonCheck.ok) return reasonCheck;
+
+  const target = await findParentById(input.targetId);
+  if (!target?._id) return { ok: false, error: "Target account not found." };
+
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  await col.updateOne(
+    { _id: target._id },
+    {
+      $set: {
+        subscription_tier: input.tier,
+        billing_status: input.status,
+        billing_manual_override: true,
+        updated_at: new Date(),
+      },
+    },
+  );
+
+  await recordStaffAction({
+    staffId: input.actorId,
+    staffEmail: input.actorEmail,
+    action: "account.plan.override",
+    targetCollection: Collections.parents,
+    targetId: input.targetId,
+    reason: input.reason,
+    before: `${target.subscription_tier}/${target.billing_status}`,
+    after: `${input.tier}/${input.status} (manual)`,
+    ip: input.ip ?? null,
+  });
+  return { ok: true };
+}
+
+/** Admin-add a child to any parent (respects nothing but the target parent id). */
+export async function adminAddChild(input: {
+  actorId: string;
+  actorEmail: string;
+  parentId: string;
+  fullName: string;
+  dateOfBirth: string;
+  targetExamWindow: string | null;
+  sendIndicators: string[];
+  reason: string;
+  ip?: string | null;
+}): Promise<GuardResult & { childId?: string }> {
+  const actor = await findParentById(input.actorId);
+  if (resolveRole({ role: actor?.role, is_admin: actor?.is_admin }) !== "admin") {
+    return { ok: false, error: "Only an admin can add a child." };
+  }
+  const reasonCheck = requireReason(input.reason);
+  if (!reasonCheck.ok) return reasonCheck;
+  if (!input.fullName.trim() || !input.dateOfBirth) {
+    return { ok: false, error: "Child name and date of birth are required." };
+  }
+  const parent = await findParentById(input.parentId);
+  if (!parent?._id) return { ok: false, error: "Parent account not found." };
+
+  const childId = await createChild({
+    parentId: input.parentId,
+    fullName: input.fullName.trim(),
+    dateOfBirth: input.dateOfBirth,
+    targetExamWindow: input.targetExamWindow,
+    sendIndicators: input.sendIndicators,
+  });
+  if (!childId) return { ok: false, error: "Could not create the child." };
+
+  await recordStaffAction({
+    staffId: input.actorId,
+    staffEmail: input.actorEmail,
+    action: "child.create",
+    targetCollection: Collections.children,
+    targetId: childId,
+    reason: input.reason,
+    before: null,
+    after: `${input.fullName.trim()} → parent ${input.parentId}`,
+    ip: input.ip ?? null,
+  });
+  return { ok: true, childId };
+}
+
+/** Admin-edit a child of any parent (name / DOB / exam window / SEND). */
+export async function adminUpdateChild(input: {
+  actorId: string;
+  actorEmail: string;
+  parentId: string;
+  childId: string;
+  patch: Partial<
+    Pick<ChildDoc, "full_name" | "date_of_birth" | "send_indicators" | "target_exam_window">
+  >;
+  reason: string;
+  ip?: string | null;
+}): Promise<GuardResult> {
+  const actor = await findParentById(input.actorId);
+  if (resolveRole({ role: actor?.role, is_admin: actor?.is_admin }) !== "admin") {
+    return { ok: false, error: "Only an admin can edit a child." };
+  }
+  const reasonCheck = requireReason(input.reason);
+  if (!reasonCheck.ok) return reasonCheck;
+
+  // updateChild verifies the child belongs to the target parent (ownership).
+  const ok = await updateChild(input.parentId, input.childId, input.patch);
+  if (!ok) return { ok: false, error: "Child not found for that parent." };
+
+  await recordStaffAction({
+    staffId: input.actorId,
+    staffEmail: input.actorEmail,
+    action: "child.update",
+    targetCollection: Collections.children,
+    targetId: input.childId,
+    reason: input.reason,
+    before: null,
+    after: Object.keys(input.patch).join(", ") || "—",
+    ip: input.ip ?? null,
+  });
+  return { ok: true };
+}
+
+/**
+ * GDPR erasure of a SINGLE child's learning record. Mirrors the family-erasure
+ * machinery but scoped to one owned child; verifies the child belongs to the
+ * given parent before deleting anything. Returns per-collection counts.
+ */
+export async function deleteChildData(
+  parentId: string,
+  childId: string,
+): Promise<Record<string, number> | null> {
+  const parentOid = toObjectId(parentId);
+  const childOid = toObjectId(childId);
+  if (!parentOid || !childOid) return null;
+  const childCol = await getCollection<ChildDoc>(Collections.children);
+  const child = await childCol.findOne({ _id: childOid, parent_id: parentOid });
+  if (!child) return null; // ownership guard — never touch another family's child
+
+  const deleted: Record<string, number> = {};
+  for (const name of CHILD_SCOPED_COLLECTIONS) {
+    const col = await getCollection(name);
+    deleted[name] = (await col.deleteMany({ child_id: childOid })).deletedCount;
+  }
+  const lp = await getCollection(Collections.lessonProgress);
+  deleted[Collections.lessonProgress] = (
+    await lp.deleteMany({ child_id: childOid })
+  ).deletedCount;
+  const pe = await getCollection(Collections.parentEvents);
+  deleted[Collections.parentEvents] = (
+    await pe.deleteMany({ child_id: childOid })
+  ).deletedCount;
+  deleted[Collections.children] = (
+    await childCol.deleteOne({ _id: childOid, parent_id: parentOid })
+  ).deletedCount;
+  return deleted;
+}
+
+/**
+ * Admin-delete a child = GDPR erasure of that child's record. Highest-risk
+ * child action: admin-only, reason required, and a typed confirmation that
+ * matches the child's exact name. Audited with the deletion counts.
+ */
+export async function adminDeleteChild(input: {
+  actorId: string;
+  actorEmail: string;
+  parentId: string;
+  childId: string;
+  confirmName: string;
+  reason: string;
+  ip?: string | null;
+}): Promise<GuardResult> {
+  const actor = await findParentById(input.actorId);
+  if (resolveRole({ role: actor?.role, is_admin: actor?.is_admin }) !== "admin") {
+    return { ok: false, error: "Only an admin can delete a child." };
+  }
+  const reasonCheck = requireReason(input.reason);
+  if (!reasonCheck.ok) return reasonCheck;
+
+  const child = await getChildById(input.parentId, input.childId);
+  if (!child) return { ok: false, error: "Child not found for that parent." };
+  if (!confirmationMatches(input.confirmName, child.full_name)) {
+    return { ok: false, error: "Confirmation name does not match the child." };
+  }
+
+  const deleted = await deleteChildData(input.parentId, input.childId);
+  if (!deleted) return { ok: false, error: "Could not delete the child." };
+
+  await recordStaffAction({
+    staffId: input.actorId,
+    staffEmail: input.actorEmail,
+    action: "child.delete",
+    targetCollection: Collections.children,
+    targetId: input.childId,
+    reason: input.reason,
+    before: child.full_name,
+    after: JSON.stringify(deleted),
+    ip: input.ip ?? null,
+  });
+  return { ok: true };
+}
+
+/**
+ * Admin-delete an entire family = GDPR erasure via the existing deleteFamilyData
+ * path (never a raw deleteOne). Guarded (admin-only, reason, not-self,
+ * not-last-admin) plus a typed confirmation matching the parent's email.
+ * Audited with the per-collection deletion counts.
+ */
+export async function adminDeleteFamily(input: {
+  actorId: string;
+  actorEmail: string;
+  targetId: string;
+  confirmEmail: string;
+  reason: string;
+  ip?: string | null;
+}): Promise<GuardResult> {
+  const actor = await findParentById(input.actorId);
+  const actorRole = actor
+    ? resolveRole({ role: actor.role, is_admin: actor.is_admin })
+    : null;
+  const target = await findParentById(input.targetId);
+  if (!target?._id) return { ok: false, error: "Target account not found." };
+  const targetIsAdmin =
+    resolveRole({ role: target.role, is_admin: target.is_admin }) === "admin";
+  const adminCount = await countAdmins();
+
+  const decision = evaluateAccountAction({
+    actorRole,
+    actorId: input.actorId,
+    targetId: input.targetId,
+    targetIsAdmin,
+    reason: input.reason,
+    adminCount,
+  });
+  if (!decision.ok) return decision;
+  if (!confirmationMatches(input.confirmEmail, target.email)) {
+    return { ok: false, error: "Confirmation email does not match the account." };
+  }
+
+  const deleted = await deleteFamilyData(input.targetId);
+  if (!deleted) return { ok: false, error: "Could not delete the family." };
+
+  await recordStaffAction({
+    staffId: input.actorId,
+    staffEmail: input.actorEmail,
+    action: "family.delete",
+    targetCollection: Collections.parents,
+    targetId: input.targetId,
+    reason: input.reason,
+    before: target.email,
+    after: JSON.stringify(deleted),
+    ip: input.ip ?? null,
+  });
+  return { ok: true };
+}
+
+// ── Users list: search / filter / paginate ────────────────────────────────
+
+export interface AdminParentsPage {
+  rows: (AdminParentRow & {
+    suspended: boolean;
+    manualOverride: boolean;
+    verified: boolean;
+  })[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/**
+ * Paginated, filterable parent list for the admin users console. Filters:
+ * free-text (name/email), billing status, and tier. Never returns child names
+ * on this cross-family surface — only a per-parent count.
+ */
+export async function adminSearchParents(opts: {
+  query?: string;
+  status?: BillingStatus | "all";
+  tier?: SubscriptionTier | "all";
+  page?: number;
+  pageSize?: number;
+}): Promise<AdminParentsPage> {
+  const page = Math.max(1, opts.page ?? 1);
+  const pageSize = Math.min(100, Math.max(5, opts.pageSize ?? 20));
+
+  const filter: Record<string, unknown> = {};
+  const q = (opts.query ?? "").trim();
+  if (q) {
+    const rx = { $regex: escapeRegex(q), $options: "i" };
+    filter.$or = [{ email: rx }, { full_name: rx }];
+  }
+  if (opts.status && opts.status !== "all") filter.billing_status = opts.status;
+  if (opts.tier && opts.tier !== "all") filter.subscription_tier = opts.tier;
+
+  const parentsCol = await getCollection<ParentDoc>(Collections.parents);
+  const total = await parentsCol.countDocuments(filter);
+  const parents = await parentsCol
+    .find(filter, {
+      projection: {
+        full_name: 1,
+        email: 1,
+        subscription_tier: 1,
+        billing_status: 1,
+        created_at: 1,
+        suspended: 1,
+        billing_manual_override: 1,
+        email_verified: 1,
+      },
+    })
+    .sort({ created_at: -1 })
+    .skip((page - 1) * pageSize)
+    .limit(pageSize)
+    .toArray();
+
+  const parentOids = parents.map((p) => p._id!).filter(Boolean);
+  const childCountByParent = new Map<string, number>();
+  if (parentOids.length > 0) {
+    const childrenCol = await getCollection<ChildDoc>(Collections.children);
+    const counts = await childrenCol
+      .aggregate<{ _id: ObjectId; count: number }>([
+        { $match: { parent_id: { $in: parentOids } } },
+        { $group: { _id: "$parent_id", count: { $sum: 1 } } },
+      ])
+      .toArray();
+    for (const c of counts) {
+      if (c._id) childCountByParent.set(c._id.toHexString(), c.count);
+    }
+  }
+
+  return {
+    total,
+    page,
+    pageSize,
+    rows: parents.map((p) => {
+      const id = p._id!.toHexString();
+      return {
+        id,
+        name: p.full_name ?? "—",
+        email: p.email,
+        tier: (p.subscription_tier ?? "diagnostic") as SubscriptionTier,
+        status: (p.billing_status ?? "trialing") as BillingStatus,
+        joinedAt: p.created_at
+          ? new Date(p.created_at).toISOString().slice(0, 10)
+          : "—",
+        childCount: childCountByParent.get(id) ?? 0,
+        suspended: p.suspended === true,
+        manualOverride: p.billing_manual_override === true,
+        verified: p.email_verified !== false,
+      };
+    }),
+  };
 }
