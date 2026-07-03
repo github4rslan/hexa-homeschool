@@ -94,4 +94,6 @@ export const Collections = {
   staffAuditLog: "staff_audit_log",
   // Wave 7, Phase 5 — parent engagement: event-driven milestone feed + dedupe
   parentEvents: "parent_events",
+  // Operations — persisted app settings (feature flags), a single fixed doc
+  settings: "app_settings",
 } as const;

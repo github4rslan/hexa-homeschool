@@ -1,127 +1,175 @@
-"use client";
-
-import { useState } from "react";
-import { Settings, Sparkles, Volume2, Shield } from "lucide-react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Activity, CreditCard, Shield, UserCog } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/sidebar";
-import { IllustrativeNote } from "@/components/admin/illustrative";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getSession } from "@/lib/auth/session";
+import { findParentById, getFeatureFlags } from "@/lib/db/repo";
+import { resolveRole } from "@/lib/auth/rbac";
+import { getDb } from "@/lib/mongodb";
+import {
+  FEATURE_FLAGS,
+  effectiveFlag,
+} from "@/lib/admin/feature-flags";
+import { aiVisualsEnabled } from "@/lib/ai/visual-flags";
+import { TEACHING_CONFIDENCE_THRESHOLD } from "@/lib/ai/config";
+import { FlagsPanel } from "./flags-client";
 
-interface Flag {
-  key: string;
-  label: string;
-  description: string;
-  enabled: boolean;
-  rollout: number;
-  category: "ai" | "ui" | "experimental" | "safety";
+export const metadata: Metadata = { title: "Admin · Settings" };
+export const dynamic = "force-dynamic";
+
+function Dot({ ok }: { ok: boolean }) {
+  return (
+    <span
+      className={`inline-block h-2 w-2 rounded-full ${ok ? "bg-neon-400" : "bg-crimson-400"}`}
+      aria-hidden
+    />
+  );
 }
 
-const INITIAL_FLAGS: Flag[] = [
-  { key: "agent.teaching.rag_v2", label: "Teaching Agent · RAG v2", description: "New retrieval pipeline with multi-vector search", enabled: true, rollout: 100, category: "ai" },
-  { key: "agent.assessment.long_form_grading", label: "Assessment · long-form GPT-4 grading", description: "Use GPT-4 for English essay grading vs. heuristic", enabled: true, rollout: 100, category: "ai" },
-  { key: "ui.dashboard.live_activity_stream", label: "Dashboard · live activity stream", description: "Real-time SSE feed in parent dashboard", enabled: true, rollout: 75, category: "ui" },
-  { key: "voice.elevenlabs.v2_5_flash", label: "ElevenLabs · Flash v2.5 voices", description: "Lower latency model for streaming narration", enabled: true, rollout: 50, category: "ai" },
-  { key: "ui.parent.mobile_app_promo", label: "Mobile app announcement banner", description: "Show 'iOS app coming soon' banner in dashboard", enabled: false, rollout: 0, category: "ui" },
-  { key: "safety.distress.expanded_vectors", label: "Distress vectors · expanded keywords", description: "Add 18 new distress patterns to detection model", enabled: true, rollout: 100, category: "safety" },
-  { key: "experimental.peer_compare", label: "Peer comparison view", description: "Anonymous percentile rank vs. cohort", enabled: false, rollout: 0, category: "experimental" },
-];
+function Health({ label, ok, detail }: { label: string; ok: boolean; detail: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2.5">
+      <div className="flex items-center gap-2 min-w-0">
+        <Dot ok={ok} />
+        <span className="text-sm text-fog-100 truncate">{label}</span>
+      </div>
+      <span className="text-xs text-fog-500 font-mono shrink-0">{detail}</span>
+    </div>
+  );
+}
 
-const categoryColor = {
-  ai: { bg: "bg-violet-500/10", border: "border-violet-400/30", text: "text-violet-300", icon: Sparkles },
-  ui: { bg: "bg-cyan-500/10", border: "border-cyan-400/30", text: "text-cyan-400", icon: Settings },
-  experimental: { bg: "bg-amber-500/10", border: "border-amber-400/30", text: "text-amber-400", icon: Volume2 },
-  safety: { bg: "bg-crimson-500/10", border: "border-crimson-400/30", text: "text-crimson-400", icon: Shield },
-};
+export default async function SettingsPage() {
+  const session = await getSession();
+  const parent = session ? await findParentById(session.id) : null;
+  const role = parent
+    ? resolveRole({ role: parent.role, is_admin: parent.is_admin })
+    : null;
+  const isAdmin = role === "admin";
 
-export default function SettingsPage() {
-  const [flags, setFlags] = useState(INITIAL_FLAGS);
-
-  function toggle(key: string) {
-    setFlags((prev) =>
-      prev.map((f) => (f.key === key ? { ...f, enabled: !f.enabled, rollout: !f.enabled ? 100 : 0 } : f)),
-    );
+  // Persisted flags → resolved effective runtime values.
+  const persisted = await getFeatureFlags();
+  const envDefaults: Record<string, boolean> = {
+    ai_visuals: aiVisualsEnabled(),
+  };
+  const effective: Record<string, boolean> = {};
+  for (const f of FEATURE_FLAGS) {
+    effective[f.key] = effectiveFlag(f.key, persisted, envDefaults[f.key] ?? false);
   }
 
-  function setRollout(key: string, rollout: number) {
-    setFlags((prev) => prev.map((f) => (f.key === key ? { ...f, rollout } : f)));
+  // System health — DB is pinged; integrations are reported by key presence
+  // (we never expose the secrets themselves).
+  let dbUp = false;
+  try {
+    await (await getDb()).command({ ping: 1 });
+    dbUp = true;
+  } catch {
+    dbUp = false;
   }
+  const stripeConfigured = Boolean(process.env.STRIPE_SECRET_KEY);
+  const emailConfiguredFlag = Boolean(process.env.BREVO_API_KEY);
+  const sentryConfigured = Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN);
+  const commit = (process.env.VERCEL_GIT_COMMIT_SHA || "").slice(0, 7) || "local";
+
+  const priceStandard = Boolean(process.env.STRIPE_PRICE_STANDARD);
+  const priceFamily = Boolean(process.env.STRIPE_PRICE_FAMILY);
 
   return (
     <>
       <AdminTopbar
-        title="Feature Flags & System Settings"
-        subtitle="Runtime toggles for AI behaviours, UI features, and safety controls"
+        title="Settings"
+        subtitle="Feature flags, system health, billing config, safety controls"
       />
 
-      <div className="flex-1 p-6 lg:p-10 max-w-[1600px]">
-        <IllustrativeNote className="mb-6">
-          These flags are a UI placeholder — they are not wired to runtime
-          behaviour and toggling them changes nothing in production. The only
-          live feature gate today is the <code className="font-mono">AI_VISUALS_ENABLED</code>{" "}
-          environment variable. A real feature-flag store is a later-phase item
-          (see docs/METRICS.md).
-        </IllustrativeNote>
-        <div className="flex flex-col gap-3">
-          {flags.map((f) => {
-            const c = categoryColor[f.category];
-            const Icon = c.icon;
-            return (
-              <Card key={f.key} variant="glass" padding="lg">
-                <div className="flex items-start gap-4">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${c.bg} ${c.border}`}>
-                    <Icon className={`h-4 w-4 ${c.text}`} />
-                  </div>
+      <div className="flex-1 p-4 sm:p-6 lg:p-10 max-w-[1100px] flex flex-col gap-6">
+        {/* Feature flags — real + persisted */}
+        <section>
+          <h2 className="text-sm font-semibold text-fog-50 mb-3">Feature flags</h2>
+          <FlagsPanel effective={effective} isAdmin={isAdmin} />
+        </section>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h3 className="text-sm font-semibold text-fog-50">{f.label}</h3>
-                      <Badge variant="outline" size="sm">
-                        {f.category}
-                      </Badge>
-                      <code className="text-[10px] font-mono text-fog-500 bg-white/[0.03] rounded px-1.5 py-0.5">
-                        {f.key}
-                      </code>
-                    </div>
-                    <p className="text-xs text-fog-400 mt-1.5">{f.description}</p>
+        {/* System health */}
+        <section>
+          <h2 className="text-sm font-semibold text-fog-50 mb-3 flex items-center gap-2">
+            <Activity className="h-4 w-4 text-neon-400" /> System health
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Health label="MongoDB" ok={dbUp} detail={dbUp ? "up" : "down"} />
+            <Health label="Stripe" ok={stripeConfigured} detail={stripeConfigured ? "configured" : "unset"} />
+            <Health label="Email (Brevo)" ok={emailConfiguredFlag} detail={emailConfiguredFlag ? "configured" : "unset"} />
+            <Health label="Sentry" ok={sentryConfigured} detail={sentryConfigured ? "configured" : "disabled"} />
+          </div>
+          <p className="mt-2 text-[11px] text-fog-600 font-mono">version · {commit}</p>
+        </section>
 
-                    {f.enabled && (
-                      <div className="mt-4">
-                        <div className="flex items-center justify-between text-xs mb-2">
-                          <span className="text-fog-500">Rollout</span>
-                          <span className="font-mono font-semibold text-fog-200 tabular-nums">{f.rollout}%</span>
-                        </div>
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          step="5"
-                          value={f.rollout}
-                          onChange={(e) => setRollout(f.key, parseInt(e.target.value))}
-                          className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-violet-500 bg-white/5"
-                        />
-                      </div>
-                    )}
-                  </div>
+        {/* Billing config (read-only) */}
+        <section>
+          <Card variant="glass" padding="lg">
+            <h2 className="text-sm font-semibold text-fog-50 mb-3 flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-cyan-300" /> Billing plans (read-only)
+            </h2>
+            <ul className="flex flex-col gap-2 text-sm">
+              <li className="flex items-center justify-between gap-3">
+                <span className="text-fog-200">Complete · Standard — £49/mo</span>
+                <Badge variant={priceStandard ? "neon" : "amber"} size="sm">
+                  {priceStandard ? "price id set" : "STRIPE_PRICE_STANDARD unset"}
+                </Badge>
+              </li>
+              <li className="flex items-center justify-between gap-3">
+                <span className="text-fog-200">Partner · Family — £99/mo</span>
+                <Badge variant={priceFamily ? "neon" : "amber"} size="sm">
+                  {priceFamily ? "price id set" : "STRIPE_PRICE_FAMILY unset"}
+                </Badge>
+              </li>
+            </ul>
+            <p className="mt-3 text-[11px] text-fog-600">
+              The Stripe webhook is the source of truth for Stripe-driven billing;
+              admin plan changes apply a local override labelled &ldquo;manual — not
+              Stripe-synced&rdquo;.
+            </p>
+          </Card>
+        </section>
 
-                  <button
-                    onClick={() => toggle(f.key)}
-                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-                      f.enabled ? "bg-violet-500" : "bg-white/10"
-                    }`}
-                    role="switch"
-                    aria-checked={f.enabled}
-                  >
-                    <span
-                      className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${
-                        f.enabled ? "translate-x-5" : "translate-x-0.5"
-                      }`}
-                    />
-                  </button>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+        {/* Safety / compliance (visibility only) */}
+        <section>
+          <Card variant="glass" padding="lg">
+            <h2 className="text-sm font-semibold text-fog-50 mb-3 flex items-center gap-2">
+              <Shield className="h-4 w-4 text-crimson-300" /> Safety &amp; compliance
+            </h2>
+            <ul className="flex flex-col gap-2 text-sm">
+              <li className="flex items-center justify-between gap-3">
+                <span className="text-fog-200">Distress gate (pre-AI)</span>
+                <Badge variant="neon" size="sm">Active</Badge>
+              </li>
+              <li className="flex items-center justify-between gap-3">
+                <span className="text-fog-200">Teaching Checker threshold</span>
+                <span className="font-mono text-fog-100">
+                  {Math.round(TEACHING_CONFIDENCE_THRESHOLD * 100)}%
+                </span>
+              </li>
+              <li className="flex items-center justify-between gap-3">
+                <span className="text-fog-200">Children&apos;s analytics</span>
+                <Badge variant="neon" size="sm">Never tracked</Badge>
+              </li>
+            </ul>
+            <p className="mt-3 text-[11px] text-fog-600">
+              These are visibility-only — safety invariants are not weakened from
+              this screen. UK data residency depends on the Atlas cluster region.
+            </p>
+          </Card>
+        </section>
+
+        {/* Staff link */}
+        <section>
+          <Link
+            href="/admin/staff"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-fog-100 hover:bg-white/[0.06]"
+          >
+            <UserCog className="h-4 w-4 text-violet-300" />
+            Manage staff &amp; access →
+          </Link>
+        </section>
       </div>
     </>
   );

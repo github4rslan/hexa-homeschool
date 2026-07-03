@@ -12,10 +12,12 @@ import {
 } from "@/lib/ai/visual-cache";
 import { VISUAL_PROMPT_VERSION } from "@/lib/ai/visual-prompt";
 import { aiVisualsEnabled } from "@/lib/ai/visual-flags";
+import { effectiveFlag } from "@/lib/admin/feature-flags";
 import {
   currentParentId,
   findMediaByHash,
   flagQuestionVisuals,
+  getFeatureFlags,
   getQuestionById,
   logInvocation,
   recordMedia,
@@ -61,7 +63,10 @@ export async function POST(request: Request) {
   if (!parentId) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
-  if (!aiVisualsEnabled()) return noVisual();
+  // Env AI_VISUALS_ENABLED is the default; a persisted admin override (set on
+  // /admin/settings) can force it on or off. The override is the kill switch.
+  const flags = await getFeatureFlags();
+  if (!effectiveFlag("ai_visuals", flags, aiVisualsEnabled())) return noVisual();
 
   let body: { questionId?: unknown; keyStage?: unknown };
   try {

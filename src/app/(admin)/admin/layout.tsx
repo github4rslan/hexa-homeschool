@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/sidebar";
+import { AdminIdentityProvider } from "@/components/admin/admin-identity";
 import { getSession } from "@/lib/auth/session";
 import { findParentById } from "@/lib/db/repo";
 import { resolveRole } from "@/lib/auth/rbac";
@@ -30,13 +31,15 @@ export default async function AdminLayout({
       <div className="fixed inset-0 bg-grid bg-grid-fade opacity-20 -z-10 pointer-events-none" />
       <div className="fixed inset-0 noise -z-10" />
 
-      <AdminSidebar
-        identity={{
-          name: displayName,
-          role,
-        }}
-      />
-      <div className="flex-1 flex flex-col min-w-0">{children}</div>
+      <AdminIdentityProvider value={{ name: displayName, role }}>
+        <AdminSidebar
+          identity={{
+            name: displayName,
+            role,
+          }}
+        />
+        <div className="flex-1 flex flex-col min-w-0">{children}</div>
+      </AdminIdentityProvider>
     </div>
   );
 }
