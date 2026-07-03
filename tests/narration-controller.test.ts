@@ -18,6 +18,7 @@ import { NarrationController } from "@/lib/child/use-narration";
 let resolvers: Map<string, (v: { ok: boolean; blob: () => Promise<string> }) => void>;
 let audios: FakeAudio[];
 let spoken: FakeUtterance[];
+let rejectAudioPlay: boolean;
 
 class FakeAudio {
   src = "";
@@ -28,6 +29,7 @@ class FakeAudio {
   onpause: (() => void) | null = null;
   onended: (() => void) | null = null;
   play = vi.fn(async () => {
+    if (rejectAudioPlay) throw new Error("play blocked");
     this.paused = false;
     this.onplay?.();
   });
@@ -56,6 +58,7 @@ beforeEach(() => {
   resolvers = new Map();
   audios = [];
   spoken = [];
+  rejectAudioPlay = false;
 
   vi.stubGlobal(
     "fetch",
@@ -176,6 +179,21 @@ describe("NarrationController", () => {
     rejectTts("A");
     await flush();
 
+    expect(spoken).toHaveLength(1);
+    expect(spoken[0].text).toBe("A");
+    expect(c.getPlaying()).toBe(true);
+  });
+
+  it("falls back to browser speech when audio playback is blocked", async () => {
+    const c = new NarrationController();
+    rejectAudioPlay = true;
+
+    void c.playText("A");
+    resolveTts("A");
+    await flush();
+
+    expect(audios).toHaveLength(1);
+    expect(audios[0].src).toBe("blob:A");
     expect(spoken).toHaveLength(1);
     expect(spoken[0].text).toBe("A");
     expect(c.getPlaying()).toBe(true);
