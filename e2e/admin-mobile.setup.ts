@@ -1,5 +1,5 @@
 import { test as setup, expect } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 
 /**
  * Auth setup for the admin mobile harness. Logs in ONCE as the seeded admin and
@@ -15,10 +15,15 @@ const ADMIN_PASSWORD = process.env.SMOKE_ADMIN_PASSWORD;
 const STORAGE = "e2e/.auth/admin.json";
 
 setup("authenticate as admin", async ({ page }) => {
-  setup.skip(
-    !ADMIN_EMAIL || !ADMIN_PASSWORD,
-    "SMOKE_ADMIN_EMAIL / SMOKE_ADMIN_PASSWORD not set",
-  );
+  // Write an empty storage state first so the dependent mobile projects can
+  // still initialise a context (they self-skip on missing creds) rather than
+  // crashing on a missing file. Then skip the login when creds are absent.
+  mkdirSync("e2e/.auth", { recursive: true });
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    writeFileSync(STORAGE, JSON.stringify({ cookies: [], origins: [] }));
+    setup.skip(true, "SMOKE_ADMIN_EMAIL / SMOKE_ADMIN_PASSWORD not set");
+    return;
+  }
 
   await page.goto("/login");
   await page.getByLabel(/email/i).fill(ADMIN_EMAIL!);

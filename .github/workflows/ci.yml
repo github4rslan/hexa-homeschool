@@ -79,3 +79,56 @@ jobs:
 
       - name: Smoke tests
         run: npm run smoke
+
+  # Post-deploy ADMIN MOBILE harness against the LIVE site. READ-ONLY: it signs
+  # in as the seeded admin and only navigates / asserts-no-overflow / opens the
+  # drawer / screenshots — it NEVER performs a destructive admin action against
+  # production. Push-to-main only, after `checks`, and self-skips when the
+  # SMOKE_ADMIN_* secrets are absent (setup writes an empty storage state so the
+  # mobile projects skip cleanly rather than erroring).
+  admin-mobile:
+    needs: checks
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+      SMOKE_ADMIN_EMAIL: ${{ secrets.SMOKE_ADMIN_EMAIL }}
+      SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for the production deploy to be live
+        run: |
+          URL="${SMOKE_BASE_URL:-https://edway.uk}/api/health"
+          echo "Probing $URL …"
+          for i in $(seq 1 18); do
+            if curl -fsS --max-time 10 "$URL" >/dev/null 2>&1; then
+              echo "Deploy is live."
+              exit 0
+            fi
+            echo "Not ready yet (attempt $i/18); waiting 10s…"
+            sleep 10
+          done
+          echo "Health probe never went green; running harness anyway to surface the failure."
+
+      - name: Admin mobile harness (read-only)
+        run: npm run test:admin-mobile
+
+      - name: Upload admin mobile screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-mobile-screenshots
+          path: e2e/screenshots
+          if-no-files-found: ignore
