@@ -2062,6 +2062,61 @@ export async function adminOpenEscalations(limit = 50): Promise<EscalationDoc[]>
   return col.find({ status: "open" }).sort({ created_at: -1 }).limit(limit).toArray();
 }
 
+export interface AdminSubscriberRow {
+  id: string;
+  email: string;
+  source: string;
+  subscribedAt: string; // ISO date (yyyy-mm-dd), or "—"
+}
+
+export interface AdminSubscriberPage {
+  rows: AdminSubscriberRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/**
+ * Newsletter subscribers for the admin list, newest first, paginated.
+ * `newsletter` is the one public, non-child-scoped collection, so this is a
+ * plain staff read (reached only through the (admin) layout's role gate) — no
+ * ownership check applies. Returns email + source + signup date only, the only
+ * fields the doc carries.
+ */
+export async function adminListNewsletterSubscribers({
+  page = 1,
+  pageSize = 50,
+}: { page?: number; pageSize?: number } = {}): Promise<AdminSubscriberPage> {
+  const col = await getCollection<{
+    email: string;
+    source?: string;
+    created_at?: Date;
+  }>(Collections.newsletter);
+  const safePage = Math.max(1, page);
+  const [total, docs] = await Promise.all([
+    col.countDocuments(),
+    col
+      .find({}, { projection: { email: 1, source: 1, created_at: 1 } })
+      .sort({ created_at: -1 })
+      .skip((safePage - 1) * pageSize)
+      .limit(pageSize)
+      .toArray(),
+  ]);
+  return {
+    rows: docs.map((d) => ({
+      id: d._id!.toHexString(),
+      email: d.email,
+      source: d.source ?? "—",
+      subscribedAt: d.created_at
+        ? new Date(d.created_at).toISOString().slice(0, 10)
+        : "—",
+    })),
+    total,
+    page: safePage,
+    pageSize,
+  };
+}
+
 // ── Admin finance / users / compliance aggregates ─────────
 //
 // Cross-family read surfaces for staff only (reached through the (admin) layout,
