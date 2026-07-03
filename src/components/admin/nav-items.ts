@@ -5,6 +5,7 @@ import {
   FlaskConical,
   Gauge,
   GraduationCap,
+  Mail,
   MessageSquareHeart,
   Network,
   PoundSterling,
@@ -85,6 +86,7 @@ export const NAV: NavGroup[] = [
     label: "Business",
     items: [
       { label: "Finance", href: "/admin/finance", icon: PoundSterling },
+      { label: "Newsletter", href: "/admin/newsletter", icon: Mail },
     ],
   },
 ];

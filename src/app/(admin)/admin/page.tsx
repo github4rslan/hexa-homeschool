@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import {
+  ChevronRight,
   Cpu,
   FileCheck,
   Mail,
@@ -114,7 +115,11 @@ export default async function AdminOverviewPage() {
               Platform totals
             </h2>
             <ul className="flex flex-col gap-3">
-              <TotalRow label="Newsletter subscribers" value={stats.newsletterSubscribers} />
+              <TotalRow
+                label="Newsletter subscribers"
+                value={stats.newsletterSubscribers}
+                href="/admin/newsletter"
+              />
               <TotalRow label="Portfolios generated" value={stats.dossiers} />
               <TotalRow label="Parent accounts" value={stats.parents} />
               <TotalRow label="Children" value={stats.children} />
@@ -148,7 +153,7 @@ export default async function AdminOverviewPage() {
           <QuickAction
             icon={Mail}
             label="Newsletter"
-            href="/admin/users"
+            href="/admin/newsletter"
             badge={`${stats.newsletterSubscribers} subs`}
             accent="neon"
           />
@@ -176,13 +181,45 @@ export default async function AdminOverviewPage() {
   );
 }
 
-function TotalRow({ label, value }: { label: string; value: number }) {
-  return (
-    <li className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.02]">
-      <span className="text-sm text-fog-200">{label}</span>
-      <span className="font-mono text-sm font-semibold text-fog-50 tabular-nums">
-        {value.toLocaleString()}
+function TotalRow({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: number;
+  href?: string;
+}) {
+  const inner = (
+    <>
+      <span className="text-sm text-fog-200 group-hover:text-fog-50">
+        {label}
       </span>
+      <span className="inline-flex items-center gap-1.5 font-mono text-sm font-semibold text-fog-50 tabular-nums">
+        {value.toLocaleString()}
+        {href && (
+          <ChevronRight className="h-3.5 w-3.5 text-fog-600 group-hover:text-fog-300 transition-colors" />
+        )}
+      </span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <li>
+        <Link
+          href={href}
+          className="group flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.04] transition-colors"
+        >
+          {inner}
+        </Link>
+      </li>
+    );
+  }
+
+  return (
+    <li className="group flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.02]">
+      {inner}
     </li>
   );
 }
