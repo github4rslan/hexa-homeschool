@@ -129,7 +129,7 @@ function FeedbackCard({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={reduce ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}
       transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-      className="glass-strong pointer-events-auto w-[calc(100vw-1.5rem)] max-w-sm rounded-2xl border border-white/10 p-5 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.6)] outline-none"
+      className="pointer-events-auto relative w-[calc(100vw-1.5rem)] max-w-sm overflow-hidden rounded-2xl border border-white/10 bg-abyss p-5 shadow-[0_24px_70px_-12px_rgba(0,0,0,0.85)] outline-none ring-1 ring-black/40 backdrop-blur-xl"
     >
       <button
         type="button"
