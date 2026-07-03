@@ -91,16 +91,19 @@ export function AdminSidebar({ identity }: { identity?: AdminIdentity }) {
             <div className="text-xs font-medium text-fog-100 truncate">
               {name}
             </div>
-            <div className="text-[10px] text-fog-500 truncate">
+            <div className="text-[10px] text-fog-500 truncate uppercase tracking-wider">
               {role}
             </div>
           </div>
-          <button
-            className="text-fog-500 hover:text-fog-100 transition-colors"
-            aria-label="Sign out"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+          <form action="/logout" method="post" className="shrink-0">
+            <button
+              type="submit"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-fog-500 hover:text-fog-100 hover:bg-white/5 transition-colors"
+              aria-label="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </form>
         </div>
       </div>
     </aside>

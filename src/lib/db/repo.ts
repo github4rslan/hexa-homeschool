@@ -49,6 +49,7 @@ import {
   type NextRole,
   type GuardResult,
 } from "@/lib/auth/staff-guards";
+import { isKnownFlag } from "@/lib/admin/feature-flags";
 import type {
   BillingRow,
   BillingStatus,
@@ -4836,6 +4837,58 @@ export async function adminDeleteFamily(input: {
     reason: input.reason,
     before: target.email,
     after: JSON.stringify(deleted),
+    ip: input.ip ?? null,
+  });
+  return { ok: true };
+}
+
+// ── Persisted feature flags (app settings) ────────────────────────────────
+
+/** Read the persisted feature-flag overrides ({} when none set). */
+export async function getFeatureFlags(): Promise<Record<string, boolean>> {
+  const col = await getCollection(Collections.settings);
+  const doc = await col.findOne({ _id: "feature_flags" as unknown as ObjectId });
+  const flags = (doc as { flags?: Record<string, boolean> } | null)?.flags;
+  return flags ?? {};
+}
+
+/**
+ * Set one feature-flag override. Admin-only, reason required, only for KNOWN
+ * wired flags (never arbitrary keys), audited with before→after.
+ */
+export async function setFeatureFlag(input: {
+  actorId: string;
+  actorEmail: string;
+  key: string;
+  enabled: boolean;
+  reason: string;
+  ip?: string | null;
+}): Promise<GuardResult> {
+  const actor = await findParentById(input.actorId);
+  if (resolveRole({ role: actor?.role, is_admin: actor?.is_admin }) !== "admin") {
+    return { ok: false, error: "Only an admin can change settings." };
+  }
+  const reasonCheck = requireReason(input.reason);
+  if (!reasonCheck.ok) return reasonCheck;
+  if (!isKnownFlag(input.key)) return { ok: false, error: "Unknown flag." };
+
+  const before = await getFeatureFlags();
+  const col = await getCollection(Collections.settings);
+  await col.updateOne(
+    { _id: "feature_flags" as unknown as ObjectId },
+    { $set: { [`flags.${input.key}`]: input.enabled, updated_at: new Date() } },
+    { upsert: true },
+  );
+
+  await recordStaffAction({
+    staffId: input.actorId,
+    staffEmail: input.actorEmail,
+    action: "settings.flag",
+    targetCollection: Collections.settings,
+    targetId: input.key,
+    reason: input.reason,
+    before: String(before[input.key] ?? "default"),
+    after: String(input.enabled),
     ip: input.ip ?? null,
   });
   return { ok: true };

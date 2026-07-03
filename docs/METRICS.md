@@ -85,7 +85,7 @@ Related: [`.claude/tasks/prove-and-grow.md`](../.claude/tasks/prove-and-grow.md)
 ### Settings — feature flags (`/admin/settings`)
 | Item | Was (mock) | Real source | Status |
 |---|---|---|---|
-| Feature flags + rollout % + toggles | `INITIAL_FLAGS` hardcoded, client-only toggles that persist nothing | no feature-flag store; only live gate is `AI_VISUALS_ENABLED` env var | ⚠️ **Illustrative** banner added (UI placeholder, not wired to runtime) |
+| Feature flags + toggles | `INITIAL_FLAGS` hardcoded, client-only toggles that persist nothing | persisted `app_settings.feature_flags` doc + audited admin toggles; `ai_visuals` override is wired into the per-question visual gate (env `AI_VISUALS_ENABLED` remains the default) | ✅ **Real** — only registered/wired flags are shown; every toggle writes a `staff_audit_log` row with reason |
 
 ---
 

@@ -8,6 +8,7 @@ import { Menu, X, LogOut } from "lucide-react";
 import { HexaLogo } from "@/components/ui/hexa-logo";
 import { Badge } from "@/components/ui/badge";
 import { NAV, isAdminNavActive } from "@/components/admin/nav-items";
+import { useAdminIdentity } from "@/components/admin/admin-identity";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ import { cn } from "@/lib/utils";
  */
 export function AdminMobileNav() {
   const pathname = usePathname();
+  const identity = useAdminIdentity();
   const [open, setOpen] = useState(false);
   const drawerRef = useRef<HTMLElement>(null);
   const close = useCallback(() => setOpen(false), []);
@@ -128,10 +130,25 @@ export function AdminMobileNav() {
               </nav>
 
               <div className="border-t border-white/5 p-4 [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]">
+                {identity && (
+                  <div className="mb-2 flex items-center gap-3 px-3 py-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-cyan-500 text-white text-xs font-semibold shrink-0">
+                      {identity.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-fog-100 truncate">
+                        {identity.name}
+                      </div>
+                      <div className="text-[10px] uppercase tracking-wider text-fog-500 truncate">
+                        {identity.role}
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <form action="/logout" method="post">
                   <button
                     type="submit"
-                    className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-base text-fog-400 transition-all hover:bg-white/5 hover:text-fog-100"
+                    className="flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-3 text-base text-fog-400 transition-all hover:bg-white/5 hover:text-fog-100"
                   >
                     <LogOut className="h-5 w-5" />
                     Sign out
