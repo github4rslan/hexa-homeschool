@@ -2117,6 +2117,30 @@ export async function adminListNewsletterSubscribers({
   };
 }
 
+/**
+ * Every newsletter subscriber, newest first — the full unpaginated set for CSV
+ * export. Staff-only (reached through the admin export route's admin gate). The
+ * subscribed date is the full ISO timestamp here so the export is precise.
+ */
+export async function adminAllNewsletterSubscribers(): Promise<
+  { email: string; source: string; subscribedAt: string }[]
+> {
+  const col = await getCollection<{
+    email: string;
+    source?: string;
+    created_at?: Date;
+  }>(Collections.newsletter);
+  const docs = await col
+    .find({}, { projection: { email: 1, source: 1, created_at: 1 } })
+    .sort({ created_at: -1 })
+    .toArray();
+  return docs.map((d) => ({
+    email: d.email,
+    source: d.source ?? "",
+    subscribedAt: d.created_at ? new Date(d.created_at).toISOString() : "",
+  }));
+}
+
 // ── Admin finance / users / compliance aggregates ─────────
 //
 // Cross-family read surfaces for staff only (reached through the (admin) layout,
