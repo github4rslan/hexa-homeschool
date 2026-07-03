@@ -2,16 +2,20 @@
 
 import { revalidatePath } from "next/cache";
 import { getSession } from "@/lib/auth/session";
+import { requireAdminActor } from "@/lib/admin/actor";
 import {
+  createTutorAccountAsAdmin,
   findParentById,
   logTutorSessionAsStaff,
   recordStaffAction,
+  scheduleTutorBookingAsStaff,
 } from "@/lib/db/repo";
 import { resolveRole, can } from "@/lib/auth/rbac";
 
 export interface TutorActionResult {
   ok: boolean;
   error?: string;
+  message?: string;
 }
 
 async function requireStaff(): Promise<
@@ -28,6 +32,62 @@ async function requireStaff(): Promise<
     return { error: "You don't have permission to action tutor requests." };
   }
   return { staffId: session.id, staffEmail: session.email ?? "staff" };
+}
+
+export async function createTutorAccount(
+  formData: FormData,
+): Promise<TutorActionResult> {
+  const actor = await requireAdminActor();
+  if ("error" in actor) return { ok: false, error: actor.error };
+
+  const email = String(formData.get("email") || "");
+  const fullName = String(formData.get("fullName") || "");
+  const temporaryPassword = String(formData.get("temporaryPassword") || "");
+  const reason = String(formData.get("reason") || "");
+
+  const res = await createTutorAccountAsAdmin({
+    actorId: actor.id,
+    actorEmail: actor.email,
+    email,
+    fullName,
+    temporaryPassword,
+    reason,
+    ip: actor.ip,
+  });
+  if (!res.ok) return { ok: false, error: res.error };
+  revalidatePath("/admin/tutors");
+  revalidatePath("/admin/staff");
+  return { ok: true, message: "Tutor account created." };
+}
+
+export async function scheduleTutorSession(
+  formData: FormData,
+): Promise<TutorActionResult> {
+  const actor = await requireAdminActor();
+  if ("error" in actor) return { ok: false, error: actor.error };
+
+  const bookingId = String(formData.get("bookingId") || "");
+  const tutorId = String(formData.get("tutorId") || "");
+  const scheduledAtRaw = String(formData.get("scheduledAt") || "");
+  const durationMinutes = Number(formData.get("durationMinutes") || 30);
+  const reason = String(formData.get("reason") || "");
+  const scheduledAt = new Date(scheduledAtRaw);
+
+  const res = await scheduleTutorBookingAsStaff({
+    staffId: actor.id,
+    staffEmail: actor.email,
+    bookingId,
+    tutorId,
+    scheduledAt,
+    durationMinutes,
+    reason,
+    ip: actor.ip,
+  });
+  if (!res.ok) return { ok: false, error: res.error };
+  revalidatePath("/admin/tutors");
+  revalidatePath("/tutor");
+  revalidatePath("/tutoring");
+  return { ok: true, message: "Session scheduled and room created." };
 }
 
 /**
@@ -64,5 +124,7 @@ export async function logTutorSession(
   }
 
   revalidatePath("/admin/tutors");
+  revalidatePath("/tutor");
+  revalidatePath("/tutoring");
   return { ok: true };
 }

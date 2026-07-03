@@ -68,7 +68,7 @@ export interface ParentDoc {
    * treated as "admin" (legacy migration in code). Absent + no is_admin = not
    * staff. Granted manually in Atlas; never self-serve.
    */
-  role?: "admin" | "support";
+  role?: "admin" | "support" | "tutor";
   /**
    * Staff-role provenance (accountability): the admin account id that last
    * granted/changed this account's staff role, and when. Absent on legacy
@@ -411,6 +411,7 @@ export interface TutorBookingDoc {
   _id?: ObjectId;
   parent_id: ObjectId;
   child_id: ObjectId;
+  assigned_tutor_id?: ObjectId | null;
   subject: Subject | null;
   /** Optional topic context for automated support requests. */
   topic_tag?: string;
@@ -418,6 +419,12 @@ export interface TutorBookingDoc {
   source?: "parent" | "remediation";
   note: string;
   requested_slot: string; // free-text preferred time for Phase 1
+  scheduled_at?: Date | null;
+  duration_minutes?: number | null;
+  video_provider?: "jitsi";
+  video_room_name?: string | null;
+  tutor_note?: string | null;
+  completed_at?: Date | null;
   status: "requested" | "scheduled" | "completed" | "cancelled";
   created_at: Date;
 }

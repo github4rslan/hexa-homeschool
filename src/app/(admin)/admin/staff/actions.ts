@@ -12,7 +12,7 @@ export interface ActionResult {
 }
 
 function parseRole(raw: string): NextRole | undefined {
-  if (raw === "admin" || raw === "support") return raw;
+  if (raw === "admin" || raw === "support" || raw === "tutor") return raw;
   if (raw === "none" || raw === "") return null;
   return undefined;
 }
@@ -29,7 +29,7 @@ export async function grantStaffRoleByEmail(
   const nextRole = parseRole(String(formData.get("role") || ""));
   if (!email) return { ok: false, error: "An account email is required." };
   if (nextRole === undefined || nextRole === null) {
-    return { ok: false, error: "Choose a role to grant (support or admin)." };
+    return { ok: false, error: "Choose a role to grant." };
   }
 
   const target = await findParentByEmail(email);

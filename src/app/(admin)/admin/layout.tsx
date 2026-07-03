@@ -3,7 +3,7 @@ import { AdminSidebar } from "@/components/admin/sidebar";
 import { AdminIdentityProvider } from "@/components/admin/admin-identity";
 import { getSession } from "@/lib/auth/session";
 import { findParentById } from "@/lib/db/repo";
-import { resolveRole } from "@/lib/auth/rbac";
+import { can, resolveRole } from "@/lib/auth/rbac";
 
 export default async function AdminLayout({
   children,
@@ -21,7 +21,8 @@ export default async function AdminLayout({
   const role = parent
     ? resolveRole({ role: parent.role, is_admin: parent.is_admin })
     : null;
-  if (!role) redirect("/dashboard");
+  if (!can(role, "admin.read")) redirect(role === "tutor" ? "/tutor" : "/dashboard");
+  const adminRole = role === "admin" || role === "support" ? role : "support";
 
   const displayName = session.email?.split("@")[0] || "Staff";
 
@@ -31,11 +32,11 @@ export default async function AdminLayout({
       <div className="fixed inset-0 bg-grid bg-grid-fade opacity-20 -z-10 pointer-events-none" />
       <div className="fixed inset-0 noise -z-10" />
 
-      <AdminIdentityProvider value={{ name: displayName, role }}>
+      <AdminIdentityProvider value={{ name: displayName, role: adminRole }}>
         <AdminSidebar
           identity={{
             name: displayName,
-            role,
+            role: adminRole,
           }}
         />
         <div className="flex-1 flex flex-col min-w-0">{children}</div>
