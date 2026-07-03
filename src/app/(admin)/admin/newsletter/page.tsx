@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { Download, Mail } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/sidebar";
 import { MetricCard } from "@/components/admin/metric-card";
 import { Card } from "@/components/ui/card";
@@ -33,13 +33,25 @@ export default async function NewsletterSubscribersPage({
       />
 
       <div className="flex-1 p-4 sm:p-6 lg:p-10 max-w-[1600px]">
-        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
-          <MetricCard
-            label="Total subscribers"
-            value={result.total.toLocaleString()}
-            hint="all-time"
-            accent="neon"
-          />
+        <section className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4">
+            <MetricCard
+              label="Total subscribers"
+              value={result.total.toLocaleString()}
+              hint="all-time"
+              accent="neon"
+            />
+          </div>
+          {result.total > 0 && (
+            <a
+              href="/admin/newsletter/export"
+              download
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-neon-400/30 bg-neon-500/10 px-4 text-sm font-medium text-neon-400 hover:bg-neon-500/20 transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              Export CSV
+            </a>
+          )}
         </section>
 
         <Card variant="glass" padding="none" className="overflow-hidden">
