@@ -135,7 +135,7 @@ function FeedbackCard({
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-lg text-fog-400 transition-colors hover:bg-white/5 hover:text-fog-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+        className="absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-lg text-fog-400 transition-colors hover:bg-white/5 hover:text-fog-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
       >
         <X className="h-5 w-5" />
       </button>
@@ -152,7 +152,7 @@ function FeedbackCard({
         </div>
       ) : (
         <>
-          <div className="mb-4 pr-8">
+          <div className="mb-4 pr-12">
             <div className="mb-1 flex items-center gap-2">
               <MessageSquareHeart className="h-4 w-4 text-violet-300" />
               <h2 className="text-base font-semibold text-fog-50">{title}</h2>
