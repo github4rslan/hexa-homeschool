@@ -33,6 +33,30 @@ export interface ParentDoc {
    */
   lifecycle_emails_sent?: string[];
   /**
+   * Parent activity heartbeat — the last time a valid session was seen for this
+   * parent, updated at most once per hour (throttled in `currentParentId()`) so
+   * it isn't a write per request. This is a PARENT signal only (never a child's)
+   * and is the single trigger for the lifecycle re-engagement series: an idle
+   * `last_active` starts the win-back cadence, and when it moves forward again the
+   * cadence resets. Absent = never tracked (legacy / never signed in since ship).
+   */
+  last_active?: Date;
+  /**
+   * Cyclical re-engagement claim keys, one per stage actually sent, of the form
+   * `"<lastActiveMs>:<stage>"`. Because the key embeds the `last_active` value the
+   * series is anchored to, a NEW idle cycle (a later `last_active`) yields new
+   * keys, so prior-cycle claims never block the fresh series — this is what makes
+   * the sequence reset on return without ever double-sending a stage in one cycle.
+   * Append-only; `$addToSet` gives the same claim-first idempotency as
+   * `lifecycle_emails_sent`. Absent = no re-engagement email ever sent.
+   */
+  reengagement_sent?: string[];
+  /**
+   * Timestamp of the most recent re-engagement email — used only for min-gap
+   * spacing between escalating stages within a cycle. Absent = none sent.
+   */
+  reengagement_last_sent_at?: Date | null;
+  /**
    * Staff flag gating the (admin) routes. No self-serve path sets this —
    * granted manually in Atlas. Undefined/false = regular parent. LEGACY: kept
    * working as "admin"; new grants use `role`. See `lib/auth/rbac.ts`.
@@ -506,6 +530,30 @@ export interface FeedbackDoc {
   /** Optional page/path the feedback was given from (context only, no PII). */
   context?: string | null;
   created_at: Date;
+}
+
+/**
+ * One row per re-engagement (win-back / upsell) email actually sent — the honest
+ * measurement backbone for the admin panel. Parent-scoped; carries no child data.
+ * `stage` (1–3) + `track` ("upsell" for free/lapsed, "reengage" for paid-active)
+ * are the segmentation dimensions; `reactivate_by` is the deadline within which a
+ * subsequent `last_active` advance counts as a re-activation attributable to this
+ * send (the KPI). Written best-effort after a successful send; never blocks the
+ * cron. Cascaded on family erasure.
+ */
+export interface ReengagementEventDoc {
+  _id?: ObjectId;
+  parent_id: ObjectId;
+  stage: 1 | 2 | 3;
+  track: "upsell" | "reengage";
+  /** Contact/segment snapshot (no child PII) for admin follow-up + breakdowns. */
+  tier: ParentDoc["subscription_tier"];
+  billing_status: ParentDoc["billing_status"];
+  /** The parent's `last_active` at send time — the idle cycle this send targeted. */
+  idle_since: Date;
+  sent_at: Date;
+  /** sent_at + attribution window; a later `last_active` before this = re-activated. */
+  reactivate_by: Date;
 }
 
 /**

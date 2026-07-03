@@ -23,8 +23,13 @@ const SERIF =
 const SANS =
   "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
-/** Outer shell: linen page, framed card, forest header, editorial footer. */
-function WRAP(inner: string): string {
+/** Outer shell: linen page, framed card, forest header, editorial footer.
+ * `unsubscribeUrl` (marketing email only) adds a one-click unsubscribe line to
+ * the outer footer, alongside the existing account-context note. */
+function WRAP(inner: string, opts?: { unsubscribeUrl?: string }): string {
+  const unsub = opts?.unsubscribeUrl
+    ? `<p style="font-family:${SANS};color:${COLORS.inkSoft};font-size:11px;margin:6px 0 0;">Not helpful? <a href="${opts.unsubscribeUrl}" style="color:${COLORS.clayDeep};">Unsubscribe from these emails</a> in one click.</p>`
+    : "";
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -55,6 +60,7 @@ function WRAP(inner: string): string {
 
       </table>
       <p style="font-family:${SANS};color:${COLORS.inkSoft};font-size:11px;margin:18px 0 0;">You&rsquo;re receiving this because an account was created with this email.</p>
+      ${unsub}
     </td></tr>
   </table>
 </body>
@@ -558,4 +564,132 @@ export function portfolioShareTemplate(opts: {
       <p style="margin:0;color:${COLORS.inkSoft};font-size:13px;">Any change to the portfolio changes this hash, so its integrity can be independently verified.</p>
     `),
   };
+}
+
+// ── Lifecycle re-engagement (win-back / upsell) ──────────
+//
+// Segmented, escalating, mobile-responsive marketing email. Personalised with
+// the child's first name, ONE concrete value point, ONE clear CTA, and a working
+// one-click unsubscribe in the footer (via WRAP's unsubscribeUrl). Content varies
+// by stage (gentle → value → win-back) and track ("upsell" for free/lapsed adds
+// what a plan unlocks + a subscribe CTA at the final stage; "reengage" for
+// paid-active parents is a warm check-in with NO upsell). Pure layout — the
+// decision to send lives in lib/engine/reengagement.ts.
+
+export type ReengEmailStage = 1 | 2 | 3;
+export type ReengEmailTrack = "upsell" | "reengage";
+
+/** Small "what a plan unlocks" list, upsell track only. */
+function planUnlocks(): string {
+  const items = [
+    "Unlimited daily lessons across Maths, English &amp; Science",
+    "The full GCSE-aligned curriculum, not just the diagnostic",
+    "A Local Authority-ready portfolio that builds itself",
+    "One-to-one tutoring when a topic needs a human",
+  ];
+  return `<ul style="margin:0 0 22px;padding-left:20px;color:${COLORS.ink};">${items
+    .map((i) => `<li style="margin-bottom:6px;">${i}</li>`)
+    .join("")}</ul>`;
+}
+
+export function reengagementTemplate(opts: {
+  name: string | null;
+  childFirstName: string;
+  stage: ReengEmailStage;
+  track: ReengEmailTrack;
+  /** Primary "come back and log in" destination. */
+  loginUrl: string;
+  /** Subscribe / choose-a-plan destination (upsell CTA). */
+  subscribeUrl: string;
+  /** Manage email preferences (soft opt-down). */
+  settingsUrl: string;
+  /** One-click unsubscribe (signed, login-less) — required for marketing. */
+  unsubscribeUrl: string;
+}): { subject: string; html: string; text: string } {
+  const first = opts.name ? opts.name.split(" ")[0] : null;
+  const greeting = first ? `Hi ${first},` : "Hi there,";
+  const child = opts.childFirstName;
+  const upsell = opts.track === "upsell";
+
+  let subject: string;
+  let headline: string;
+  let bodyHtml: string;
+  let ctaLabel: string;
+  let ctaUrl: string;
+  let bodyText: string;
+
+  if (opts.stage === 1) {
+    // Gentle — both tracks identical: warm, low-key, "pick up where you left off".
+    subject = `We miss you — ${child}'s next lesson is ready`;
+    headline = `${child}'s next lesson is ready`;
+    ctaLabel = "Continue learning";
+    ctaUrl = opts.loginUrl;
+    bodyHtml = `
+      <p style="margin:0 0 18px;">It&rsquo;s been a little while since ${child} last logged in — no worries at all, some weeks are busier than others. Whenever it suits, ${child}&rsquo;s next lesson is picked out and waiting, right where you left off.</p>
+      <p style="margin:0 0 24px;">A single 10-minute session is enough to keep the momentum going.</p>`;
+    bodyText = `It's been a little while since ${child} last logged in. Whenever it suits, ${child}'s next lesson is ready and waiting — a single 10-minute session keeps the momentum going.`;
+  } else if (opts.stage === 2) {
+    // Value — what's waiting; upsell track adds what a plan unlocks.
+    subject = `Here's what ${child} is missing`;
+    headline = `A few things waiting for ${child}`;
+    ctaLabel = "See what's waiting";
+    ctaUrl = opts.loginUrl;
+    bodyHtml = `
+      <p style="margin:0 0 18px;">${child}&rsquo;s learning is paused mid-stride. There are topics ready to be certified, a next lesson lined up, and progress that&rsquo;s just a login away from moving again.</p>
+      ${
+        upsell
+          ? `<p style="margin:0 0 10px;font-weight:600;color:${COLORS.forestDeep};">A full plan would also unlock:</p>${planUnlocks()}`
+          : `<p style="margin:0 0 24px;">Pick things back up whenever ${child} is ready — it takes just one short session to find the rhythm again.</p>`
+      }`;
+    bodyText = upsell
+      ? `${child}'s learning is paused mid-stride — topics ready to certify and a next lesson lined up. A full plan also unlocks unlimited daily lessons, the full GCSE curriculum, a self-building portfolio, and one-to-one tutoring.`
+      : `${child}'s learning is paused mid-stride — topics ready to certify and a next lesson lined up. It takes just one short session to find the rhythm again.`;
+  } else {
+    // Win-back — upsell: subscribe CTA + incentive; reengage: warm check-in.
+    if (upsell) {
+      subject = `Come back to ${child}'s learning — 20% off your first month`;
+      headline = `Ready when ${child} is`;
+      ctaLabel = "Choose a plan";
+      ctaUrl = opts.subscribeUrl;
+      bodyHtml = `
+        <p style="margin:0 0 18px;">We&rsquo;d love to help ${child} keep going. To make coming back easy, here&rsquo;s <strong style="color:${COLORS.forestDeep};">20% off your first month</strong> of any Edway plan — unlimited lessons, the full curriculum, and a portfolio that builds itself as ${child} learns.</p>
+        <p style="margin:0 0 24px;color:${COLORS.inkSoft};font-size:13px;">No pressure, and no commitment — cancel anytime.</p>`;
+      bodyText = `We'd love to help ${child} keep going. Here's 20% off your first month of any Edway plan — unlimited lessons, the full curriculum, and a self-building portfolio. Cancel anytime.`;
+    } else {
+      subject = `Checking in on ${child}`;
+      headline = `Just checking in`;
+      ctaLabel = `Open ${child}'s dashboard`;
+      ctaUrl = opts.loginUrl;
+      bodyHtml = `
+        <p style="margin:0 0 18px;">We&rsquo;ve noticed it&rsquo;s been quiet for ${child} lately, and wanted to check in — is everything going okay? If something&rsquo;s in the way, just reply to this email and a real person will help.</p>
+        <p style="margin:0 0 24px;">${child}&rsquo;s lessons are exactly where you left them, ready whenever the time is right.</p>`;
+      bodyText = `We've noticed it's been quiet for ${child} lately and wanted to check in — is everything going okay? Just reply and a real person will help. ${child}'s lessons are ready whenever the time is right.`;
+    }
+  }
+
+  const html = WRAP(
+    `
+      ${heading(headline)}
+      <p style="margin:0 0 22px;">${greeting}</p>
+      ${bodyHtml}
+      <p style="margin:0 0 24px;text-align:center;">${amberButton(ctaUrl, ctaLabel)}</p>
+      <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">Prefer fewer emails like this? <a href="${opts.settingsUrl}" style="color:${COLORS.clayDeep};">Manage your preferences</a>. Account and safety emails always reach you.</p>
+    `,
+    { unsubscribeUrl: opts.unsubscribeUrl },
+  );
+
+  const text = [
+    headline,
+    "",
+    greeting,
+    "",
+    bodyText,
+    "",
+    `${ctaLabel}: ${ctaUrl}`,
+    "",
+    `Manage preferences: ${opts.settingsUrl}`,
+    `Unsubscribe: ${opts.unsubscribeUrl}`,
+  ].join("\n");
+
+  return { subject, html, text };
 }

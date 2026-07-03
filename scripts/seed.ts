@@ -180,6 +180,13 @@ async function main() {
     await db.collection("feedback").createIndex({ parent_id: 1, created_at: -1 });
     await db.collection("feedback").createIndex({ stars: 1, created_at: -1 });
 
+    // Lifecycle re-engagement sends: newest-first admin reads + per-parent
+    // lookups (re-activation attribution). Parent-scoped; no child data.
+    await db.collection("reengagement_events").createIndex({ sent_at: -1 });
+    await db.collection("reengagement_events").createIndex({ parent_id: 1, sent_at: -1 });
+    // Idle-parent candidate scan for the daily re-engagement cron.
+    await db.collection("parents").createIndex({ last_active: 1 });
+
     console.log("✓ Indexes ensured.");
     console.log("\n✅ Seed complete.");
   } finally {

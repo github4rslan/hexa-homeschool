@@ -254,11 +254,12 @@ export default async function SettingsPage({
                   className="mt-0.5 rounded border-white/10 bg-white/5"
                 />
                 <span>
-                  Onboarding tips
+                  Tips &amp; occasional check-ins
                   <span className="block text-xs text-fog-500 mt-0.5">
                     A few helpful emails as you get started — a nudge to run the
-                    diagnostic, and a note when your first weekly plan is
-                    approved. Account and safety emails always come through.
+                    diagnostic, a note when your first plan is approved — and the
+                    occasional friendly reminder if things go quiet for a while.
+                    Account and safety emails always come through regardless.
                   </span>
                 </span>
               </label>
