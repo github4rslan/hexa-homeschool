@@ -3521,7 +3521,7 @@ export async function createTutorAccountAsAdmin(input: {
 }
 
 function makeJitsiRoomName(bookingId: string): string {
-  return `edway-${bookingId}-${randomUUID().replace(/-/g, "").slice(0, 12)}`;
+  return `Edway${bookingId}${randomUUID().replace(/-/g, "").slice(0, 12)}`;
 }
 
 export async function scheduleTutorBookingAsStaff(input: {
