@@ -25,7 +25,7 @@ const csp = [
   "font-src 'self' data:",
   "connect-src 'self' https://api.cloudinary.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io https://*.posthog.com https://*.i.posthog.com",
   "worker-src 'self' blob:",
-  "frame-src 'none'",
+  "frame-src 'self' https://meet.jit.si",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -44,9 +44,12 @@ const securityHeaders = [
 // Camera stays off everywhere. The microphone is allowed only under /learn,
 // where the child records spoken answers for STT — every other route gets
 // microphone=() too.
-const permissionsPolicy = (allowMicrophone: boolean) => ({
+const permissionsPolicy = (mode: "none" | "learn" | "tutoring") => ({
   key: "Permissions-Policy",
-  value: `camera=(), microphone=(${allowMicrophone ? "self" : ""}), geolocation=(), payment=(), usb=()`,
+  value:
+    mode === "tutoring"
+      ? 'camera=(self "https://meet.jit.si"), microphone=(self "https://meet.jit.si"), display-capture=(self "https://meet.jit.si"), geolocation=(), payment=(), usb=()'
+      : `camera=(), microphone=(${mode === "learn" ? "self" : ""}), display-capture=(), geolocation=(), payment=(), usb=()`,
 });
 
 const nextConfig: NextConfig = {
@@ -65,8 +68,10 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
-      { source: "/((?!learn).*)", headers: [permissionsPolicy(false)] },
-      { source: "/learn/:path*", headers: [permissionsPolicy(true)] },
+      { source: "/((?!learn|tutor|tutoring).*)", headers: [permissionsPolicy("none")] },
+      { source: "/learn/:path*", headers: [permissionsPolicy("learn")] },
+      { source: "/tutor/:path*", headers: [permissionsPolicy("tutoring")] },
+      { source: "/tutoring/:path*", headers: [permissionsPolicy("tutoring")] },
     ];
   },
   experimental: {
