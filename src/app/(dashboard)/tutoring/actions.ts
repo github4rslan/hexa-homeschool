@@ -4,11 +4,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   currentParentId,
+  findParentById,
   getActiveChild,
   createTutorBooking,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
+import { appUrl } from "@/lib/email/verification";
+import { notifyTutorBookingRequested } from "@/lib/email/tutoring";
 
 export async function requestTutor(formData: FormData) {
   const parentId = await currentParentId();
@@ -34,6 +37,16 @@ export async function requestTutor(formData: FormData) {
 
   if (!res.ok) {
     redirect(`/tutoring?error=${encodeURIComponent(res.reason ?? "Could not book.")}`);
+  }
+  const parent = await findParentById(parentId);
+  if (parent) {
+    await notifyTutorBookingRequested({
+      parentEmail: parent.email,
+      parentName: parent.full_name,
+      childName: child.full_name,
+      requestedSlot,
+      detailUrl: `${appUrl()}/tutoring`,
+    });
   }
   revalidatePath("/tutoring");
   redirect("/tutoring?booked=1");

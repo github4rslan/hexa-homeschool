@@ -11,6 +11,11 @@ import {
 } from "@/lib/db/repo";
 import { validateMessageBody } from "@/lib/messaging/validate";
 import { rateLimit } from "@/lib/rate-limit";
+import { appUrl } from "@/lib/email/verification";
+import {
+  notifyTutorMessage,
+  notifyTutorSessionCompleted,
+} from "@/lib/email/tutoring";
 
 export interface TutorPortalActionResult {
   ok: boolean;
@@ -51,6 +56,12 @@ export async function sendTutorMessage(
 
   const posted = await postMessageAsStaff("booking", bookingId, valid.body);
   if (!posted) return { ok: false, error: "Could not send message." };
+  await notifyTutorMessage({
+    to: detail.parentEmail,
+    recipientName: detail.parentName,
+    senderLabel: detail.tutorName ?? "Your tutor",
+    sessionUrl: `${appUrl()}/tutoring/session/${bookingId}`,
+  });
 
   revalidatePath("/tutor");
   revalidatePath(`/tutor/sessions/${bookingId}`);
@@ -68,6 +79,7 @@ export async function completeTutorSession(
   const note = String(formData.get("note") || "");
   if (!bookingId) return { ok: false, error: "Missing session." };
   if (!note.trim()) return { ok: false, error: "Add a short session note." };
+  const detail = await getTutorSessionForTutor(auth.tutorId, bookingId);
 
   const res = await logTutorSessionAsStaff({
     staffId: auth.tutorId,
@@ -77,6 +89,15 @@ export async function completeTutorSession(
     tutorScoped: true,
   });
   if (!res.ok) return { ok: false, error: res.reason ?? "Could not complete session." };
+  if (detail) {
+    await notifyTutorSessionCompleted({
+      parentEmail: detail.parentEmail,
+      parentName: detail.parentName,
+      childName: detail.childName,
+      tutorName: detail.tutorName,
+      sessionUrl: `${appUrl()}/tutoring`,
+    });
+  }
 
   revalidatePath("/tutor");
   revalidatePath(`/tutor/sessions/${bookingId}`);
