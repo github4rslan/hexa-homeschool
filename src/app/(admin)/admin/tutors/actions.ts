@@ -6,11 +6,17 @@ import { requireAdminActor } from "@/lib/admin/actor";
 import {
   createTutorAccountAsAdmin,
   findParentById,
+  getTutorBookingAsStaff,
   logTutorSessionAsStaff,
   recordStaffAction,
   scheduleTutorBookingAsStaff,
 } from "@/lib/db/repo";
 import { resolveRole, can } from "@/lib/auth/rbac";
+import { appUrl } from "@/lib/email/verification";
+import {
+  notifyTutorSessionCompleted,
+  notifyTutorSessionScheduled,
+} from "@/lib/email/tutoring";
 
 export interface TutorActionResult {
   ok: boolean;
@@ -84,6 +90,20 @@ export async function scheduleTutorSession(
     ip: actor.ip,
   });
   if (!res.ok) return { ok: false, error: res.error };
+  const detail = await getTutorBookingAsStaff(bookingId);
+  if (detail) {
+    await notifyTutorSessionScheduled({
+      parentEmail: detail.parentEmail,
+      parentName: detail.parentName,
+      tutorEmail: detail.tutorEmail,
+      tutorName: detail.tutorName,
+      childName: detail.childName,
+      scheduledAt,
+      durationMinutes,
+      parentUrl: `${appUrl()}/tutoring/session/${bookingId}`,
+      tutorUrl: `${appUrl()}/tutor/sessions/${bookingId}`,
+    });
+  }
   revalidatePath("/admin/tutors");
   revalidatePath("/tutor");
   revalidatePath("/tutoring");
@@ -105,6 +125,7 @@ export async function logTutorSession(
   const note = String(formData.get("note") || "");
   if (!bookingId) return { ok: false, error: "Missing request." };
   if (!note.trim()) return { ok: false, error: "Add a short note first." };
+  const detail = await getTutorBookingAsStaff(bookingId);
 
   const res = await logTutorSessionAsStaff({
     staffId: auth.staffId,
@@ -121,6 +142,15 @@ export async function logTutorSession(
       targetId: bookingId,
     });
     return { ok: false, error: res.reason ?? "Could not log the session." };
+  }
+  if (detail) {
+    await notifyTutorSessionCompleted({
+      parentEmail: detail.parentEmail,
+      parentName: detail.parentName,
+      childName: detail.childName,
+      tutorName: detail.tutorName,
+      sessionUrl: `${appUrl()}/tutoring`,
+    });
   }
 
   revalidatePath("/admin/tutors");

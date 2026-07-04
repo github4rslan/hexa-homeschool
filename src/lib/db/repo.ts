@@ -3253,7 +3253,7 @@ export async function createTutorBooking(
   parentId: string,
   childId: ObjectId,
   input: { subject: Subject | null; note: string; requestedSlot: string },
-): Promise<{ ok: boolean; reason?: string }> {
+): Promise<{ ok: boolean; reason?: string; bookingId?: string }> {
   if (!(await assertOwnsChild(parentId, childId))) {
     return { ok: false, reason: "Child not found." };
   }
@@ -3269,7 +3269,7 @@ export async function createTutorBooking(
   }
   const oid = toObjectId(parentId)!;
   const col = await getCollection<TutorBookingDoc>(Collections.tutorBookings);
-  await col.insertOne({
+  const res = await col.insertOne({
     parent_id: oid,
     child_id: childId,
     subject: input.subject,
@@ -3279,7 +3279,7 @@ export async function createTutorBooking(
     status: "requested",
     created_at: new Date(),
   } as TutorBookingDoc);
-  return { ok: true };
+  return { ok: true, bookingId: res.insertedId.toHexString() };
 }
 
 export async function createRemediationTutorHandoff(
@@ -3631,6 +3631,17 @@ export async function getTutorBookingForParent(
   const booking = await (await getCollection<TutorBookingDoc>(Collections.tutorBookings)).findOne({
     _id: bookingOid,
     parent_id: parentOid,
+  });
+  return booking ? hydrateTutorBooking(booking) : null;
+}
+
+export async function getTutorBookingAsStaff(
+  bookingId: string,
+): Promise<TutorSessionDetail | null> {
+  const bookingOid = toObjectId(bookingId);
+  if (!bookingOid) return null;
+  const booking = await (await getCollection<TutorBookingDoc>(Collections.tutorBookings)).findOne({
+    _id: bookingOid,
   });
   return booking ? hydrateTutorBooking(booking) : null;
 }

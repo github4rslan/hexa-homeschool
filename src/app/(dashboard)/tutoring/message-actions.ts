@@ -4,12 +4,15 @@ import { revalidatePath } from "next/cache";
 import {
   currentParentId,
   getActiveChild,
+  getTutorBookingForParent,
   postMessageAsParent,
   markThreadReadByParent,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { validateMessageBody, isThreadType } from "@/lib/messaging/validate";
 import { rateLimit } from "@/lib/rate-limit";
+import { appUrl } from "@/lib/email/verification";
+import { notifyTutorMessage } from "@/lib/email/tutoring";
 
 export interface PostMessageResult {
   ok: boolean;
@@ -49,6 +52,17 @@ export async function sendParentMessage(formData: FormData): Promise<PostMessage
     valid.body,
   );
   if (!ok) return { ok: false, error: "You can only message your own threads." };
+  if (threadType === "booking") {
+    const detail = await getTutorBookingForParent(parentId, threadId);
+    if (detail?.tutorEmail) {
+      await notifyTutorMessage({
+        to: detail.tutorEmail,
+        recipientName: detail.tutorName,
+        senderLabel: "A parent",
+        sessionUrl: `${appUrl()}/tutor/sessions/${threadId}`,
+      });
+    }
+  }
 
   revalidatePath("/tutoring");
   return { ok: true };
