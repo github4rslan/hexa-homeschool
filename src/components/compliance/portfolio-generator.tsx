@@ -27,6 +27,9 @@ type PortfolioResponse = VerifiedPortfolio & {
     totalTopics: number;
     mocksTaken: number;
     totalMocks: number;
+    lessonsCompleted: number;
+    workEvidenceCount: number;
+    latestGrade: number | null;
   } | null;
 };
 
@@ -39,6 +42,26 @@ const DEFAULT_TERM = (() => {
 export interface PortfolioChild {
   id: string;
   name: string;
+}
+
+function EvidenceMetric({
+  label,
+  value,
+  detail,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+}) {
+  return (
+    <div className="rounded-xl border border-white/5 bg-white/[0.03] p-4">
+      <div className="text-[10px] font-mono uppercase tracking-widest text-fog-500">
+        {label}
+      </div>
+      <div className="mt-1 text-xl font-semibold text-fog-50">{value}</div>
+      <div className="mt-0.5 text-xs text-fog-500">{detail}</div>
+    </div>
+  );
 }
 
 export function PortfolioGenerator({
@@ -224,44 +247,78 @@ export function PortfolioGenerator({
               </div>
               <Badge variant="neon" size="md">
                 <Check className="h-3 w-3" />
-                Verified
+                Tamper-evident
               </Badge>
             </div>
 
             {portfolio.readiness && (
-              <div
-                className={[
-                  "mb-6 rounded-2xl border p-4",
-                  portfolio.readiness.status === "complete"
-                    ? "border-neon-400/20 bg-neon-500/[0.04]"
-                    : "border-amber-400/20 bg-amber-500/[0.04]",
-                ].join(" ")}
-              >
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <Badge
-                    variant={
-                      portfolio.readiness.status === "complete"
-                        ? "neon"
-                        : "amber"
-                    }
-                    size="md"
-                  >
-                    {portfolio.readiness.status === "complete"
-                      ? "Complete portfolio"
-                      : "In progress portfolio"}
+              <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.025] p-5">
+                <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <Badge
+                        variant={
+                          portfolio.readiness.status === "complete"
+                            ? "neon"
+                            : "amber"
+                        }
+                        size="md"
+                      >
+                        {portfolio.readiness.status === "complete"
+                          ? "Complete portfolio"
+                          : "In progress portfolio"}
+                      </Badge>
+                      <span className="text-xs font-medium text-fog-500">
+                        Evidence status
+                      </span>
+                    </div>
+                    <p className="max-w-2xl text-sm leading-relaxed text-fog-300">
+                      {portfolio.readiness.status === "complete"
+                        ? "This evidence pack includes the full certified curriculum and all subject mock exams."
+                        : "This evidence pack is useful for interim reporting. It becomes complete when all topics are certified and all subject mocks are taken."}
+                    </p>
+                  </div>
+                  <Badge variant="outline" size="sm">
+                    SHA-256 signed
                   </Badge>
-                  <span className="text-xs text-fog-500">
-                    {portfolio.readiness.certifiedTopics}/
-                    {portfolio.readiness.totalTopics} topics certified ·{" "}
-                    {portfolio.readiness.mocksTaken}/
-                    {portfolio.readiness.totalMocks} mocks taken
-                  </span>
                 </div>
-                <p className="text-sm leading-relaxed text-fog-300">
-                  {portfolio.readiness.status === "complete"
-                    ? "This evidence pack includes the full certified curriculum and all subject mock exams."
-                    : "This evidence pack is useful for interim reporting. It will become complete when all topics are certified and all subject mocks are taken."}
-                </p>
+
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <EvidenceMetric
+                    label="Curriculum"
+                    value={`${portfolio.readiness.certifiedTopics}/${portfolio.readiness.totalTopics}`}
+                    detail="topics certified"
+                  />
+                  <EvidenceMetric
+                    label="Mock exams"
+                    value={`${portfolio.readiness.mocksTaken}/${portfolio.readiness.totalMocks}`}
+                    detail="subject mocks completed"
+                  />
+                  <EvidenceMetric
+                    label="Lessons"
+                    value={portfolio.readiness.lessonsCompleted.toString()}
+                    detail="completed lesson logs"
+                  />
+                  <EvidenceMetric
+                    label="Grade evidence"
+                    value={
+                      portfolio.readiness.latestGrade !== null
+                        ? `Grade ${portfolio.readiness.latestGrade}`
+                        : "Pending"
+                    }
+                    detail="latest assessment signal"
+                  />
+                  <EvidenceMetric
+                    label="Work evidence"
+                    value={portfolio.readiness.workEvidenceCount.toString()}
+                    detail="uploaded work samples"
+                  />
+                  <EvidenceMetric
+                    label="Verification"
+                    value="Ready"
+                    detail="public hash check"
+                  />
+                </div>
               </div>
             )}
 
