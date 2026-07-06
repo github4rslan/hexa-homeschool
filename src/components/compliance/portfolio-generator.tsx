@@ -33,6 +33,18 @@ type PortfolioResponse = VerifiedPortfolio & {
   } | null;
 };
 
+function formatUkDateTime(value: string): string {
+  return new Date(value).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/London",
+    timeZoneName: "short",
+  });
+}
+
 const DEFAULT_TERM = (() => {
   const now = new Date();
   const q = Math.floor(now.getMonth() / 3) + 1;
@@ -144,6 +156,14 @@ export function PortfolioGenerator({
     }
   }
 
+  const verificationHref = portfolio?.persisted
+    ? `/verify-portfolio?hash=${encodeURIComponent(portfolio.verificationHash)}`
+    : null;
+  const verificationUrl =
+    verificationHref && typeof window !== "undefined"
+      ? `${window.location.origin}${verificationHref}`
+      : verificationHref;
+
   return (
     <div className="max-w-3xl mx-auto">
       {/* Generator form */}
@@ -247,7 +267,7 @@ export function PortfolioGenerator({
               </div>
               <Badge variant="neon" size="md">
                 <Check className="h-3 w-3" />
-                Tamper-evident
+                Verified
               </Badge>
             </div>
 
@@ -318,6 +338,11 @@ export function PortfolioGenerator({
                     value="Ready"
                     detail="public hash check"
                   />
+                  <EvidenceMetric
+                    label="Generated"
+                    value={formatUkDateTime(portfolio.generatedAt)}
+                    detail="UK time"
+                  />
                 </div>
               </div>
             )}
@@ -373,7 +398,7 @@ export function PortfolioGenerator({
                 This hash is computed over the canonical record. Any alteration to
                 the portfolio changes the hash — allowing a Local Authority to
                 independently verify the document has not been tampered with.
-                Generated {new Date(portfolio.generatedAt).toLocaleString("en-GB")}.
+                Generated {formatUkDateTime(portfolio.generatedAt)}.
                 {portfolio.persisted
                   ? " Saved to your child's compliance record."
                   : " (Not saved — sign in and match a child's name to persist.)"}
@@ -381,15 +406,34 @@ export function PortfolioGenerator({
             </div>
 
             {portfolio.persisted && (
-              <div className="mt-4 print:hidden">
-                <Button
-                  href={`/verify-portfolio?hash=${encodeURIComponent(portfolio.verificationHash)}`}
-                  variant="outline"
-                  size="sm"
-                >
+              <div className="mt-5 rounded-xl border border-neon-400/20 bg-neon-500/[0.04] p-4">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-neon-300">
                   <Fingerprint className="h-4 w-4" />
-                  Open verification page
-                </Button>
+                  Verification page
+                </div>
+                <p className="mb-3 text-xs leading-relaxed text-fog-500">
+                  Local Authority officers can use this link to confirm the
+                  portfolio hash against Edway&apos;s generated dossier record.
+                </p>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center print:block">
+                  <Button
+                    href={verificationHref ?? "#"}
+                    variant="outline"
+                    size="sm"
+                    className="self-start print:hidden"
+                  >
+                    <Fingerprint className="h-4 w-4" />
+                    Open verification page
+                  </Button>
+                  {verificationHref && (
+                    <a
+                      href={verificationHref}
+                      className="break-all text-xs font-medium text-violet-300 underline underline-offset-2 print:text-fog-900"
+                    >
+                      {verificationUrl}
+                    </a>
+                  )}
+                </div>
               </div>
             )}
 
