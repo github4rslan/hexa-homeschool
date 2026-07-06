@@ -3,6 +3,7 @@
 import { currentParentId, findParentById } from "@/lib/db/repo";
 import { sendEmail, emailConfigured } from "@/lib/email/send";
 import { portfolioShareTemplate } from "@/lib/email/templates";
+import { appUrl } from "@/lib/email/verification";
 
 export interface ShareResult {
   ok: boolean;
@@ -34,10 +35,14 @@ export async function emailPortfolio(input: {
   }
 
   const parent = await findParentById(parentId);
+  const verificationUrl = `${appUrl()}/verify-portfolio?hash=${encodeURIComponent(
+    input.verificationHash,
+  )}`;
   const tmpl = portfolioShareTemplate({
     childName: input.childName,
     term: input.term,
     verificationHash: input.verificationHash,
+    verificationUrl,
     fromParent: parent?.full_name ?? null,
   });
   const res = await sendEmail({ to, subject: tmpl.subject, html: tmpl.html });

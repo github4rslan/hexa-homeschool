@@ -1836,6 +1836,43 @@ export async function insertDossier(
   return true;
 }
 
+export interface DossierVerification {
+  childFirstName: string;
+  reportingPeriod: string;
+  generatedAt: Date;
+  secureHash: string;
+}
+
+/**
+ * Public, minimal verification lookup for Local Authority officers. The hash is
+ * already shared by the parent; this returns only enough metadata to confirm
+ * the dossier exists and has not been altered, without exposing learning detail.
+ */
+export async function verifyDossierHash(
+  secureHash: string,
+): Promise<DossierVerification | null> {
+  const hash = secureHash.trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(hash)) return null;
+
+  const dossiers = await getCollection<DossierDoc>(Collections.dossiers);
+  const dossier = await dossiers.findOne({ secure_hash: hash });
+  if (!dossier) return null;
+
+  const children = await getCollection<ChildDoc>(Collections.children);
+  const child = await children.findOne(
+    { _id: dossier.child_id },
+    { projection: { full_name: 1 } },
+  );
+  const firstName = child?.full_name?.trim().split(/\s+/)[0] || "Child";
+
+  return {
+    childFirstName: firstName,
+    reportingPeriod: dossier.reporting_period,
+    generatedAt: dossier.generated_at,
+    secureHash: dossier.secure_hash,
+  };
+}
+
 /** Count certified competence rows updated since a timestamp, across children. */
 export async function countCertifiedSince(
   childIds: ObjectId[],
