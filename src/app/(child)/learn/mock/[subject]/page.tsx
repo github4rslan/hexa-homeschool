@@ -7,6 +7,7 @@ import {
   currentBandForSubject,
   childFloorBand,
   hasMockThisPeriod,
+  certifiedBySubject,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
@@ -21,6 +22,7 @@ const SUBJECT_LABEL: Record<Subject, string> = {
   english: "English",
   science: "Science",
 };
+const TOPICS_PER_SUBJECT = 10;
 
 function isSubject(s: string): s is Subject {
   return s === "mathematics" || s === "english" || s === "science";
@@ -38,6 +40,11 @@ export default async function MockSubjectPage({
   if (!parentId) redirect(`/login?redirect=/learn/mock/${subject}`);
   const child = await getActiveChild(parentId, await readActiveChildId());
   if (!child?._id) redirect("/dashboard");
+
+  const certified = await certifiedBySubject(child._id);
+  if ((certified[subject] ?? 0) < TOPICS_PER_SUBJECT) {
+    redirect("/learn/mock");
+  }
 
   // One honest attempt per period: if this subject's mock is already done this
   // period, never build a fresh paper — show the saved, read-only result.

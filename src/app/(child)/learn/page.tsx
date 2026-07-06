@@ -91,6 +91,8 @@ export default async function LearnHubPage() {
 
   const quests: Quest[] = SUBJECTS.map((s, i) => {
     const done = certified[s.id] ?? 0;
+    const courseDone = Math.min(done, TOPICS_PER_SUBJECT);
+    const courseCertified = done >= TOPICS_PER_SUBJECT;
     const planned = plannedTodayBySubject.get(s.id);
     const topicTag = planned?.tag ?? firstTopics[i]?.topic_tag;
     // A topic resting for a tutor handoff shows as a calm "resting" card rather
@@ -102,11 +104,17 @@ export default async function LearnHubPage() {
       label: s.label,
       accent: s.accent,
       ring: s.ring,
-      href: topicTag ? `/learn/lesson?topic=${topicTag}` : "/learn/lesson",
+      href:
+        courseCertified
+          ? `/learn/mock/${s.id}`
+          : topicTag
+            ? `/learn/lesson?topic=${topicTag}`
+            : "/learn/lesson",
       done: doneSubjects.has(s.id),
       resting,
-      progressLabel: `${done}/${TOPICS_PER_SUBJECT}`,
-      progressPct: Math.round((done / TOPICS_PER_SUBJECT) * 100),
+      certified: courseCertified,
+      progressLabel: `${courseDone}/${TOPICS_PER_SUBJECT}`,
+      progressPct: Math.round((courseDone / TOPICS_PER_SUBJECT) * 100),
     };
   });
 
