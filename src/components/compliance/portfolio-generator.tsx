@@ -30,6 +30,17 @@ type PortfolioResponse = VerifiedPortfolio & {
     lessonsCompleted: number;
     workEvidenceCount: number;
     latestGrade: number | null;
+    subjects: {
+      subject: string;
+      label: string;
+      certifiedTopics: number;
+      totalTopics: number;
+      mockTaken: boolean;
+      mockGrade: string | null;
+      latestGrade: string | null;
+      gradeSource: string | null;
+      assessedAt: string | null;
+    }[];
   } | null;
 };
 
@@ -74,6 +85,16 @@ function EvidenceMetric({
       <div className="mt-0.5 text-xs text-fog-500">{detail}</div>
     </div>
   );
+}
+
+function formatShortUkDate(value: string | null): string {
+  if (!value) return "No assessment yet";
+  return new Date(value).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Europe/London",
+  });
 }
 
 export function PortfolioGenerator({
@@ -177,7 +198,7 @@ export function PortfolioGenerator({
               Local Authority portfolio
             </h1>
             <p className="text-sm text-fog-400">
-              Generate a verified, tamper-evident evidence package.
+              Generate a verified Local Authority evidence package.
             </p>
           </div>
         </div>
@@ -275,6 +296,9 @@ export function PortfolioGenerator({
               <div className="mb-8 rounded-2xl border border-white/10 bg-white/[0.025] p-5">
                 <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
                   <div>
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-violet-300">
+                      Evidence summary
+                    </div>
                     <div className="mb-2 flex flex-wrap items-center gap-2">
                       <Badge
                         variant={
@@ -326,7 +350,7 @@ export function PortfolioGenerator({
                         ? `Grade ${portfolio.readiness.latestGrade}`
                         : "Pending"
                     }
-                    detail="latest assessment signal"
+                    detail="highest current predicted grade"
                   />
                   <EvidenceMetric
                     label="Work evidence"
@@ -343,6 +367,64 @@ export function PortfolioGenerator({
                     value={formatUkDateTime(portfolio.generatedAt)}
                     detail="UK time"
                   />
+                </div>
+
+                <div className="mt-5 overflow-x-auto rounded-xl border border-white/10">
+                  <div className="min-w-[720px]">
+                    <div className="grid grid-cols-[1.15fr_0.8fr_0.9fr_1.1fr] gap-3 border-b border-white/10 bg-white/[0.04] px-4 py-3 text-[10px] font-mono uppercase tracking-widest text-fog-500">
+                      <span>Subject</span>
+                      <span>Topics</span>
+                      <span>Mock</span>
+                      <span>Predicted grade</span>
+                    </div>
+                    <div className="divide-y divide-white/10">
+                    {portfolio.readiness.subjects.map((subject) => (
+                      <div
+                        key={subject.subject}
+                        className="grid grid-cols-[1.15fr_0.8fr_0.9fr_1.1fr] gap-3 px-4 py-3 text-sm text-fog-200"
+                      >
+                        <div>
+                          <div className="font-semibold text-fog-50">
+                            {subject.label}
+                          </div>
+                          <div className="mt-0.5 text-xs text-fog-500">
+                            {formatShortUkDate(subject.assessedAt)}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-fog-50">
+                            {subject.certifiedTopics}/{subject.totalTopics}
+                          </span>
+                          <div className="mt-0.5 text-xs text-fog-500">
+                            certified
+                          </div>
+                        </div>
+                        <div>
+                          <span
+                            className={
+                              subject.mockTaken
+                                ? "font-semibold text-neon-300"
+                                : "font-semibold text-amber-300"
+                            }
+                          >
+                            {subject.mockTaken ? "Taken" : "Pending"}
+                          </span>
+                          <div className="mt-0.5 text-xs text-fog-500">
+                            {subject.mockGrade ?? "No mock grade"}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="font-semibold text-fog-50">
+                            {subject.latestGrade ?? "Pending"}
+                          </span>
+                          <div className="mt-0.5 text-xs text-fog-500">
+                            {subject.gradeSource ?? "Awaiting assessment"}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -397,7 +479,7 @@ export function PortfolioGenerator({
               <p className="mt-3 text-xs text-fog-500 leading-relaxed">
                 This hash is computed over the canonical record. Any alteration to
                 the portfolio changes the hash — allowing a Local Authority to
-                independently verify the document has not been tampered with.
+                independently verify whether the document changed after generation.
                 Generated {formatUkDateTime(portfolio.generatedAt)}.
                 {portfolio.persisted
                   ? " Saved to your child's compliance record."

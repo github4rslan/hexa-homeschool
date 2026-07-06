@@ -12,10 +12,16 @@ import {
   listMedia,
 } from "@/lib/db/repo";
 import type { ChildDoc } from "@/lib/db/types";
+import type { Subject } from "@/lib/db/types";
 import { rateLimit } from "@/lib/rate-limit";
 
 const PORTFOLIO_TOPICS_PER_SUBJECT = 10;
 const PORTFOLIO_TOTAL_TOPICS = 30;
+const SUBJECT_LABELS: Record<Subject, string> = {
+  mathematics: "Mathematics",
+  english: "English",
+  science: "Science",
+};
 
 function gradeNumber(grade: string | null): number | null {
   if (!grade) return null;
@@ -86,6 +92,28 @@ async function portfolioReadiness(parentId: string, child: ChildDoc) {
   const mocksTaken = mockState.filter((m) => m.taken).length;
   const totalMocks = mockState.length;
   const lessonsCompleted = logs.filter((l) => l.status === "completed").length;
+  const subjects = mockState.map((mock) => {
+    const standing = standings.find((s) => s.subject === mock.subject);
+    const latestGrade = standing?.grade ?? null;
+    return {
+      subject: mock.subject,
+      label: SUBJECT_LABELS[mock.subject],
+      certifiedTopics: Math.min(
+        certified[mock.subject] ?? 0,
+        PORTFOLIO_TOPICS_PER_SUBJECT,
+      ),
+      totalTopics: PORTFOLIO_TOPICS_PER_SUBJECT,
+      mockTaken: mock.taken,
+      mockGrade: mock.result?.indicativeGrade || null,
+      latestGrade,
+      gradeSource: standing?.fromMock
+        ? "Mock exam"
+        : latestGrade
+          ? "Diagnostic / topic assessment"
+          : null,
+      assessedAt: standing?.assessedAt?.toISOString() ?? null,
+    };
+  });
   return {
     status:
       certifiedTopics >= PORTFOLIO_TOTAL_TOPICS &&
@@ -100,6 +128,7 @@ async function portfolioReadiness(parentId: string, child: ChildDoc) {
     lessonsCompleted,
     workEvidenceCount: workEvidence.length,
     latestGrade,
+    subjects,
   };
 }
 
