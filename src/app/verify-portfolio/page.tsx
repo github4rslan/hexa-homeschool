@@ -12,11 +12,15 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-function formatDate(d: Date): string {
-  return new Date(d).toLocaleDateString("en-GB", {
+function formatUkDateTime(d: Date): string {
+  return new Date(d).toLocaleString("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/London",
+    timeZoneName: "short",
   });
 }
 
@@ -93,7 +97,7 @@ export default async function VerifyPortfolioPage({
                     Generated
                   </div>
                   <div className="mt-1 text-lg font-semibold text-fog-100">
-                    {formatDate(verification.generatedAt)}
+                    {formatUkDateTime(verification.generatedAt)}
                   </div>
                 </div>
               </div>
