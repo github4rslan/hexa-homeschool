@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Calculator, BookText, FlaskConical, ArrowLeft, Timer, Check, ArrowRight } from "lucide-react";
-import { currentParentId, getActiveChild, getMockState } from "@/lib/db/repo";
+import { Calculator, BookText, FlaskConical, ArrowLeft, Timer, Check, ArrowRight, Lock } from "lucide-react";
+import {
+  currentParentId,
+  getActiveChild,
+  getMockState,
+  certifiedBySubject,
+} from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
 
@@ -14,6 +19,7 @@ const SUBJECTS = [
   { id: "english", label: "English", icon: BookText, accent: "from-cyan-500 to-cyan-700" },
   { id: "science", label: "Science", icon: FlaskConical, accent: "from-neon-500 to-neon-600" },
 ] as const;
+const TOPICS_PER_SUBJECT = 10;
 
 export default async function MockHubPage() {
   const parentId = await currentParentId();
@@ -23,6 +29,7 @@ export default async function MockHubPage() {
 
   // Per-subject attempt state this period (one honest attempt each).
   const states = await getMockState(parentId, child._id);
+  const certified = await certifiedBySubject(child._id);
   const stateBySubject = new Map(states.map((s) => [s.subject, s]));
   const dateLabel = (d: Date) =>
     d.toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" });
@@ -51,6 +58,33 @@ export default async function MockHubPage() {
         {SUBJECTS.map((s) => {
           const Icon = s.icon;
           const state = stateBySubject.get(s.id as Subject);
+          const certifiedCount = Math.min(
+            certified[s.id as Subject] ?? 0,
+            TOPICS_PER_SUBJECT,
+          );
+          const unlocked = certifiedCount >= TOPICS_PER_SUBJECT;
+
+          if (!unlocked) {
+            return (
+              <div
+                key={s.id}
+                className="child-panel flex items-center gap-5 p-6 opacity-80"
+                aria-label={`${s.label} mock locked until 10 topics are certified`}
+              >
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl border-2 border-white/10 bg-white/[0.04]">
+                  <Lock className="h-9 w-9 text-fog-400" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-2xl font-semibold text-fog-50">
+                    {s.label} mock locked
+                  </div>
+                  <p className="mt-1 text-base text-fog-400">
+                    Certify {TOPICS_PER_SUBJECT}/10 topics to unlock it. You have {certifiedCount}/10.
+                  </p>
+                </div>
+              </div>
+            );
+          }
 
           // Completed this period — a calm "done" panel (no retake), with the
           // result and when the next mock unlocks. Effort-framed, encouraging.

@@ -35,6 +35,8 @@ export interface Quest {
   ring: string;
   href: string;
   done: boolean;
+  /** All 10 course topics are certified; the subject mock is the next step. */
+  certified?: boolean;
   /** Resting for a five-attempt tutor handoff — shown calmly, never as failure. */
   resting?: boolean;
   progressLabel: string;
@@ -97,14 +99,29 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
                     resting
                   </span>
                 ) : (
-                  q.done && (
+                  q.certified ? (
                     <span className="text-sm font-medium text-neon-300">
-                      done today
+                      certified
                     </span>
+                  ) : (
+                    q.done && (
+                      <span className="text-sm font-medium text-neon-300">
+                        done today
+                      </span>
+                    )
                   )
                 )}
               </div>
-              {q.resting ? (
+              {q.certified && !q.resting ? (
+                <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <p className="flex-1 text-base text-fog-300">
+                    You completed 10/10 certified topics. Your {q.label} mock exam is unlocked.
+                  </p>
+                  <span className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-neon-400/30 bg-neon-500/10 px-4 text-base font-semibold text-neon-200">
+                    Go to mock
+                  </span>
+                </div>
+              ) : q.resting ? (
                 <p className="mt-2 text-base text-fog-300">
                   A tutor is coming to help — pick this back up soon. 💛
                 </p>
@@ -121,6 +138,19 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
                   </span>
                 </div>
               )}
+              {!q.certified && q.resting ? null : q.certified ? (
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-violet-500 to-neon-400"
+                      style={{ width: `${q.progressPct}%` }}
+                    />
+                  </div>
+                  <span className={`text-sm font-semibold ${q.ring}`}>
+                    {q.progressLabel}
+                  </span>
+                </div>
+              ) : null}
             </div>
             {!q.resting && (
               <ArrowRight className="h-7 w-7 text-fog-400 transition-transform group-hover:translate-x-1" />
