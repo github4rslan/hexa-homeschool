@@ -88,6 +88,14 @@ function currentQuarter(): string {
   return `Q${Math.floor(now.getMonth() / 3) + 1} ${now.getFullYear()}`;
 }
 
+function gradeNumber(grade: string | null): number | null {
+  if (!grade) return null;
+  const nums = grade.match(/\d+/g);
+  if (!nums?.length) return null;
+  const parsed = Math.max(...nums.map(Number));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 /** One-line family summary for the Today briefing, from real data only. */
 function buildTodaySummary(card: TodayCardData): string {
   const first = card.childName.split(" ")[0];
@@ -153,11 +161,11 @@ export default async function DashboardPage() {
       const childId = kid._id!;
       const certifiedCount = await countCertified(childId);
       const standings = await latestEvaluationsBySubject(childId);
-      const graded = standings.filter((s) => s.grade);
-      const predictedGrade = graded.length
-        ? `${Math.round(
-            graded.reduce((sum, s) => sum + Number(s.grade), 0) / graded.length,
-          )}`
+      const grades = standings
+        .map((s) => gradeNumber(s.grade))
+        .filter((grade): grade is number => grade !== null);
+      const predictedGrade = grades.length
+        ? `${Math.round(grades.reduce((sum, grade) => sum + grade, 0) / grades.length)}`
         : undefined;
       const pct = certifiedCount / (TOTAL_TOPICS || 1);
       const status: ChildView["status"] =
