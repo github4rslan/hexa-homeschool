@@ -5,11 +5,25 @@ import {
   findChildByName,
   getChildById,
   insertDossier,
-  subjectMilestones,
   getMockState,
+  certifiedBySubject,
+  latestEvaluationsBySubject,
+  recentLogs,
+  listMedia,
 } from "@/lib/db/repo";
 import type { ChildDoc } from "@/lib/db/types";
 import { rateLimit } from "@/lib/rate-limit";
+
+const PORTFOLIO_TOPICS_PER_SUBJECT = 10;
+const PORTFOLIO_TOTAL_TOPICS = 30;
+
+function gradeNumber(grade: string | null): number | null {
+  if (!grade) return null;
+  const nums = grade.match(/\d+/g);
+  if (!nums?.length) return null;
+  const parsed = Math.max(...nums.map(Number));
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -46,26 +60,46 @@ async function persistDossier(
 
 async function portfolioReadiness(parentId: string, child: ChildDoc) {
   if (!child._id) return null;
-  const [milestones, mockState] = await Promise.all([
-    subjectMilestones(parentId, child._id),
+  const since = Date.now() - 365 * 24 * 60 * 60 * 1000;
+  const [certified, mockState, standings, logs, workEvidence] = await Promise.all([
+    certifiedBySubject(child._id),
     getMockState(parentId, child._id),
+    latestEvaluationsBySubject(child._id),
+    recentLogs([child._id], since, 500),
+    listMedia({
+      useCase: "child_work",
+      childId: child._id.toHexString(),
+      limit: 100,
+    }),
   ]);
-  const certifiedTopics = milestones.reduce((sum, m) => sum + m.certified, 0);
-  const totalTopics = milestones.reduce((sum, m) => sum + m.total, 0);
+  const certifiedTopics = Math.min(
+    PORTFOLIO_TOTAL_TOPICS,
+    Object.values(certified).reduce(
+      (sum, count) => sum + Math.min(count, PORTFOLIO_TOPICS_PER_SUBJECT),
+      0,
+    ),
+  );
+  const grades = standings
+    .map((s) => gradeNumber(s.grade))
+    .filter((grade): grade is number => grade !== null);
+  const latestGrade = grades.length ? Math.round(Math.max(...grades)) : null;
   const mocksTaken = mockState.filter((m) => m.taken).length;
   const totalMocks = mockState.length;
+  const lessonsCompleted = logs.filter((l) => l.status === "completed").length;
   return {
     status:
-      totalTopics > 0 &&
-      certifiedTopics >= totalTopics &&
+      certifiedTopics >= PORTFOLIO_TOTAL_TOPICS &&
       totalMocks > 0 &&
       mocksTaken >= totalMocks
         ? "complete"
         : "in_progress",
     certifiedTopics,
-    totalTopics,
+    totalTopics: PORTFOLIO_TOTAL_TOPICS,
     mocksTaken,
     totalMocks,
+    lessonsCompleted,
+    workEvidenceCount: workEvidence.length,
+    latestGrade,
   };
 }
 
