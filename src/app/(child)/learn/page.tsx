@@ -110,6 +110,7 @@ export default async function LearnHubPage() {
           : topicTag
             ? `/learn/lesson?topic=${topicTag}`
             : "/learn/lesson",
+      practiceHref: topicTag ? `/learn/lesson?topic=${topicTag}` : "/learn/lesson",
       done: doneSubjects.has(s.id),
       resting,
       certified: courseCertified,
