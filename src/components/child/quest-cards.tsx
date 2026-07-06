@@ -34,6 +34,8 @@ export interface Quest {
   accent: string; // tailwind gradient classes
   ring: string;
   href: string;
+  /** Optional extra-practice route used after a subject is certified. */
+  practiceHref?: string;
   done: boolean;
   /** All 10 course topics are certified; the subject mock is the next step. */
   certified?: boolean;
@@ -117,9 +119,20 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
                   <p className="flex-1 text-base text-fog-300">
                     You completed 10/10 certified topics. Your {q.label} mock exam is unlocked.
                   </p>
-                  <span className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-neon-400/30 bg-neon-500/10 px-4 text-base font-semibold text-neon-200">
-                    Go to mock
-                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href={q.href}
+                      className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-neon-400/30 bg-neon-500/10 px-4 text-base font-semibold text-neon-200 hover:border-neon-300/60"
+                    >
+                      Go to mock
+                    </Link>
+                    <Link
+                      href={q.practiceHref ?? q.href}
+                      className="inline-flex min-h-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-100 hover:border-white/25 hover:bg-white/[0.06]"
+                    >
+                      Practice more
+                    </Link>
+                  </div>
                 </div>
               ) : q.resting ? (
                 <p className="mt-2 text-base text-fog-300">
@@ -152,7 +165,7 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
                 </div>
               ) : null}
             </div>
-            {!q.resting && (
+            {!q.resting && !q.certified && (
               <ArrowRight className="h-7 w-7 text-fog-400 transition-transform group-hover:translate-x-1" />
             )}
           </>
@@ -164,6 +177,17 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
               key={q.id}
               className="child-panel flex items-center gap-5 p-6 opacity-90"
               aria-label={`${q.label} is resting while a tutor is lined up`}
+            >
+              {inner}
+            </div>
+          );
+        }
+
+        if (q.certified) {
+          return (
+            <div
+              key={q.id}
+              className="child-panel flex items-center gap-5 p-6 opacity-90"
             >
               {inner}
             </div>
