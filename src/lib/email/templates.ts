@@ -549,6 +549,7 @@ export function portfolioShareTemplate(opts: {
   childName: string;
   term: string;
   verificationHash: string;
+  verificationUrl: string;
   fromParent: string | null;
 }): { subject: string; html: string } {
   const from = opts.fromParent ? ` from ${opts.fromParent}` : "";
@@ -561,7 +562,8 @@ export function portfolioShareTemplate(opts: {
       <p style="margin:0 0 8px;color:${COLORS.inkSoft};font-size:13px;">Statutory format: Intent · Implementation · Impact · Next Steps.</p>
       <p style="margin:0 0 6px;color:${COLORS.inkSoft};font-size:13px;">Tamper-evident SHA-256 verification hash:</p>
       <code style="display:block;word-break:break-all;background:${COLORS.linenAlt};border:1px solid ${COLORS.line};border-radius:8px;padding:10px;color:${COLORS.ink};font-size:12px;margin:0 0 16px;">${opts.verificationHash}</code>
-      <p style="margin:0;color:${COLORS.inkSoft};font-size:13px;">Any change to the portfolio changes this hash, so its integrity can be independently verified.</p>
+      <p style="margin:0 0 18px;text-align:center;">${amberButton(opts.verificationUrl, "Verify portfolio")}</p>
+      <p style="margin:0;color:${COLORS.inkSoft};font-size:13px;">Any change to the portfolio changes this hash. The verification link confirms the supplied hash exists in Edway's generated dossier record.</p>
     `),
   };
 }

@@ -277,6 +277,19 @@ export function PortfolioGenerator({
               </p>
             </div>
 
+            {portfolio.persisted && (
+              <div className="mt-4 print:hidden">
+                <Button
+                  href={`/verify-portfolio?hash=${encodeURIComponent(portfolio.verificationHash)}`}
+                  variant="outline"
+                  size="sm"
+                >
+                  <Fingerprint className="h-4 w-4" />
+                  Open verification page
+                </Button>
+              </div>
+            )}
+
             <div className="mt-6 flex gap-3 print:hidden">
               <Button onClick={() => window.print()} variant="secondary" size="md">
                 <Printer className="h-4 w-4" />
