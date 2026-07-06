@@ -19,7 +19,16 @@ import { Input } from "@/components/ui/input";
 import type { VerifiedPortfolio } from "@/lib/compliance/portfolio";
 import { emailPortfolio } from "@/app/(dashboard)/portfolio/actions";
 
-type PortfolioResponse = VerifiedPortfolio & { persisted?: boolean };
+type PortfolioResponse = VerifiedPortfolio & {
+  persisted?: boolean;
+  readiness?: {
+    status: "complete" | "in_progress";
+    certifiedTopics: number;
+    totalTopics: number;
+    mocksTaken: number;
+    totalMocks: number;
+  } | null;
+};
 
 const DEFAULT_TERM = (() => {
   const now = new Date();
@@ -218,6 +227,43 @@ export function PortfolioGenerator({
                 Verified
               </Badge>
             </div>
+
+            {portfolio.readiness && (
+              <div
+                className={[
+                  "mb-6 rounded-2xl border p-4",
+                  portfolio.readiness.status === "complete"
+                    ? "border-neon-400/20 bg-neon-500/[0.04]"
+                    : "border-amber-400/20 bg-amber-500/[0.04]",
+                ].join(" ")}
+              >
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant={
+                      portfolio.readiness.status === "complete"
+                        ? "neon"
+                        : "amber"
+                    }
+                    size="md"
+                  >
+                    {portfolio.readiness.status === "complete"
+                      ? "Complete portfolio"
+                      : "In progress portfolio"}
+                  </Badge>
+                  <span className="text-xs text-fog-500">
+                    {portfolio.readiness.certifiedTopics}/
+                    {portfolio.readiness.totalTopics} topics certified ·{" "}
+                    {portfolio.readiness.mocksTaken}/
+                    {portfolio.readiness.totalMocks} mocks taken
+                  </span>
+                </div>
+                <p className="text-sm leading-relaxed text-fog-300">
+                  {portfolio.readiness.status === "complete"
+                    ? "This evidence pack includes the full certified curriculum and all subject mock exams."
+                    : "This evidence pack is useful for interim reporting. It will become complete when all topics are certified and all subject mocks are taken."}
+                </p>
+              </div>
+            )}
 
             {/* Statutory sections */}
             <div className="flex flex-col gap-6">

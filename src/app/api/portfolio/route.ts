@@ -5,7 +5,10 @@ import {
   findChildByName,
   getChildById,
   insertDossier,
+  subjectMilestones,
+  getMockState,
 } from "@/lib/db/repo";
+import type { ChildDoc } from "@/lib/db/types";
 import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -39,6 +42,31 @@ async function persistDossier(
   } catch {
     return false;
   }
+}
+
+async function portfolioReadiness(parentId: string, child: ChildDoc) {
+  if (!child._id) return null;
+  const [milestones, mockState] = await Promise.all([
+    subjectMilestones(parentId, child._id),
+    getMockState(parentId, child._id),
+  ]);
+  const certifiedTopics = milestones.reduce((sum, m) => sum + m.certified, 0);
+  const totalTopics = milestones.reduce((sum, m) => sum + m.total, 0);
+  const mocksTaken = mockState.filter((m) => m.taken).length;
+  const totalMocks = mockState.length;
+  return {
+    status:
+      totalTopics > 0 &&
+      certifiedTopics >= totalTopics &&
+      totalMocks > 0 &&
+      mocksTaken >= totalMocks
+        ? "complete"
+        : "in_progress",
+    certifiedTopics,
+    totalTopics,
+    mocksTaken,
+    totalMocks,
+  };
 }
 
 export async function POST(request: Request) {
@@ -84,10 +112,12 @@ export async function POST(request: Request) {
 
   // When a childId is supplied, resolve the canonical name from it (ownership
   // checked) so the portfolio always reflects the real child, not free text.
+  let ownedChild: ChildDoc | null = null;
   if (childId) {
-    const parentId = await currentParentId();
-    const child = parentId ? await getChildById(parentId, childId) : null;
-    if (child?.full_name) childName = child.full_name;
+    ownedChild = await getChildById(authParentId, childId);
+    if (ownedChild?.full_name) childName = ownedChild.full_name;
+  } else if (childName) {
+    ownedChild = await findChildByName(authParentId, childName);
   }
 
   if (!childName || !term) {
@@ -104,8 +134,11 @@ export async function POST(request: Request) {
       term,
       portfolio.verificationHash,
     );
+    const readiness = ownedChild
+      ? await portfolioReadiness(authParentId, ownedChild)
+      : null;
     return NextResponse.json(
-      { ...portfolio, persisted },
+      { ...portfolio, persisted, readiness },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (err) {
