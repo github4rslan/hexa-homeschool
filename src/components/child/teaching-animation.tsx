@@ -1340,6 +1340,24 @@ export function TeachingAnimation({
     [animation.steps, current],
   );
 
+  // Ask, then wait (Phase 3): once the reveal's final beat has finished
+  // holding, Eddie voices the "Your turn" question ONCE and goes quiet — a
+  // back-and-forth, not a lecture. The visible panel is the fallback when
+  // narration is muted/unavailable.
+  const promptSpokenRef = useRef(false);
+  useEffect(() => {
+    promptSpokenRef.current = false;
+  }, [animation]);
+  useEffect(() => {
+    if (!yourTurn || playing || current < total - 1) return;
+    if (promptSpokenRef.current) return;
+    promptSpokenRef.current = true;
+    const timer = window.setTimeout(() => {
+      speakRef.current?.(personalizeYourTurnPrompt(yourTurn.prompt, childName));
+    }, 600);
+    return () => window.clearTimeout(timer);
+  }, [yourTurn, playing, current, total, childName]);
+
   useEffect(() => {
     if (!playing) return;
     // Band-aware hold per beat: derived from how much there is to take in

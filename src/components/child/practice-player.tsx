@@ -748,11 +748,15 @@ export function PracticePlayer({
   function showHint() {
     // Manual "another hint" — one rung per press, starting past the floor
     // (the misconception panel already covered rung 1 when the floor is set).
-    setHintRung((r) => {
-      const next = Math.min(Math.max(r, hintFloor) + 1, hintLadder.length);
-      if (next > r) hintsTotalRef.current += 1;
-      return next;
-    });
+    const next = Math.min(Math.max(hintRung, hintFloor) + 1, hintLadder.length);
+    if (next > hintRung) {
+      hintsTotalRef.current += 1;
+      setHintRung(next);
+      // Everything a child sees is narratable (Phase 3): the new hint is read
+      // aloud so a non-reader gets the same help. Single shared audio engine —
+      // this simply supersedes whatever was playing.
+      if (autoplayOn) void narration.playText(hintLadder[next - 1] ?? "");
+    }
   }
 
   function toggleTeachingVisual() {
