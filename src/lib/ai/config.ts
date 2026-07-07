@@ -75,14 +75,37 @@ export const ELEVENLABS_STT_MODEL = "scribe_v1";
 export const ELEVENLABS_DEFAULT_VOICE_ID = "EXAVITQu4vr4xnSDxMaL";
 
 /**
- * Curated, age-appropriate teaching voices a child may pick in "My stuff".
- * Kept short on purpose — choice without overwhelm. All are calm, clear and
- * warm; none are babyish. The first entry is the default.
+ * Curated, age-appropriate voices for Eddie that a child may pick in
+ * "My stuff" (Wave 8, Phase 2: 7 hand-picked ElevenLabs premade voices).
+ * Coverage: several female (including a warmer, younger-sounding one),
+ * several male, and UK accents. All calm/clear/warm; none babyish. The first
+ * entry is the default — presented to the child as "Eddie's voice: <name>".
+ * `isCuratedVoice` is the API-boundary allow-list; never accept a raw id.
  */
 export const CHILD_VOICES: { id: string; label: string; blurb: string }[] = [
   { id: "EXAVITQu4vr4xnSDxMaL", label: "Sarah", blurb: "Calm and reassuring" },
+  {
+    id: "XrExE9yKIg1WjnnlVkGX",
+    label: "Matilda",
+    blurb: "Warm and bright — like a big sister",
+  },
+  {
+    id: "cgSgspJ2msm6clMCkdW9",
+    label: "Jessica",
+    blurb: "Playful and cheerful",
+  },
+  { id: "pFZP5JQG7iQjIQuC4Bku", label: "Lily", blurb: "Gentle British voice" },
+  {
+    id: "JBFqnCBsd6RMkjVDRZzb",
+    label: "George",
+    blurb: "Warm British storyteller",
+  },
   { id: "pNInz6obpgDQGcFmaJgB", label: "Adam", blurb: "Warm and steady" },
-  { id: "ThT5KcBeYPX3keUQqHPh", label: "Dorothy", blurb: "Bright and friendly" },
+  {
+    id: "ThT5KcBeYPX3keUQqHPh",
+    label: "Dorothy",
+    blurb: "Bright and friendly",
+  },
 ];
 
 /** Whether a voice id is one of the curated child voices (validation guard). */
