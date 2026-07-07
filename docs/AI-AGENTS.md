@@ -174,8 +174,9 @@ Confident"; warm `ELEVENLABS_VOICE_SETTINGS` in `lib/ai/config.ts`)
 
 - Input capped at 1,200 characters (ElevenLabs bills per character)
 - Child narration uses the central `ELEVENLABS_NARRATION_SPEED` baseline
-  (`0.85`), with a small key-stage adjustment so KS2 is calmest while retaining
-  the child's chosen voice
+  (`0.80`, Wave 8 Phase 2 — warmer + slower), scaled by key stage so younger =
+  slower (KS2 ≈ 0.76 · KS3 0.80 · KS4 ≈ 0.84, floor 0.72) while retaining the
+  child's chosen voice
 - Generated audio is cached in Cloudinary, deduplicated by a hash of
   model + voice + speed + voice settings + text (`content_hash` on MediaDoc);
   without Cloudinary it streams bytes uncached
