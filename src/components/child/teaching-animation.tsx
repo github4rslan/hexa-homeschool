@@ -392,67 +392,68 @@ export function TeachingAnimation({
         accent.softBorder,
       )}
     >
-      <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-        <div className="flex items-start gap-3">
-          <div
-            className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
-              accent.bg,
-              accent.border,
-            )}
-          >
-            <Sparkles className={cn("h-5 w-5", accent.text)} aria-hidden />
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-xl font-semibold text-fog-50">
-              {animation.title}
-            </h2>
-            <p className="mt-1 max-w-xl text-base leading-relaxed text-fog-300">
-              {animation.intro}
-            </p>
-          </div>
+      <div className="mb-4 flex items-start gap-3">
+        <div
+          className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
+            accent.bg,
+            accent.border,
+          )}
+        >
+          <Sparkles className={cn("h-5 w-5", accent.text)} aria-hidden />
         </div>
+        <div className="min-w-0">
+          <h2 className="text-xl font-semibold text-fog-50">
+            {animation.title}
+          </h2>
+          <p className="mt-1 max-w-xl text-base leading-relaxed text-fog-300">
+            {animation.intro}
+          </p>
+        </div>
+      </div>
 
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={playing ? pause : play}
-            className={cn(
-              "inline-flex min-h-12 items-center gap-2 rounded-2xl border px-4 text-base font-semibold",
-              accent.bg,
-              accent.border,
-              accent.text,
-            )}
-          >
-            {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-            {playing ? "Pause" : "Play"}
-          </button>
-          <button
-            type="button"
-            onClick={() => speak()}
-            className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200"
-          >
-            <Volume2 className="h-5 w-5" />
-            Hear step
-          </button>
-          <button
-            type="button"
-            onClick={next}
-            disabled={current >= total - 1}
-            className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 disabled:opacity-40"
-          >
-            <StepForward className="h-5 w-5" />
-            Next
-          </button>
-          <button
-            type="button"
-            onClick={replay}
-            className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200"
-          >
-            <RotateCcw className="h-5 w-5" />
-            Replay
-          </button>
-        </div>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={playing ? pause : play}
+          className={cn(
+            "inline-flex min-h-12 items-center gap-2 rounded-2xl border px-4 text-base font-semibold transition-all hover:brightness-110",
+            accent.bg,
+            accent.border,
+            accent.text,
+          )}
+        >
+          {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+          {playing ? "Pause" : "Play"}
+        </button>
+        <button
+          type="button"
+          onClick={() => speak()}
+          className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06]"
+        >
+          <Volume2 className="h-5 w-5" />
+          Hear step
+        </button>
+        <button
+          type="button"
+          onClick={next}
+          disabled={current >= total - 1}
+          className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06] disabled:pointer-events-none disabled:opacity-40"
+        >
+          <StepForward className="h-5 w-5" />
+          Next
+        </button>
+        <button
+          type="button"
+          onClick={replay}
+          className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06]"
+        >
+          <RotateCcw className="h-5 w-5" />
+          Replay
+        </button>
+        <span className="ml-auto whitespace-nowrap text-sm font-semibold text-fog-400">
+          Step {current + 1} of {total}
+        </span>
       </div>
 
       <div className="mb-4">
@@ -471,6 +472,7 @@ export function TeachingAnimation({
               speak(index);
             }}
             aria-label={`Show animation step ${index + 1}`}
+            aria-current={index === current ? "step" : undefined}
             className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10"
           >
             <motion.span
