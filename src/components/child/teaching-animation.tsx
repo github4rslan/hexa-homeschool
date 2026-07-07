@@ -328,9 +328,18 @@ export function TeachingAnimation({
     stopRef.current = onStop;
   }, [onSpeak, onStop]);
 
+  // Opening "See it" starts the show: the animation is the reveal, so it plays
+  // (and narrates step one) as soon as it appears. Reduced motion keeps the
+  // calm step-at-your-own-pace path instead of a timer.
   useEffect(() => {
     setCurrent(0);
-    setPlaying(false);
+    if (autoPlay && !reduced) {
+      setPlaying(true);
+      const first = animation.steps[0];
+      if (first) speakRef.current?.(stepNarration(first));
+    } else {
+      setPlaying(false);
+    }
   }, [animation, autoPlay, reduced]);
 
   const speak = useCallback(

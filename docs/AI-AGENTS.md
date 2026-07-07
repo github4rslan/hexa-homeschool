@@ -112,6 +112,17 @@ reteach is the optional richer layer.
   simpler wording + the concrete hint rung), **attention** (long pause / long
   session → suggest a movement break), or the default **encourage** nudge. No AI,
   identical on every device, builds no psychological profile of the child.
+- **One graduated help spine (Wave 8).** The misconception line, the text hint
+  ladder and the "See it" teaching animation are ONE escalating ladder, not
+  three parallel systems (`decideHelpSpine()` in `lib/child/interactions.ts`,
+  pure + unit-tested): attempt 1 wrong → the misconception line (rung 1; the
+  generic nudge substitutes when none is authored) · attempt 2 wrong → the
+  method hint (rung 2 — the key step, **never the answer**) · attempt 3 or an
+  explicit "Show me" → the reveal: the choreographed "See it" animation plays
+  the full solution and the calm worked walkthrough follows. The text ladder
+  deliberately has **no answer rung** — the animation is the payoff. Each
+  attempt surfaces at most one new piece of help; `MAX_ATTEMPTS` and the
+  persisted attempts/hints counters are unchanged.
 - **Multi-modal delivery.** The chosen line is shown as a calm, accent-tinted,
   reduced-motion-safe slide-in **and** narrated through the existing TTS engine —
   never a silent wall of text, never red/shake/buzzer.

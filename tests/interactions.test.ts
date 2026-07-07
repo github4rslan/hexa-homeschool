@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildHintLadder,
+  decideHelpSpine,
   checkDragDrop,
   checkFillBlank,
   checkMcq,
@@ -120,17 +121,19 @@ describe("answer checking (pure, deterministic)", () => {
   });
 });
 
-describe("buildHintLadder (nudge → specific → full)", () => {
-  it("always returns exactly three escalating rungs", () => {
+describe("buildHintLadder (nudge → method; the answer is NEVER a text rung)", () => {
+  it("returns exactly two escalating rungs", () => {
     const ladder = buildHintLadder({
       hints: ["Gentle nudge", "Be specific"],
       explanation: "First sentence. Second sentence with the full working.",
     });
-    expect(ladder).toHaveLength(3);
+    expect(ladder).toHaveLength(2);
     expect(ladder[0]).toBe("Gentle nudge");
     expect(ladder[1]).toBe("Be specific");
-    // Final rung is the full human-authored explanation.
-    expect(ladder[2]).toContain("full working");
+    // The full-answer rung is gone — the See-it reveal delivers the answer.
+    expect(ladder).not.toContain(
+      "First sentence. Second sentence with the full working.",
+    );
   });
 
   it("falls back deterministically when no hints are authored", () => {
@@ -138,16 +141,66 @@ describe("buildHintLadder (nudge → specific → full)", () => {
       hints: [],
       explanation: "Subtract 3. Then divide by 2.",
     });
-    expect(ladder).toHaveLength(3);
+    expect(ladder).toHaveLength(2);
     expect(ladder[0]).toBeTruthy(); // generic nudge
-    expect(ladder[1]).toBe("Subtract 3."); // first sentence as the specific rung
-    expect(ladder[2]).toBe("Subtract 3. Then divide by 2."); // full explanation
+    expect(ladder[1]).toBe("Subtract 3."); // first sentence as the method rung
   });
 
-  it("handles a single-sentence explanation without crashing", () => {
-    const ladder = buildHintLadder({ explanation: "Just one sentence" });
-    expect(ladder).toHaveLength(3);
-    expect(ladder[2]).toBe("Just one sentence");
+  it("never leaks a single-sentence explanation (it usually states the answer)", () => {
+    const ladder = buildHintLadder({ explanation: "x = 3 or x = -3" });
+    expect(ladder).toHaveLength(2);
+    expect(ladder[0]).not.toContain("x = 3");
+    expect(ladder[1]).not.toContain("x = 3");
+  });
+});
+
+describe("decideHelpSpine (one graduated ladder: misconception → method → reveal)", () => {
+  const base = { maxAttempts: 3, ladderLength: 2 };
+
+  it("attempt 1 with a misconception: the targeted line IS the help — no text rung", () => {
+    const d = decideHelpSpine({ ...base, attempts: 1, hasMisconception: true });
+    expect(d).toEqual({ showFrom: 0, showTo: 0, reveal: false });
+  });
+
+  it("attempt 1 without a misconception: the nudge substitutes as rung 1", () => {
+    const d = decideHelpSpine({ ...base, attempts: 1, hasMisconception: false });
+    expect(d).toEqual({ showFrom: 0, showTo: 1, reveal: false });
+  });
+
+  it("attempt 2: the method appears — and skips the nudge when the misconception carried rung 1", () => {
+    const withMisconception = decideHelpSpine({
+      ...base,
+      attempts: 2,
+      hasMisconception: true,
+    });
+    expect(withMisconception).toEqual({ showFrom: 1, showTo: 2, reveal: false });
+
+    const withoutMisconception = decideHelpSpine({
+      ...base,
+      attempts: 2,
+      hasMisconception: false,
+    });
+    // The nudge stays visible; the method is the one NEW rung.
+    expect(withoutMisconception).toEqual({ showFrom: 0, showTo: 2, reveal: false });
+  });
+
+  it("the attempt cap ends the ladder in the reveal", () => {
+    expect(
+      decideHelpSpine({ ...base, attempts: 3, hasMisconception: true }).reveal,
+    ).toBe(true);
+    expect(
+      decideHelpSpine({ ...base, attempts: 3, hasMisconception: false }).reveal,
+    ).toBe(true);
+  });
+
+  it("never reveals before the cap", () => {
+    for (const attempts of [1, 2]) {
+      for (const hasMisconception of [true, false]) {
+        expect(
+          decideHelpSpine({ ...base, attempts, hasMisconception }).reveal,
+        ).toBe(false);
+      }
+    }
   });
 });
 
