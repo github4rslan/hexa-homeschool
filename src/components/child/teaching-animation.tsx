@@ -19,6 +19,7 @@ import {
   classifyOptions,
   equationBeat,
   sentenceWords,
+  splitExpression,
   type NumberLineSpec,
 } from "@/lib/child/animation-timeline";
 import {
@@ -73,18 +74,87 @@ function MathToken({ token }: { token: string }) {
   return <>{token}</>;
 }
 
-function CoachBadge({
+/** Calm three-bar "Eddie is speaking" pulse — transform-only, never flashing. */
+function SpeakingBars({ accent }: { accent: AccentPreset }) {
+  return (
+    <div className="flex h-5 items-end gap-0.5" aria-hidden>
+      {[0, 1, 2].map((bar) => (
+        <motion.span
+          key={bar}
+          animate={{ scaleY: [0.4, 1, 0.55, 0.9, 0.4] }}
+          transition={{
+            duration: 1.4,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: bar * 0.18,
+          }}
+          className="w-1 origin-bottom rounded-full"
+          style={{ height: "100%", backgroundColor: accent.swatch }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Coach Eddie — an expressive, accent-driven presence (Wave 8, Feature 2):
+ * gentle breathing at idle, livelier bobbing synced to the TTS narration, a
+ * quick warm nod when the step advances, and a points-at gesture toward the
+ * current step's focus token. Settles to calm idle the moment narration stops
+ * (e.g. the child starts answering). Professional, never cutesy; every beat is
+ * transform/opacity only and collapses under reduced motion.
+ */
+function EddieCoach({
   line,
   accent,
+  speaking,
+  stepIndex,
+  focus,
+  reduced,
 }: {
   line: string;
   accent: AccentPreset;
+  speaking: boolean;
+  stepIndex: number;
+  focus?: string;
+  reduced: boolean;
 }) {
+  const [reacting, setReacting] = useState(false);
+  const lastStepRef = useRef(stepIndex);
+
+  // A warm micro-reaction (a quick nod) each time the step advances.
+  useEffect(() => {
+    if (stepIndex === lastStepRef.current) return;
+    lastStepRef.current = stepIndex;
+    if (reduced) return;
+    setReacting(true);
+    const timer = window.setTimeout(() => setReacting(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [stepIndex, reduced]);
+
+  const focusTokens = focus ? splitExpression(focus) : [];
+
   return (
     <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
       <motion.div
-        animate={{ y: [0, -4, 0], rotate: [0, 2, -2, 0] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+        animate={
+          reduced
+            ? undefined
+            : reacting
+              ? { rotate: [0, -7, 7, 0], scale: [1, 1.08, 1], y: 0 }
+              : speaking
+                ? { y: [0, -3, 0], rotate: [0, 1.5, -1.5, 0], scale: 1 }
+                : { scale: [1, 1.04, 1], y: 0, rotate: 0 }
+        }
+        transition={
+          reduced
+            ? undefined
+            : reacting
+              ? { duration: 0.65, ease: "easeInOut" }
+              : speaking
+                ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+                : { duration: 4, repeat: Infinity, ease: "easeInOut" }
+        }
         className={cn(
           "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
           accent.bg,
@@ -93,11 +163,37 @@ function CoachBadge({
       >
         <WandSparkles className={cn("h-5 w-5", accent.text)} aria-hidden />
       </motion.div>
-      <div>
-        <div className="text-xs font-semibold uppercase tracking-wider text-fog-500">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-fog-500">
           Eddie, your Edway coach
+          {speaking && !reduced && <SpeakingBars accent={accent} />}
         </div>
         <p className="mt-1 text-base leading-relaxed text-fog-100">{line}</p>
+        {focusTokens.length > 0 && (
+          <div className="mt-2 flex items-center gap-1.5" aria-hidden>
+            <motion.span
+              animate={reduced ? undefined : { x: [0, 5, 0] }}
+              transition={{ duration: 1.1, repeat: Infinity, ease: "easeInOut" }}
+              className="flex"
+            >
+              <ArrowRight className={cn("h-4 w-4", accent.text)} />
+            </motion.span>
+            <span
+              className={cn(
+                "rounded-lg border px-2 py-0.5 text-sm font-bold",
+                accent.bg,
+                accent.border,
+                accent.text,
+              )}
+            >
+              {focusTokens.map((token, i) => (
+                <span key={`${token}-${i}`} className="mx-0.5">
+                  <MathToken token={token} />
+                </span>
+              ))}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -604,6 +700,7 @@ export function TeachingAnimation({
   onStop,
   options,
   correctIndex,
+  speaking = false,
 }: {
   animation: TeachingAnimationData;
   accent: AccentPreset;
@@ -613,6 +710,8 @@ export function TeachingAnimation({
   /** The question's real answer options — powers eliminate-vs-keep beats. */
   options?: string[];
   correctIndex?: number;
+  /** Whether TTS narration is audibly playing — drives Eddie's speaking beats. */
+  speaking?: boolean;
 }) {
   const reduced = useReducedMotion() ?? false;
   const [current, setCurrent] = useState(0);
@@ -765,7 +864,14 @@ export function TeachingAnimation({
       </div>
 
       <div className="mb-4">
-        <CoachBadge line={animation.coachLine} accent={accent} />
+        <EddieCoach
+          line={animation.coachLine}
+          accent={accent}
+          speaking={speaking}
+          stepIndex={current}
+          focus={step.focus}
+          reduced={reduced}
+        />
       </div>
 
       <div className="mb-4 flex gap-2">
