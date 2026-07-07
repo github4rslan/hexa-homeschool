@@ -204,6 +204,40 @@ after the final try, the same reveal opens before the answer state is shown.
 If a question has no `worked_solution`, the reveal is built deterministically
 from its human-authored canonical `explanation`, never from AI output.
 
+### "See it" — Coach Eddie's animated teaching (Wave 8, Phase 1)
+
+The practice player's "See it" is a choreographed mini-lesson where **motion
+maps to the maths** — never decoration: a difference-of-squares visibly factors
+into `(x − 3)(x + 3)` and both roots land on an animated number line; choice
+questions eliminate options and name the near-miss "±" distractor as *only half
+the answer*; grammar sweeps an underline through the sentence; science walks a
+labelled cause→effect chain.
+
+- **Content is human-authored / deterministic.** Animations come from an
+  authored `teaching_animation` on the question (validated by
+  `normalizeTeachingAnimation`) or from pure, prompt-derived builders
+  (`lib/child/teaching-animations.ts`). **No AI authors or narrates a step**;
+  the AI reteach layer stays the separate Checker-gated `/api/tutor` path.
+- **Choreography is pure + unit-tested.** `lib/child/animation-timeline.ts`
+  decides every beat (beat kinds, number-line specs, eliminate/keep/half
+  option fates, band-aware pacing, the "Your turn" task) with no DOM.
+- **The reveal is the endpoint of the help spine** (see the ladder above), and
+  a deterministic **"Your turn"** recall beat follows it — optional, skippable,
+  no AI, no analytics.
+- **Karaoke captions** reuse the Read-Along alignment path: `/api/tts` accepts
+  `withAlignment: true`, calls the ElevenLabs with-timestamps endpoint (same
+  voice/model/limits/tier-gate), returns base64 audio + per-word timings, and
+  caches the timings on the cached-audio media record (`meta.words`). Missing
+  timings degrade to a plain per-step caption — never a broken highlight.
+- **Delivery is child-paced and multi-sensory**: tap-to-pause, a scrubbable
+  step timeline, band-aware autoplay pacing with an "Again, slower" pass,
+  Eddie's TTS-synced presence, and gentle synthesized sound/haptic cues
+  (`lib/child/sensory-cues.ts` — feature-detected, debounced, reduced-motion
+  aware, opt-out via the child's "Sounds & buzz" preference). The child's
+  voice pick in "My stuff" is **Eddie's voice** (curated `CHILD_VOICES`,
+  validated server-side). Reduced motion keeps the full teaching path with
+  instant reveals. No analytics anywhere in `(child)`.
+
 ## Speak Your Answer (STT)
 
 Route: `POST /api/stt` · Provider: ElevenLabs Scribe (`scribe_v1`)
