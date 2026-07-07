@@ -105,6 +105,36 @@ export function equationBeat(step: TeachingAnimationStep): EquationBeat {
   };
 }
 
+// ── Autoplay pacing (band-aware, replaces the fixed STEP_MS) ─
+
+/** Reading-pace per word by UK key stage — KS2 is the calmest. */
+const MS_PER_WORD: Record<number, number> = { 2: 400, 3: 330, 4: 300 };
+const DEFAULT_MS_PER_WORD = 330;
+/** A beat never rushes below this, nor overstays past this. */
+export const MIN_STEP_MS = 3_600;
+export const MAX_STEP_MS = 14_000;
+/** "Again, slower" multiplier for a calmer second pass. */
+export const SLOW_PACE_FACTOR = 1.4;
+
+/**
+ * How long an autoplaying step holds, derived from how much there is to take
+ * in (the narration word count) and the child's key stage — younger readers
+ * get calmer pacing. `slower` applies the "Again, slower" pass. Pure.
+ */
+export function stepDurationMs(input: {
+  /** The step's narration text (label + spoken expression + note). */
+  narration: string;
+  keyStage?: number;
+  slower?: boolean;
+}): number {
+  const words = input.narration.trim().split(/\s+/).filter(Boolean).length;
+  const perWord = MS_PER_WORD[input.keyStage ?? -1] ?? DEFAULT_MS_PER_WORD;
+  // A settle-in beat before + after the words carry the reading.
+  const raw = 1_600 + words * perWord;
+  const clamped = Math.min(Math.max(raw, MIN_STEP_MS), MAX_STEP_MS);
+  return Math.round(input.slower ? clamped * SLOW_PACE_FACTOR : clamped);
+}
+
 // ── Choice-strategy beats (eliminate vs keep) ────────────────
 
 export type OptionFate = "keep" | "eliminate" | "half";

@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Sparkles,
   StepForward,
+  Turtle,
   WandSparkles,
   Volume2,
 } from "lucide-react";
@@ -20,6 +21,7 @@ import {
   equationBeat,
   sentenceWords,
   splitExpression,
+  stepDurationMs,
   type NumberLineSpec,
 } from "@/lib/child/animation-timeline";
 import {
@@ -40,8 +42,6 @@ import {
  * animation-timeline.ts decide the choreography, this component only renders
  * it. Transform/opacity only; reduced motion gets the same beats, calmly.
  */
-
-const STEP_MS = 4600;
 
 const SPRING = { type: "spring" as const, stiffness: 260, damping: 20 };
 
@@ -396,7 +396,23 @@ function EquationStage({
                   token === "=" && "text-cyan-200",
                 )}
               >
-                <MathToken token={token} />
+                {focus && !reduced ? (
+                  // Subtle parallax float on the focused token — the eye's anchor.
+                  <motion.span
+                    className="inline-block"
+                    animate={{ y: [0, -3, 0] }}
+                    transition={{
+                      duration: 2.8,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                      delay: 0.9,
+                    }}
+                  >
+                    <MathToken token={token} />
+                  </motion.span>
+                ) : (
+                  <MathToken token={token} />
+                )}
               </motion.span>
             );
           })}
@@ -701,6 +717,7 @@ export function TeachingAnimation({
   options,
   correctIndex,
   speaking = false,
+  keyStage,
 }: {
   animation: TeachingAnimationData;
   accent: AccentPreset;
@@ -712,10 +729,14 @@ export function TeachingAnimation({
   correctIndex?: number;
   /** Whether TTS narration is audibly playing — drives Eddie's speaking beats. */
   speaking?: boolean;
+  /** Child's UK key stage — autoplay pacing is calmer for younger readers. */
+  keyStage?: number;
 }) {
   const reduced = useReducedMotion() ?? false;
   const [current, setCurrent] = useState(0);
   const [playing, setPlaying] = useState(false);
+  /** "Again, slower" — a calmer second pass at ~1.4× the hold per beat. */
+  const [slowMode, setSlowMode] = useState(false);
   const speakRef = useRef(onSpeak);
   const stopRef = useRef(onStop);
   const step = animation.steps[current] ?? animation.steps[0];
@@ -731,6 +752,7 @@ export function TeachingAnimation({
   // calm step-at-your-own-pace path instead of a timer.
   useEffect(() => {
     setCurrent(0);
+    setSlowMode(false);
     if (autoPlay && !reduced) {
       setPlaying(true);
       const first = animation.steps[0];
@@ -750,6 +772,14 @@ export function TeachingAnimation({
 
   useEffect(() => {
     if (!playing || reduced) return;
+    // Band-aware hold per beat: derived from how much there is to take in
+    // (the narration length) and the child's key stage; "Again, slower"
+    // stretches every beat for a calmer second pass.
+    const holdMs = stepDurationMs({
+      narration: step ? stepNarration(step) : "",
+      keyStage,
+      slower: slowMode,
+    });
     const timer = window.setTimeout(() => {
       if (current >= total - 1) {
         setPlaying(false);
@@ -758,9 +788,9 @@ export function TeachingAnimation({
       const nextIndex = current + 1;
       setCurrent(nextIndex);
       speak(nextIndex);
-    }, STEP_MS);
+    }, holdMs);
     return () => window.clearTimeout(timer);
-  }, [playing, current, total, reduced, speak]);
+  }, [playing, current, total, reduced, speak, step, keyStage, slowMode]);
 
   function play() {
     const nextIndex = current >= total - 1 ? 0 : current;
@@ -775,6 +805,15 @@ export function TeachingAnimation({
   }
 
   function replay() {
+    setSlowMode(false);
+    setCurrent(0);
+    setPlaying(true);
+    speak(0);
+  }
+
+  /** A calmer second pass — same beats, ~1.4× the hold on each. */
+  function replaySlower() {
+    setSlowMode(true);
     setCurrent(0);
     setPlaying(true);
     speak(0);
@@ -794,12 +833,21 @@ export function TeachingAnimation({
       exit={reduced ? undefined : { opacity: 0, y: 8, scale: 0.98 }}
       transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "mt-6 overflow-hidden rounded-3xl border p-5",
+        "relative mt-6 overflow-hidden rounded-3xl border p-5",
         accent.softBg,
         accent.softBorder,
       )}
     >
-      <div className="mb-4 flex items-start gap-3">
+      {/* Ambient depth — a soft accent gradient field, pure CSS, no animation
+          cost. Tasteful, never noisy. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `radial-gradient(560px 280px at 22% 12%, ${accent.swatch}12, transparent 70%), radial-gradient(480px 260px at 85% 95%, ${accent.swatch}0a, transparent 70%)`,
+        }}
+      />
+      <div className="relative mb-4 flex items-start gap-3">
         <div
           className={cn(
             "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
@@ -857,6 +905,20 @@ export function TeachingAnimation({
         >
           <RotateCcw className="h-5 w-5" />
           Replay
+        </button>
+        <button
+          type="button"
+          onClick={replaySlower}
+          aria-pressed={slowMode}
+          className={cn(
+            "inline-flex min-h-12 items-center gap-2 rounded-2xl border px-4 text-base font-semibold transition-all",
+            slowMode
+              ? cn(accent.bg, accent.border, accent.text)
+              : "border-white/10 bg-white/[0.03] text-fog-200 hover:border-white/30 hover:bg-white/[0.06]",
+          )}
+        >
+          <Turtle className="h-5 w-5" />
+          Again, slower
         </button>
         <span className="ml-auto whitespace-nowrap text-sm font-semibold text-fog-400">
           Step {current + 1} of {total}
