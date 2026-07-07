@@ -512,12 +512,22 @@ export function PracticePlayer({
         return;
       }
       setSpoken(data.text);
-      const match = matchSpokenOption(data.text, question?.options ?? []);
-      if (match !== null) {
-        setSpokenSelect(match);
-        setSttNotice(null);
+      if (isMcq) {
+        const match = matchSpokenOption(data.text, question?.options ?? []);
+        if (match !== null) {
+          setSpokenSelect(match);
+          setSttNotice(null);
+        } else {
+          setSttNotice("Tap the answer that matches what you said.");
+        }
       } else {
-        setSttNotice("Tap the answer that matches what you said.");
+        // Fill-blank dictation (Phase 3): the processed transcript lands in
+        // the first empty blank; a miss is a calm retry, never a hard fail.
+        const applied =
+          interactionRef.current?.applySpokenAnswer(data.text) ?? false;
+        setSttNotice(
+          applied ? null : "I couldn't quite catch it — say it again, or type it.",
+        );
       }
     } catch {
       setSttNotice("I couldn't hear that — have another go, or tap your answer.");
@@ -1276,7 +1286,7 @@ export function PracticePlayer({
             {step + 1} of {activeQuestions.length}
           </span>
           <div className="flex flex-wrap items-center gap-2">
-            {speechSupported && isMcq && (
+            {speechSupported && (isMcq || interaction.type === "fill_blank") && (
               <button
                 onClick={toggleSpeak}
                 disabled={sttLoading || revealed}
