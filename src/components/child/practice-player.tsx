@@ -667,6 +667,13 @@ export function PracticePlayer({
     }
   }
 
+  const speakTeachingStep = useCallback(
+    (text: string) => {
+      if (autoplayOn) void narration.playText(text);
+    },
+    [autoplayOn, narration],
+  );
+
   function resetStepState() {
     setAttempts(0);
     setReady(false);
@@ -1191,9 +1198,7 @@ export function PracticePlayer({
                   animation={teachingAnimation}
                   accent={accent}
                   autoPlay
-                  onSpeak={(text) => {
-                    if (autoplayOn) void narration.playText(text);
-                  }}
+                  onSpeak={speakTeachingStep}
                   onStop={narration.stop}
                 />
               )}
