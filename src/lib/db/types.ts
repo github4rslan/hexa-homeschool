@@ -380,6 +380,12 @@ export interface QuestionDoc {
    * Used after a miss; absent rows fall back to the canonical explanation.
    */
   worked_solution?: unknown;
+  /**
+   * Optional human-authored teaching animation data. The child renderer validates
+   * it and falls back to a deterministic animation when absent, so bad authoring
+   * can never break a lesson.
+   */
+  teaching_animation?: unknown;
   created_at: Date;
 }
 

@@ -17,6 +17,7 @@ import {
 import { readActiveChildId } from "@/lib/active-child";
 import { normalizeInteraction } from "@/lib/child/interactions";
 import { normalizeWorkedExample } from "@/lib/child/worked-examples";
+import { normalizeTeachingAnimation } from "@/lib/child/teaching-animations";
 import type { Question } from "@/components/lesson/lesson-player";
 
 export const metadata: Metadata = { title: "Lesson" };
@@ -88,6 +89,11 @@ export default async function ChildLessonPage({
     hints: q.hints,
     misconceptions: q.misconceptions,
     workedSolution: normalizeWorkedExample(q.worked_solution),
+    teachingAnimation: normalizeTeachingAnimation({
+      raw: q.teaching_animation,
+      prompt: q.prompt,
+      explanation: q.explanation,
+    }),
   });
 
   const questions: Question[] = docs
