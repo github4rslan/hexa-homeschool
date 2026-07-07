@@ -29,6 +29,8 @@ import {
   type TeachingAnimation as TeachingAnimationData,
   type TeachingAnimationStep,
 } from "@/lib/child/teaching-animations";
+import { currentWordIndex } from "@/lib/child/caption-timing";
+import type { NarrationCaption } from "@/lib/child/use-narration";
 
 /**
  * "See it" — Coach Eddie's choreographed mini-lesson (Wave 8, Phase 1).
@@ -195,6 +197,73 @@ function EddieCoach({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Karaoke caption (Wave 8, Feature 5 — reuses the Read-Along alignment path):
+ * the step's narration line sits under Eddie, and while he speaks, each word
+ * lights up exactly as it's said — a calm accent tint moving with the voice,
+ * never flashing. Without word timings (uncached clip, speech fallback, TTS
+ * off) it degrades to a plain per-step caption; never a stuck highlight.
+ */
+function KaraokeCaption({
+  narration,
+  caption,
+  getTime,
+  accent,
+  reduced,
+}: {
+  narration: string;
+  caption: NarrationCaption | null;
+  getTime?: () => number;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  // Timings only apply when the playing clip IS this step's narration.
+  const timed =
+    caption && caption.text === narration && caption.words?.length
+      ? caption.words
+      : null;
+  const [litIndex, setLitIndex] = useState(-1);
+
+  useEffect(() => {
+    setLitIndex(-1);
+    if (!timed || !getTime) return;
+    let raf = 0;
+    const tick = () => {
+      const index = currentWordIndex(timed, getTime());
+      setLitIndex((prev) => (prev === index ? prev : index));
+      raf = window.requestAnimationFrame(tick);
+    };
+    raf = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(raf);
+  }, [timed, getTime, narration]);
+
+  return (
+    <div className="mt-3 rounded-2xl border border-white/10 bg-void/30 px-4 py-3 text-lg leading-relaxed">
+      {timed ? (
+        timed.map((w, i) => (
+          <span
+            key={`${w.word}-${i}`}
+            className={cn(
+              "rounded px-0.5",
+              // Reduced motion keeps a static current-word tint, no transition.
+              !reduced && "transition-colors duration-150",
+              i === litIndex
+                ? cn(accent.bg, "text-fog-50")
+                : i < litIndex
+                  ? "text-fog-200"
+                  : "text-fog-400",
+            )}
+          >
+            {w.word}{" "}
+          </span>
+        ))
+      ) : (
+        <span className="text-fog-300">{narration}</span>
+      )}
     </div>
   );
 }
@@ -718,6 +787,8 @@ export function TeachingAnimation({
   correctIndex,
   speaking = false,
   keyStage,
+  caption = null,
+  getTime,
 }: {
   animation: TeachingAnimationData;
   accent: AccentPreset;
@@ -731,6 +802,10 @@ export function TeachingAnimation({
   speaking?: boolean;
   /** Child's UK key stage — autoplay pacing is calmer for younger readers. */
   keyStage?: number;
+  /** Current narration clip's caption data — powers the karaoke highlight. */
+  caption?: NarrationCaption | null;
+  /** Playback position poller for the karaoke highlight. */
+  getTime?: () => number;
 }) {
   const reduced = useReducedMotion() ?? false;
   const [current, setCurrent] = useState(0);
@@ -933,6 +1008,13 @@ export function TeachingAnimation({
           speaking={speaking}
           stepIndex={current}
           focus={step.focus}
+          reduced={reduced}
+        />
+        <KaraokeCaption
+          narration={stepNarration(step)}
+          caption={caption}
+          getTime={getTime}
+          accent={accent}
           reduced={reduced}
         />
       </div>

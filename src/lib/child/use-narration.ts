@@ -1,6 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
+import {
+  normalizeWordTimings,
+  type WordTiming,
+} from "@/lib/child/caption-timing";
 
 /**
  * Auto-narration audio engine (Wave 4, Phase 1; single-controller rewrite).
@@ -37,11 +41,25 @@ const NARRATION_MAX_CHARS = 1200;
 interface FetchOpts {
   voiceId?: string | null;
   keyStage?: number;
+  /**
+   * Karaoke mode: fetch word-level timings with the audio (the Read-Along
+   * alignment path). Timings ride the same cache; a clip cached without them
+   * simply plays without karaoke — never a second paid fetch.
+   */
+  align?: boolean;
+}
+
+/** What the captions need to follow the voice: the clip's text + word timings. */
+export interface NarrationCaption {
+  text: string;
+  words: WordTiming[] | null;
 }
 
 export interface NarrationApi {
   /** Fetch (or reuse) and play the clip for `text` from the start. */
   playText: (text: string) => Promise<void>;
+  /** Like playText, but also fetches word timings for karaoke captions. */
+  playCaptioned: (text: string) => Promise<void>;
   /** Play/pause the clip for `text` (manual "Listen"/replay control). */
   toggle: (text: string) => Promise<void>;
   /** Stop the current clip immediately (e.g. the child starts answering). */
@@ -52,6 +70,10 @@ export interface NarrationApi {
   playing: boolean;
   /** Whether the current/last requested clip is still being fetched. */
   loading: boolean;
+  /** The current clip's caption data (null when nothing is loaded). */
+  caption: NarrationCaption | null;
+  /** Playback position in seconds — poll from rAF for karaoke highlight. */
+  getTime: () => number;
 }
 
 /**
@@ -62,10 +84,15 @@ export interface NarrationApi {
  */
 export class NarrationController {
   private audio: HTMLAudioElement | null = null;
-  /** voice:stage:text → object URL of the fetched MP3. */
-  private cache = new Map<string, string>();
+  /** voice:stage:text → object URL of the fetched MP3 + any word timings. */
+  private cache = new Map<string, { url: string; words: WordTiming[] | null }>();
   /** key → in-flight fetch, so concurrent play+prefetch share one request. */
-  private inflight = new Map<string, Promise<string | null>>();
+  private inflight = new Map<
+    string,
+    Promise<{ url: string; words: WordTiming[] | null } | null>
+  >();
+  /** Caption data for the current clip (text + timings), for karaoke. */
+  private caption: NarrationCaption | null = null;
   /** Monotonic play generation — a play whose token is stale must not start. */
   private token = 0;
   private currentText: string | null = null;
@@ -83,6 +110,17 @@ export class NarrationController {
 
   getPlaying = (): boolean => this.playingState;
   getLoading = (): boolean => this.loadingState;
+  /** Stable snapshot for useSyncExternalStore — replaced only on change. */
+  getCaption = (): NarrationCaption | null => this.caption;
+  /** Playback position in seconds (0 for the speech fallback — no timings). */
+  getTime = (): number => this.audio?.currentTime ?? 0;
+
+  private setCaption(next: NarrationCaption | null) {
+    if (this.caption !== next) {
+      this.caption = next;
+      this.emit();
+    }
+  }
 
   private emit() {
     for (const l of this.listeners) l();
@@ -156,14 +194,22 @@ export class NarrationController {
     return `${opts.voiceId ?? ""}:${opts.keyStage ?? ""}:${text}`;
   }
 
-  private fetchUrl(text: string, opts: FetchOpts): Promise<string | null> {
+  private fetchClip(
+    text: string,
+    opts: FetchOpts,
+  ): Promise<{ url: string; words: WordTiming[] | null } | null> {
     const key = this.key(text, opts);
     const cached = this.cache.get(key);
+    // A cached clip without timings still plays when karaoke asks — captions
+    // degrade to the per-step line rather than paying for a refetch.
     if (cached) return Promise.resolve(cached);
     const existing = this.inflight.get(key);
     if (existing) return existing;
 
-    const p = (async (): Promise<string | null> => {
+    const p = (async (): Promise<{
+      url: string;
+      words: WordTiming[] | null;
+    } | null> => {
       try {
         const res = await fetch("/api/tts", {
           method: "POST",
@@ -172,13 +218,36 @@ export class NarrationController {
             text: text.slice(0, NARRATION_MAX_CHARS),
             ...(opts.voiceId ? { voiceId: opts.voiceId } : {}),
             ...(opts.keyStage ? { keyStage: opts.keyStage } : {}),
+            ...(opts.align ? { withAlignment: true } : {}),
           }),
         });
         if (!res.ok) return null; // 503/429/502 → silently unavailable
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        this.cache.set(key, url);
-        return url;
+
+        let clip: { url: string; words: WordTiming[] | null };
+        if (opts.align) {
+          // Aligned mode returns JSON: base64 audio + word timings. Anything
+          // malformed degrades to audio-only or (worse) the speech fallback —
+          // never a broken highlight.
+          const data = (await res.json()) as {
+            audio?: string;
+            words?: unknown;
+          };
+          if (typeof data.audio !== "string" || !data.audio) return null;
+          const bin = atob(data.audio);
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          clip = {
+            url: URL.createObjectURL(
+              new Blob([bytes], { type: "audio/mpeg" }),
+            ),
+            words: normalizeWordTimings(data.words),
+          };
+        } else {
+          const blob = await res.blob();
+          clip = { url: URL.createObjectURL(blob), words: null };
+        }
+        this.cache.set(key, clip);
+        return clip;
       } catch {
         return null;
       } finally {
@@ -192,7 +261,7 @@ export class NarrationController {
   prefetch(text: string, opts: FetchOpts = {}): void {
     const t = text.trim();
     if (!t) return;
-    void this.fetchUrl(t, opts);
+    void this.fetchClip(t, opts);
   }
 
   async playText(text: string, opts: FetchOpts = {}): Promise<void> {
@@ -204,24 +273,27 @@ export class NarrationController {
     this.stopSpeechFallback();
     this.audio?.pause();
     this.setLoading(true);
-    const url = await this.fetchUrl(t, opts);
+    const clip = await this.fetchClip(t, opts);
     // Superseded by a newer play, or cancelled by stop(), while we were fetching.
     if (myToken !== this.token) return;
     this.setLoading(false);
-    if (!url) {
+    if (!clip) {
+      this.setCaption(null); // speech fallback has no timings
       this.playSpeechFallback(t, myToken);
       return;
     }
     const a = this.getAudio();
     if (!a) return;
     a.pause();
-    a.src = url;
+    a.src = clip.url;
     a.currentTime = 0;
     this.currentText = t;
+    this.setCaption({ text: t, words: clip.words });
     try {
       await a.play();
     } catch {
       if (myToken === this.token) {
+        this.setCaption(null);
         this.playSpeechFallback(t, myToken);
       }
       // Autoplay blocked or interrupted by a newer play — silent; the visible
@@ -267,6 +339,9 @@ export class NarrationController {
   }
 }
 
+/** Sentinel so useSyncExternalStore has a stable server snapshot. */
+const NO_CAPTION: NarrationCaption | null = null;
+
 /**
  * The one shared engine for the whole app. A module singleton (not per-hook) is
  * what guarantees a single <audio> element and therefore a single voice.
@@ -288,8 +363,19 @@ export function useNarration(
     () => false,
   );
 
+  const caption = useSyncExternalStore(
+    controller.subscribe,
+    controller.getCaption,
+    () => NO_CAPTION,
+  );
+
   const playText = useCallback(
     (text: string) => controller.playText(text, { voiceId, keyStage }),
+    [voiceId, keyStage],
+  );
+  const playCaptioned = useCallback(
+    (text: string) =>
+      controller.playText(text, { voiceId, keyStage, align: true }),
     [voiceId, keyStage],
   );
   const toggle = useCallback(
@@ -307,5 +393,15 @@ export function useNarration(
   // bounded to lesson-sized clips; dedupe by voice+stage+text keeps it small.
   useEffect(() => () => controller.stop(), []);
 
-  return { playText, toggle, stop, prefetch, playing, loading };
+  return {
+    playText,
+    playCaptioned,
+    toggle,
+    stop,
+    prefetch,
+    playing,
+    loading,
+    caption,
+    getTime: controller.getTime,
+  };
 }
