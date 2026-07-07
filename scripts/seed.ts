@@ -156,6 +156,12 @@ async function main() {
     await db.collection("ai_invocations").createIndex({ created_at: -1 });
     await db.collection("ai_invocations").createIndex({ agent: 1, created_at: -1 });
 
+    // Wave 8, Phase 2 — Checker-passed agentic animation cache (one per hash).
+    await db.collection("ai_animations").createIndex(
+      { content_hash: 1 },
+      { unique: true },
+    );
+
     // Parent ↔ staff messaging: thread reads, parent isolation, unread badge.
     await db.collection("messages").createIndex({ thread_type: 1, thread_id: 1, created_at: 1 });
     await db.collection("messages").createIndex({ parent_id: 1, sender: 1, read_at: 1 });

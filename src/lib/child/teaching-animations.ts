@@ -299,6 +299,39 @@ function deriveChoiceStrategy(prompt: string, explanation: string): TeachingAnim
   };
 }
 
+/**
+ * Validate a raw (AI-generated or authored) animation payload WITHOUT the
+ * deterministic fallback — the Checker-gated agentic path needs to know
+ * whether the payload itself stood up. Math expressions are normalised to the
+ * renderer's ascii mini-syntax (^2 · sqrt(n) · +/-) so `MathToken` and the
+ * timeline helpers read them exactly like derived content. Null = rejected.
+ */
+export function validateTeachingAnimation(raw: unknown): TeachingAnimation | null {
+  const animation = fromRaw(raw);
+  if (!animation) return null;
+  if (animation.type !== "equation_steps") return animation;
+  return {
+    ...animation,
+    steps: animation.steps.map((step) => ({
+      ...step,
+      expression: normaliseMath(step.expression),
+      focus: step.focus ? normaliseMath(step.focus) : step.focus,
+    })),
+  };
+}
+
+/**
+ * Flatten an animation into one prose block for the Teaching Checker, so the
+ * SAME factual-accuracy + tone gate that guards text explanations guards
+ * every word of an agentic animation (title, intro, coach line, every step).
+ */
+export function animationCheckerText(animation: TeachingAnimation): string {
+  const steps = animation.steps
+    .map((step) => `${step.label}: ${step.expression}. ${step.note}`)
+    .join(" ");
+  return `${animation.title}. ${animation.intro} ${animation.coachLine} ${steps}`;
+}
+
 export function normalizeTeachingAnimation(input: {
   raw?: unknown;
   prompt: string;

@@ -19,6 +19,12 @@ import {
   getOpenAIKey,
 } from "./config";
 import { logInvocation } from "@/lib/db/repo";
+import {
+  animationCheckerText,
+  validateTeachingAnimation,
+  type TeachingAnimation,
+  type TeachingAnimationType,
+} from "@/lib/child/teaching-animations";
 
 export interface TutorRequest {
   /** The question prompt shown to the student (human-authored). */
@@ -236,6 +242,143 @@ function fallbackExplanation(req: TutorRequest): string {
     ? "Correct. "
     : "Not quite — here's the worked answer. ";
   return `${lead}The correct answer is ${req.correctAnswer}. Review the method step by step and try a similar question to lock it in. If it still doesn't click, a human tutor can help.`;
+}
+
+// ── Agentic "Explain it my way" (Wave 8, Phase 2) ────────────
+//
+// The Teaching Agent can also produce a student-tailored explanation AS a
+// TeachingAnimation, so it renders through the same safe animated pipeline.
+// Gate order (all must pass, else animation: null and the caller keeps the
+// deterministic version): shape validation (`validateTeachingAnimation`) →
+// the SAME independent Teaching Checker over every word
+// (`animationCheckerText`) at the same 95% threshold. No raw model output
+// ever reaches a child.
+
+export interface AnimationAgentResult {
+  /** The validated, Checker-passed animation — or null (use deterministic). */
+  animation: TeachingAnimation | null;
+  aiVerified: boolean;
+  checker: CheckerResult;
+  model: string;
+}
+
+/** Step 1 — generate a tailored animation payload (strict JSON). */
+async function generateAnimation(
+  req: TutorRequest,
+  animationType: TeachingAnimationType,
+): Promise<ChatResult> {
+  const system = [
+    "You are Edway's Teaching Agent, creating a SHORT animated mini-lesson for a home-educated child, tailored to how this student answered.",
+    "Respond ONLY with JSON of this exact shape:",
+    '{"type": string, "title": string, "intro": string, "coachLine": string, "steps": [{"label": string, "expression": string, "note": string, "focus": string}]}',
+    `"type" MUST be "${animationType}". 3 to 5 steps.`,
+    'Math syntax inside "expression"/"focus": use ^2 for squared, sqrt(9) for roots, +/- for plus-or-minus, plain ASCII only. Keep each expression under 40 characters.',
+    '"label" is 1-3 words; "note" is ONE short warm sentence (under 140 characters); "focus" is the single token to highlight (may be "").',
+    '"title"/"intro"/"coachLine" are short, warm, second-person, encouraging British English for a child — never condescending, never shaming.',
+    "Ground everything in the provided correct answer. Do not introduce facts beyond it. The final step must state the correct answer.",
+  ].join(" ");
+
+  const user = [
+    req.topic ? `Topic: ${req.topic}` : null,
+    `Question: ${req.prompt}`,
+    `Correct answer: ${req.correctAnswer}`,
+    req.studentAnswer
+      ? `Student's answer (tailor the explanation to the mistake): ${req.studentAnswer}`
+      : null,
+    readingLevelGuidance(req.keyStage),
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return chat(
+    [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    { temperature: 0.5, maxTokens: 550, json: true },
+  );
+}
+
+/** Shape-rejection checker verdict (fail closed, no second model call needed). */
+const SHAPE_REJECTED: CheckerResult = {
+  confidence: 0,
+  factuallyConsistent: false,
+  toneAppropriate: false,
+  reason: "Animation payload failed shape validation; failing closed.",
+};
+
+/**
+ * Full agentic-animation run: generate → validate shape → independent
+ * Checker over every word → gate. Returns `animation: null` on ANY failure —
+ * the caller always has the deterministic animation to fall back on, so this
+ * never throws on rejection (only on config/network errors, which the route
+ * maps to 503/502).
+ */
+export async function runAnimationAgent(
+  req: TutorRequest,
+  animationType: TeachingAnimationType,
+): Promise<AnimationAgentResult> {
+  const gen = await generateAnimation(req, animationType);
+
+  let animation: TeachingAnimation | null = null;
+  try {
+    animation = validateTeachingAnimation(JSON.parse(gen.content));
+  } catch {
+    animation = null;
+  }
+
+  if (!animation) {
+    void logInvocation([
+      {
+        agent: "Animation Agent",
+        model: TEACHING_MODEL,
+        tokens: gen.tokens,
+        latencyMs: gen.latencyMs,
+        blocked: true,
+        reason: SHAPE_REJECTED.reason,
+      },
+    ]);
+    return {
+      animation: null,
+      aiVerified: false,
+      checker: SHAPE_REJECTED,
+      model: TEACHING_MODEL,
+    };
+  }
+
+  // The SAME independent Checker gates every word of the animation.
+  const check = await runChecker(req, animationCheckerText(animation));
+  const checker = check.result;
+  const passed =
+    checker.confidence >= TEACHING_CONFIDENCE_THRESHOLD &&
+    checker.factuallyConsistent &&
+    checker.toneAppropriate;
+
+  void logInvocation([
+    {
+      agent: "Animation Agent",
+      model: TEACHING_MODEL,
+      tokens: gen.tokens,
+      latencyMs: gen.latencyMs,
+      blocked: !passed,
+      reason: passed ? undefined : checker.reason,
+    },
+    {
+      agent: "Meta Checker",
+      model: TEACHING_MODEL,
+      tokens: check.tokens,
+      latencyMs: check.latencyMs,
+      blocked: !passed,
+      reason: passed ? undefined : checker.reason,
+    },
+  ]);
+
+  return {
+    animation: passed ? animation : null,
+    aiVerified: passed,
+    checker,
+    model: TEACHING_MODEL,
+  };
 }
 
 /**

@@ -88,6 +88,10 @@ export const Collections = {
   newsletter: "newsletter_subscribers",
   // AI telemetry — one row per real agent invocation (powers admin console)
   aiInvocations: "ai_invocations",
+  // Wave 8, Phase 2 — Checker-PASSED agentic teaching animations, cached per
+  // question+band content hash so each tailored explanation is generated once.
+  // Question-scoped (no child data) — like `media`, not a child-siloed table.
+  aiAnimations: "ai_animations",
   // Parent ↔ staff messaging threads (booking + escalation)
   messages: "messages",
   // Operations — append-only audit trail of staff WRITE actions + sensitive views

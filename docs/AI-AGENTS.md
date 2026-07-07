@@ -230,6 +230,20 @@ labelled cause→effect chain.
   voice/model/limits/tier-gate), returns base64 audio + per-word timings, and
   caches the timings on the cached-audio media record (`meta.words`). Missing
   timings degrade to a plain per-step caption — never a broken highlight.
+- **Agentic "Explain it my way" (Phase 2).** `POST /api/explain-animation`
+  lets the Teaching Agent generate a *student-tailored* explanation **as a
+  `TeachingAnimation`**, so it renders through the same safe animated pipeline.
+  The route mirrors `/api/tutor` exactly (distress gate FIRST on any
+  child-entered text → tier gate → rate limit, 6/min) and the payload passes
+  TWO gates before a child can see it: shape validation
+  (`validateTeachingAnimation`) and the same independent Teaching Checker at
+  the 95% threshold over **every word** (`animationCheckerText`). The
+  deterministic animation always shows instantly; the tailored one swaps in
+  only after passing, else the client falls back to the Checker-gated text
+  reteach and then the human-authored explanation. Only VERIFIED animations
+  are cached (`ai_animations`, per question + band + prompt version,
+  re-validated on read) so each is generated once. Telemetry: agent
+  `"Animation Agent"` + `"Meta Checker"` in `ai_invocations`.
 - **Delivery is child-paced and multi-sensory**: tap-to-pause, a scrubbable
   step timeline, band-aware autoplay pacing with an "Again, slower" pass,
   Eddie's TTS-synced presence, and gentle synthesized sound/haptic cues
