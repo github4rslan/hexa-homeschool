@@ -22,7 +22,12 @@ import {
 const STEP_MS = 4600;
 
 function splitExpression(expression: string): string[] {
-  return expression.split(/(\s+|=|\+\/-|[()+\-*/])/).filter((part) => part.trim());
+  const tokens: string[] = [];
+  const pattern = /sqrt\([^)]+\)|\+\/-|[A-Za-z0-9]+\^2|[A-Za-z0-9]+|=|[()+\-*/]/g;
+  for (const match of expression.matchAll(pattern)) {
+    tokens.push(match[0]);
+  }
+  return tokens;
 }
 
 function MathToken({ token }: { token: string }) {
@@ -137,24 +142,14 @@ function EquationStage({
           </>
         )}
         {isRoot && (
-          <>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.7, x: -70 }}
-              animate={{ opacity: 1, scale: 1, x: -110 }}
-              transition={{ duration: 0.55 }}
-              className="absolute left-1/2 top-4 text-4xl font-bold text-cyan-200"
-            >
-              {String.fromCharCode(8730)}
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, scale: 0.7, x: 70 }}
-              animate={{ opacity: 1, scale: 1, x: 76 }}
-              transition={{ duration: 0.55, delay: 0.2 }}
-              className="absolute left-1/2 top-4 text-4xl font-bold text-cyan-200"
-            >
-              {String.fromCharCode(8730)}
-            </motion.div>
-          </>
+          <motion.div
+            initial={{ opacity: 0, y: -18, scale: 0.85 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.55 }}
+            className="absolute inset-x-0 top-4 text-center text-base font-semibold uppercase tracking-wider text-cyan-200"
+          >
+            square root both sides
+          </motion.div>
         )}
 
         <motion.div
