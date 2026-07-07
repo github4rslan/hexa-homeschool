@@ -748,19 +748,20 @@ export function TeachingAnimation({
   }, [onSpeak, onStop]);
 
   // Opening "See it" starts the show: the animation is the reveal, so it plays
-  // (and narrates step one) as soon as it appears. Reduced motion keeps the
-  // calm step-at-your-own-pace path instead of a timer.
+  // (and narrates step one) as soon as it appears. Under reduced motion the
+  // SAME teaching beats still autoplay and narrate — springs and parallax
+  // collapse to instant reveals, the pedagogy doesn't.
   useEffect(() => {
     setCurrent(0);
     setSlowMode(false);
-    if (autoPlay && !reduced) {
+    if (autoPlay) {
       setPlaying(true);
       const first = animation.steps[0];
       if (first) speakRef.current?.(stepNarration(first));
     } else {
       setPlaying(false);
     }
-  }, [animation, autoPlay, reduced]);
+  }, [animation, autoPlay]);
 
   const speak = useCallback(
     (index = current) => {
@@ -771,7 +772,7 @@ export function TeachingAnimation({
   );
 
   useEffect(() => {
-    if (!playing || reduced) return;
+    if (!playing) return;
     // Band-aware hold per beat: derived from how much there is to take in
     // (the narration length) and the child's key stage; "Again, slower"
     // stretches every beat for a calmer second pass.
@@ -872,7 +873,7 @@ export function TeachingAnimation({
           type="button"
           onClick={playing ? pause : play}
           className={cn(
-            "inline-flex min-h-12 items-center gap-2 rounded-2xl border px-4 text-base font-semibold transition-all hover:brightness-110",
+            "inline-flex min-h-12 items-center gap-2 rounded-2xl border focus-visible:outline-none focus-visible:ring-2 px-4 text-base font-semibold transition-all hover:brightness-110",
             accent.bg,
             accent.border,
             accent.text,
@@ -884,7 +885,7 @@ export function TeachingAnimation({
         <button
           type="button"
           onClick={() => speak()}
-          className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06]"
+          className="inline-flex min-h-12 items-center gap-2 rounded-2xl border focus-visible:outline-none focus-visible:ring-2 border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06]"
         >
           <Volume2 className="h-5 w-5" />
           Hear step
@@ -893,7 +894,7 @@ export function TeachingAnimation({
           type="button"
           onClick={next}
           disabled={current >= total - 1}
-          className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06] disabled:pointer-events-none disabled:opacity-40"
+          className="inline-flex min-h-12 items-center gap-2 rounded-2xl border focus-visible:outline-none focus-visible:ring-2 border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06] disabled:pointer-events-none disabled:opacity-40"
         >
           <StepForward className="h-5 w-5" />
           Next
@@ -901,7 +902,7 @@ export function TeachingAnimation({
         <button
           type="button"
           onClick={replay}
-          className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06]"
+          className="inline-flex min-h-12 items-center gap-2 rounded-2xl border focus-visible:outline-none focus-visible:ring-2 border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06]"
         >
           <RotateCcw className="h-5 w-5" />
           Replay
@@ -911,7 +912,7 @@ export function TeachingAnimation({
           onClick={replaySlower}
           aria-pressed={slowMode}
           className={cn(
-            "inline-flex min-h-12 items-center gap-2 rounded-2xl border px-4 text-base font-semibold transition-all",
+            "inline-flex min-h-12 items-center gap-2 rounded-2xl border focus-visible:outline-none focus-visible:ring-2 px-4 text-base font-semibold transition-all",
             slowMode
               ? cn(accent.bg, accent.border, accent.text)
               : "border-white/10 bg-white/[0.03] text-fog-200 hover:border-white/30 hover:bg-white/[0.06]",
@@ -949,7 +950,7 @@ export function TeachingAnimation({
             }}
             aria-label={`Show animation step ${index + 1}`}
             aria-current={index === current ? "step" : undefined}
-            className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10"
+            className={cn("h-2.5 flex-1 overflow-hidden rounded-full bg-white/10 focus-visible:outline-none focus-visible:ring-2", accent.ring)}
           >
             <motion.span
               className={cn("block h-full rounded-full bg-gradient-to-r", accent.bar)}

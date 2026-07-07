@@ -44,8 +44,19 @@ import { accentPreset, type AccentPreset } from "@/lib/child/accents";
 import { useNarration } from "@/lib/child/use-narration";
 import { useQuestionVisual } from "@/lib/child/use-question-visual";
 import { buildQuestionNarration } from "@/lib/child/narration-copy";
+import dynamic from "next/dynamic";
 import { StepReveal } from "@/components/child/step-reveal";
-import { TeachingAnimation } from "@/components/child/teaching-animation";
+
+// Lazy-mount the choreographed See-it player: its motion tree only downloads
+// and mounts when a child actually opens it (60fps on low-end devices starts
+// with not shipping unused animation code).
+const TeachingAnimation = dynamic(
+  () =>
+    import("@/components/child/teaching-animation").then(
+      (m) => m.TeachingAnimation,
+    ),
+  { ssr: false },
+);
 import { workedSolutionFromExplanation } from "@/lib/child/worked-examples";
 import { teachingAnimationNarration } from "@/lib/child/teaching-animations";
 import {
