@@ -90,8 +90,52 @@ function deriveSquareEquation(prompt: string): TeachingAnimation | null {
 
   const value = Number(match[1]);
   const root = Math.sqrt(value);
-  const rootText = Number.isInteger(root) ? String(root) : `sqrt(${value})`;
 
+  // Perfect square → the full difference-of-squares story: spot the square,
+  // factor into two brackets, land both roots on the number line, reveal ±.
+  if (Number.isInteger(root)) {
+    return {
+      type: "equation_steps",
+      title: "Watch the equation come apart",
+      intro:
+        "We'll spot the square pattern, split it into two brackets, and find both answers.",
+      coachLine: "Two square pieces can split into two brackets — watch.",
+      steps: [
+        {
+          label: "Start",
+          expression: `x^2 - ${value} = 0`,
+          note: "We want every x that makes this zero.",
+          focus: "x^2",
+        },
+        {
+          label: "Spot the square",
+          expression: `${value} = ${root}^2`,
+          note: `${value} is ${root} squared — so both parts are square numbers.`,
+          focus: `${root}^2`,
+        },
+        {
+          label: "Factor",
+          expression: `(x - ${root})(x + ${root}) = 0`,
+          note: "A difference of squares splits into one minus bracket and one plus bracket.",
+          focus: `${root}`,
+        },
+        {
+          label: "Roots",
+          expression: `x = ${root} or x = -${root}`,
+          note: "Each bracket can be zero on its own — so there are two answers.",
+          focus: `${root}`,
+        },
+        {
+          label: "Answer",
+          expression: `x = +/- ${root}`,
+          note: `${root} squared is ${value}, and minus ${root} squared is also ${value} — both land on the line.`,
+          focus: `+/- ${root}`,
+        },
+      ],
+    };
+  }
+
+  // Not a perfect square → the calm balance-then-root story (no fake positions).
   return {
     type: "equation_steps",
     title: "Watch the equation balance",
@@ -101,7 +145,7 @@ function deriveSquareEquation(prompt: string): TeachingAnimation | null {
       {
         label: "Start",
         expression: `x^2 - ${value} = 0`,
-        note: `The -${value} is keeping x^2 from being alone.`,
+        note: `The minus ${value} is keeping x squared from being alone.`,
         focus: `-${value}`,
       },
       {
@@ -118,9 +162,9 @@ function deriveSquareEquation(prompt: string): TeachingAnimation | null {
       },
       {
         label: "Answer",
-        expression: `x = +/- ${rootText}`,
-        note: `${rootText} squared is ${value}, and -${rootText} squared is also ${value}.`,
-        focus: `+/- ${rootText}`,
+        expression: `x = +/- sqrt(${value})`,
+        note: `${value} isn't a square number, so the answer stays as a square root.`,
+        focus: `sqrt(${value})`,
       },
     ],
   };
@@ -270,8 +314,34 @@ export function normalizeTeachingAnimation(input: {
   );
 }
 
+/**
+ * Turn a normalised math expression into natural spoken words so TTS reads
+ * "x squared minus 9 equals 0", never "x caret 2". Pure + testable; order
+ * matters (± and sqrt before the bare +/- characters).
+ */
+export function speakableExpression(expression: string): string {
+  return expression
+    .replace(/\s+/g, " ")
+    .replace(/sqrt\(([^)]+)\)/g, "the square root of $1")
+    .replace(/\+\/-/g, "plus or minus")
+    .replace(/([A-Za-z0-9]+)\^2/g, "$1 squared")
+    .replace(/\)\s*\(/g, ", times ")
+    .replace(/[()]/g, " ")
+    .replace(/=/g, " equals ")
+    .replace(/\*/g, " times ")
+    .replace(/\//g, " divided by ")
+    .replace(/-/g, " minus ")
+    .replace(/\+/g, " plus ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function stepNarration(step: TeachingAnimationStep): string {
-  return `${step.label}. ${step.expression}. ${step.note}`;
+  // Only math-shaped expressions get the spoken-math treatment — prose keeps
+  // its hyphens ("re-read" must never become "re minus read").
+  const mathy = /[=^]|sqrt\(|\+\/-/.test(step.expression);
+  const spoken = mathy ? speakableExpression(step.expression) : step.expression;
+  return `${step.label}. ${spoken}. ${step.note}`;
 }
 
 export function teachingAnimationNarration(animation: TeachingAnimation): string {

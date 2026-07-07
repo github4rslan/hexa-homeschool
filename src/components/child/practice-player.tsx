@@ -1218,6 +1218,8 @@ export function PracticePlayer({
                   autoPlay
                   onSpeak={speakTeachingStep}
                   onStop={narration.stop}
+                  options={question.options}
+                  correctIndex={question.correctIndex}
                 />
               )}
             </AnimatePresence>
