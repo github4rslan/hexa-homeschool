@@ -42,6 +42,8 @@ export default async function ChildLessonPage({
   const narrationAutoplay = child?.narration_autoplay !== false;
   // Gentle sound/haptic cues — default ON, opt-out in "My stuff".
   const soundCues = child?.sound_cues !== false;
+  // Picture-first / low-text mode — fewer words, icon-first (default off).
+  const lowText = child?.low_text === true;
   // Today's emoji check-in (1–5, null = none) — tunes Eddie's tone only.
   const mood = child?._id ? (await todaysCheckin(child._id))?.mood ?? null : null;
 
@@ -142,6 +144,7 @@ export default async function ChildLessonPage({
         accent={accent}
         narrationAutoplay={narrationAutoplay}
         soundCues={soundCues}
+        lowText={lowText}
         mood={mood}
         savedProgress={savedProgress}
         firstName={firstName}

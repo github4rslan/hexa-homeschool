@@ -142,6 +142,7 @@ export function PracticePlayer({
   accent: accentId,
   narrationAutoplay = true,
   soundCues = true,
+  lowText = false,
   mood = null,
   savedProgress,
   firstName,
@@ -163,6 +164,8 @@ export function PracticePlayer({
   narrationAutoplay?: boolean;
   /** Child's "sounds & buzz" preference (gentle lesson cues; opt-out). */
   soundCues?: boolean;
+  /** Picture-first / low-text mode — fewer words, icon-first controls. */
+  lowText?: boolean;
   /** Today's emoji check-in (1-5; null = none) — tunes Eddie's tone only. */
   mood?: number | null;
   /** Server-synced mid-lesson progress (MongoDB) for a warm resume. */
@@ -1399,6 +1402,7 @@ export function PracticePlayer({
                   caption={narration.caption}
                   getTime={narration.getTime}
                   childName={childName}
+                  lowText={lowText}
                 />
               )}
             </AnimatePresence>

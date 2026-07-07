@@ -167,6 +167,12 @@ export interface ChildDoc {
    */
   sound_cues?: boolean;
   /**
+   * Picture-first / low-text mode (Wave 8, Phase 3): fewer words, icon-first
+   * controls, meaning never depends on reading (pairs with read-aloud).
+   * Optional + legacy-safe: undefined ⇒ OFF (normal text).
+   */
+  low_text?: boolean;
+  /**
    * When the child completed the one-time onboarding diagnostic. Set ONCE on
    * first full completion (the baseline); never overwritten. Optional +
    * legacy-safe: a child with prior non-mock evaluations but no flag is treated

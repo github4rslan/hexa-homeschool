@@ -30,6 +30,7 @@ export function DailyFlow({
   accent: accentId,
   narrationAutoplay = true,
   soundCues = true,
+  lowText = false,
   mood = null,
   savedProgress,
   firstName,
@@ -59,6 +60,8 @@ export function DailyFlow({
   narrationAutoplay?: boolean;
   /** Child's "sounds & buzz" preference (gentle lesson cues; opt-out). */
   soundCues?: boolean;
+  /** Picture-first / low-text mode — fewer words, icon-first controls. */
+  lowText?: boolean;
   /** Today's emoji check-in (1-5; null = none) — tunes Eddie's tone only. */
   mood?: number | null;
   /** Server-synced mid-lesson progress for a warm resume (MongoDB). */
@@ -142,6 +145,7 @@ export function DailyFlow({
               accent={accentId}
               narrationAutoplay={narrationAutoplay}
               soundCues={soundCues}
+              lowText={lowText}
               mood={mood}
               savedProgress={savedProgress}
               firstName={firstName}
