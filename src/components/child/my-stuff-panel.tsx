@@ -31,6 +31,7 @@ export function MyStuffPanel({
   currentAccent,
   currentNarrationAutoplay = true,
   currentSoundCues = true,
+  currentLowText = false,
   onSave,
 }: {
   voices: Voice[];
@@ -41,12 +42,15 @@ export function MyStuffPanel({
   currentNarrationAutoplay?: boolean;
   /** Child's "sounds & buzz" preference (gentle lesson cues; opt-out). */
   currentSoundCues?: boolean;
+  /** Child's picture-first / low-text preference (fewer words, opt-in). */
+  currentLowText?: boolean;
   /** Injected in tests; defaults to the real server action. */
   onSave?: (
     voiceId: string,
     accent: string,
     narrationAutoplay: boolean,
     soundCues: boolean,
+    lowText: boolean,
   ) => Promise<{ ok: boolean }>;
 }) {
   const router = useRouter();
@@ -54,6 +58,7 @@ export function MyStuffPanel({
   const [accent, setAccent] = useState(currentAccent);
   const [readAloud, setReadAloud] = useState(currentNarrationAutoplay);
   const [soundCues, setSoundCues] = useState(currentSoundCues);
+  const [lowText, setLowText] = useState(currentLowText);
   const [previewing, setPreviewing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -92,6 +97,7 @@ export function MyStuffPanel({
         accent,
         readAloud,
         soundCues,
+        lowText,
       );
       if (res.ok) {
         setSaved(true);
@@ -215,6 +221,39 @@ export function MyStuffPanel({
             </span>
           </span>
         </button>
+        {/* Pictures first — fewer words, icon-first controls (Wave 8, P3). */}
+        <button
+          type="button"
+          onClick={() => setLowText((v) => !v)}
+          role="switch"
+          aria-checked={lowText}
+          className="child-panel child-touch mt-3 flex w-full items-center gap-4 p-5 text-left"
+        >
+          <span
+            className={[
+              "relative flex h-8 w-14 shrink-0 items-center rounded-full transition-colors",
+              lowText ? "bg-violet-500" : "bg-white/15",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "absolute h-6 w-6 rounded-full bg-white transition-transform",
+                lowText ? "translate-x-7" : "translate-x-1",
+              ].join(" ")}
+            />
+          </span>
+          <span>
+            <span className="block text-xl font-semibold text-fog-50">
+              Pictures first
+            </span>
+            <span className="block text-base text-fog-400">
+              {lowText
+                ? "Fewer words on screen — Eddie says them out loud instead."
+                : "Show the full words on screen as well as reading them."}
+            </span>
+          </span>
+        </button>
+
         {/* Sounds & buzz — gentle lesson cues (opt-out, Wave 8). */}
         <button
           type="button"

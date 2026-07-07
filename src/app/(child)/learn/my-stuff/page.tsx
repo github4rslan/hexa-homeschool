@@ -24,6 +24,7 @@ export default async function MyStuffPage() {
         currentAccent={child.accent ?? DEFAULT_ACCENT}
         currentNarrationAutoplay={child.narration_autoplay !== false}
         currentSoundCues={child.sound_cues !== false}
+        currentLowText={child.low_text === true}
       />
     </div>
   );

@@ -1268,6 +1268,7 @@ export function TeachingAnimation({
   caption = null,
   getTime,
   childName = null,
+  lowText = false,
 }: {
   animation: TeachingAnimationData;
   accent: AccentPreset;
@@ -1287,6 +1288,12 @@ export function TeachingAnimation({
   getTime?: () => number;
   /** Sanitised first name — Eddie asks THIS child by name in "Your turn". */
   childName?: string | null;
+  /**
+   * Picture-first / low-text mode: secondary prose (intro, step note) hides —
+   * it is still narrated and captioned — and controls go icon-first with
+   * bigger glyphs. Meaning never depends on reading.
+   */
+  lowText?: boolean;
 }) {
   const reduced = useReducedMotion() ?? false;
   const [current, setCurrent] = useState(0);
@@ -1473,9 +1480,11 @@ export function TeachingAnimation({
           <h2 className="text-xl font-semibold text-fog-50">
             {animation.title}
           </h2>
-          <p className="mt-1 max-w-xl text-base leading-relaxed text-fog-300">
-            {animation.intro}
-          </p>
+          {!lowText && (
+            <p className="mt-1 max-w-xl text-base leading-relaxed text-fog-300">
+              {animation.intro}
+            </p>
+          )}
         </div>
       </div>
 
@@ -1490,8 +1499,12 @@ export function TeachingAnimation({
             accent.text,
           )}
         >
-          {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
-          {playing ? "Pause" : "Play"}
+          {playing ? (
+            <Pause className={lowText ? "h-6 w-6" : "h-5 w-5"} />
+          ) : (
+            <Play className={lowText ? "h-6 w-6" : "h-5 w-5"} />
+          )}
+          {!lowText && (playing ? "Pause" : "Play")}
         </button>
         <button
           type="button"
@@ -1501,8 +1514,8 @@ export function TeachingAnimation({
           }}
           className="inline-flex min-h-12 items-center gap-2 rounded-2xl border focus-visible:outline-none focus-visible:ring-2 border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06]"
         >
-          <Volume2 className="h-5 w-5" />
-          Hear step
+          <Volume2 className={lowText ? "h-6 w-6" : "h-5 w-5"} />
+          {!lowText && "Hear step"}
         </button>
         <button
           type="button"
@@ -1510,16 +1523,16 @@ export function TeachingAnimation({
           disabled={current >= total - 1}
           className="inline-flex min-h-12 items-center gap-2 rounded-2xl border focus-visible:outline-none focus-visible:ring-2 border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06] disabled:pointer-events-none disabled:opacity-40"
         >
-          <StepForward className="h-5 w-5" />
-          Next
+          <StepForward className={lowText ? "h-6 w-6" : "h-5 w-5"} />
+          {!lowText && "Next"}
         </button>
         <button
           type="button"
           onClick={replay}
           className="inline-flex min-h-12 items-center gap-2 rounded-2xl border focus-visible:outline-none focus-visible:ring-2 border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06]"
         >
-          <RotateCcw className="h-5 w-5" />
-          Replay
+          <RotateCcw className={lowText ? "h-6 w-6" : "h-5 w-5"} />
+          {!lowText && "Replay"}
         </button>
         <button
           type="button"
@@ -1532,8 +1545,8 @@ export function TeachingAnimation({
               : "border-white/10 bg-white/[0.03] text-fog-200 hover:border-white/30 hover:bg-white/[0.06]",
           )}
         >
-          <Turtle className="h-5 w-5" />
-          Again, slower
+          <Turtle className={lowText ? "h-6 w-6" : "h-5 w-5"} />
+          {!lowText && "Again, slower"}
         </button>
         <span className="ml-auto whitespace-nowrap text-sm font-semibold text-fog-400">
           Step {current + 1} of {total}
@@ -1672,10 +1685,12 @@ export function TeachingAnimation({
         )}
       </AnimatePresence>
 
-      <p className="mt-4 flex items-start gap-2 text-base leading-relaxed text-fog-300">
-        <Volume2 className={cn("mt-0.5 h-5 w-5 shrink-0", accent.text)} />
-        {step.note}
-      </p>
+      {!lowText && (
+        <p className="mt-4 flex items-start gap-2 text-base leading-relaxed text-fog-300">
+          <Volume2 className={cn("mt-0.5 h-5 w-5 shrink-0", accent.text)} />
+          {step.note}
+        </p>
+      )}
     </motion.div>
   );
 }

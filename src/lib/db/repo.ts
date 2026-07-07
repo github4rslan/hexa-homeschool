@@ -4419,6 +4419,7 @@ export async function setChildPreferences(
     accent?: string | null;
     narrationAutoplay?: boolean;
     soundCues?: boolean;
+    lowText?: boolean;
   },
 ): Promise<boolean> {
   if (!(await assertOwnsChild(parentId, childId))) return false;
@@ -4428,6 +4429,7 @@ export async function setChildPreferences(
   if (prefs.narrationAutoplay !== undefined)
     set.narration_autoplay = prefs.narrationAutoplay;
   if (prefs.soundCues !== undefined) set.sound_cues = prefs.soundCues;
+  if (prefs.lowText !== undefined) set.low_text = prefs.lowText;
   const col = await getCollection<ChildDoc>(Collections.children);
   const res = await col.updateOne({ _id: childId }, { $set: set });
   return res.matchedCount > 0;
