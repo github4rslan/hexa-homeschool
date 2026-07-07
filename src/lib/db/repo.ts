@@ -4392,6 +4392,7 @@ export async function setChildPreferences(
     voiceId?: string | null;
     accent?: string | null;
     narrationAutoplay?: boolean;
+    soundCues?: boolean;
   },
 ): Promise<boolean> {
   if (!(await assertOwnsChild(parentId, childId))) return false;
@@ -4400,6 +4401,7 @@ export async function setChildPreferences(
   if (prefs.accent !== undefined) set.accent = prefs.accent;
   if (prefs.narrationAutoplay !== undefined)
     set.narration_autoplay = prefs.narrationAutoplay;
+  if (prefs.soundCues !== undefined) set.sound_cues = prefs.soundCues;
   const col = await getCollection<ChildDoc>(Collections.children);
   const res = await col.updateOne({ _id: childId }, { $set: set });
   return res.matchedCount > 0;

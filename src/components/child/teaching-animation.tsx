@@ -34,6 +34,7 @@ import {
   type TeachingAnimationStep,
 } from "@/lib/child/teaching-animations";
 import { currentWordIndex } from "@/lib/child/caption-timing";
+import { landCue, successCue, tapCue } from "@/lib/child/sensory-cues";
 import type { NarrationCaption } from "@/lib/child/use-narration";
 
 /**
@@ -323,6 +324,11 @@ function NumberLine({
                 ? { duration: 0 }
                 : { ...SPRING, delay: 0.55 + i * 0.45 }
             }
+            onAnimationComplete={() => {
+              // A root physically lands → one soft low cue (skipped when
+              // the landing was instant under reduced motion).
+              if (!reduced) landCue();
+            }}
             className="absolute top-0 -translate-x-1/2"
             style={{ left: `${pos(mark)}%` }}
           >
@@ -822,16 +828,22 @@ function YourTurnPanel({
   function tapChoice(index: number) {
     if (result === "correct") return;
     setResult(null);
-    finish(checkYourTurnTap(task, index));
+    const correct = checkYourTurnTap(task, index);
+    if (correct) successCue();
+    else tapCue();
+    finish(correct);
   }
 
   function tapOrderItem(index: number) {
     if (result === "correct" || task.kind !== "order_steps") return;
     if (tapped.includes(index)) return;
+    tapCue();
     const next = [...tapped, index];
     setTapped(next);
     if (next.length === task.items.length) {
-      finish(checkYourTurnOrder(task, next));
+      const correct = checkYourTurnOrder(task, next);
+      if (correct) successCue();
+      finish(correct);
     } else {
       setResult(null);
     }
@@ -1052,6 +1064,7 @@ export function TeachingAnimation({
   }, [playing, current, total, reduced, speak, step, keyStage, slowMode]);
 
   function play() {
+    tapCue();
     const nextIndex = current >= total - 1 ? 0 : current;
     if (nextIndex !== current) setCurrent(nextIndex);
     setPlaying(true);
@@ -1059,11 +1072,13 @@ export function TeachingAnimation({
   }
 
   function pause() {
+    tapCue();
     setPlaying(false);
     stopRef.current?.();
   }
 
   function replay() {
+    tapCue();
     setSlowMode(false);
     setCurrent(0);
     setPlaying(true);
@@ -1072,6 +1087,7 @@ export function TeachingAnimation({
 
   /** A calmer second pass — same beats, ~1.4× the hold on each. */
   function replaySlower() {
+    tapCue();
     setSlowMode(true);
     setCurrent(0);
     setPlaying(true);
@@ -1079,6 +1095,7 @@ export function TeachingAnimation({
   }
 
   function next() {
+    tapCue();
     const nextIndex = Math.min(total - 1, current + 1);
     setPlaying(false);
     setCurrent(nextIndex);
@@ -1161,7 +1178,10 @@ export function TeachingAnimation({
         </button>
         <button
           type="button"
-          onClick={() => speak()}
+          onClick={() => {
+            tapCue();
+            speak();
+          }}
           className="inline-flex min-h-12 items-center gap-2 rounded-2xl border focus-visible:outline-none focus-visible:ring-2 border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.06]"
         >
           <Volume2 className="h-5 w-5" />

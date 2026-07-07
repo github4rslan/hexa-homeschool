@@ -28,6 +28,7 @@ export function MyStuffPanel({
   currentVoiceId,
   currentAccent,
   currentNarrationAutoplay = true,
+  currentSoundCues = true,
   onSave,
 }: {
   voices: Voice[];
@@ -36,17 +37,21 @@ export function MyStuffPanel({
   currentAccent: string;
   /** Child's "read questions to me" preference (auto-narration). */
   currentNarrationAutoplay?: boolean;
+  /** Child's "sounds & buzz" preference (gentle lesson cues; opt-out). */
+  currentSoundCues?: boolean;
   /** Injected in tests; defaults to the real server action. */
   onSave?: (
     voiceId: string,
     accent: string,
     narrationAutoplay: boolean,
+    soundCues: boolean,
   ) => Promise<{ ok: boolean }>;
 }) {
   const router = useRouter();
   const [voiceId, setVoiceId] = useState(currentVoiceId);
   const [accent, setAccent] = useState(currentAccent);
   const [readAloud, setReadAloud] = useState(currentNarrationAutoplay);
+  const [soundCues, setSoundCues] = useState(currentSoundCues);
   const [previewing, setPreviewing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -84,6 +89,7 @@ export function MyStuffPanel({
         voiceId,
         accent,
         readAloud,
+        soundCues,
       );
       if (res.ok) {
         setSaved(true);
@@ -199,6 +205,38 @@ export function MyStuffPanel({
               {readAloud
                 ? "I'll read each question out loud for you."
                 : "Questions stay quiet — tap Listen any time you want to hear one."}
+            </span>
+          </span>
+        </button>
+        {/* Sounds & buzz — gentle lesson cues (opt-out, Wave 8). */}
+        <button
+          type="button"
+          onClick={() => setSoundCues((v) => !v)}
+          role="switch"
+          aria-checked={soundCues}
+          className="child-panel child-touch mt-3 flex w-full items-center gap-4 p-5 text-left"
+        >
+          <span
+            className={[
+              "relative flex h-8 w-14 shrink-0 items-center rounded-full transition-colors",
+              soundCues ? "bg-violet-500" : "bg-white/15",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "absolute h-6 w-6 rounded-full bg-white transition-transform",
+                soundCues ? "translate-x-7" : "translate-x-1",
+              ].join(" ")}
+            />
+          </span>
+          <span>
+            <span className="block text-xl font-semibold text-fog-50">
+              Sounds &amp; buzz
+            </span>
+            <span className="block text-base text-fog-400">
+              {soundCues
+                ? "Soft taps and a tiny buzz when things happen in a lesson."
+                : "Lessons stay silent — no tap sounds, no buzz."}
             </span>
           </span>
         </button>
