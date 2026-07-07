@@ -203,44 +203,103 @@ export function checkDragDrop(
   return it.slots.every((slot, i) => placement[i] === slot.correctChip);
 }
 
-// ── Progressive hint ladder (Feature 2) ──────────────────────
+// ── Graduated help spine (Wave 8 — one ladder, least help first) ──
 
 export interface HintLadderInput {
   /** Optional human-authored hints, shortest/gentlest first. */
   hints?: string[] | null;
-  /** The human-authored canonical explanation (the final rung). */
+  /** The human-authored canonical explanation (method-rung fallback source). */
   explanation: string;
 }
 
 /**
- * Build a 3-rung hint ladder: nudge → specific → full worked explanation.
- * Uses authored hints where present and falls back deterministically so every
- * question always has a complete, escalating ladder. Pure + testable.
+ * Build the TEXT rungs of the help spine: nudge → method. The rung that used to
+ * spell out the full answer in text is deliberately GONE — the answer is
+ * delivered by the reveal (the "See it" animation + the calm worked
+ * walkthrough), so the animation is the payoff, not a repeat. Uses authored
+ * hints where present and falls back deterministically. Pure + testable.
  */
 export function buildHintLadder({ hints, explanation }: HintLadderInput): string[] {
   const authored = (hints ?? []).map((h) => h.trim()).filter(Boolean);
   const explain = explanation.trim();
 
-  // Rung 1 — a gentle nudge that never gives the answer away.
+  // Nudge — a gentle re-read prompt that never gives the answer away.
   const nudge =
     authored[0] ??
     "Read it through once more — what is the question really asking?";
 
-  // Rung 2 — something specific. Prefer an authored hint; otherwise lean on the
-  // first sentence of the explanation (still short of the full working).
-  let specific = authored[1];
-  if (!specific) {
+  // Method — the key step, short of the answer. Prefer an authored hint;
+  // otherwise the explanation's first sentence, but never the whole thing
+  // (a single-sentence explanation usually states the answer outright).
+  let method = authored[1];
+  if (!method) {
     const firstSentence = explain.split(/(?<=[.!?])\s+/)[0] ?? explain;
-    specific =
+    method =
       firstSentence && firstSentence !== explain
         ? firstSentence
         : "Focus on the key step — you're closer than you think.";
   }
 
-  // Rung 3 — the full human-authored worked explanation.
-  const full = authored[2] ?? explain;
+  return [nudge, method];
+}
 
-  return [nudge, specific, full];
+export interface HelpSpineInput {
+  /** Wrong attempts on this question INCLUDING the miss being handled (>= 1). */
+  attempts: number;
+  /** The attempt cap — at the cap the spine ends in the reveal. */
+  maxAttempts: number;
+  /**
+   * Whether the targeted misconception line is carrying rung 1 for this
+   * question (decided on the FIRST miss and held constant after that).
+   */
+  hasMisconception: boolean;
+  /** Text rungs available (nudge, method). */
+  ladderLength: number;
+}
+
+export interface HelpSpineDecision {
+  /**
+   * First text rung to display (0-based). When the misconception line carries
+   * rung 1, the generic nudge is skipped — the method is the next new help.
+   */
+  showFrom: number;
+  /** Display ladder rungs [showFrom, showTo); 0 = no text rung yet. */
+  showTo: number;
+  /** Open the reveal: the See-it animation + the calm worked walkthrough. */
+  reveal: boolean;
+}
+
+/**
+ * One graduated help spine — least help first, escalating, nothing stacked
+ * redundantly (EDWAY §2.2/§3):
+ *
+ *   attempt 1 wrong → misconception line (why THAT answer; the nudge substitutes
+ *                     when no targeted line is authored)
+ *   attempt 2 wrong → method hint (the key step — never the answer)
+ *   attempt cap     → the reveal ("See it" animation + calm worked walkthrough)
+ *
+ * Each attempt surfaces at most ONE new piece of help. Pure + testable.
+ */
+export function decideHelpSpine(input: HelpSpineInput): HelpSpineDecision {
+  const { attempts, maxAttempts, hasMisconception, ladderLength } = input;
+  const reveal = attempts >= maxAttempts;
+
+  if (attempts <= 1) {
+    // Rung 1 — the misconception panel is the help; otherwise show the nudge.
+    return hasMisconception
+      ? { showFrom: 0, showTo: 0, reveal }
+      : { showFrom: 0, showTo: Math.min(1, ladderLength), reveal };
+  }
+
+  // Rung 2 — the method hint. When the misconception carried rung 1 the
+  // generic nudge is skipped so exactly one new line appears.
+  return hasMisconception
+    ? {
+        showFrom: Math.min(1, ladderLength),
+        showTo: Math.min(2, ladderLength),
+        reveal,
+      }
+    : { showFrom: 0, showTo: Math.min(2, ladderLength), reveal };
 }
 
 // ── Misconception-targeted feedback (Wave 7, Phase 3) ────────

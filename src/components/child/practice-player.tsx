@@ -29,6 +29,7 @@ import {
 } from "@/app/(dashboard)/lesson/actions";
 import {
   buildHintLadder,
+  decideHelpSpine,
   pickMisconception,
   resolveResumeStep,
   clampResumeScore,
@@ -169,8 +170,11 @@ export function PracticePlayer({
   const [reteachText, setReteachText] = useState<string | null>(null);
   const [reteachLoading, setReteachLoading] = useState(false);
 
-  // Progressive hint ladder (local, human-authored).
+  // Graduated help spine (Wave 8): misconception → method hint → the See-it
+  // reveal. `hintRung` is the highest text rung shown (exclusive end);
+  // `hintFloor` skips the generic nudge when the misconception carries rung 1.
   const [hintRung, setHintRung] = useState(0); // 0 = none shown yet
+  const [hintFloor, setHintFloor] = useState(0);
 
   // Specific, targeted feedback on a wrong answer (Wave 7, Phase 3).
   // The human-authored misconception line for the exact wrong option (or null).
@@ -330,17 +334,14 @@ export function PracticePlayer({
   // miss, so this fires once per wrong answer.
   useEffect(() => {
     if (!feedback || !autoplayOn) return;
-    // When a concept-gap miss also opens the worked example, let StepReveal's
-    // narration own the voice — don't speak the feedback line over it. (With the
-    // single shared audio controller there is no overlap either way; this just
-    // picks the more useful clip instead of superseding it a beat later.)
-    if (stepByStepOpen) return;
-    const visualCue = teachingNarration
-      ? " I have opened a quick picture to show the idea."
-      : "";
+    // When a miss opens the reveal (See-it animation and/or the worked
+    // walkthrough), let the reveal own the voice — don't speak the feedback
+    // line over it. (With the single shared audio controller there is no
+    // overlap either way; this just picks the more useful clip.)
+    if (stepByStepOpen || visualOpen) return;
     const spoken = misconceptionHint
-      ? `${feedback.message} ${misconceptionHint}${visualCue}`
-      : `${feedback.message}${visualCue}`;
+      ? `${feedback.message} ${misconceptionHint}`
+      : feedback.message;
     void narration.playText(spoken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feedback]);
@@ -606,7 +607,6 @@ export function PracticePlayer({
     }
 
     setOutcome("incorrect");
-    if (teachingAnimation) setVisualOpen(true);
 
     // Specific feedback: the human-authored line for the EXACT wrong option the
     // child picked (mcq only; deterministic, no API). Null ⇒ no targeted line.
@@ -632,28 +632,45 @@ export function PracticePlayer({
     });
     setFeedback(decision);
 
-    // Surface hints to match the matrix's response: a concept gap unfolds the
-    // full method, language support jumps to the concrete/simpler rung, and any
-    // other miss advances one gentle rung. The ladder only ever moves forward.
-    const targetRung = decision.escalateReteach
-      ? hintLadder.length
-      : decision.simplify
-        ? Math.min(2, hintLadder.length)
-        : 1;
+    // One graduated help spine: misconception (rung 1) → method hint (rung 2)
+    // → the See-it reveal. Whether the misconception carries rung 1 is decided
+    // on the FIRST miss and held, so the spine never flip-flops mid-question.
+    const misconceptionCarriesRungOne =
+      nextAttempts === 1 ? misconception !== null : hintFloor > 0;
+    const spine = decideHelpSpine({
+      attempts: nextAttempts,
+      maxAttempts: MAX_ATTEMPTS,
+      hasMisconception: misconceptionCarriesRungOne,
+      ladderLength: hintLadder.length,
+    });
+    if (nextAttempts === 1) setHintFloor(spine.showFrom);
     setHintRung((r) => {
-      const next = Math.max(r, Math.min(targetRung, hintLadder.length));
+      const next = Math.max(r, spine.showTo);
       if (next > r) hintsTotalRef.current += next - r;
       return next;
     });
 
-    // Concept gap (tries/hints exhausted) → unfold the worked method before the
-    // answer. Subsumes the old "final attempt" rule and also fires on heavy hinting.
-    if (decision.escalateReteach) setStepByStepOpen(true);
+    // The endpoint of the ladder: the attempt cap, or a concept gap (hints
+    // leaned on) per the matrix — the animated reveal, then the calm worked
+    // walkthrough, then move on.
+    if (spine.reveal || decision.escalateReteach) openReveal();
+  }
+
+  /**
+   * The reveal — the endpoint of the help spine ("See it" is the payoff): the
+   * choreographed animation shows the full solution, and the calm worked
+   * walkthrough follows so the child can step through it before moving on.
+   */
+  function openReveal() {
+    if (teachingAnimation) setVisualOpen(true);
+    if (workedSolution) setStepByStepOpen(true);
   }
 
   function showHint() {
+    // Manual "another hint" — one rung per press, starting past the floor
+    // (the misconception panel already covered rung 1 when the floor is set).
     setHintRung((r) => {
-      const next = Math.min(r + 1, hintLadder.length);
+      const next = Math.min(Math.max(r, hintFloor) + 1, hintLadder.length);
       if (next > r) hintsTotalRef.current += 1;
       return next;
     });
@@ -682,6 +699,7 @@ export function PracticePlayer({
     setOutcome(null);
     setScoredThis(false);
     setHintRung(0);
+    setHintFloor(0);
     setMisconceptionHint(null);
     setFeedback(null);
     setReteachInline(null);
@@ -1298,9 +1316,11 @@ export function PracticePlayer({
           )}
         </AnimatePresence>
 
-        {/* Progressive hints (muted accent tint, distinct from the answer) */}
+        {/* Text rungs of the help spine (nudge → method) — muted accent tint,
+            distinct from the answer. The answer itself is never a text rung;
+            the See-it reveal delivers it. */}
         <AnimatePresence>
-          {hintRung > 0 && !isCorrect && (
+          {hintRung > hintFloor && !isCorrect && (
             <motion.div
               key="hints"
               initial={{ opacity: 0, y: 8 }}
@@ -1313,7 +1333,7 @@ export function PracticePlayer({
                 accent.softBorder,
               )}
             >
-              {hintLadder.slice(0, hintRung).map((rung, i) => (
+              {hintLadder.slice(hintFloor, hintRung).map((rung, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 6 }}
@@ -1322,18 +1342,7 @@ export function PracticePlayer({
                   className="flex items-start gap-3 text-lg text-fog-100"
                 >
                   <Lightbulb className={cn("mt-1 h-5 w-5 shrink-0", accent.text)} />
-                  <span>
-                    {i === hintLadder.length - 1 && revealed ? (
-                      <>
-                        <span className="mr-1 font-semibold text-fog-50">
-                          Here&apos;s how it works:
-                        </span>
-                        {rung}
-                      </>
-                    ) : (
-                      rung
-                    )}
-                  </span>
+                  <span>{rung}</span>
                 </motion.div>
               ))}
             </motion.div>
@@ -1358,7 +1367,9 @@ export function PracticePlayer({
                 voiceId={voiceId}
                 keyStage={keyStage}
                 accent={accentId}
-                autoplay={autoplayOn}
+                // When the See-it animation is open it owns the voice — the
+                // worked walkthrough stays visual so two clips never compete.
+                autoplay={autoplayOn && !(visualOpen && !!teachingAnimation)}
                 className="border-white/10 bg-white/[0.02]"
               />
             </motion.div>
@@ -1391,15 +1402,15 @@ export function PracticePlayer({
                 className="inline-flex items-center gap-2 text-base text-fog-400 transition-colors hover:text-fog-200"
               >
                 <Lightbulb className="h-5 w-5" />
-                {hintRung === 0 ? "Show a hint" : "Another hint"}
+                {hintRung <= hintFloor ? "Show a hint" : "Another hint"}
               </button>
-              {attempts > 0 && workedSolution && (
+              {attempts > 0 && (
                 <button
-                  onClick={() => setStepByStepOpen(true)}
+                  onClick={openReveal}
                   className="inline-flex items-center gap-2 text-base text-fog-400 transition-colors hover:text-fog-200"
                 >
                   <ListChecks className="h-5 w-5" />
-                  Show me step by step
+                  Show me
                 </button>
               )}
             </div>
@@ -1408,15 +1419,13 @@ export function PracticePlayer({
               <span className="text-base text-fog-400">
                 {attemptsLeft} {attemptsLeft === 1 ? "try" : "tries"} left
               </span>
-              {workedSolution && (
-                <button
-                  onClick={() => setStepByStepOpen(true)}
-                  className="inline-flex items-center gap-2 text-base text-fog-400 transition-colors hover:text-fog-200"
-                >
-                  <ListChecks className="h-5 w-5" />
-                  Show me step by step
-                </button>
-              )}
+              <button
+                onClick={openReveal}
+                className="inline-flex items-center gap-2 text-base text-fog-400 transition-colors hover:text-fog-200"
+              >
+                <ListChecks className="h-5 w-5" />
+                Show me
+              </button>
             </div>
           ) : (
             <span />
