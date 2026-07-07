@@ -298,6 +298,23 @@ export type MediaUseCase =
   | "question_visual"
   | "resource";
 
+/**
+ * A Checker-PASSED agentic teaching animation, cached by question+band
+ * content hash (Wave 8, Phase 2) so a tailored explanation is generated once.
+ * Only verified payloads are ever stored — the cache can never replay an
+ * unchecked model output. Question-scoped; carries no child data.
+ */
+export interface AiAnimationDoc {
+  _id?: ObjectId;
+  /** sha256 of prompt + canonical answer + key stage + prompt version. */
+  content_hash: string;
+  /** The validated TeachingAnimation payload (shape-checked before insert). */
+  animation: Record<string, unknown>;
+  key_stage?: number;
+  model: string;
+  created_at: Date;
+}
+
 export interface MediaDoc {
   _id?: ObjectId;
   owner_id: ObjectId | null; // parent who uploaded (null for system/admin)

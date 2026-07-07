@@ -59,7 +59,11 @@ const TeachingAnimation = dynamic(
   { ssr: false },
 );
 import { workedSolutionFromExplanation } from "@/lib/child/worked-examples";
-import { teachingAnimationNarration } from "@/lib/child/teaching-animations";
+import {
+  teachingAnimationNarration,
+  validateTeachingAnimation,
+  type TeachingAnimation as TeachingAnimationData,
+} from "@/lib/child/teaching-animations";
 import {
   decideRemediation,
   selectMasteryAttempt,
@@ -200,6 +204,15 @@ export function PracticePlayer({
   // per question+band, degrading to the human-authored explanation.
   const [reteachInline, setReteachInline] = useState<string | null>(null);
   const [reteachInlineLoading, setReteachInlineLoading] = useState(false);
+  // Agentic "Explain it my way" (Wave 8, Phase 2): a Checker-PASSED tailored
+  // animation that swaps into the See-it panel. Deterministic always shows
+  // first; null = keep deterministic. Cached per question+band for the lesson.
+  const [tailoredAnimation, setTailoredAnimation] =
+    useState<TeachingAnimationData | null>(null);
+  const [tailoredLoading, setTailoredLoading] = useState(false);
+  const tailoredCacheRef = useRef<Map<string, TeachingAnimationData | null>>(
+    new Map(),
+  );
   // When this question first appeared — drives the matrix's time signals.
   const questionShownAtRef = useRef<number>(Date.now());
   // Clean first-try correct answers in a row (careless-slip signal).
@@ -245,8 +258,11 @@ export function PracticePlayer({
   const question = activeQuestions[step];
   const complete = lessonPhase === "complete";
   const teachingAnimation = question?.teachingAnimation ?? null;
-  const teachingNarration = teachingAnimation
-    ? teachingAnimationNarration(teachingAnimation)
+  // The animation the See-it panel actually plays: a Checker-passed tailored
+  // one when available, else the deterministic/authored one — never neither.
+  const activeAnimation = tailoredAnimation ?? teachingAnimation;
+  const teachingNarration = activeAnimation
+    ? teachingAnimationNarration(activeAnimation)
     : "";
   const narrationText = question
     ? buildQuestionNarration({
@@ -728,6 +744,8 @@ export function PracticePlayer({
     setFeedback(null);
     setReteachInline(null);
     setReteachInlineLoading(false);
+    setTailoredAnimation(null);
+    setTailoredLoading(false);
     setStepByStepOpen(false);
     setSpoken(null);
     setSpokenSelect(null);
@@ -857,6 +875,79 @@ export function PracticePlayer({
       setReteachInline(fallback);
     } finally {
       setReteachInlineLoading(false);
+    }
+  }
+
+  /**
+   * Agentic "Explain it my way" (Wave 8, Phase 2). The deterministic See-it
+   * animation opens INSTANTLY; the Teaching Agent then generates a tailored
+   * animation in the background and it swaps in only after passing the
+   * Checker. On reject/error/rate-limit we quietly fall back to the
+   * Checker-gated TEXT reteach — the child always gets help, never a wait,
+   * never raw model output.
+   */
+  async function explainMyWay() {
+    if (!question || tailoredLoading) return;
+    tapCue();
+    if (!teachingAnimation) {
+      // No animation surface for this question — the text reteach is the help.
+      await fetchInlineReteach();
+      return;
+    }
+    setVisualOpen(true); // deterministic first, no wait
+
+    const key = `${question.id}:${keyStage ?? "na"}`;
+    const cached = tailoredCacheRef.current.get(key);
+    if (cached !== undefined) {
+      if (cached) setTailoredAnimation(cached);
+      else await fetchInlineReteach();
+      return;
+    }
+
+    setTailoredLoading(true);
+    try {
+      const selected = interactionRef.current?.selectedIndex() ?? null;
+      const res = await fetch("/api/explain-animation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: question.prompt,
+          correctAnswer: question.options[question.correctIndex],
+          topic: curriculumTopic,
+          keyStage,
+          animationType: teachingAnimation.type,
+          ...(selected !== null && question.options[selected]
+            ? { studentAnswer: question.options[selected] }
+            : {}),
+        }),
+      });
+      const data = (await res.json()) as {
+        animation?: unknown;
+        aiVerified?: boolean;
+        frozen?: boolean;
+        message?: string;
+      };
+      if (data.frozen) {
+        narration.stop();
+        stopRecorder();
+        setFrozen(data.message ?? "");
+        return;
+      }
+      const animation =
+        res.ok && data.aiVerified
+          ? validateTeachingAnimation(data.animation)
+          : null;
+      tailoredCacheRef.current.set(key, animation);
+      if (animation) {
+        setTailoredAnimation(animation);
+      } else {
+        await fetchInlineReteach();
+      }
+    } catch {
+      tailoredCacheRef.current.set(key, null);
+      await fetchInlineReteach();
+    } finally {
+      setTailoredLoading(false);
     }
   }
 
@@ -1235,9 +1326,9 @@ export function PracticePlayer({
               {visualOpen ? "Hide animation" : "See it"}
             </button>
             <AnimatePresence>
-              {visualOpen && (
+              {visualOpen && activeAnimation && (
                 <TeachingAnimation
-                  animation={teachingAnimation}
+                  animation={activeAnimation}
                   accent={accent}
                   autoPlay
                   onSpeak={speakTeachingStep}
@@ -1318,8 +1409,11 @@ export function PracticePlayer({
                   </p>
                 )}
 
-                {/* Optional richer reteach (concept gap) — Checker-gated +
-                    cached, opt-in. Degrades to the human-authored explanation. */}
+                {/* Optional richer reteach (concept gap) — the agentic
+                    "Explain it my way" path: deterministic See-it opens
+                    instantly, a Checker-passed tailored animation swaps in,
+                    and everything degrades to the Checker-gated text reteach
+                    then the human-authored explanation. Opt-in, cached. */}
                 {feedback.escalateReteach &&
                   (reteachInline ? (
                     <p className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-base text-fog-100">
@@ -1327,18 +1421,18 @@ export function PracticePlayer({
                     </p>
                   ) : (
                     <button
-                      onClick={fetchInlineReteach}
-                      disabled={reteachInlineLoading}
+                      onClick={() => void explainMyWay()}
+                      disabled={reteachInlineLoading || tailoredLoading}
                       className="mt-3 inline-flex items-center gap-2 text-base text-fog-300 transition-colors hover:text-fog-100 disabled:opacity-60"
                     >
-                      {reteachInlineLoading ? (
+                      {reteachInlineLoading || tailoredLoading ? (
                         <Loader2 className="h-5 w-5 animate-spin" />
                       ) : (
                         <Sparkles className="h-5 w-5" />
                       )}
-                      {reteachInlineLoading
-                        ? "Getting a clearer explanation…"
-                        : "Explain it another way"}
+                      {reteachInlineLoading || tailoredLoading
+                        ? "Making it just for you…"
+                        : "Explain it my way"}
                     </button>
                   ))}
               </div>

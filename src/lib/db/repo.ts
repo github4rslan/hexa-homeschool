@@ -30,6 +30,7 @@ import type {
   CurriculumTopicDoc,
   QuestionDoc,
   CheckinDoc,
+  AiAnimationDoc,
   MediaDoc,
   MediaUseCase,
   WeeklyScheduleDoc,
@@ -2790,6 +2791,31 @@ export async function listMedia(filter: {
     .sort({ created_at: -1 })
     .limit(filter.limit ?? 60)
     .toArray();
+}
+
+/**
+ * Look up a cached Checker-passed agentic animation (Wave 8, Phase 2).
+ * Question-scoped cache — no ownership check needed (carries no child data,
+ * mirroring the `media` cache pattern).
+ */
+export async function findCachedAnimation(
+  contentHash: string,
+): Promise<AiAnimationDoc | null> {
+  const col = await getCollection<AiAnimationDoc>(Collections.aiAnimations);
+  return col.findOne({ content_hash: contentHash });
+}
+
+/** Store a Checker-PASSED animation so it is generated once per question+band. */
+export async function saveCachedAnimation(
+  doc: Omit<AiAnimationDoc, "_id" | "created_at">,
+): Promise<void> {
+  const col = await getCollection<AiAnimationDoc>(Collections.aiAnimations);
+  // Idempotent under races: last write wins on the same hash.
+  await col.updateOne(
+    { content_hash: doc.content_hash },
+    { $set: { ...doc, created_at: new Date() } },
+    { upsert: true },
+  );
 }
 
 /** Look up a cached media asset by content hash (e.g. TTS audio). */
