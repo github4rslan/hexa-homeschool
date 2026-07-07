@@ -1220,6 +1220,7 @@ export function PracticePlayer({
                   onStop={narration.stop}
                   options={question.options}
                   correctIndex={question.correctIndex}
+                  speaking={narration.playing}
                 />
               )}
             </AnimatePresence>
