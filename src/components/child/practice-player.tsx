@@ -695,9 +695,11 @@ export function PracticePlayer({
     }
   }
 
+  // Eddie's steps fetch word timings with the audio (karaoke captions);
+  // the same clip cache and /api/tts limits apply.
   const speakTeachingStep = useCallback(
     (text: string) => {
-      if (autoplayOn) void narration.playText(text);
+      if (autoplayOn) void narration.playCaptioned(text);
     },
     [autoplayOn, narration],
   );
@@ -1233,6 +1235,8 @@ export function PracticePlayer({
                   correctIndex={question.correctIndex}
                   speaking={narration.playing}
                   keyStage={keyStage}
+                  caption={narration.caption}
+                  getTime={narration.getTime}
                 />
               )}
             </AnimatePresence>
