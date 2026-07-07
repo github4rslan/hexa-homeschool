@@ -11,7 +11,6 @@ import {
   Sparkles,
   ArrowRight,
   Lightbulb,
-  ListChecks,
   Wind,
   Eye,
 } from "lucide-react";
@@ -743,6 +742,20 @@ export function PracticePlayer({
   function openReveal() {
     if (teachingAnimation) setVisualOpen(true);
     if (workedSolution) setStepByStepOpen(true);
+  }
+
+  /**
+   * ONE big "I'm stuck" button (Phase 3, Feature 4): each press walks the
+   * graduated help spine — next hint rung, then the See-it reveal. Always in
+   * the same place, always a next step, never a dead end.
+   */
+  function imStuck() {
+    tapCue();
+    if (canHint) {
+      showHint();
+    } else if (!revealed) {
+      openReveal();
+    }
   }
 
   function showHint() {
@@ -1568,37 +1581,28 @@ export function PracticePlayer({
 
         {/* Actions */}
         <div className="mt-8 flex items-center justify-between gap-4">
-          {canHint ? (
-            <div className="flex flex-wrap gap-4">
+          {!revealed && !isCorrect ? (
+            <div className="flex flex-wrap items-center gap-4">
+              {/* ONE big, always-here help button — each press gives the next
+                  rung of the ladder, ending in the See-it reveal. Giant touch
+                  target, keyboardable, calm; never a dead end. */}
               <button
-                onClick={showHint}
-                className="inline-flex items-center gap-2 text-base text-fog-400 transition-colors hover:text-fog-200"
+                onClick={imStuck}
+                className={cn(
+                  "child-touch inline-flex items-center gap-2 rounded-2xl border px-5 text-lg font-semibold text-fog-100 transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2",
+                  accent.softBg,
+                  accent.softBorder,
+                  accent.ring,
+                )}
               >
-                <Lightbulb className="h-5 w-5" />
-                {hintRung <= hintFloor ? "Show a hint" : "Another hint"}
+                <Lightbulb className={cn("h-6 w-6", accent.text)} />
+                I&apos;m stuck
               </button>
               {attempts > 0 && (
-                <button
-                  onClick={openReveal}
-                  className="inline-flex items-center gap-2 text-base text-fog-400 transition-colors hover:text-fog-200"
-                >
-                  <ListChecks className="h-5 w-5" />
-                  Show me
-                </button>
+                <span className="text-base text-fog-400">
+                  {attemptsLeft} {attemptsLeft === 1 ? "try" : "tries"} left
+                </span>
               )}
-            </div>
-          ) : !revealed && !isCorrect && attempts > 0 ? (
-            <div className="flex flex-wrap gap-4">
-              <span className="text-base text-fog-400">
-                {attemptsLeft} {attemptsLeft === 1 ? "try" : "tries"} left
-              </span>
-              <button
-                onClick={openReveal}
-                className="inline-flex items-center gap-2 text-base text-fog-400 transition-colors hover:text-fog-200"
-              >
-                <ListChecks className="h-5 w-5" />
-                Show me
-              </button>
             </div>
           ) : (
             <span />
