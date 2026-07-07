@@ -39,6 +39,8 @@ export default async function ChildLessonPage({
   const accent = child?.accent ?? null;
   // Auto-narration preference — default ON (legacy-safe: undefined ⇒ on).
   const narrationAutoplay = child?.narration_autoplay !== false;
+  // Gentle sound/haptic cues — default ON, opt-out in "My stuff".
+  const soundCues = child?.sound_cues !== false;
 
   // Resolve the topic: explicit ?topic= wins; otherwise the child's first
   // in-band maths topic (band-aware), falling back to the global first topic.
@@ -136,6 +138,7 @@ export default async function ChildLessonPage({
         keyStage={topicDoc.key_stage ?? 4}
         accent={accent}
         narrationAutoplay={narrationAutoplay}
+        soundCues={soundCues}
         savedProgress={savedProgress}
         firstName={firstName}
         resumeKey={resumeKey}

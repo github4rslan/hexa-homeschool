@@ -29,6 +29,7 @@ export function DailyFlow({
   keyStage,
   accent: accentId,
   narrationAutoplay = true,
+  soundCues = true,
   savedProgress,
   firstName,
   resumeKey,
@@ -55,6 +56,8 @@ export function DailyFlow({
   accent?: string | null;
   /** Child's "read questions to me" preference (auto-narration). */
   narrationAutoplay?: boolean;
+  /** Child's "sounds & buzz" preference (gentle lesson cues; opt-out). */
+  soundCues?: boolean;
   /** Server-synced mid-lesson progress for a warm resume (MongoDB). */
   savedProgress?: SavedProgress | null;
   /** Child's first name, for the warm re-entry card. */
@@ -135,6 +138,7 @@ export function DailyFlow({
               keyStage={keyStage}
               accent={accentId}
               narrationAutoplay={narrationAutoplay}
+              soundCues={soundCues}
               savedProgress={savedProgress}
               firstName={firstName}
               resumeKey={resumeKey}

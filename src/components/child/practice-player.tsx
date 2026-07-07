@@ -41,6 +41,7 @@ import {
   type GuardOutcome,
 } from "@/lib/safety/free-text-gate";
 import { accentPreset, type AccentPreset } from "@/lib/child/accents";
+import { setCuesEnabled, tapCue } from "@/lib/child/sensory-cues";
 import { useNarration } from "@/lib/child/use-narration";
 import { useQuestionVisual } from "@/lib/child/use-question-visual";
 import { buildQuestionNarration } from "@/lib/child/narration-copy";
@@ -129,6 +130,7 @@ export function PracticePlayer({
   keyStage,
   accent: accentId,
   narrationAutoplay = true,
+  soundCues = true,
   savedProgress,
   firstName,
   resumeKey,
@@ -147,6 +149,8 @@ export function PracticePlayer({
   accent?: string | null;
   /** Child's "read questions to me" preference (auto-narration default-on). */
   narrationAutoplay?: boolean;
+  /** Child's "sounds & buzz" preference (gentle lesson cues; opt-out). */
+  soundCues?: boolean;
   /** Server-synced mid-lesson progress (MongoDB) for a warm resume. */
   savedProgress?: SavedProgress | null;
   /** Child's first name, for the warm re-entry card. */
@@ -288,6 +292,11 @@ export function PracticePlayer({
         !!navigator.mediaDevices?.getUserMedia,
     );
   }, []);
+
+  // Push the child's "sounds & buzz" preference into the shared cue helper.
+  useEffect(() => {
+    setCuesEnabled(soundCues);
+  }, [soundCues]);
 
   // Auto-narrate the prompt when a new step appears — read the question TO the
   // child, then go quiet. Once per step (a re-render won't replay it); skipped
@@ -573,6 +582,7 @@ export function PracticePlayer({
   async function check() {
     if (!ready || !question || revealed || outcome === "correct") return;
     if (checkingRef.current) return;
+    tapCue();
     checkingRef.current = true;
     try {
       // Child-safety rule 2: on the only free-text surface (fill_blank), the
@@ -688,6 +698,7 @@ export function PracticePlayer({
   }
 
   function toggleTeachingVisual() {
+    tapCue();
     const next = !visualOpen;
     setVisualOpen(next);
     if (!next) {

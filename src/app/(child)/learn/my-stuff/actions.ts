@@ -20,6 +20,7 @@ export async function saveChildPreferences(
   voiceId: string,
   accent: string,
   narrationAutoplay?: boolean,
+  soundCues?: boolean,
 ): Promise<SavePrefsResult> {
   const parentId = await currentParentId();
   if (!parentId) return { ok: false };
@@ -31,6 +32,7 @@ export async function saveChildPreferences(
     accent: isAccent(accent) ? accent : undefined,
     narrationAutoplay:
       typeof narrationAutoplay === "boolean" ? narrationAutoplay : undefined,
+    soundCues: typeof soundCues === "boolean" ? soundCues : undefined,
   });
   revalidatePath("/learn");
   return { ok };

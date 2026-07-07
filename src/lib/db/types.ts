@@ -162,6 +162,11 @@ export interface ChildDoc {
    */
   narration_autoplay?: boolean;
   /**
+   * Gentle sound + haptic cues on lesson controls (Wave 8). Optional +
+   * legacy-safe: undefined ⇒ ON; the child can opt out in "My stuff".
+   */
+  sound_cues?: boolean;
+  /**
    * When the child completed the one-time onboarding diagnostic. Set ONCE on
    * first full completion (the baseline); never overwritten. Optional +
    * legacy-safe: a child with prior non-mock evaluations but no flag is treated
