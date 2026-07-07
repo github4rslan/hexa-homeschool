@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildYourTurn,
+  checkYourTurnOrder,
+  checkYourTurnTap,
   classifyOptions,
   equationBeat,
   equationBeatKind,
@@ -149,6 +152,84 @@ describe("classifyOptions (eliminate vs keep vs half)", () => {
       "keep",
       "eliminate",
     ]);
+  });
+});
+
+describe("buildYourTurn (active recall, deterministic, no AI)", () => {
+  it("equation with integer roots → tap where x lands", () => {
+    const task = buildYourTurn({
+      type: "equation_steps",
+      steps: [
+        { label: "Start", expression: "x^2 - 9 = 0" },
+        { label: "Answer", expression: "x = +/- 3" },
+      ],
+    });
+    expect(task?.kind).toBe("tap_choice");
+    if (task?.kind !== "tap_choice") return;
+    expect(task.choices).toContain("-3 and 3");
+    expect(task.choices[task.correct]).toBe("-3 and 3");
+    expect(checkYourTurnTap(task, task.correct)).toBe(true);
+    expect(checkYourTurnTap(task, (task.correct + 1) % 3)).toBe(false);
+  });
+
+  it("irrational equation → recall the ± idea, never fake positions", () => {
+    const task = buildYourTurn({
+      type: "equation_steps",
+      steps: [{ label: "Answer", expression: "x = +/- sqrt(10)" }],
+    });
+    expect(task?.kind).toBe("tap_choice");
+    if (task?.kind !== "tap_choice") return;
+    expect(task.choices[task.correct]).toBe("x = +/- sqrt(10)");
+  });
+
+  it("choice strategy → tap the half-answer distractor when one exists", () => {
+    const task = buildYourTurn({
+      type: "choice_strategy",
+      steps: [],
+      options: ["x = ±3", "x = 9", "x = 3"],
+      correctIndex: 0,
+    });
+    expect(task?.kind).toBe("tap_choice");
+    if (task?.kind !== "tap_choice") return;
+    expect(task.correct).toBe(2); // "x = 3" is only half the answer
+  });
+
+  it("grammar → tap the keyword only when the focus is a real word", () => {
+    const withKeyword = buildYourTurn({
+      type: "grammar_highlight",
+      steps: [
+        { label: "Read", expression: "The dog ran quickly", focus: "quickly" },
+      ],
+    });
+    expect(withKeyword?.kind).toBe("tap_choice");
+
+    const metaFocus = buildYourTurn({
+      type: "grammar_highlight",
+      steps: [{ label: "Find", expression: "Look for the answer", focus: "zzz" }],
+    });
+    expect(metaFocus).toBeNull();
+  });
+
+  it("science → order the steps, checked as a sequence", () => {
+    const task = buildYourTurn({
+      type: "science_sequence",
+      steps: [
+        { label: "Start", expression: "" },
+        { label: "Change", expression: "" },
+        { label: "Result", expression: "" },
+      ],
+    });
+    expect(task?.kind).toBe("order_steps");
+    if (task?.kind !== "order_steps") return;
+    // Items are rotated: display = [Change, Result, Start]
+    expect(task.items).toEqual(["Change", "Result", "Start"]);
+    // Correct tap sequence must visit Start, Change, Result in true order:
+    const startAt = task.items.indexOf("Start");
+    const changeAt = task.items.indexOf("Change");
+    const resultAt = task.items.indexOf("Result");
+    expect(checkYourTurnOrder(task, [startAt, changeAt, resultAt])).toBe(true);
+    expect(checkYourTurnOrder(task, [changeAt, startAt, resultAt])).toBe(false);
+    expect(checkYourTurnOrder(task, [startAt])).toBe(false); // incomplete
   });
 });
 

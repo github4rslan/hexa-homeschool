@@ -17,12 +17,16 @@ import {
 import { cn } from "@/lib/utils";
 import type { AccentPreset } from "@/lib/child/accents";
 import {
+  buildYourTurn,
+  checkYourTurnOrder,
+  checkYourTurnTap,
   classifyOptions,
   equationBeat,
   sentenceWords,
   splitExpression,
   stepDurationMs,
   type NumberLineSpec,
+  type YourTurnTask,
 } from "@/lib/child/animation-timeline";
 import {
   stepNarration,
@@ -777,6 +781,174 @@ function ScienceStage({
   );
 }
 
+/**
+ * "Your turn" — ONE short active-recall beat after the reveal (Feature 6).
+ * Deterministic (built from the animation's own steps + the real options), no
+ * AI, no analytics. Optional and skippable; calm confirm on success, a
+ * supportive nudge on a miss — never punitive. Tap targets are .child-touch
+ * and fully keyboardable.
+ */
+function YourTurnPanel({
+  task,
+  accent,
+  reduced,
+  onSpeak,
+}: {
+  task: YourTurnTask;
+  accent: AccentPreset;
+  reduced: boolean;
+  onSpeak?: (text: string) => void;
+}) {
+  const [dismissed, setDismissed] = useState(false);
+  const [result, setResult] = useState<"correct" | "miss" | null>(null);
+  const [tapped, setTapped] = useState<number[]>([]);
+
+  useEffect(() => {
+    setDismissed(false);
+    setResult(null);
+    setTapped([]);
+  }, [task]);
+
+  if (dismissed) return null;
+
+  const confirmLine = "That's exactly it — you saw it for yourself.";
+  const nudgeLine = "Not quite — have another look at the last step. You're close.";
+
+  function finish(correct: boolean) {
+    setResult(correct ? "correct" : "miss");
+    onSpeak?.(correct ? confirmLine : nudgeLine);
+  }
+
+  function tapChoice(index: number) {
+    if (result === "correct") return;
+    setResult(null);
+    finish(checkYourTurnTap(task, index));
+  }
+
+  function tapOrderItem(index: number) {
+    if (result === "correct" || task.kind !== "order_steps") return;
+    if (tapped.includes(index)) return;
+    const next = [...tapped, index];
+    setTapped(next);
+    if (next.length === task.items.length) {
+      finish(checkYourTurnOrder(task, next));
+    } else {
+      setResult(null);
+    }
+  }
+
+  return (
+    <motion.div
+      initial={reduced ? false : { opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className={cn("mt-4 rounded-3xl border p-4", accent.softBg, accent.softBorder)}
+    >
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <p className="text-lg font-semibold text-fog-50">{task.prompt}</p>
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
+          className="shrink-0 text-sm text-fog-500 transition-colors hover:text-fog-200 focus-visible:outline-none focus-visible:ring-2"
+        >
+          Skip
+        </button>
+      </div>
+
+      {task.kind === "tap_choice" ? (
+        <div className="flex flex-wrap gap-2">
+          {task.choices.map((choice, i) => {
+            const isCorrectPick = result === "correct" && i === task.correct;
+            return (
+              <button
+                key={`${choice}-${i}`}
+                type="button"
+                onClick={() => tapChoice(i)}
+                disabled={result === "correct"}
+                className={cn(
+                  "child-touch inline-flex items-center gap-2 rounded-2xl border px-4 text-lg font-semibold transition-all focus-visible:outline-none focus-visible:ring-2",
+                  accent.ring,
+                  isCorrectPick
+                    ? cn(accent.bg, accent.border, accent.text)
+                    : "border-white/10 bg-white/[0.03] text-fog-100 hover:border-white/30 hover:bg-white/[0.06]",
+                )}
+              >
+                {choice}
+                {isCorrectPick && <Check className="h-5 w-5" aria-hidden />}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div>
+          <div className="flex flex-wrap gap-2">
+            {task.items.map((item, i) => {
+              const order = tapped.indexOf(i);
+              return (
+                <button
+                  key={`${item}-${i}`}
+                  type="button"
+                  onClick={() => tapOrderItem(i)}
+                  disabled={result === "correct" || order >= 0}
+                  className={cn(
+                    "child-touch inline-flex items-center gap-2 rounded-2xl border px-4 text-lg font-semibold transition-all focus-visible:outline-none focus-visible:ring-2",
+                    accent.ring,
+                    order >= 0
+                      ? cn(accent.bg, accent.border, accent.text)
+                      : "border-white/10 bg-white/[0.03] text-fog-100 hover:border-white/30 hover:bg-white/[0.06]",
+                  )}
+                >
+                  {order >= 0 && (
+                    <span
+                      className={cn(
+                        "flex h-6 w-6 items-center justify-center rounded-full text-sm",
+                        accent.bg,
+                      )}
+                    >
+                      {order + 1}
+                    </span>
+                  )}
+                  {item}
+                </button>
+              );
+            })}
+          </div>
+          {tapped.length > 0 && result !== "correct" && (
+            <button
+              type="button"
+              onClick={() => {
+                setTapped([]);
+                setResult(null);
+              }}
+              className="mt-2 text-sm text-fog-400 transition-colors hover:text-fog-200 focus-visible:outline-none focus-visible:ring-2"
+            >
+              Start again
+            </button>
+          )}
+        </div>
+      )}
+
+      <AnimatePresence>
+        {result && (
+          <motion.p
+            key={result}
+            initial={reduced ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className={cn(
+              "mt-3 text-base leading-relaxed",
+              result === "correct" ? "text-neon-200" : "text-fog-200",
+            )}
+            role="status"
+          >
+            {result === "correct" ? confirmLine : nudgeLine}
+          </motion.p>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
 export function TeachingAnimation({
   animation,
   accent,
@@ -810,6 +982,17 @@ export function TeachingAnimation({
   const reduced = useReducedMotion() ?? false;
   const [current, setCurrent] = useState(0);
   const [playing, setPlaying] = useState(false);
+  // The one active-recall micro-task that follows the reveal (deterministic).
+  const yourTurn = useMemo(
+    () =>
+      buildYourTurn({
+        type: animation.type,
+        steps: animation.steps,
+        options,
+        correctIndex,
+      }),
+    [animation, options, correctIndex],
+  );
   /** "Again, slower" — a calmer second pass at ~1.4× the hold per beat. */
   const [slowMode, setSlowMode] = useState(false);
   const speakRef = useRef(onSpeak);
@@ -1085,6 +1268,18 @@ export function TeachingAnimation({
             />
           )}
         </motion.div>
+      </AnimatePresence>
+
+      {/* After the reveal's final beat: one short recall task, skippable. */}
+      <AnimatePresence>
+        {yourTurn && current >= total - 1 && (
+          <YourTurnPanel
+            task={yourTurn}
+            accent={accent}
+            reduced={reduced}
+            onSpeak={onSpeak}
+          />
+        )}
       </AnimatePresence>
 
       <p className="mt-4 flex items-start gap-2 text-base leading-relaxed text-fog-300">
