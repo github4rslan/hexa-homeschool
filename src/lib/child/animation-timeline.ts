@@ -179,6 +179,160 @@ function signedValues(option: string): number[] {
   return [...new Set(values)];
 }
 
+// ── "Your turn" active-recall beat (Feature 6 — no AI) ───────
+
+export type YourTurnTask =
+  | {
+      kind: "tap_choice";
+      prompt: string;
+      choices: string[];
+      correct: number;
+    }
+  | {
+      kind: "order_steps";
+      prompt: string;
+      /** Items in DISPLAY order (deterministically rotated). */
+      items: string[];
+      /** For each display item, its true position in the process. */
+      correctOrder: number[];
+    };
+
+/** Deterministic rotation so the correct choice isn't always listed first. */
+function rotate<T>(items: T[], by: number): T[] {
+  const n = items.length;
+  if (n === 0) return items;
+  const shift = ((by % n) + n) % n;
+  return items.map((_, i) => items[(i + shift) % n]);
+}
+
+/**
+ * Build the single active-recall micro-task that follows the reveal — turning
+ * passive watching into recall. Entirely deterministic (derived from the
+ * animation's own human-authored steps and the question's real options); when
+ * no meaningful task can be built it returns null and the beat simply doesn't
+ * appear. Never AI, never analytics.
+ */
+export function buildYourTurn(input: {
+  type: "equation_steps" | "choice_strategy" | "grammar_highlight" | "science_sequence";
+  steps: { label: string; expression: string; focus?: string }[];
+  options?: string[];
+  correctIndex?: number;
+}): YourTurnTask | null {
+  const { type, steps, options, correctIndex } = input;
+
+  if (type === "equation_steps") {
+    const last = steps[steps.length - 1];
+    if (!last) return null;
+    const roots = extractRoots(last.expression);
+    if (roots.length === 2) {
+      const r = Math.max(...roots.map((v) => Math.abs(v)));
+      const v = r * r;
+      const base = [`${-r} and ${r}`, `only ${r}`, `${v} and ${-v}`];
+      const shift = r % base.length;
+      const choices = rotate(base, shift);
+      return {
+        kind: "tap_choice",
+        prompt: "Your turn — where does x land on the number line?",
+        choices,
+        correct: choices.indexOf(base[0]),
+      };
+    }
+    // Irrational answer — recall the ± idea instead of fake positions.
+    const sqrtMatch = last.expression.match(/sqrt\((\d+)\)/);
+    if (sqrtMatch) {
+      const v = Number(sqrtMatch[1]);
+      const base = [
+        `x = +/- sqrt(${v})`,
+        `x = sqrt(${v}) only`,
+        `x = ${v}`,
+      ];
+      const shift = v % base.length;
+      const choices = rotate(base, shift);
+      return {
+        kind: "tap_choice",
+        prompt: "Your turn — which shows BOTH possible answers?",
+        choices,
+        correct: choices.indexOf(base[0]),
+      };
+    }
+    return null;
+  }
+
+  if (type === "choice_strategy") {
+    if (!options || options.length < 2 || typeof correctIndex !== "number") {
+      return null;
+    }
+    const fates = classifyOptions(options, correctIndex);
+    const halfIndex = fates.indexOf("half");
+    if (halfIndex >= 0) {
+      return {
+        kind: "tap_choice",
+        prompt: "Your turn — which answer is tempting but only HALF right?",
+        choices: [...options],
+        correct: halfIndex,
+      };
+    }
+    return {
+      kind: "tap_choice",
+      prompt: "Your turn — which answer would you keep?",
+      choices: [...options],
+      correct: correctIndex,
+    };
+  }
+
+  if (type === "grammar_highlight") {
+    // Tap the keyword — only when a step's focus is an actual word in its
+    // sentence (derived content often uses meta-focuses; then no task).
+    for (const step of steps) {
+      if (!step.focus) continue;
+      const words = sentenceWords(step.expression, 8);
+      const hit = words.findIndex((w) =>
+        w.toLowerCase().includes(step.focus!.toLowerCase()),
+      );
+      if (hit >= 0 && words.length >= 2) {
+        return {
+          kind: "tap_choice",
+          prompt: "Your turn — tap the clue word.",
+          choices: words,
+          correct: hit,
+        };
+      }
+    }
+    return null;
+  }
+
+  // science_sequence — put the process back in order.
+  const labels = steps.map((s) => s.label);
+  if (labels.length < 3) return null;
+  const items = rotate(labels, 1);
+  return {
+    kind: "order_steps",
+    prompt: "Your turn — tap the steps in the order they happen.",
+    items,
+    correctOrder: items.map((item) => labels.indexOf(item)),
+  };
+}
+
+/** Check a tap answer (pure, instant). */
+export function checkYourTurnTap(task: YourTurnTask, selected: number): boolean {
+  return task.kind === "tap_choice" && selected === task.correct;
+}
+
+/**
+ * Check an order answer: `tapped` is the display-index sequence the child
+ * tapped; correct when it visits the true positions 0,1,2,… in order.
+ */
+export function checkYourTurnOrder(
+  task: YourTurnTask,
+  tapped: number[],
+): boolean {
+  if (task.kind !== "order_steps") return false;
+  if (tapped.length !== task.items.length) return false;
+  return tapped.every(
+    (displayIndex, i) => task.correctOrder[displayIndex] === i,
+  );
+}
+
 // ── Grammar / science beats ──────────────────────────────────
 
 /** Words of a sentence for the sequential highlight sweep (cap keeps it calm). */
