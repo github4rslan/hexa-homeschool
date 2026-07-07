@@ -10,6 +10,7 @@ import {
   normalizeInteraction,
   pickMisconception,
   resolveResumeStep,
+  spokenBlankValue,
   type DragDropInteraction,
   type FillBlankInteraction,
   type TapRevealInteraction,
@@ -151,6 +152,33 @@ describe("buildHintLadder (nudge → method; the answer is NEVER a text rung)", 
     expect(ladder).toHaveLength(2);
     expect(ladder[0]).not.toContain("x = 3");
     expect(ladder[1]).not.toContain("x = 3");
+  });
+});
+
+describe("spokenBlankValue (voice answers for fill-blank, forgiving)", () => {
+  it("pulls the number out of natural speech for numeric blanks", () => {
+    expect(spokenBlankValue("it's 12", true)).toBe("12");
+    expect(spokenBlankValue("minus 3", true)).toBe("-3");
+    expect(spokenBlankValue("negative 3!", true)).toBe("-3");
+    expect(spokenBlankValue("I think it's 3.5", true)).toBe("3.5");
+    expect(spokenBlankValue("1,000", true)).toBe("1000");
+  });
+
+  it("understands small number words", () => {
+    expect(spokenBlankValue("three", true)).toBe("3");
+    expect(spokenBlankValue("it's twelve", true)).toBe("12");
+    expect(spokenBlankValue("minus three", true)).toBe("-3");
+  });
+
+  it("passes text blanks through cleaned", () => {
+    expect(spokenBlankValue("photosynthesis.", false)).toBe("photosynthesis");
+    expect(spokenBlankValue("  a noun ", false)).toBe("a noun");
+  });
+
+  it("returns null when there is nothing usable — calm retry, no hard fail", () => {
+    expect(spokenBlankValue("", true)).toBeNull();
+    expect(spokenBlankValue("um I don't know", true)).toBeNull();
+    expect(spokenBlankValue("   ", false)).toBeNull();
   });
 });
 

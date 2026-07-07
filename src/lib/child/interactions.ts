@@ -203,6 +203,70 @@ export function checkDragDrop(
   return it.slots.every((slot, i) => placement[i] === slot.correctChip);
 }
 
+// ── Spoken answers beyond mcq (Wave 8, Phase 3 Feature 6) ────
+
+/** Small spoken-number vocabulary for numeric blanks ("three" → "3"). */
+const NUMBER_WORDS: Record<string, number> = {
+  zero: 0,
+  one: 1,
+  two: 2,
+  three: 3,
+  four: 4,
+  five: 5,
+  six: 6,
+  seven: 7,
+  eight: 8,
+  nine: 9,
+  ten: 10,
+  eleven: 11,
+  twelve: 12,
+  thirteen: 13,
+  fourteen: 14,
+  fifteen: 15,
+  sixteen: 16,
+  seventeen: 17,
+  eighteen: 18,
+  nineteen: 19,
+  twenty: 20,
+};
+
+/**
+ * Turn a speech transcript into a fill-blank value — forgiving, never a hard
+ * fail. Numeric blanks pull the first number ("it's minus 3!" → "-3",
+ * "three" → "3"); text blanks pass the cleaned words through (the checker is
+ * already case/whitespace-insensitive). Null = couldn't hear an answer →
+ * the caller shows a calm retry nudge. Pure + testable.
+ */
+export function spokenBlankValue(
+  transcript: string,
+  numeric?: boolean,
+): string | null {
+  const text = transcript.replace(/\s+/g, " ").trim();
+  if (!text) return null;
+
+  if (!numeric) {
+    const cleaned = text.replace(/[.?!]+$/, "").trim();
+    return cleaned || null;
+  }
+
+  // Spoken negatives come through as words: "minus 3" / "negative three".
+  const negativeDigits = text.match(/(?:minus|negative)\s+(\d+(?:\.\d+)?)/i);
+  if (negativeDigits) return `-${negativeDigits[1]}`;
+  const digits = text.replace(/,/g, "").match(/-?\d+(?:\.\d+)?/);
+  if (digits) return digits[0];
+
+  const lower = text.toLowerCase();
+  for (const [word, value] of Object.entries(NUMBER_WORDS)) {
+    if (new RegExp(`\\b${word}\\b`).test(lower)) {
+      const negative = new RegExp(
+        `\\b(?:minus|negative)\\s+${word}\\b`,
+      ).test(lower);
+      return String(negative ? -value : value);
+    }
+  }
+  return null;
+}
+
 // ── Graduated help spine (Wave 8 — one ladder, least help first) ──
 
 export interface HintLadderInput {

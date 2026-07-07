@@ -16,6 +16,7 @@ import {
   checkFillBlank,
   checkMcq,
   checkTapReveal,
+  spokenBlankValue,
   type DragDropInteraction,
   type FillBlankInteraction,
   type Interaction as InteractionDef,
@@ -50,6 +51,13 @@ export interface InteractionHandle {
    * or null for other interaction types where there is no single option index.
    */
   selectedIndex: () => number | null;
+  /**
+   * Apply a spoken answer (Wave 8, Phase 3): fill_blank puts the processed
+   * transcript into the first empty blank. Returns whether it was applied —
+   * false means "let the child tap/type instead" (mcq is handled by the
+   * parent's option matcher; other types don't take dictation yet).
+   */
+  applySpokenAnswer: (transcript: string) => boolean;
 }
 
 interface InteractionProps {
@@ -161,6 +169,7 @@ const Mcq = forwardRef<
     isCorrect: () => checkMcq(selected, correctIndex),
     answerText: () => (selected !== null ? options[selected] ?? "" : ""),
     selectedIndex: () => selected,
+    applySpokenAnswer: () => false, // parent matches spoken text to an option
   }));
 
   return (
@@ -237,6 +246,7 @@ const TapReveal = forwardRef<
     answerText: () =>
       selected !== null ? it.cards[selected]?.reveal ?? "" : "",
     selectedIndex: () => null,
+    applySpokenAnswer: () => false,
   }));
 
   function tap(i: number) {
@@ -328,6 +338,20 @@ const FillBlank = forwardRef<
     isCorrect: () => checkFillBlank(it, values),
     answerText: () => values.join(" ").trim(),
     selectedIndex: () => null,
+    // Spoken answer → the first empty blank (or the only blank). Forgiving:
+    // an unusable transcript returns false and the child just types instead.
+    applySpokenAnswer: (transcript: string) => {
+      const target = Math.max(
+        0,
+        values.findIndex((v) => !v.trim()),
+      );
+      const blank = it.blanks[target];
+      if (!blank) return false;
+      const value = spokenBlankValue(transcript, blank.numeric);
+      if (value === null) return false;
+      setBlank(target, value);
+      return true;
+    },
   }));
 
   function setBlank(i: number, v: string) {
@@ -421,6 +445,7 @@ const DragDrop = forwardRef<
         })
         .join("; "),
     selectedIndex: () => null,
+    applySpokenAnswer: () => false,
   }));
 
   function placeChip(slotIdx: number, chipIdx: number) {
