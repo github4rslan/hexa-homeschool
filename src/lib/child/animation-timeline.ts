@@ -38,8 +38,14 @@ export interface EquationBeat {
   kind: EquationBeatKind;
   /** Expression split into renderable math tokens. */
   tokens: string[];
-  /** Number line to land roots on (root/answer beats with integer roots). */
+  /** Number line to land roots on (root beats with integer roots). */
   numberLine: NumberLineSpec | null;
+  /** Graph reveal (answer beats): the parabola crossing the x-axis at ±r. */
+  graph: GraphSpec | null;
+  /** Area-model proof (factor beats): x·x minus r·r rearranged into brackets. */
+  areaModel: AreaModelSpec | null;
+  /** Square-number dot grid (square beats): r² dots forming an r×r square. */
+  squareDots: { row: number; col: number }[] | null;
 }
 
 /** Split a normalised expression into math tokens (`x^2`, `sqrt(9)`, `+/-` …). */
@@ -94,14 +100,162 @@ export function numberLineSpec(marks: number[]): NumberLineSpec | null {
   return { min: -bound, max: bound, tickStep, marks };
 }
 
+// ── Super animations (Phase 2, Feature 4) ────────────────────
+
+export interface GraphSpec {
+  /** SVG path for y = x² − r² inside a `width`×`height` viewbox. */
+  path: string;
+  /** SVG y of the x-axis line. */
+  xAxisY: number;
+  /** SVG x of the vertical (y) axis. */
+  yAxisX: number;
+  /** SVG x positions of the two x-intercepts, with their maths labels. */
+  intercepts: { x: number; label: number }[];
+  /** SVG position of the vertex (0, −r²). */
+  vertex: { x: number; y: number };
+  /** Human/spoken label for the curve. */
+  label: string;
+  width: number;
+  height: number;
+}
+
+/**
+ * The parabola y = x² − r², mapped into SVG space, crossing the x-axis at −r
+ * and +r — the picture that ties the factoring to the graph. Pure geometry,
+ * unit-testable; null for non-integer/zero roots (never a fake picture).
+ */
+export function parabolaGraphSpec(
+  root: number,
+  width = 320,
+  height = 170,
+  samples = 32,
+): GraphSpec | null {
+  if (!Number.isInteger(root) || root <= 0) return null;
+  const xMin = -(root + 1);
+  const xMax = root + 1;
+  const yMin = -(root * root); // vertex
+  const yMax = 2 * root + 1; // value at the domain edges
+  const pad = height * 0.08;
+  const sx = (x: number) => ((x - xMin) / (xMax - xMin)) * width;
+  const sy = (y: number) =>
+    height - pad - ((y - yMin) / (yMax - yMin)) * (height - 2 * pad);
+
+  const points: string[] = [];
+  for (let i = 0; i <= samples; i++) {
+    const x = xMin + ((xMax - xMin) * i) / samples;
+    const y = x * x - root * root;
+    points.push(
+      `${i === 0 ? "M" : "L"}${sx(x).toFixed(1)},${sy(y).toFixed(1)}`,
+    );
+  }
+
+  return {
+    path: points.join(" "),
+    xAxisY: sy(0),
+    yAxisX: sx(0),
+    intercepts: [
+      { x: sx(-root), label: -root },
+      { x: sx(root), label: root },
+    ],
+    vertex: { x: sx(0), y: sy(yMin) },
+    label: `y = x² − ${root * root}`,
+    width,
+    height,
+  };
+}
+
+export interface AreaRect {
+  w: number;
+  h: number;
+}
+
+export interface AreaModelSpec {
+  root: number;
+  /** Display size of the symbolic "x" in abstract units. */
+  x: number;
+  /** The x·x square we start from. */
+  bigSquare: AreaRect;
+  /** The r·r corner that is removed. */
+  cut: AreaRect;
+  /** The (x−r)-tall bottom block that stays put. */
+  bottom: AreaRect;
+  /** The r-tall top strip that rotates onto the side. */
+  topStrip: AreaRect;
+  /** The rearranged (x+r) × (x−r) rectangle — the two brackets. */
+  final: AreaRect;
+}
+
+/**
+ * The physical difference-of-squares proof: an x·x square with an r·r corner
+ * removed, whose pieces rearrange into an (x+r)(x−r) rectangle. Areas are
+ * conserved by construction (unit-tested). x is displayed as r+2 units so the
+ * proportions stay kind at any root.
+ */
+export function areaModelSpec(root: number): AreaModelSpec | null {
+  if (!Number.isInteger(root) || root <= 0) return null;
+  const x = root + 2;
+  return {
+    root,
+    x,
+    bigSquare: { w: x, h: x },
+    cut: { w: root, h: root },
+    bottom: { w: x, h: x - root },
+    topStrip: { w: x - root, h: root },
+    final: { w: x + root, h: x - root },
+  };
+}
+
+/**
+ * r² dots forming an r×r square — the meaningful "9 shatters into 3 × 3"
+ * beat (a square NUMBER literally is a square of dots). Capped at 4×4 so the
+ * grid never becomes noise; null = skip the delight, keep the maths.
+ */
+export function squareDotsSpec(
+  root: number,
+): { row: number; col: number }[] | null {
+  if (!Number.isInteger(root) || root < 2 || root > 4) return null;
+  const dots: { row: number; col: number }[] = [];
+  for (let row = 0; row < root; row++) {
+    for (let col = 0; col < root; col++) {
+      dots.push({ row, col });
+    }
+  }
+  return dots;
+}
+
+/** The positive root an equation step states, or null. */
+function positiveRoot(expression: string): number | null {
+  const roots = extractRoots(expression);
+  if (roots.length !== 2) return null;
+  return Math.max(...roots.map((v) => Math.abs(v)));
+}
+
 /** The full render plan for one equation step. */
 export function equationBeat(step: TeachingAnimationStep): EquationBeat {
   const kind = equationBeatKind(step.label);
-  const showsLine = kind === "root" || kind === "answer";
+  const root = positiveRoot(step.expression);
+  const squareMatch = step.expression.match(/(\d+)\s*=\s*(\d+)\^2/);
+
   return {
     kind,
     tokens: splitExpression(step.expression),
-    numberLine: showsLine ? numberLineSpec(extractRoots(step.expression)) : null,
+    // Roots land on the number line; the answer beat ties it to the graph.
+    numberLine:
+      kind === "root" ? numberLineSpec(extractRoots(step.expression)) : null,
+    graph: kind === "answer" && root !== null ? parabolaGraphSpec(root) : null,
+    areaModel:
+      kind === "factor"
+        ? areaModelSpec(
+            (() => {
+              const m = step.expression.match(/x\s*[-−]\s*(\d+)/);
+              return m ? Number(m[1]) : NaN;
+            })(),
+          )
+        : null,
+    squareDots:
+      kind === "square" && squareMatch
+        ? squareDotsSpec(Number(squareMatch[2]))
+        : null,
   };
 }
 

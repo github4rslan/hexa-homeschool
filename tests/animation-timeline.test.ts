@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  areaModelSpec,
   buildYourTurn,
   checkYourTurnOrder,
   checkYourTurnTap,
@@ -10,8 +11,10 @@ import {
   MAX_STEP_MS,
   MIN_STEP_MS,
   numberLineSpec,
+  parabolaGraphSpec,
   sentenceWords,
   splitExpression,
+  squareDotsSpec,
   stepDurationMs,
   wordIsLit,
 } from "@/lib/child/animation-timeline";
@@ -90,14 +93,22 @@ describe("numberLineSpec (calm, uncrowded line)", () => {
 });
 
 describe("equationBeat (the full render plan)", () => {
-  it("only root/answer beats get a number line", () => {
+  it("root beats land on the number line; the answer beat gets the graph", () => {
+    const roots = equationBeat({
+      label: "Roots",
+      expression: "x = 3 or x = -3",
+      note: "",
+    });
+    expect(roots.numberLine?.marks).toEqual([3, -3]);
+    expect(roots.graph).toBeNull();
+
     const answer = equationBeat({
       label: "Answer",
       expression: "x = +/- 3",
       note: "",
     });
     expect(answer.kind).toBe("answer");
-    expect(answer.numberLine?.marks).toEqual([-3, 3]);
+    expect(answer.graph?.intercepts.map((i) => i.label)).toEqual([-3, 3]);
 
     const start = equationBeat({
       label: "Start",
@@ -105,6 +116,79 @@ describe("equationBeat (the full render plan)", () => {
       note: "",
     });
     expect(start.numberLine).toBeNull();
+    expect(start.graph).toBeNull();
+  });
+
+  it("factor beats carry the area model; square beats carry the dot grid", () => {
+    const factor = equationBeat({
+      label: "Factor",
+      expression: "(x - 3)(x + 3) = 0",
+      note: "",
+    });
+    expect(factor.areaModel?.root).toBe(3);
+
+    const square = equationBeat({
+      label: "Spot the square",
+      expression: "9 = 3^2",
+      note: "",
+    });
+    expect(square.squareDots).toHaveLength(9);
+  });
+});
+
+describe("parabolaGraphSpec (algebra ↔ picture)", () => {
+  it("crosses the x-axis at −r and +r, symmetric about the y-axis", () => {
+    const spec = parabolaGraphSpec(3, 320, 170)!;
+    expect(spec.intercepts.map((i) => i.label)).toEqual([-3, 3]);
+    const [left, right] = spec.intercepts;
+    expect(left.x + right.x).toBeCloseTo(320, 0); // mirrored about centre
+    expect(spec.yAxisX).toBeCloseTo(160, 0);
+    expect(spec.vertex.x).toBeCloseTo(160, 0);
+  });
+
+  it("puts the vertex below the x-axis (SVG y grows downward)", () => {
+    const spec = parabolaGraphSpec(3)!;
+    expect(spec.vertex.y).toBeGreaterThan(spec.xAxisY);
+    expect(spec.label).toBe("y = x² − 9");
+  });
+
+  it("returns null for non-integer or non-positive roots — never a fake picture", () => {
+    expect(parabolaGraphSpec(0)).toBeNull();
+    expect(parabolaGraphSpec(-3)).toBeNull();
+    expect(parabolaGraphSpec(Math.sqrt(10))).toBeNull();
+  });
+});
+
+describe("areaModelSpec (difference of squares you can see)", () => {
+  it("conserves area: x² − r² = pieces = (x+r)(x−r)", () => {
+    for (const root of [2, 3, 4, 5]) {
+      const spec = areaModelSpec(root)!;
+      const { x } = spec;
+      const removed = x * x - root * root;
+      const pieces =
+        spec.bottom.w * spec.bottom.h + spec.topStrip.w * spec.topStrip.h;
+      const final = spec.final.w * spec.final.h;
+      expect(pieces).toBe(removed);
+      expect(final).toBe(removed);
+    }
+  });
+
+  it("rejects invalid roots", () => {
+    expect(areaModelSpec(0)).toBeNull();
+    expect(areaModelSpec(2.5)).toBeNull();
+  });
+});
+
+describe("squareDotsSpec (a square number IS a square)", () => {
+  it("builds r² dots in an r×r grid within the calm cap", () => {
+    expect(squareDotsSpec(3)).toHaveLength(9);
+    expect(squareDotsSpec(4)).toHaveLength(16);
+  });
+
+  it("skips the delight when it would become noise", () => {
+    expect(squareDotsSpec(1)).toBeNull();
+    expect(squareDotsSpec(5)).toBeNull();
+    expect(squareDotsSpec(2.5)).toBeNull();
   });
 });
 

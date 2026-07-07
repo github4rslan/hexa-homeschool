@@ -25,9 +25,12 @@ import {
   sentenceWords,
   splitExpression,
   stepDurationMs,
+  type AreaModelSpec,
+  type GraphSpec,
   type NumberLineSpec,
   type YourTurnTask,
 } from "@/lib/child/animation-timeline";
+import { Celebration } from "@/components/fx/celebration";
 import {
   stepNarration,
   type TeachingAnimation as TeachingAnimationData,
@@ -118,6 +121,7 @@ function EddieCoach({
   stepIndex,
   focus,
   reduced,
+  celebrating = false,
 }: {
   line: string;
   accent: AccentPreset;
@@ -125,6 +129,8 @@ function EddieCoach({
   stepIndex: number;
   focus?: string;
   reduced: boolean;
+  /** A warm one-shot celebration pose (e.g. the child nailed "Your turn"). */
+  celebrating?: boolean;
 }) {
   const [reacting, setReacting] = useState(false);
   const lastStepRef = useRef(stepIndex);
@@ -147,20 +153,24 @@ function EddieCoach({
         animate={
           reduced
             ? undefined
-            : reacting
-              ? { rotate: [0, -7, 7, 0], scale: [1, 1.08, 1], y: 0 }
-              : speaking
-                ? { y: [0, -3, 0], rotate: [0, 1.5, -1.5, 0], scale: 1 }
-                : { scale: [1, 1.04, 1], y: 0, rotate: 0 }
+            : celebrating
+              ? { rotate: [0, 9, -9, 5, 0], scale: [1, 1.16, 1], y: [0, -7, 0] }
+              : reacting
+                ? { rotate: [0, -7, 7, 0], scale: [1, 1.08, 1], y: 0 }
+                : speaking
+                  ? { y: [0, -3, 0], rotate: [0, 1.5, -1.5, 0], scale: 1 }
+                  : { scale: [1, 1.04, 1], y: 0, rotate: 0 }
         }
         transition={
           reduced
             ? undefined
-            : reacting
-              ? { duration: 0.65, ease: "easeInOut" }
-              : speaking
-                ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
-                : { duration: 4, repeat: Infinity, ease: "easeInOut" }
+            : celebrating
+              ? { duration: 1.1, ease: "easeInOut" }
+              : reacting
+                ? { duration: 0.65, ease: "easeInOut" }
+                : speaking
+                  ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
+                  : { duration: 4, repeat: Infinity, ease: "easeInOut" }
         }
         className={cn(
           "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
@@ -354,6 +364,258 @@ function NumberLine({
   );
 }
 
+/**
+ * Graph reveal (Phase 2): the parabola y = x² − r² draws itself and visibly
+ * crosses the x-axis at −r and +r — the algebra and the picture become one
+ * idea. Stroke-draw + pop-in dots only; reduced motion shows the finished
+ * graph instantly.
+ */
+function GraphReveal({
+  spec,
+  accent,
+  reduced,
+}: {
+  spec: GraphSpec;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  return (
+    <motion.div
+      initial={reduced ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+      className="mt-5"
+    >
+      <svg
+        viewBox={`0 0 ${spec.width} ${spec.height}`}
+        className="h-auto w-full max-w-md mx-auto block"
+        role="img"
+        aria-label={`Graph of ${spec.label} crossing the x axis at ${spec.intercepts
+          .map((i) => i.label)
+          .join(" and ")}`}
+      >
+        {/* Axes */}
+        <line
+          x1={0}
+          y1={spec.xAxisY}
+          x2={spec.width}
+          y2={spec.xAxisY}
+          stroke="rgba(255,255,255,0.25)"
+          strokeWidth={1}
+        />
+        <line
+          x1={spec.yAxisX}
+          y1={6}
+          x2={spec.yAxisX}
+          y2={spec.height - 6}
+          stroke="rgba(255,255,255,0.15)"
+          strokeWidth={1}
+        />
+        {/* The parabola draws itself */}
+        <motion.path
+          d={spec.path}
+          fill="none"
+          stroke={accent.swatch}
+          strokeWidth={3}
+          strokeLinecap="round"
+          initial={reduced ? false : { pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={
+            reduced
+              ? { duration: 0 }
+              : { duration: 1.5, delay: 0.35, ease: [0.16, 1, 0.3, 1] }
+          }
+        />
+        {/* The crossings ARE the answers */}
+        {spec.intercepts.map((intercept, i) => (
+          <motion.g
+            key={intercept.label}
+            initial={reduced ? false : { opacity: 0, scale: 0.4 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={
+              reduced
+                ? { duration: 0 }
+                : { ...SPRING, delay: 1.7 + i * 0.25 }
+            }
+            onAnimationComplete={() => {
+              if (!reduced && i === 0) landCue();
+            }}
+            style={{
+              transformOrigin: `${intercept.x}px ${spec.xAxisY}px`,
+            }}
+          >
+            <circle
+              cx={intercept.x}
+              cy={spec.xAxisY}
+              r={6}
+              fill={accent.swatch}
+              stroke="rgba(255,255,255,0.9)"
+              strokeWidth={2}
+            />
+            <text
+              x={intercept.x}
+              y={spec.xAxisY - 12}
+              textAnchor="middle"
+              fill="currentColor"
+              className="text-fog-100"
+              fontSize={15}
+              fontWeight={700}
+            >
+              {intercept.label}
+            </text>
+          </motion.g>
+        ))}
+        {/* Curve label */}
+        <text
+          x={8}
+          y={18}
+          fill="rgba(255,255,255,0.65)"
+          fontSize={13}
+          fontWeight={600}
+        >
+          {spec.label}
+        </text>
+      </svg>
+    </motion.div>
+  );
+}
+
+/**
+ * Area-model proof (Phase 2): an x·x square loses an r·r corner, and the
+ * leftover pieces line up as the (x+r)(x−r) rectangle — difference of squares
+ * you can SEE. Three labelled panels beat in sequence (transform/opacity
+ * only); reduced motion shows all three at once.
+ */
+function AreaModel({
+  spec,
+  accent,
+  reduced,
+}: {
+  spec: AreaModelSpec;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  const unit = 14; // px per abstract unit — biggest panel stays under 90px tall
+  const r = spec.root;
+  const beat = (i: number) =>
+    reduced
+      ? { duration: 0 }
+      : { duration: 0.45, delay: 0.5 + i * 1.1, ease: [0.16, 1, 0.3, 1] as const };
+
+  return (
+    <div className="mt-5 flex flex-wrap items-center justify-center gap-4">
+      {/* 1 — the x·x square with the r·r corner marked */}
+      <motion.div
+        initial={reduced ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={beat(0)}
+        className="flex flex-col items-center gap-1"
+      >
+        <div
+          className="relative rounded-md border-2"
+          style={{
+            width: spec.bigSquare.w * unit,
+            height: spec.bigSquare.h * unit,
+            borderColor: accent.swatch,
+            backgroundColor: `${accent.swatch}14`,
+          }}
+        >
+          <motion.div
+            initial={reduced ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={beat(1)}
+            className="absolute right-0 top-0 rounded-bl-md border-b-2 border-l-2 border-dashed border-amber-300/80 bg-amber-400/20"
+            style={{ width: spec.cut.w * unit, height: spec.cut.h * unit }}
+          />
+        </div>
+        <span className="text-sm font-semibold text-fog-300">
+          x·x take away {r}·{r}
+        </span>
+      </motion.div>
+
+      <motion.span
+        initial={reduced ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={beat(2)}
+        aria-hidden
+      >
+        <ArrowRight className={cn("h-5 w-5", accent.text)} />
+      </motion.span>
+
+      {/* 2 — the pieces rearranged into (x+r)(x−r) */}
+      <motion.div
+        initial={reduced ? false : { opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={beat(2)}
+        className="flex flex-col items-center gap-1"
+      >
+        <div className="flex">
+          <div
+            className="rounded-l-md border-2"
+            style={{
+              width: spec.bottom.w * unit,
+              height: spec.final.h * unit,
+              borderColor: accent.swatch,
+              backgroundColor: `${accent.swatch}14`,
+            }}
+          />
+          <div
+            className="rounded-r-md border-2 border-l-0 border-dashed"
+            style={{
+              width: spec.topStrip.h * unit,
+              height: spec.final.h * unit,
+              borderColor: accent.swatch,
+              backgroundColor: `${accent.swatch}0d`,
+            }}
+          />
+        </div>
+        <span className="text-sm font-semibold text-fog-300">
+          (x − {r})(x + {r})
+        </span>
+      </motion.div>
+    </div>
+  );
+}
+
+/** r² dots assemble into an r×r square — a square number IS a square. */
+function SquareDots({
+  dots,
+  root,
+  accent,
+  reduced,
+}: {
+  dots: { row: number; col: number }[];
+  root: number;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  return (
+    <div className="mt-5 flex flex-col items-center gap-2">
+      <div
+        className="grid gap-1.5"
+        style={{ gridTemplateColumns: `repeat(${root}, minmax(0, 1fr))` }}
+        aria-label={`${dots.length} dots arranged as a ${root} by ${root} square`}
+      >
+        {dots.map((dot, i) => (
+          <motion.span
+            key={`${dot.row}-${dot.col}`}
+            initial={reduced ? false : { opacity: 0, scale: 0.3, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={
+              reduced ? { duration: 0 } : { ...SPRING, delay: 0.5 + i * 0.07 }
+            }
+            className="h-3.5 w-3.5 rounded-full"
+            style={{ backgroundColor: accent.swatch }}
+          />
+        ))}
+      </div>
+      <span className="text-sm font-semibold text-fog-300">
+        {dots.length} dots make a {root} × {root} square
+      </span>
+    </div>
+  );
+}
+
 function EquationStage({
   step,
   index,
@@ -499,6 +761,23 @@ function EquationStage({
 
         {beat.numberLine && (
           <NumberLine spec={beat.numberLine} accent={accent} reduced={reduced} />
+        )}
+
+        {beat.graph && (
+          <GraphReveal spec={beat.graph} accent={accent} reduced={reduced} />
+        )}
+
+        {beat.areaModel && (
+          <AreaModel spec={beat.areaModel} accent={accent} reduced={reduced} />
+        )}
+
+        {beat.squareDots && (
+          <SquareDots
+            dots={beat.squareDots}
+            root={Math.round(Math.sqrt(beat.squareDots.length))}
+            accent={accent}
+            reduced={reduced}
+          />
         )}
 
         {isAnswer && (
@@ -799,11 +1078,14 @@ function YourTurnPanel({
   accent,
   reduced,
   onSpeak,
+  onSuccess,
 }: {
   task: YourTurnTask;
   accent: AccentPreset;
   reduced: boolean;
   onSpeak?: (text: string) => void;
+  /** Lets Eddie strike his celebration pose when the child nails it. */
+  onSuccess?: () => void;
 }) {
   const [dismissed, setDismissed] = useState(false);
   const [result, setResult] = useState<"correct" | "miss" | null>(null);
@@ -823,6 +1105,7 @@ function YourTurnPanel({
   function finish(correct: boolean) {
     setResult(correct ? "correct" : "miss");
     onSpeak?.(correct ? confirmLine : nudgeLine);
+    if (correct) onSuccess?.();
   }
 
   function tapChoice(index: number) {
@@ -948,11 +1231,16 @@ function YourTurnPanel({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             className={cn(
-              "mt-3 text-base leading-relaxed",
+              "relative mt-3 text-base leading-relaxed",
               result === "correct" ? "text-neon-200" : "text-fog-200",
             )}
             role="status"
           >
+            {result === "correct" && (
+              // Tasteful, reduced-motion-aware burst — fires once, after the
+              // answer, never blocks input (existing Celebration contract).
+              <Celebration variant={2} />
+            )}
             {result === "correct" ? confirmLine : nudgeLine}
           </motion.p>
         )}
@@ -994,6 +1282,8 @@ export function TeachingAnimation({
   const reduced = useReducedMotion() ?? false;
   const [current, setCurrent] = useState(0);
   const [playing, setPlaying] = useState(false);
+  // One-shot Eddie celebration pose (fires on a "Your turn" success).
+  const [eddieCelebrating, setEddieCelebrating] = useState(false);
   // The one active-recall micro-task that follows the reveal (deterministic).
   const yourTurn = useMemo(
     () =>
@@ -1231,6 +1521,7 @@ export function TeachingAnimation({
           stepIndex={current}
           focus={step.focus}
           reduced={reduced}
+          celebrating={eddieCelebrating}
         />
         <KaraokeCaption
           narration={stepNarration(step)}
@@ -1345,6 +1636,10 @@ export function TeachingAnimation({
             accent={accent}
             reduced={reduced}
             onSpeak={onSpeak}
+            onSuccess={() => {
+              setEddieCelebrating(true);
+              window.setTimeout(() => setEddieCelebrating(false), 1300);
+            }}
           />
         )}
       </AnimatePresence>
