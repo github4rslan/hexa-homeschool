@@ -33,31 +33,40 @@ export const ELEVENLABS_API_BASE = "https://api.elevenlabs.io/v1";
  */
 export const ELEVENLABS_MODEL = "eleven_turbo_v2_5";
 /**
- * Baseline narration pace for child lessons. ElevenLabs accepts 0.7–1.2;
- * 0.85 is deliberately calm without sounding stretched. Keep this as the
- * single by-ear tuning point for the whole lesson experience.
+ * Baseline narration pace for child lessons (Wave 8, Phase 2: friendlier +
+ * slower). ElevenLabs accepts 0.7–1.2; 0.80 is warm and unhurried without
+ * droning. Keep this as the single by-ear tuning point for the whole lesson
+ * experience. The cache key includes speed, so tuning never serves stale audio.
  */
-export const ELEVENLABS_NARRATION_SPEED = 0.85;
+export const ELEVENLABS_NARRATION_SPEED = 0.8;
+
+/** Hard floor — narration must never drag below this (and never below 0.7). */
+export const ELEVENLABS_MIN_NARRATION_SPEED = 0.72;
 
 /**
- * Younger children get a very small additional slowdown while older learners
- * stay close to the baseline. This is a delivery hint only; it never changes
- * the lesson content or selected voice.
+ * Younger = slower: KS2 ≈ 0.76, KS3 = baseline 0.80, KS4 ≈ 0.84. A delivery
+ * hint only; it never changes the lesson content or selected voice. Clamped
+ * so no band can ever fall below the floor.
  */
 export function narrationSpeedForKeyStage(keyStage?: number): number {
-  if (keyStage === 2) return ELEVENLABS_NARRATION_SPEED - 0.03;
-  if (keyStage === 4) return ELEVENLABS_NARRATION_SPEED + 0.03;
-  return ELEVENLABS_NARRATION_SPEED;
+  const speed =
+    keyStage === 2
+      ? ELEVENLABS_NARRATION_SPEED - 0.04
+      : keyStage === 4
+        ? ELEVENLABS_NARRATION_SPEED + 0.04
+        : ELEVENLABS_NARRATION_SPEED;
+  return Math.max(ELEVENLABS_MIN_NARRATION_SPEED, speed);
 }
 /**
- * Warm, natural read settings (shared by /api/tts). Slightly lower stability for
- * gentle expressiveness, similarity kept high for the chosen voice, a light
- * style for friendliness, and speaker boost for clarity — calm, not robotic.
+ * Warm, natural read settings (shared by /api/tts). Stability nudged down and
+ * style up (Phase 2) for gentle expressiveness — friendly, never theatrical;
+ * similarity kept high for the chosen voice, speaker boost for clarity. All
+ * within ElevenLabs' accepted 0–1 ranges.
  */
 export const ELEVENLABS_VOICE_SETTINGS = {
-  stability: 0.5,
+  stability: 0.45,
   similarity_boost: 0.8,
-  style: 0.2,
+  style: 0.3,
   use_speaker_boost: true,
 } as const;
 /** ElevenLabs Scribe — speech-to-text for spoken answers. */
