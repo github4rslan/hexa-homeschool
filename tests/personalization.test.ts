@@ -26,9 +26,11 @@ describe("child personalization validation", () => {
     expect(accentPreset("cyan").id).toBe("cyan");
   });
 
-  it("offers a small, non-overwhelming set of choices", () => {
-    expect(CHILD_VOICES.length).toBeGreaterThanOrEqual(2);
-    expect(CHILD_VOICES.length).toBeLessThanOrEqual(4);
+  it("offers a curated, non-overwhelming set of choices", () => {
+    // Wave 8 Phase 2 widened the voice set to 6–8 (still hand-picked, never
+    // an open list); accents stay at four.
+    expect(CHILD_VOICES.length).toBeGreaterThanOrEqual(6);
+    expect(CHILD_VOICES.length).toBeLessThanOrEqual(8);
     expect(ACCENTS.length).toBe(4);
   });
 });
