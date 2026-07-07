@@ -1221,6 +1221,7 @@ export function PracticePlayer({
                   options={question.options}
                   correctIndex={question.correctIndex}
                   speaking={narration.playing}
+                  keyStage={keyStage}
                 />
               )}
             </AnimatePresence>

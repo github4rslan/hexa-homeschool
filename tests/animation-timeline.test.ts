@@ -4,9 +4,12 @@ import {
   equationBeat,
   equationBeatKind,
   extractRoots,
+  MAX_STEP_MS,
+  MIN_STEP_MS,
   numberLineSpec,
   sentenceWords,
   splitExpression,
+  stepDurationMs,
   wordIsLit,
 } from "@/lib/child/animation-timeline";
 import {
@@ -99,6 +102,33 @@ describe("equationBeat (the full render plan)", () => {
       note: "",
     });
     expect(start.numberLine).toBeNull();
+  });
+});
+
+describe("stepDurationMs (band-aware pacing)", () => {
+  const narration = "Answer. x equals plus or minus 3. Both answers land on the line.";
+
+  it("KS2 holds longer than KS4 on the same beat", () => {
+    const ks2 = stepDurationMs({ narration, keyStage: 2 });
+    const ks4 = stepDurationMs({ narration, keyStage: 4 });
+    expect(ks2).toBeGreaterThan(ks4);
+  });
+
+  it("longer narration holds longer, within calm bounds", () => {
+    const short = stepDurationMs({ narration: "Start. x squared.", keyStage: 3 });
+    const long = stepDurationMs({
+      narration: narration + " " + narration + " " + narration,
+      keyStage: 3,
+    });
+    expect(long).toBeGreaterThan(short);
+    expect(short).toBeGreaterThanOrEqual(MIN_STEP_MS);
+    expect(long).toBeLessThanOrEqual(MAX_STEP_MS);
+  });
+
+  it("'Again, slower' stretches every beat", () => {
+    const normal = stepDurationMs({ narration, keyStage: 3 });
+    const slower = stepDurationMs({ narration, keyStage: 3, slower: true });
+    expect(slower).toBeGreaterThan(normal);
   });
 });
 
