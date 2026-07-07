@@ -662,9 +662,7 @@ export function PracticePlayer({
   function toggleTeachingVisual() {
     const next = !visualOpen;
     setVisualOpen(next);
-    if (next && teachingNarration) {
-      void narration.playText(teachingNarration);
-    } else if (!next) {
+    if (!next) {
       narration.stop();
     }
   }
@@ -1185,13 +1183,18 @@ export function PracticePlayer({
               )}
             >
               <Eye className="h-5 w-5" />
-              {visualOpen ? "Hide the picture" : "See it"}
+              {visualOpen ? "Hide animation" : "See it"}
             </button>
             <AnimatePresence>
               {visualOpen && (
                 <TeachingAnimation
                   animation={teachingAnimation}
                   accent={accent}
+                  autoPlay
+                  onSpeak={(text) => {
+                    if (autoplayOn) void narration.playText(text);
+                  }}
+                  onStop={narration.stop}
                 />
               )}
             </AnimatePresence>
