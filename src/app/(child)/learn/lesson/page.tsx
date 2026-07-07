@@ -13,6 +13,7 @@ import {
   getActiveChild,
   getLessonProgress,
   getTutorHandoffState,
+  todaysCheckin,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { normalizeInteraction } from "@/lib/child/interactions";
@@ -41,6 +42,8 @@ export default async function ChildLessonPage({
   const narrationAutoplay = child?.narration_autoplay !== false;
   // Gentle sound/haptic cues — default ON, opt-out in "My stuff".
   const soundCues = child?.sound_cues !== false;
+  // Today's emoji check-in (1–5, null = none) — tunes Eddie's tone only.
+  const mood = child?._id ? (await todaysCheckin(child._id))?.mood ?? null : null;
 
   // Resolve the topic: explicit ?topic= wins; otherwise the child's first
   // in-band maths topic (band-aware), falling back to the global first topic.
@@ -139,6 +142,7 @@ export default async function ChildLessonPage({
         accent={accent}
         narrationAutoplay={narrationAutoplay}
         soundCues={soundCues}
+        mood={mood}
         savedProgress={savedProgress}
         firstName={firstName}
         resumeKey={resumeKey}
