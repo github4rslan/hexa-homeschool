@@ -37,6 +37,7 @@ import {
   type TeachingAnimationStep,
 } from "@/lib/child/teaching-animations";
 import { currentWordIndex } from "@/lib/child/caption-timing";
+import { personalizeYourTurnPrompt } from "@/lib/child/eddie-copy";
 import { landCue, successCue, tapCue } from "@/lib/child/sensory-cues";
 import type { NarrationCaption } from "@/lib/child/use-narration";
 
@@ -1079,6 +1080,7 @@ function YourTurnPanel({
   reduced,
   onSpeak,
   onSuccess,
+  childName = null,
 }: {
   task: YourTurnTask;
   accent: AccentPreset;
@@ -1086,6 +1088,8 @@ function YourTurnPanel({
   onSpeak?: (text: string) => void;
   /** Lets Eddie strike his celebration pose when the child nails it. */
   onSuccess?: () => void;
+  /** Sanitised first name — the ask is addressed to THIS child. */
+  childName?: string | null;
 }) {
   const [dismissed, setDismissed] = useState(false);
   const [result, setResult] = useState<"correct" | "miss" | null>(null);
@@ -1140,7 +1144,9 @@ function YourTurnPanel({
       className={cn("mt-4 rounded-3xl border p-4", accent.softBg, accent.softBorder)}
     >
       <div className="mb-3 flex items-start justify-between gap-3">
-        <p className="text-lg font-semibold text-fog-50">{task.prompt}</p>
+        <p className="text-lg font-semibold text-fog-50">
+          {personalizeYourTurnPrompt(task.prompt, childName)}
+        </p>
         <button
           type="button"
           onClick={() => setDismissed(true)}
@@ -1261,6 +1267,7 @@ export function TeachingAnimation({
   keyStage,
   caption = null,
   getTime,
+  childName = null,
 }: {
   animation: TeachingAnimationData;
   accent: AccentPreset;
@@ -1278,6 +1285,8 @@ export function TeachingAnimation({
   caption?: NarrationCaption | null;
   /** Playback position poller for the karaoke highlight. */
   getTime?: () => number;
+  /** Sanitised first name — Eddie asks THIS child by name in "Your turn". */
+  childName?: string | null;
 }) {
   const reduced = useReducedMotion() ?? false;
   const [current, setCurrent] = useState(0);
@@ -1640,6 +1649,7 @@ export function TeachingAnimation({
               setEddieCelebrating(true);
               window.setTimeout(() => setEddieCelebrating(false), 1300);
             }}
+            childName={childName}
           />
         )}
       </AnimatePresence>

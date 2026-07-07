@@ -41,6 +41,12 @@ import {
   type GuardOutcome,
 } from "@/lib/safety/free-text-gate";
 import { accentPreset, type AccentPreset } from "@/lib/child/accents";
+import { classifyOptions } from "@/lib/child/animation-timeline";
+import {
+  eddieCorrectLine,
+  eddieWrongAnswerLine,
+  safeFirstName,
+} from "@/lib/child/eddie-copy";
 import { setCuesEnabled, tapCue } from "@/lib/child/sensory-cues";
 import { useNarration } from "@/lib/child/use-narration";
 import { useQuestionVisual } from "@/lib/child/use-question-visual";
@@ -163,6 +169,9 @@ export function PracticePlayer({
   resumeKey?: string;
 }) {
   const accent: AccentPreset = accentPreset(accentId);
+  // Eddie only ever uses a sanitised FIRST name — anything unusable degrades
+  // to warm no-name phrasing (child-safety: no other personal data, ever).
+  const childName = safeFirstName(firstName);
   const storageKey = `hexa_progress_${resumeKey ?? "anon"}_${curriculumTopic}`;
   const masteryBank = masteryQuestions?.length ? masteryQuestions : questions;
 
@@ -198,6 +207,10 @@ export function PracticePlayer({
   // Specific, targeted feedback on a wrong answer (Wave 7, Phase 3).
   // The human-authored misconception line for the exact wrong option (or null).
   const [misconceptionHint, setMisconceptionHint] = useState<string | null>(null);
+  // Eddie's composed, answer-reactive line (Wave 8, Phase 3): second person,
+  // first name, reacting to the exact option picked. Deterministic templates
+  // only — on-rails per .claude/rules/child-safety.md.
+  const [eddieLine, setEddieLine] = useState<string | null>(null);
   // The adaptive-matrix decision (careless / concept gap / language / attention).
   const [feedback, setFeedback] = useState<FeedbackResponse | null>(null);
   // Optional richer reteach (concept gap) — Checker-gated `gpt-4o-mini`, cached
@@ -375,16 +388,15 @@ export function PracticePlayer({
     // line over it. (With the single shared audio controller there is no
     // overlap either way; this just picks the more useful clip.)
     if (stepByStepOpen || visualOpen) return;
-    const spoken = misconceptionHint
-      ? `${feedback.message} ${misconceptionHint}`
-      : feedback.message;
-    void narration.playText(spoken);
+    // Eddie's composed line already folds in the misconception + the child's
+    // name — one voice, one thought.
+    void narration.playText(eddieLine ?? feedback.message);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feedback]);
 
   useEffect(() => {
     if (!outcome || outcome !== "correct" || !autoplayOn) return;
-    void narration.playText("Yes, that's it. Lovely thinking.");
+    void narration.playText(eddieCorrectLine(childName));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [outcome, autoplayOn]);
 
@@ -647,9 +659,10 @@ export function PracticePlayer({
 
     // Specific feedback: the human-authored line for the EXACT wrong option the
     // child picked (mcq only; deterministic, no API). Null ⇒ no targeted line.
+    const selectedIndex = interactionRef.current?.selectedIndex() ?? null;
     const misconception = pickMisconception({
       misconceptions: question.misconceptions,
-      selectedIndex: interactionRef.current?.selectedIndex() ?? null,
+      selectedIndex,
       correctIndex: question.correctIndex,
     });
     setMisconceptionHint(misconception);
@@ -668,6 +681,25 @@ export function PracticePlayer({
       hasMisconceptionHint: misconception !== null,
     });
     setFeedback(decision);
+
+    // Eddie reacts to the exact answer (Wave 8, Phase 3): the child's name,
+    // second person, and what their specific pick tells us — e.g. the ± near
+    // miss is "one of the two, can you spot the other?" — never generic,
+    // never punitive. Deterministic templates only.
+    const fate =
+      selectedIndex !== null
+        ? classifyOptions(question.options, question.correctIndex)[selectedIndex]
+        : null;
+    setEddieLine(
+      eddieWrongAnswerLine({
+        name: childName,
+        chosenOption:
+          selectedIndex !== null ? question.options[selectedIndex] : null,
+        fate: fate ?? null,
+        misconception,
+        baseMessage: decision.message,
+      }),
+    );
 
     // One graduated help spine: misconception (rung 1) → method hint (rung 2)
     // → the See-it reveal. Whether the misconception carries rung 1 is decided
@@ -741,6 +773,7 @@ export function PracticePlayer({
     setHintRung(0);
     setHintFloor(0);
     setMisconceptionHint(null);
+    setEddieLine(null);
     setFeedback(null);
     setReteachInline(null);
     setReteachInlineLoading(false);
@@ -1339,6 +1372,7 @@ export function PracticePlayer({
                   keyStage={keyStage}
                   caption={narration.caption}
                   getTime={narration.getTime}
+                  childName={childName}
                 />
               )}
             </AnimatePresence>
@@ -1398,10 +1432,12 @@ export function PracticePlayer({
             >
               <Sparkles className={cn("mt-0.5 h-6 w-6 shrink-0", accent.text)} aria-hidden />
               <div className="min-w-0 text-lg text-fog-100">
-                <p className="font-medium text-fog-50">{feedback.message}</p>
-                {misconceptionHint && (
-                  <p className="mt-2 text-fog-100/90">{misconceptionHint}</p>
-                )}
+                {/* Eddie's one composed, answer-reactive line — the name, the
+                    exact pick and the misconception folded into a single warm
+                    thought (never a stack of system messages). */}
+                <p className="font-medium text-fog-50">
+                  {eddieLine ?? feedback.message}
+                </p>
                 {feedback.suggestBreak && (
                   <p className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-base text-fog-200">
                     <Wind className={cn("h-5 w-5 shrink-0", accent.text)} aria-hidden />
