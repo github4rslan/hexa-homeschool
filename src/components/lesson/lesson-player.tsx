@@ -24,6 +24,7 @@ import { Interaction as InteractionRenderer, type InteractionHandle } from "@/co
 import type { Interaction } from "@/lib/child/interactions";
 import { accentPreset } from "@/lib/child/accents";
 import type { WorkedExample } from "@/lib/child/worked-examples";
+import type { TeachingAnimation } from "@/lib/child/teaching-animations";
 
 export interface Question {
   id: string;
@@ -45,6 +46,7 @@ export interface Question {
    */
   misconceptions?: string[];
   workedSolution?: WorkedExample;
+  teachingAnimation?: TeachingAnimation;
 }
 
 /** Result shape returned by /api/tutor (Teaching Agent + Checker). */

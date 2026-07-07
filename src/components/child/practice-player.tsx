@@ -13,6 +13,7 @@ import {
   Lightbulb,
   ListChecks,
   Wind,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalmPause } from "@/components/child/calm-pause";
@@ -43,7 +44,9 @@ import { useNarration } from "@/lib/child/use-narration";
 import { useQuestionVisual } from "@/lib/child/use-question-visual";
 import { buildQuestionNarration } from "@/lib/child/narration-copy";
 import { StepReveal } from "@/components/child/step-reveal";
+import { TeachingAnimation } from "@/components/child/teaching-animation";
 import { workedSolutionFromExplanation } from "@/lib/child/worked-examples";
+import { teachingAnimationNarration } from "@/lib/child/teaching-animations";
 import {
   decideRemediation,
   selectMasteryAttempt,
@@ -155,6 +158,7 @@ export function PracticePlayer({
   const [attempts, setAttempts] = useState(0);
   const [ready, setReady] = useState(false);
   const [revealed, setRevealed] = useState(false); // worked solution shown
+  const [visualOpen, setVisualOpen] = useState(false);
   const [stepByStepOpen, setStepByStepOpen] = useState(false);
   const [outcome, setOutcome] = useState<"correct" | "incorrect" | null>(null);
   const [score, setScore] = useState(0);
@@ -221,6 +225,10 @@ export function PracticePlayer({
   const activeQuestions = lessonPhase === "practice" ? questions : masterySet;
   const question = activeQuestions[step];
   const complete = lessonPhase === "complete";
+  const teachingAnimation = question?.teachingAnimation ?? null;
+  const teachingNarration = teachingAnimation
+    ? teachingAnimationNarration(teachingAnimation)
+    : "";
   const narrationText = question
     ? buildQuestionNarration({
         prompt: question.prompt,
@@ -304,6 +312,11 @@ export function PracticePlayer({
     prefetchQuestionVisual(activeQuestions[step + 1]?.id);
   }, [prefetchQuestionVisual, activeQuestions, step]);
 
+  useEffect(() => {
+    if (teachingNarration) narration.prefetch(teachingNarration);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teachingNarration]);
+
   // Stamp when each question appears, so the adaptive matrix can read time-on-
   // question (a fast slip vs. a long, drifting pause). Pedagogical signal only.
   useEffect(() => {
@@ -322,12 +335,21 @@ export function PracticePlayer({
     // single shared audio controller there is no overlap either way; this just
     // picks the more useful clip instead of superseding it a beat later.)
     if (stepByStepOpen) return;
+    const visualCue = teachingNarration
+      ? " I have opened a quick picture to show the idea."
+      : "";
     const spoken = misconceptionHint
-      ? `${feedback.message} ${misconceptionHint}`
-      : feedback.message;
+      ? `${feedback.message} ${misconceptionHint}${visualCue}`
+      : `${feedback.message}${visualCue}`;
     void narration.playText(spoken);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feedback]);
+
+  useEffect(() => {
+    if (!outcome || outcome !== "correct" || !autoplayOn) return;
+    void narration.playText("Yes, that's it. Lovely thinking.");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outcome, autoplayOn]);
 
   // Resume once on mount: reconcile the server copy (props) with a same-device
   // localStorage copy (which may be a step ahead if a server write lagged), then
@@ -584,6 +606,7 @@ export function PracticePlayer({
     }
 
     setOutcome("incorrect");
+    if (teachingAnimation) setVisualOpen(true);
 
     // Specific feedback: the human-authored line for the EXACT wrong option the
     // child picked (mcq only; deterministic, no API). Null ⇒ no targeted line.
@@ -636,10 +659,21 @@ export function PracticePlayer({
     });
   }
 
+  function toggleTeachingVisual() {
+    const next = !visualOpen;
+    setVisualOpen(next);
+    if (next && teachingNarration) {
+      void narration.playText(teachingNarration);
+    } else if (!next) {
+      narration.stop();
+    }
+  }
+
   function resetStepState() {
     setAttempts(0);
     setReady(false);
     setRevealed(false);
+    setVisualOpen(false);
     setOutcome(null);
     setScoredThis(false);
     setHintRung(0);
@@ -1137,6 +1171,32 @@ export function PracticePlayer({
             </figure>
           )}
         </div>
+
+        {teachingAnimation && (
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={toggleTeachingVisual}
+              className={cn(
+                "child-touch inline-flex items-center gap-2 rounded-2xl border px-4 text-base font-semibold transition-all",
+                visualOpen
+                  ? cn(accent.bg, accent.border, accent.text)
+                  : "border-white/10 bg-white/[0.03] text-fog-200 hover:border-white/30 hover:bg-white/[0.06]",
+              )}
+            >
+              <Eye className="h-5 w-5" />
+              {visualOpen ? "Hide the picture" : "See it"}
+            </button>
+            <AnimatePresence>
+              {visualOpen && (
+                <TeachingAnimation
+                  animation={teachingAnimation}
+                  accent={accent}
+                />
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
         {/* The first answering gesture silences narration so it never plays
             over a child who is actively working. */}
