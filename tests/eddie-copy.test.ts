@@ -6,6 +6,7 @@ import {
   personalizeYourTurnPrompt,
   pickTone,
   safeFirstName,
+  shouldOfferBreak,
 } from "@/lib/child/eddie-copy";
 
 describe("safeFirstName (child-safety: first name only, or nothing)", () => {
@@ -136,6 +137,58 @@ describe("pickTone + applyTone (deterministic, emotion-aware)", () => {
     expect(eddieCorrectLine("Aisha", "calm")).toBe(
       "That's it, Aisha. Well done for sticking with it.",
     );
+  });
+});
+
+describe("shouldOfferBreak (calm break, generous but not nagging)", () => {
+  const base = { mood: null, priorMissedQuestions: 0, attemptsThisQuestion: 1 };
+
+  it("always offers one when the matrix flags attention drift", () => {
+    expect(shouldOfferBreak({ ...base, category: "attention" })).toBe(true);
+  });
+
+  it("offers one when a tough day meets a repeated struggle", () => {
+    expect(
+      shouldOfferBreak({
+        category: "encourage",
+        mood: 2,
+        priorMissedQuestions: 0,
+        attemptsThisQuestion: 2,
+      }),
+    ).toBe(true);
+    // A tough day alone (first miss) is not enough — no nagging.
+    expect(
+      shouldOfferBreak({
+        category: "encourage",
+        mood: 2,
+        priorMissedQuestions: 0,
+        attemptsThisQuestion: 1,
+      }),
+    ).toBe(false);
+  });
+
+  it("offers one after several hard questions in a row", () => {
+    expect(
+      shouldOfferBreak({
+        category: "language",
+        mood: 4,
+        priorMissedQuestions: 2,
+        attemptsThisQuestion: 2,
+      }),
+    ).toBe(true);
+    expect(
+      shouldOfferBreak({
+        category: "language",
+        mood: 4,
+        priorMissedQuestions: 1,
+        attemptsThisQuestion: 2,
+      }),
+    ).toBe(false);
+  });
+
+  it("stays quiet on an ordinary miss", () => {
+    expect(shouldOfferBreak({ ...base, category: "encourage" })).toBe(false);
+    expect(shouldOfferBreak({ ...base, category: "careless" })).toBe(false);
   });
 });
 

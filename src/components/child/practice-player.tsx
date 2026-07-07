@@ -47,6 +47,7 @@ import {
   eddieWrongAnswerLine,
   pickTone,
   safeFirstName,
+  shouldOfferBreak,
 } from "@/lib/child/eddie-copy";
 import { setCuesEnabled, tapCue } from "@/lib/child/sensory-cues";
 import { useNarration } from "@/lib/child/use-narration";
@@ -108,6 +109,56 @@ const MAX_RECORDING_MS = 15_000;
  * otherwise the longest option whose normalized text overlaps the transcript
  * wins. Null = let the child tap instead.
  */
+/**
+ * A real (but skippable) calm break — breathing circle + three slow breaths —
+ * offered when the deterministic signals say the child needs one (Wave 8,
+ * Phase 3, Feature 7). Never blocks the lesson: "I'm ready" carries straight
+ * on. Reduced motion holds a still circle; nothing flashes.
+ */
+function BreathBreak({
+  accent,
+  name,
+  onDone,
+}: {
+  accent: AccentPreset;
+  name: string | null;
+  onDone: () => void;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      className={cn(
+        "mt-6 flex flex-col items-center gap-4 rounded-3xl border p-6 text-center",
+        accent.softBg,
+        accent.softBorder,
+      )}
+      role="status"
+    >
+      <motion.div
+        animate={{ scale: [1, 1.25, 1] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        className={cn(
+          "flex h-20 w-20 items-center justify-center rounded-full border-2 motion-reduce:animate-none",
+          accent.bg,
+          accent.border,
+        )}
+      >
+        <Wind className={cn("h-9 w-9", accent.text)} aria-hidden />
+      </motion.div>
+      <p className="max-w-md text-lg leading-relaxed text-fog-100">
+        {name ? `${name}, your` : "Your"} brain is working hard. Stand up,
+        stretch, and take three slow breaths with the circle.
+      </p>
+      <Button onClick={onDone} variant="child" size="child">
+        I&apos;m ready
+      </Button>
+    </motion.div>
+  );
+}
+
 function matchSpokenOption(transcript: string, options: string[]): number | null {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   const t = norm(transcript);
@@ -238,6 +289,11 @@ export function PracticePlayer({
   // Pedagogical counters for the lesson log (NOT analytics).
   const attemptsTotalRef = useRef(0);
   const hintsTotalRef = useRef(0);
+  // Calm-break signals (Feature 7): consecutive prior questions that needed
+  // more than one try, and whether this question already offered a break.
+  const missedQuestionStreakRef = useRef(0);
+  const breakShownRef = useRef(false);
+  const [breakOpen, setBreakOpen] = useState(false);
 
   const interactionRef = useRef<InteractionHandle>(null);
 
@@ -745,6 +801,21 @@ export function PracticePlayer({
     // leaned on) per the matrix — the animated reveal, then the calm worked
     // walkthrough, then move on.
     if (spine.reveal || decision.escalateReteach) openReveal();
+
+    // A real calm break when frustration or repeated misses are detected —
+    // once per question, always skippable (Feature 7).
+    if (
+      !breakShownRef.current &&
+      shouldOfferBreak({
+        mood,
+        category: decision.category,
+        priorMissedQuestions: missedQuestionStreakRef.current,
+        attemptsThisQuestion: nextAttempts,
+      })
+    ) {
+      breakShownRef.current = true;
+      setBreakOpen(true);
+    }
   }
 
   /**
@@ -818,6 +889,7 @@ export function PracticePlayer({
     setReteachInlineLoading(false);
     setTailoredAnimation(null);
     setTailoredLoading(false);
+    setBreakOpen(false);
     setStepByStepOpen(false);
     setSpoken(null);
     setSpokenSelect(null);
@@ -1060,6 +1132,11 @@ export function PracticePlayer({
   function next() {
     narration.stop();
     stopRecorder();
+    // Track consecutive questions that needed more than one try (calm-break
+    // signal only — the lesson log keeps the real pedagogical counters).
+    missedQuestionStreakRef.current =
+      scoredThis && attempts === 1 ? 0 : missedQuestionStreakRef.current + 1;
+    breakShownRef.current = false;
     const nextStep = step + 1;
     const missed =
       lessonPhase === "mastery" && question && !scoredThis
@@ -1478,7 +1555,7 @@ export function PracticePlayer({
                 <p className="font-medium text-fog-50">
                   {eddieLine ?? feedback.message}
                 </p>
-                {feedback.suggestBreak && (
+                {feedback.suggestBreak && !breakOpen && (
                   <p className="mt-3 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-2 text-base text-fog-200">
                     <Wind className={cn("h-5 w-5 shrink-0", accent.text)} aria-hidden />
                     Stand up, stretch, and take three slow breaths.
@@ -1513,6 +1590,22 @@ export function PracticePlayer({
                   ))}
               </div>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* A real calm break when the signals say so — skippable, never a
+            dead end; the lesson waits exactly where the child left it. */}
+        <AnimatePresence>
+          {breakOpen && !isCorrect && (
+            <BreathBreak
+              key="breath-break"
+              accent={accent}
+              name={childName}
+              onDone={() => {
+                tapCue();
+                setBreakOpen(false);
+              }}
+            />
           )}
         </AnimatePresence>
 

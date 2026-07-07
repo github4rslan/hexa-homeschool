@@ -43,6 +43,27 @@ export function pickTone(input: {
 }
 
 /**
+ * Offer a real calm break (beyond the inline stretch line) when the signals
+ * say the child needs one: the matrix flags attention drift, a tough-day
+ * check-in meets a repeated struggle, or several questions in a row have
+ * been missed. Deterministic, generous-but-not-nagging; the break is always
+ * skippable and never a dead end.
+ */
+export function shouldOfferBreak(input: {
+  mood: number | null;
+  category: FeedbackCategory;
+  /** Consecutive PRIOR questions that needed more than one try. */
+  priorMissedQuestions: number;
+  /** Attempts on the current question including this miss. */
+  attemptsThisQuestion: number;
+}): boolean {
+  if (input.category === "attention") return true;
+  const struggling = input.attemptsThisQuestion >= 2;
+  if ((input.mood ?? 3) <= 2 && struggling) return true;
+  return input.priorMissedQuestions >= 2 && struggling;
+}
+
+/**
  * Apply the tone to a composed line. Calm prepends a slow, warm lead (worded
  * for the child's band); encouraging is the default register of every
  * template; celebratory is handled by the correct-line variants.
