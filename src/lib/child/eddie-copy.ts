@@ -14,6 +14,50 @@
  */
 
 import type { OptionFate } from "@/lib/child/animation-timeline";
+import type { FeedbackCategory } from "@/lib/engine/feedback-matrix";
+
+// ── Tone (Wave 8, Phase 3 Feature 2) ─────────────────────────
+
+export type EddieTone = "calm" | "encouraging" | "celebratory";
+
+/**
+ * Choose Eddie's tone deterministically from the adaptive-matrix category and
+ * today's emoji check-in (1–5; null = unknown). Gentler when the child
+ * reported a tough day or the signals say attention/concept-gap; brighter on
+ * a win. Pure — no AI, no profile built, just today's self-reported mood.
+ */
+export function pickTone(input: {
+  category?: FeedbackCategory | null;
+  wasCorrect?: boolean;
+  mood?: number | null;
+}): EddieTone {
+  if (input.wasCorrect) {
+    // A win on a tough day is confirmed warmly, not loudly.
+    return (input.mood ?? 3) <= 2 ? "calm" : "celebratory";
+  }
+  if ((input.mood ?? 3) <= 2) return "calm";
+  if (input.category === "attention" || input.category === "concept_gap") {
+    return "calm";
+  }
+  return "encouraging";
+}
+
+/**
+ * Apply the tone to a composed line. Calm prepends a slow, warm lead (worded
+ * for the child's band); encouraging is the default register of every
+ * template; celebratory is handled by the correct-line variants.
+ */
+export function applyTone(
+  line: string,
+  tone: EddieTone,
+  keyStage?: number,
+): string {
+  if (tone === "calm") {
+    const lead = keyStage === 2 ? "Take a slow breath. " : "No rush. ";
+    return `${lead}${line}`;
+  }
+  return line;
+}
 
 /**
  * Sanitize a profile first name for display + speech. Only the FIRST name is
@@ -71,8 +115,19 @@ export function eddieWrongAnswerLine(input: {
   return name ? `${name}, ${lowerFirst(baseMessage)}` : baseMessage;
 }
 
-/** Eddie's warm confirm for a correct answer — spoken, second person. */
-export function eddieCorrectLine(name: string | null): string {
+/**
+ * Eddie's confirm for a correct answer — spoken, second person. Celebratory
+ * by default; the calm variant keeps a win on a tough day gentle and proud.
+ */
+export function eddieCorrectLine(
+  name: string | null,
+  tone: EddieTone = "celebratory",
+): string {
+  if (tone === "calm") {
+    return name
+      ? `That's it, ${name}. Well done for sticking with it.`
+      : "That's it. Well done for sticking with it.";
+  }
   return name
     ? `Yes, ${name} — that's exactly it. Lovely thinking.`
     : "Yes — that's exactly it. Lovely thinking.";

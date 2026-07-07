@@ -43,8 +43,10 @@ import {
 import { accentPreset, type AccentPreset } from "@/lib/child/accents";
 import { classifyOptions } from "@/lib/child/animation-timeline";
 import {
+  applyTone,
   eddieCorrectLine,
   eddieWrongAnswerLine,
+  pickTone,
   safeFirstName,
 } from "@/lib/child/eddie-copy";
 import { setCuesEnabled, tapCue } from "@/lib/child/sensory-cues";
@@ -141,6 +143,7 @@ export function PracticePlayer({
   accent: accentId,
   narrationAutoplay = true,
   soundCues = true,
+  mood = null,
   savedProgress,
   firstName,
   resumeKey,
@@ -161,6 +164,8 @@ export function PracticePlayer({
   narrationAutoplay?: boolean;
   /** Child's "sounds & buzz" preference (gentle lesson cues; opt-out). */
   soundCues?: boolean;
+  /** Today's emoji check-in (1-5; null = none) — tunes Eddie's tone only. */
+  mood?: number | null;
   /** Server-synced mid-lesson progress (MongoDB) for a warm resume. */
   savedProgress?: SavedProgress | null;
   /** Child's first name, for the warm re-entry card. */
@@ -204,9 +209,6 @@ export function PracticePlayer({
   const [hintRung, setHintRung] = useState(0); // 0 = none shown yet
   const [hintFloor, setHintFloor] = useState(0);
 
-  // Specific, targeted feedback on a wrong answer (Wave 7, Phase 3).
-  // The human-authored misconception line for the exact wrong option (or null).
-  const [misconceptionHint, setMisconceptionHint] = useState<string | null>(null);
   // Eddie's composed, answer-reactive line (Wave 8, Phase 3): second person,
   // first name, reacting to the exact option picked. Deterministic templates
   // only — on-rails per .claude/rules/child-safety.md.
@@ -396,7 +398,9 @@ export function PracticePlayer({
 
   useEffect(() => {
     if (!outcome || outcome !== "correct" || !autoplayOn) return;
-    void narration.playText(eddieCorrectLine(childName));
+    void narration.playText(
+      eddieCorrectLine(childName, pickTone({ wasCorrect: true, mood })),
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [outcome, autoplayOn]);
 
@@ -665,7 +669,6 @@ export function PracticePlayer({
       selectedIndex,
       correctIndex: question.correctIndex,
     });
-    setMisconceptionHint(misconception);
 
     // Adaptive matrix: pick the RESPONSE from deterministic signals (no AI).
     // Read the prior correct run, then break it — this question was missed.
@@ -690,15 +693,22 @@ export function PracticePlayer({
       selectedIndex !== null
         ? classifyOptions(question.options, question.correctIndex)[selectedIndex]
         : null;
+    // Tone (Phase 3, F2): gentler on a tough-day check-in or a real struggle;
+    // deterministic — today's self-reported mood only, no profiling.
+    const tone = pickTone({ category: decision.category, mood });
     setEddieLine(
-      eddieWrongAnswerLine({
-        name: childName,
-        chosenOption:
-          selectedIndex !== null ? question.options[selectedIndex] : null,
-        fate: fate ?? null,
-        misconception,
-        baseMessage: decision.message,
-      }),
+      applyTone(
+        eddieWrongAnswerLine({
+          name: childName,
+          chosenOption:
+            selectedIndex !== null ? question.options[selectedIndex] : null,
+          fate: fate ?? null,
+          misconception,
+          baseMessage: decision.message,
+        }),
+        tone,
+        keyStage,
+      ),
     );
 
     // One graduated help spine: misconception (rung 1) → method hint (rung 2)
@@ -772,7 +782,6 @@ export function PracticePlayer({
     setScoredThis(false);
     setHintRung(0);
     setHintFloor(0);
-    setMisconceptionHint(null);
     setEddieLine(null);
     setFeedback(null);
     setReteachInline(null);

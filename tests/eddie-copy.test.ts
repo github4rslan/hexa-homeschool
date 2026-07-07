@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyTone,
   eddieCorrectLine,
   eddieWrongAnswerLine,
   personalizeYourTurnPrompt,
+  pickTone,
   safeFirstName,
 } from "@/lib/child/eddie-copy";
 
@@ -97,6 +99,43 @@ describe("eddieWrongAnswerLine (answer-reactive, on-rails)", () => {
       });
       expect(line.toLowerCase()).not.toContain("wrong");
     }
+  });
+});
+
+describe("pickTone + applyTone (deterministic, emotion-aware)", () => {
+  it("is gentler on a tough-day check-in", () => {
+    expect(pickTone({ mood: 1 })).toBe("calm");
+    expect(pickTone({ mood: 2, category: "encourage" })).toBe("calm");
+  });
+
+  it("is calm on a real struggle, encouraging otherwise", () => {
+    expect(pickTone({ category: "concept_gap", mood: 4 })).toBe("calm");
+    expect(pickTone({ category: "attention", mood: null })).toBe("calm");
+    expect(pickTone({ category: "encourage", mood: 4 })).toBe("encouraging");
+    expect(pickTone({ category: "careless" })).toBe("encouraging");
+  });
+
+  it("is brighter on a win — but keeps a tough day gentle", () => {
+    expect(pickTone({ wasCorrect: true, mood: 4 })).toBe("celebratory");
+    expect(pickTone({ wasCorrect: true, mood: 1 })).toBe("calm");
+  });
+
+  it("applyTone adds a calm lead worded for the band, else passes through", () => {
+    expect(applyTone("Have another go.", "calm")).toBe(
+      "No rush. Have another go.",
+    );
+    expect(applyTone("Have another go.", "calm", 2)).toBe(
+      "Take a slow breath. Have another go.",
+    );
+    expect(applyTone("Have another go.", "encouraging")).toBe(
+      "Have another go.",
+    );
+  });
+
+  it("calm correct line stays proud, never flat", () => {
+    expect(eddieCorrectLine("Aisha", "calm")).toBe(
+      "That's it, Aisha. Well done for sticking with it.",
+    );
   });
 });
 
