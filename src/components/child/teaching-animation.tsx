@@ -1085,6 +1085,25 @@ export function TeachingAnimation({
     speak(nextIndex);
   }
 
+  /** Scrub debounce — narrate the landed-on step, not every step dragged past. */
+  const scrubSpeakRef = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (scrubSpeakRef.current) window.clearTimeout(scrubSpeakRef.current);
+    },
+    [],
+  );
+
+  function scrubTo(index: number) {
+    setPlaying(false);
+    stopRef.current?.();
+    setCurrent(index);
+    if (scrubSpeakRef.current) window.clearTimeout(scrubSpeakRef.current);
+    scrubSpeakRef.current = window.setTimeout(() => speak(index), 350);
+  }
+
+  const scrubPct = total > 1 ? (current / (total - 1)) * 100 : 100;
+
   return (
     <motion.div
       initial={reduced ? false : { opacity: 0, y: 12, scale: 0.98 }}
@@ -1202,73 +1221,101 @@ export function TeachingAnimation({
         />
       </div>
 
-      <div className="mb-4 flex gap-2">
-        {animation.steps.map((_, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => {
-              setPlaying(false);
-              stopRef.current?.();
-              setCurrent(index);
-              speak(index);
-            }}
-            aria-label={`Show animation step ${index + 1}`}
-            aria-current={index === current ? "step" : undefined}
-            className={cn("h-2.5 flex-1 overflow-hidden rounded-full bg-white/10 focus-visible:outline-none focus-visible:ring-2", accent.ring)}
-          >
-            <motion.span
-              className={cn("block h-full rounded-full bg-gradient-to-r", accent.bar)}
-              initial={false}
-              animate={{ width: index <= current ? "100%" : "0%" }}
-              transition={{ duration: 0.25 }}
-            />
-          </button>
-        ))}
+      {/* Scrubbable step timeline — the CHILD sets the pace. Dragging (or
+          arrow keys) moves between beats; narration follows after a beat's
+          pause so scrubbing never machine-guns clips. */}
+      <div className="mb-4">
+        <input
+          type="range"
+          min={0}
+          max={Math.max(total - 1, 0)}
+          step={1}
+          value={current}
+          aria-label="Animation step"
+          aria-valuetext={`Step ${current + 1} of ${total}`}
+          onChange={(e) => scrubTo(Number(e.target.value))}
+          className="seeit-scrub"
+          style={
+            {
+              "--seeit-accent": accent.swatch,
+              background: `linear-gradient(to right, ${accent.swatch} ${scrubPct}%, rgba(255,255,255,0.1) ${scrubPct}%)`,
+            } as React.CSSProperties
+          }
+        />
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={`${current}-${step.expression}`}
-          initial={reduced ? false : { opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={reduced ? undefined : { opacity: 0, y: -10 }}
-          transition={{ duration: 0.25 }}
-        >
-          {animation.type === "equation_steps" ? (
-            <EquationStage
-              step={step}
-              index={current}
-              accent={accent}
-              reduced={reduced}
-            />
-          ) : animation.type === "grammar_highlight" ? (
-            <GrammarStage
-              step={step}
-              index={current}
-              accent={accent}
-              reduced={reduced}
-            />
-          ) : animation.type === "science_sequence" ? (
-            <ScienceStage
-              steps={animation.steps}
-              step={step}
-              index={current}
-              accent={accent}
-              reduced={reduced}
-            />
-          ) : (
-            <ChoiceStage
-              step={step}
-              index={current}
-              accent={accent}
-              reduced={reduced}
-              options={options}
-              correctIndex={correctIndex}
-            />
-          )}
-        </motion.div>
-      </AnimatePresence>
+      {/* Tap anywhere on the picture to pause/resume — the child, not a
+          timer, owns the pace. Keyboardable (Enter/Space) with visible focus. */}
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={playing ? "Pause the animation" : "Play the animation"}
+        onClick={() => (playing ? pause() : play())}
+        onKeyDown={(e) => {
+          if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            if (playing) pause();
+            else play();
+          }
+        }}
+        className={cn(
+          "relative cursor-pointer select-none rounded-3xl focus-visible:outline-none focus-visible:ring-2",
+          accent.ring,
+        )}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${current}-${step.expression}`}
+            initial={reduced ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduced ? undefined : { opacity: 0, y: -10 }}
+            transition={{ duration: 0.25 }}
+          >
+            {animation.type === "equation_steps" ? (
+              <EquationStage
+                step={step}
+                index={current}
+                accent={accent}
+                reduced={reduced}
+              />
+            ) : animation.type === "grammar_highlight" ? (
+              <GrammarStage
+                step={step}
+                index={current}
+                accent={accent}
+                reduced={reduced}
+              />
+            ) : animation.type === "science_sequence" ? (
+              <ScienceStage
+                steps={animation.steps}
+                step={step}
+                index={current}
+                accent={accent}
+                reduced={reduced}
+              />
+            ) : (
+              <ChoiceStage
+                step={step}
+                index={current}
+                accent={accent}
+                reduced={reduced}
+                options={options}
+                correctIndex={correctIndex}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+        {!playing && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute bottom-3 right-3 z-10"
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-void/70 px-3 py-1.5 text-sm font-semibold text-fog-200 backdrop-blur-sm">
+              <Play className="h-4 w-4" /> Tap to play
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* After the reveal's final beat: one short recall task, skippable. */}
       <AnimatePresence>
