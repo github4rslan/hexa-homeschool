@@ -20,7 +20,9 @@ interface Voice {
   blurb: string;
 }
 
-const PREVIEW_TEXT = "Hi! I'll be your reading voice. Let's learn together.";
+/** Eddie introduces himself in the previewed voice — the pick IS Eddie's voice. */
+const PREVIEW_TEXT =
+  "Hi! I'm Eddie, your Edway coach. This is how I'll sound. Let's learn together.";
 
 export function MyStuffPanel({
   voices,
@@ -115,11 +117,16 @@ export function MyStuffPanel({
         Make Edway feel like yours.
       </p>
 
-      {/* Voice */}
+      {/* Eddie's voice (Wave 8, Feature 9) — the same curated, tier-gated TTS
+          voices as before, framed as EDDIE so the choice builds attachment. */}
       <section className="mb-10">
-        <h2 className="mb-4 flex items-center gap-2 text-2xl font-semibold text-fog-100">
-          <Volume2 className="h-6 w-6 text-fog-300" /> Reading voice
+        <h2 className="mb-1 flex items-center gap-2 text-2xl font-semibold text-fog-100">
+          <Volume2 className="h-6 w-6 text-fog-300" /> Eddie&apos;s voice
         </h2>
+        <p className="mb-4 text-base text-fog-400">
+          Pick the voice Eddie uses when he reads and teaches. Tap the speaker
+          to hear each one.
+        </p>
         <div className="grid gap-3">
           {voices.map((v) => {
             const selected = v.id === voiceId;
