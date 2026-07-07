@@ -1,19 +1,335 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  Pause,
+  Play,
+  RotateCcw,
+  Sparkles,
+  StepForward,
+  WandSparkles,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AccentPreset } from "@/lib/child/accents";
-import type { TeachingAnimation as TeachingAnimationData } from "@/lib/child/teaching-animations";
+import {
+  stepNarration,
+  type TeachingAnimation as TeachingAnimationData,
+  type TeachingAnimationStep,
+} from "@/lib/child/teaching-animations";
+
+const STEP_MS = 4600;
+
+function splitExpression(expression: string): string[] {
+  return expression.split(/(\s+|=|\+\/-|[()+\-*/])/).filter((part) => part.trim());
+}
+
+function CoachBadge({
+  line,
+  accent,
+}: {
+  line: string;
+  accent: AccentPreset;
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-3xl border border-white/10 bg-white/[0.035] p-4">
+      <motion.div
+        animate={{ y: [0, -4, 0], rotate: [0, 2, -2, 0] }}
+        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
+        className={cn(
+          "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border",
+          accent.bg,
+          accent.border,
+        )}
+      >
+        <WandSparkles className={cn("h-6 w-6", accent.text)} aria-hidden />
+      </motion.div>
+      <div>
+        <div className="text-sm font-semibold uppercase tracking-wider text-fog-500">
+          Edway coach
+        </div>
+        <p className="mt-1 text-base leading-relaxed text-fog-100">{line}</p>
+      </div>
+    </div>
+  );
+}
+
+function EquationStage({
+  step,
+  index,
+  accent,
+}: {
+  step: TeachingAnimationStep;
+  index: number;
+  accent: AccentPreset;
+}) {
+  const tokens = splitExpression(step.expression);
+  const isBalance = step.label.toLowerCase().includes("balance");
+  const isRoot = step.label.toLowerCase().includes("root");
+  const isAnswer = step.label.toLowerCase().includes("answer");
+
+  return (
+    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-void/35 p-5 sm:p-6">
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <span className="text-sm font-semibold uppercase tracking-wider text-fog-500">
+          Step {index + 1}
+        </span>
+        <span className={cn("text-sm font-semibold", accent.text)}>
+          {step.label}
+        </span>
+      </div>
+
+      <div className="relative min-h-[10rem] rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+        <div className="absolute inset-x-6 top-1/2 h-px bg-white/10" />
+        {isBalance && (
+          <motion.div
+            initial={{ x: -90, opacity: 0, y: -34 }}
+            animate={{ x: 120, opacity: [0, 1, 1, 0], y: -34 }}
+            transition={{ duration: 2.2, ease: [0.16, 1, 0.3, 1] }}
+            className={cn(
+              "absolute left-1/2 top-1/2 rounded-2xl border px-3 py-1 text-lg font-bold",
+              accent.bg,
+              accent.border,
+              accent.text,
+            )}
+          >
+            {step.focus}
+          </motion.div>
+        )}
+        {isRoot && (
+          <>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.7, x: -70 }}
+              animate={{ opacity: 1, scale: 1, x: -110 }}
+              transition={{ duration: 0.55 }}
+              className="absolute left-1/2 top-4 text-4xl font-bold text-cyan-200"
+            >
+              sqrt
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.7, x: 70 }}
+              animate={{ opacity: 1, scale: 1, x: 76 }}
+              transition={{ duration: 0.55, delay: 0.2 }}
+              className="absolute left-1/2 top-4 text-4xl font-bold text-cyan-200"
+            >
+              sqrt
+            </motion.div>
+          </>
+        )}
+
+        <motion.div
+          key={step.expression}
+          initial={{ opacity: 0, y: 18, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className="relative z-10 flex min-h-[7rem] flex-wrap items-center justify-center gap-2 text-center"
+        >
+          {tokens.map((token, tokenIndex) => {
+            const focus =
+              step.focus &&
+              token.toLowerCase().includes(step.focus.toLowerCase());
+            return (
+              <motion.span
+                key={`${token}-${tokenIndex}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: tokenIndex * 0.05, duration: 0.25 }}
+                className={cn(
+                  "rounded-2xl px-2 py-1 font-mono text-4xl font-bold sm:text-5xl",
+                  focus
+                    ? cn(accent.bg, accent.text, "shadow-lg")
+                    : "text-fog-50",
+                  token === "=" && "text-cyan-200",
+                )}
+              >
+                {token}
+              </motion.span>
+            );
+          })}
+        </motion.div>
+
+        {isAnswer && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.35 }}
+            className="mt-3 flex justify-center gap-3"
+          >
+            <span className="rounded-2xl border border-neon-400/30 bg-neon-500/10 px-4 py-2 text-xl font-semibold text-neon-200">
+              positive
+            </span>
+            <span className="rounded-2xl border border-cyan-400/30 bg-cyan-500/10 px-4 py-2 text-xl font-semibold text-cyan-200">
+              negative
+            </span>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StrategyStage({
+  step,
+  index,
+  accent,
+  type,
+}: {
+  step: TeachingAnimationStep;
+  index: number;
+  accent: AccentPreset;
+  type: TeachingAnimationData["type"];
+}) {
+  const isScience = type === "science_sequence";
+  const isGrammar = type === "grammar_highlight";
+  const items = useMemo(
+    () =>
+      cleanStageWords(step.expression)
+        .slice(0, 10)
+        .map((word, i) => ({ word, active: i === index || word === step.focus })),
+    [step.expression, step.focus, index],
+  );
+
+  return (
+    <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <span className="text-sm font-semibold uppercase tracking-wider text-fog-500">
+          {step.label}
+        </span>
+        <span className={cn("text-sm font-semibold", accent.text)}>
+          Step {index + 1}
+        </span>
+      </div>
+
+      {isScience ? (
+        <div className="relative mb-5 h-28 rounded-3xl border border-white/10 bg-void/35">
+          {[0, 1, 2, 3, 4].map((dot) => (
+            <motion.span
+              key={dot}
+              animate={{
+                x: [20, 120, 220, 320],
+                y: [34 + dot * 9, 18 + dot * 6, 52 - dot * 3, 34 + dot * 5],
+                opacity: [0.3, 1, 0.75, 0.3],
+              }}
+              transition={{
+                duration: 2.8,
+                delay: dot * 0.18,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+              className={cn(
+                "absolute left-0 top-0 h-3 w-3 rounded-full",
+                dot % 2 ? "bg-cyan-300" : "bg-neon-300",
+              )}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="mb-5 flex flex-wrap gap-2">
+          {items.map((item, itemIndex) => (
+            <motion.span
+              key={`${item.word}-${itemIndex}`}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: itemIndex * 0.06 }}
+              className={cn(
+                "rounded-2xl border px-3 py-2 text-xl font-semibold",
+                item.active || isGrammar
+                  ? cn(accent.bg, accent.border, "text-fog-50")
+                  : "border-white/10 bg-white/[0.03] text-fog-300",
+              )}
+            >
+              {item.word}
+            </motion.span>
+          ))}
+        </div>
+      )}
+
+      <motion.div
+        key={step.note}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-2xl border border-white/10 bg-void/30 p-4"
+      >
+        <div className="text-2xl font-semibold text-fog-50">
+          {step.expression}
+        </div>
+        <p className="mt-2 text-lg leading-relaxed text-fog-200">{step.note}</p>
+      </motion.div>
+    </div>
+  );
+}
+
+function cleanStageWords(value: string): string[] {
+  return value
+    .replace(/[^\w\s+-]/g, " ")
+    .split(/\s+/)
+    .map((word) => word.trim())
+    .filter(Boolean);
+}
 
 export function TeachingAnimation({
   animation,
   accent,
+  autoPlay = false,
+  onSpeak,
+  onStop,
 }: {
   animation: TeachingAnimationData;
   accent: AccentPreset;
+  autoPlay?: boolean;
+  onSpeak?: (text: string) => void;
+  onStop?: () => void;
 }) {
   const reduced = useReducedMotion();
+  const [current, setCurrent] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const step = animation.steps[current] ?? animation.steps[0];
+  const total = animation.steps.length;
+
+  useEffect(() => {
+    setCurrent(0);
+    setPlaying(autoPlay && !reduced);
+  }, [animation, autoPlay, reduced]);
+
+  useEffect(() => {
+    if (!playing || reduced) return;
+    const timer = window.setTimeout(() => {
+      setCurrent((value) => {
+        if (value >= total - 1) {
+          setPlaying(false);
+          return value;
+        }
+        return value + 1;
+      });
+    }, STEP_MS);
+    return () => window.clearTimeout(timer);
+  }, [playing, current, total, reduced]);
+
+  useEffect(() => {
+    if (!playing || !step) return;
+    onSpeak?.(stepNarration(step));
+  }, [playing, step, onSpeak]);
+
+  function play() {
+    setPlaying(true);
+    if (current >= total - 1) setCurrent(0);
+  }
+
+  function pause() {
+    setPlaying(false);
+    onStop?.();
+  }
+
+  function replay() {
+    setCurrent(0);
+    setPlaying(true);
+  }
+
+  function next() {
+    setPlaying(false);
+    onStop?.();
+    setCurrent((value) => Math.min(total - 1, value + 1));
+  }
 
   return (
     <motion.div
@@ -27,80 +343,110 @@ export function TeachingAnimation({
         accent.softBorder,
       )}
     >
-      <div className="mb-4 flex items-start gap-3">
-        <div
-          className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
-            accent.bg,
-            accent.border,
-          )}
-        >
-          <Sparkles className={cn("h-5 w-5", accent.text)} aria-hidden />
+      <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border",
+              accent.bg,
+              accent.border,
+            )}
+          >
+            <Sparkles className={cn("h-5 w-5", accent.text)} aria-hidden />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-fog-50">
+              {animation.title}
+            </h2>
+            <p className="mt-1 text-base leading-relaxed text-fog-300">
+              {animation.intro}
+            </p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-semibold text-fog-50">
-            {animation.title}
-          </h2>
-          <p className="mt-1 text-base leading-relaxed text-fog-300">
-            {animation.intro}
-          </p>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={playing ? pause : play}
+            className={cn(
+              "child-touch inline-flex items-center gap-2 rounded-2xl border px-4 text-base font-semibold",
+              accent.bg,
+              accent.border,
+              accent.text,
+            )}
+          >
+            {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+            {playing ? "Pause" : "Play"}
+          </button>
+          <button
+            type="button"
+            onClick={next}
+            disabled={current >= total - 1}
+            className="child-touch inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 disabled:opacity-40"
+          >
+            <StepForward className="h-5 w-5" />
+            Next
+          </button>
+          <button
+            type="button"
+            onClick={replay}
+            className="child-touch inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200"
+          >
+            <RotateCcw className="h-5 w-5" />
+            Replay
+          </button>
         </div>
       </div>
 
-      <div className="grid gap-3">
-        {animation.steps.map((step, index) => (
-          <motion.div
-            key={`${step.label}-${index}`}
-            initial={reduced ? false : { opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{
-              duration: 0.28,
-              delay: reduced ? 0 : index * 0.16,
-              ease: [0.16, 1, 0.3, 1],
+      <div className="mb-4">
+        <CoachBadge line={animation.coachLine} accent={accent} />
+      </div>
+
+      <div className="mb-4 flex gap-2">
+        {animation.steps.map((_, index) => (
+          <button
+            key={index}
+            type="button"
+            onClick={() => {
+              setPlaying(false);
+              onStop?.();
+              setCurrent(index);
             }}
-            className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 sm:grid-cols-[9rem_1fr]"
+            aria-label={`Show animation step ${index + 1}`}
+            className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10"
           >
-            <div className="flex items-center gap-3">
-              <motion.span
-                initial={reduced ? false : { scale: 0.8 }}
-                animate={{ scale: 1 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 300,
-                  damping: 18,
-                  delay: reduced ? 0 : index * 0.16,
-                }}
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold",
-                  accent.bg,
-                  accent.text,
-                )}
-              >
-                {index + 1}
-              </motion.span>
-              <span className="text-sm font-semibold uppercase tracking-wider text-fog-400">
-                {step.label}
-              </span>
-            </div>
-            <div>
-              <motion.div
-                initial={reduced ? false : { opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.28,
-                  delay: reduced ? 0 : index * 0.16 + 0.08,
-                }}
-                className="font-mono text-2xl font-semibold text-fog-50"
-              >
-                {step.expression}
-              </motion.div>
-              <p className="mt-1 text-base leading-relaxed text-fog-300">
-                {step.note}
-              </p>
-            </div>
-          </motion.div>
+            <motion.span
+              className={cn("block h-full rounded-full bg-gradient-to-r", accent.bar)}
+              initial={false}
+              animate={{ width: index <= current ? "100%" : "0%" }}
+              transition={{ duration: 0.25 }}
+            />
+          </button>
         ))}
       </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={`${current}-${step.expression}`}
+          initial={reduced ? false : { opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={reduced ? undefined : { opacity: 0, y: -10 }}
+          transition={{ duration: 0.25 }}
+        >
+          {animation.type === "equation_steps" ? (
+            <EquationStage step={step} index={current} accent={accent} />
+          ) : (
+            <StrategyStage
+              step={step}
+              index={current}
+              accent={accent}
+              type={animation.type}
+            />
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      <p className="mt-4 text-base leading-relaxed text-fog-300">{step.note}</p>
     </motion.div>
   );
 }
