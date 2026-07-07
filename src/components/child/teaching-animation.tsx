@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Pause,
@@ -76,7 +76,7 @@ function CoachBadge({
       </motion.div>
       <div>
         <div className="text-xs font-semibold uppercase tracking-wider text-fog-500">
-          Edway coach
+          Eddie, your Edway coach
         </div>
         <p className="mt-1 text-base leading-relaxed text-fog-100">{line}</p>
       </div>
@@ -335,31 +335,36 @@ export function TeachingAnimation({
 
   useEffect(() => {
     setCurrent(0);
-    setPlaying(autoPlay && !reduced);
+    setPlaying(false);
   }, [animation, autoPlay, reduced]);
+
+  const speak = useCallback(
+    (index = current) => {
+      const target = animation.steps[index];
+      if (target) speakRef.current?.(stepNarration(target));
+    },
+    [animation.steps, current],
+  );
 
   useEffect(() => {
     if (!playing || reduced) return;
     const timer = window.setTimeout(() => {
-      setCurrent((value) => {
-        if (value >= total - 1) {
-          setPlaying(false);
-          return value;
-        }
-        return value + 1;
-      });
+      if (current >= total - 1) {
+        setPlaying(false);
+        return;
+      }
+      const nextIndex = current + 1;
+      setCurrent(nextIndex);
+      speak(nextIndex);
     }, STEP_MS);
     return () => window.clearTimeout(timer);
-  }, [playing, current, total, reduced]);
-
-  useEffect(() => {
-    if (!playing || !step) return;
-    speakRef.current?.(stepNarration(step));
-  }, [playing, step]);
+  }, [playing, current, total, reduced, speak]);
 
   function play() {
+    const nextIndex = current >= total - 1 ? 0 : current;
+    if (nextIndex !== current) setCurrent(nextIndex);
     setPlaying(true);
-    if (current >= total - 1) setCurrent(0);
+    speak(nextIndex);
   }
 
   function pause() {
@@ -370,12 +375,14 @@ export function TeachingAnimation({
   function replay() {
     setCurrent(0);
     setPlaying(true);
+    speak(0);
   }
 
   function next() {
+    const nextIndex = Math.min(total - 1, current + 1);
     setPlaying(false);
-    stopRef.current?.();
-    setCurrent((value) => Math.min(total - 1, value + 1));
+    setCurrent(nextIndex);
+    speak(nextIndex);
   }
 
   return (
@@ -427,6 +434,14 @@ export function TeachingAnimation({
           </button>
           <button
             type="button"
+            onClick={() => speak()}
+            className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200"
+          >
+            <Volume2 className="h-5 w-5" />
+            Hear step
+          </button>
+          <button
+            type="button"
             onClick={next}
             disabled={current >= total - 1}
             className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 disabled:opacity-40"
@@ -458,6 +473,7 @@ export function TeachingAnimation({
               setPlaying(false);
               stopRef.current?.();
               setCurrent(index);
+              speak(index);
             }}
             aria-label={`Show animation step ${index + 1}`}
             className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10"
