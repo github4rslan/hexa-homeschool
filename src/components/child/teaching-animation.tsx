@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Pause,
@@ -9,6 +9,7 @@ import {
   Sparkles,
   StepForward,
   WandSparkles,
+  Volume2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AccentPreset } from "@/lib/child/accents";
@@ -24,6 +25,35 @@ function splitExpression(expression: string): string[] {
   return expression.split(/(\s+|=|\+\/-|[()+\-*/])/).filter((part) => part.trim());
 }
 
+function MathToken({ token }: { token: string }) {
+  if (token === "+/-") {
+    return <>{String.fromCharCode(177)}</>;
+  }
+
+  const square = token.match(/^([a-zA-Z0-9]+)\^2$/);
+  if (square) {
+    return (
+      <>
+        {square[1]}
+        <sup className="ml-0.5 align-super text-[0.55em]">2</sup>
+      </>
+    );
+  }
+
+  const root = token.match(/^sqrt\((.+)\)$/);
+  if (root) {
+    return (
+      <>
+        {String.fromCharCode(8730)}
+        <span className="border-t-2 border-current pl-1">{root[1]}</span>
+      </>
+    );
+  }
+
+  if (token === "sqrt") return <>{String.fromCharCode(8730)}</>;
+  return <>{token}</>;
+}
+
 function CoachBadge({
   line,
   accent,
@@ -32,20 +62,20 @@ function CoachBadge({
   accent: AccentPreset;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-3xl border border-white/10 bg-white/[0.035] p-4">
+    <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
       <motion.div
         animate={{ y: [0, -4, 0], rotate: [0, 2, -2, 0] }}
         transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
         className={cn(
-          "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border",
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
           accent.bg,
           accent.border,
         )}
       >
-        <WandSparkles className={cn("h-6 w-6", accent.text)} aria-hidden />
+        <WandSparkles className={cn("h-5 w-5", accent.text)} aria-hidden />
       </motion.div>
       <div>
-        <div className="text-sm font-semibold uppercase tracking-wider text-fog-500">
+        <div className="text-xs font-semibold uppercase tracking-wider text-fog-500">
           Edway coach
         </div>
         <p className="mt-1 text-base leading-relaxed text-fog-100">{line}</p>
@@ -69,8 +99,8 @@ function EquationStage({
   const isAnswer = step.label.toLowerCase().includes("answer");
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-void/35 p-5 sm:p-6">
-      <div className="mb-5 flex items-center justify-between gap-3">
+    <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-void/35 p-4 sm:p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <span className="text-sm font-semibold uppercase tracking-wider text-fog-500">
           Step {index + 1}
         </span>
@@ -79,22 +109,32 @@ function EquationStage({
         </span>
       </div>
 
-      <div className="relative min-h-[10rem] rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+      <div className="relative min-h-[11rem] rounded-3xl border border-white/10 bg-white/[0.035] p-5">
         <div className="absolute inset-x-6 top-1/2 h-px bg-white/10" />
         {isBalance && (
-          <motion.div
-            initial={{ x: -90, opacity: 0, y: -34 }}
-            animate={{ x: 120, opacity: [0, 1, 1, 0], y: -34 }}
-            transition={{ duration: 2.2, ease: [0.16, 1, 0.3, 1] }}
-            className={cn(
-              "absolute left-1/2 top-1/2 rounded-2xl border px-3 py-1 text-lg font-bold",
-              accent.bg,
-              accent.border,
-              accent.text,
-            )}
-          >
-            {step.focus}
-          </motion.div>
+          <>
+            {["left", "right"].map((side, sideIndex) => (
+              <motion.div
+                key={side}
+                initial={{ y: -58, opacity: 0, scale: 0.85 }}
+                animate={{ y: -28, opacity: [0, 1, 1, 0.85], scale: 1 }}
+                transition={{
+                  duration: 1.2,
+                  delay: sideIndex * 0.18,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className={cn(
+                  "absolute top-1/2 rounded-2xl border px-3 py-1 text-lg font-bold",
+                  side === "left" ? "left-[24%]" : "right-[24%]",
+                  accent.bg,
+                  accent.border,
+                  accent.text,
+                )}
+              >
+                {step.focus}
+              </motion.div>
+            ))}
+          </>
         )}
         {isRoot && (
           <>
@@ -104,7 +144,7 @@ function EquationStage({
               transition={{ duration: 0.55 }}
               className="absolute left-1/2 top-4 text-4xl font-bold text-cyan-200"
             >
-              sqrt
+              {String.fromCharCode(8730)}
             </motion.div>
             <motion.div
               initial={{ opacity: 0, scale: 0.7, x: 70 }}
@@ -112,7 +152,7 @@ function EquationStage({
               transition={{ duration: 0.55, delay: 0.2 }}
               className="absolute left-1/2 top-4 text-4xl font-bold text-cyan-200"
             >
-              sqrt
+              {String.fromCharCode(8730)}
             </motion.div>
           </>
         )}
@@ -122,7 +162,7 @@ function EquationStage({
           initial={{ opacity: 0, y: 18, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 flex min-h-[7rem] flex-wrap items-center justify-center gap-2 text-center"
+          className="relative z-10 flex min-h-[7.5rem] flex-wrap items-center justify-center gap-2 text-center"
         >
           {tokens.map((token, tokenIndex) => {
             const focus =
@@ -135,14 +175,14 @@ function EquationStage({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: tokenIndex * 0.05, duration: 0.25 }}
                 className={cn(
-                  "rounded-2xl px-2 py-1 font-mono text-4xl font-bold sm:text-5xl",
+                  "rounded-2xl px-2 py-1 text-4xl font-bold leading-none sm:text-5xl",
                   focus
                     ? cn(accent.bg, accent.text, "shadow-lg")
                     : "text-fog-50",
                   token === "=" && "text-cyan-200",
                 )}
               >
-                {token}
+                <MathToken token={token} />
               </motion.span>
             );
           })}
@@ -283,8 +323,15 @@ export function TeachingAnimation({
   const reduced = useReducedMotion();
   const [current, setCurrent] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const speakRef = useRef(onSpeak);
+  const stopRef = useRef(onStop);
   const step = animation.steps[current] ?? animation.steps[0];
   const total = animation.steps.length;
+
+  useEffect(() => {
+    speakRef.current = onSpeak;
+    stopRef.current = onStop;
+  }, [onSpeak, onStop]);
 
   useEffect(() => {
     setCurrent(0);
@@ -307,8 +354,8 @@ export function TeachingAnimation({
 
   useEffect(() => {
     if (!playing || !step) return;
-    onSpeak?.(stepNarration(step));
-  }, [playing, step, onSpeak]);
+    speakRef.current?.(stepNarration(step));
+  }, [playing, step]);
 
   function play() {
     setPlaying(true);
@@ -317,7 +364,7 @@ export function TeachingAnimation({
 
   function pause() {
     setPlaying(false);
-    onStop?.();
+    stopRef.current?.();
   }
 
   function replay() {
@@ -327,7 +374,7 @@ export function TeachingAnimation({
 
   function next() {
     setPlaying(false);
-    onStop?.();
+    stopRef.current?.();
     setCurrent((value) => Math.min(total - 1, value + 1));
   }
 
@@ -343,7 +390,7 @@ export function TeachingAnimation({
         accent.softBorder,
       )}
     >
-      <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
         <div className="flex items-start gap-3">
           <div
             className={cn(
@@ -354,22 +401,22 @@ export function TeachingAnimation({
           >
             <Sparkles className={cn("h-5 w-5", accent.text)} aria-hidden />
           </div>
-          <div>
+          <div className="min-w-0">
             <h2 className="text-xl font-semibold text-fog-50">
               {animation.title}
             </h2>
-            <p className="mt-1 text-base leading-relaxed text-fog-300">
+            <p className="mt-1 max-w-xl text-base leading-relaxed text-fog-300">
               {animation.intro}
             </p>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex shrink-0 flex-wrap gap-2">
           <button
             type="button"
             onClick={playing ? pause : play}
             className={cn(
-              "child-touch inline-flex items-center gap-2 rounded-2xl border px-4 text-base font-semibold",
+              "inline-flex min-h-12 items-center gap-2 rounded-2xl border px-4 text-base font-semibold",
               accent.bg,
               accent.border,
               accent.text,
@@ -382,7 +429,7 @@ export function TeachingAnimation({
             type="button"
             onClick={next}
             disabled={current >= total - 1}
-            className="child-touch inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 disabled:opacity-40"
+            className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200 disabled:opacity-40"
           >
             <StepForward className="h-5 w-5" />
             Next
@@ -390,7 +437,7 @@ export function TeachingAnimation({
           <button
             type="button"
             onClick={replay}
-            className="child-touch inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200"
+            className="inline-flex min-h-12 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 text-base font-semibold text-fog-200"
           >
             <RotateCcw className="h-5 w-5" />
             Replay
@@ -409,7 +456,7 @@ export function TeachingAnimation({
             type="button"
             onClick={() => {
               setPlaying(false);
-              onStop?.();
+              stopRef.current?.();
               setCurrent(index);
             }}
             aria-label={`Show animation step ${index + 1}`}
@@ -446,7 +493,10 @@ export function TeachingAnimation({
         </motion.div>
       </AnimatePresence>
 
-      <p className="mt-4 text-base leading-relaxed text-fog-300">{step.note}</p>
+      <p className="mt-4 flex items-start gap-2 text-base leading-relaxed text-fog-300">
+        <Volume2 className={cn("mt-0.5 h-5 w-5 shrink-0", accent.text)} />
+        {step.note}
+      </p>
     </motion.div>
   );
 }
