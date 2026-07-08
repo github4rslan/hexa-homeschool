@@ -253,6 +253,34 @@ labelled cause→effect chain.
   validated server-side). Reduced motion keeps the full teaching path with
   instant reveals. No analytics anywhere in `(child)`.
 
+### Eddie as a direct tutor (Wave 8, Phase 3)
+
+Coach Eddie now talks TO the child — and stays completely on-rails
+(`.claude/rules/child-safety.md` is acceptance):
+
+- **Deterministic copy engine** (`lib/child/eddie-copy.ts`, pure + unit-tested):
+  `safeFirstName` (first name only, sanitised, degrades to no-name — no other
+  personal data is ever echoed), `eddieWrongAnswerLine` (reacts to the EXACT
+  option picked — the ± near-miss is "one of the two, can you spot the
+  other?"), `eddieCorrectLine`, `personalizeYourTurnPrompt` (ask, then wait),
+  `pickTone`/`applyTone` (calm / encouraging / celebratory from the
+  feedback-matrix category + today's emoji check-in — today's self-reported
+  mood only, no profile), and `shouldOfferBreak` (the skippable breathing
+  pause on attention drift, a tough-day struggle, or repeated misses).
+  **Every line is a fixed human-authored template — never open-ended chat,
+  never a personal-data question, never punitive.** The only AI-written words
+  a child can meet remain the Checker-gated `/api/tutor` and
+  `/api/explain-animation` outputs above.
+- **Child-simple experience:** one big fixed-place **"I'm stuck"** button walks
+  the graduated help ladder (hint → method → the See-it reveal — never a dead
+  end); everything on screen is narratable (hints and the "Your turn" ask are
+  read aloud; `narration_autoplay` stays the single read-aloud preference,
+  default ON); a **picture-first / low-text mode** (`ChildDoc.low_text`, "My
+  stuff" toggle) hides secondary prose (still narrated + captioned) and goes
+  icon-first; **spoken answers** now also fill `fill_blank` blanks
+  (`spokenBlankValue`, forgiving, calm retry) — the transcript still passes
+  the `/api/stt` distress gate and the free-text gate before scoring.
+
 ## Speak Your Answer (STT)
 
 Route: `POST /api/stt` · Provider: ElevenLabs Scribe (`scribe_v1`)

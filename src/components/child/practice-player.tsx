@@ -105,11 +105,6 @@ const PRAISE = ["Brilliant! 🎉", "You nailed it! ⭐", "Amazing work! 🚀", "
 const MAX_RECORDING_MS = 15_000;
 
 /**
- * Match a transcript to one of the options: "option b"/"b" picks by letter,
- * otherwise the longest option whose normalized text overlaps the transcript
- * wins. Null = let the child tap instead.
- */
-/**
  * A real (but skippable) calm break — breathing circle + three slow breaths —
  * offered when the deterministic signals say the child needs one (Wave 8,
  * Phase 3, Feature 7). Never blocks the lesson: "I'm ready" carries straight
@@ -159,6 +154,11 @@ function BreathBreak({
   );
 }
 
+/**
+ * Match a transcript to one of the options: "option b"/"b" picks by letter,
+ * otherwise the longest option whose normalized text overlaps the transcript
+ * wins. Null = let the child tap instead.
+ */
 function matchSpokenOption(transcript: string, options: string[]): number | null {
   const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
   const t = norm(transcript);
@@ -1576,7 +1576,7 @@ export function PracticePlayer({
                     <button
                       onClick={() => void explainMyWay()}
                       disabled={reteachInlineLoading || tailoredLoading}
-                      className="mt-3 inline-flex items-center gap-2 text-base text-fog-300 transition-colors hover:text-fog-100 disabled:opacity-60"
+                      className="child-touch mt-3 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 disabled:opacity-60"
                     >
                       {reteachInlineLoading || tailoredLoading ? (
                         <Loader2 className="h-5 w-5 animate-spin" />
