@@ -1150,7 +1150,7 @@ function YourTurnPanel({
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="shrink-0 text-sm text-fog-500 transition-colors hover:text-fog-200 focus-visible:outline-none focus-visible:ring-2"
+          className="min-h-11 shrink-0 rounded-xl px-3 text-base text-fog-500 transition-colors hover:text-fog-200 focus-visible:outline-none focus-visible:ring-2"
         >
           Skip
         </button>
@@ -1221,7 +1221,7 @@ function YourTurnPanel({
                 setTapped([]);
                 setResult(null);
               }}
-              className="mt-2 text-sm text-fog-400 transition-colors hover:text-fog-200 focus-visible:outline-none focus-visible:ring-2"
+              className="mt-2 min-h-11 rounded-xl px-3 text-base text-fog-400 transition-colors hover:text-fog-200 focus-visible:outline-none focus-visible:ring-2"
             >
               Start again
             </button>
