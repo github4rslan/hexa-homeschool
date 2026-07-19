@@ -54,8 +54,10 @@ next-env.d.ts
 
 .vercel
 
-# Claude Code local artifacts
-.claude/
+# Claude Code — ignore local state, but track shared agents + safety rules
+.claude/*
+!.claude/agents/
+!.claude/rules/
 .mcp.json
 .playwright-mcp/
 CLAUDE.md
