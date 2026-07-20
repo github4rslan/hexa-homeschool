@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { DailyFlow } from "@/components/child/daily-flow";
 import { FocusFrame } from "@/components/child/focus-frame";
 import { HandoffPause } from "@/components/child/handoff-pause";
+import { QuestNotReady } from "@/components/child/quest-not-ready";
 import {
   getTopic,
   firstTopic,
@@ -58,9 +58,18 @@ export default async function ChildLessonPage({
           childFloorBand(child.date_of_birth),
         )
       : await firstTopic("mathematics");
-  if (!topicDoc) redirect("/learn");
 
   const firstName = child?.full_name.split(" ")[0] ?? "";
+
+  // A planned/linked topic that doesn't resolve is never a silent bounce — the
+  // child sees a calm "not ready yet" screen with a clear way back (no dead end).
+  if (!topicDoc) {
+    return (
+      <FocusFrame>
+        <QuestNotReady firstName={firstName} accent={accent} />
+      </FocusFrame>
+    );
+  }
 
   // Five-attempt handoff (Wave 7, Phase 4): if this topic is resting awaiting a
   // tutor, never re-serve the lesson — show the calm pause instead. A logged
@@ -117,8 +126,19 @@ export default async function ChildLessonPage({
     .slice(0, 3)
     .map((q) => q.explanation);
 
+  // The topic exists but has no playable questions yet (e.g. a planned tag with
+  // no seeded question bank): show the same calm "not ready" screen rather than
+  // silently bouncing the child home.
   if (questions.length === 0 && masteryQuestions.length === 0) {
-    redirect("/learn");
+    return (
+      <FocusFrame>
+        <QuestNotReady
+          topicTitle={topicDoc.title}
+          firstName={firstName}
+          accent={accent}
+        />
+      </FocusFrame>
+    );
   }
 
   // Server-synced mid-lesson progress (MongoDB) for a warm cross-device resume.
