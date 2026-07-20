@@ -3,8 +3,13 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Check, Volume2, Loader2, Palette, BookOpenText } from "lucide-react";
+import { ArrowLeft, Check, Volume2, Loader2, Palette, BookOpenText, Type, Ruler } from "lucide-react";
 import type { AccentPreset } from "@/lib/child/accents";
+import {
+  TEXT_SCALES,
+  textScaleLabel,
+  type TextScale,
+} from "@/lib/child/reading-supports";
 import { saveChildPreferences } from "@/app/(child)/learn/my-stuff/actions";
 
 /**
@@ -32,6 +37,9 @@ export function MyStuffPanel({
   currentNarrationAutoplay = true,
   currentSoundCues = true,
   currentLowText = false,
+  currentReadingFont = false,
+  currentTextScale = 1,
+  currentReadingRuler = false,
   onSave,
 }: {
   voices: Voice[];
@@ -44,6 +52,12 @@ export function MyStuffPanel({
   currentSoundCues?: boolean;
   /** Child's picture-first / low-text preference (fewer words, opt-in). */
   currentLowText?: boolean;
+  /** SEND reading support: dyslexia-friendly font (opt-in). */
+  currentReadingFont?: boolean;
+  /** SEND reading support: text-size multiplier. */
+  currentTextScale?: TextScale;
+  /** SEND reading support: line-focus reading ruler (opt-in). */
+  currentReadingRuler?: boolean;
   /** Injected in tests; defaults to the real server action. */
   onSave?: (
     voiceId: string,
@@ -51,6 +65,11 @@ export function MyStuffPanel({
     narrationAutoplay: boolean,
     soundCues: boolean,
     lowText: boolean,
+    reading?: {
+      readingFont?: boolean;
+      textScale?: number;
+      readingRuler?: boolean;
+    },
   ) => Promise<{ ok: boolean }>;
 }) {
   const router = useRouter();
@@ -59,6 +78,9 @@ export function MyStuffPanel({
   const [readAloud, setReadAloud] = useState(currentNarrationAutoplay);
   const [soundCues, setSoundCues] = useState(currentSoundCues);
   const [lowText, setLowText] = useState(currentLowText);
+  const [readingFont, setReadingFont] = useState(currentReadingFont);
+  const [textScale, setTextScale] = useState<TextScale>(currentTextScale);
+  const [readingRuler, setReadingRuler] = useState(currentReadingRuler);
   const [previewing, setPreviewing] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -98,6 +120,7 @@ export function MyStuffPanel({
         readAloud,
         soundCues,
         lowText,
+        { readingFont, textScale, readingRuler },
       );
       if (res.ok) {
         setSaved(true);
@@ -283,6 +306,124 @@ export function MyStuffPanel({
               {soundCues
                 ? "Soft taps and a tiny buzz when things happen in a lesson."
                 : "Lessons stay silent — no tap sounds, no buzz."}
+            </span>
+          </span>
+        </button>
+      </section>
+
+      {/* Reading supports (F3) — SEND-friendly: easy-read font, bigger text,
+          and a line-focus ruler. All child-controlled, default off. */}
+      <section className="mb-10">
+        <h2 className="mb-1 flex items-center gap-2 text-2xl font-semibold text-fog-100">
+          <Type className="h-6 w-6 text-fog-300" /> Easier to read
+        </h2>
+        <p className="mb-4 text-base text-fog-400">
+          Make the words easier to read the way that suits you.
+        </p>
+
+        {/* Easy-read font */}
+        <button
+          type="button"
+          onClick={() => setReadingFont((v) => !v)}
+          role="switch"
+          aria-checked={readingFont}
+          className="child-panel child-touch flex w-full items-center gap-4 p-5 text-left"
+        >
+          <span
+            className={[
+              "relative flex h-8 w-14 shrink-0 items-center rounded-full transition-colors",
+              readingFont ? "bg-violet-500" : "bg-white/15",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "absolute h-6 w-6 rounded-full bg-white transition-transform",
+                readingFont ? "translate-x-7" : "translate-x-1",
+              ].join(" ")}
+            />
+          </span>
+          <span>
+            <span className="block text-xl font-semibold text-fog-50">
+              Easy-read font
+            </span>
+            <span className="block text-base text-fog-400">
+              {readingFont
+                ? "Rounder letters with more space between them."
+                : "Use the normal lesson font."}
+            </span>
+          </span>
+        </button>
+
+        {/* Text size */}
+        <div className="child-panel mt-3 p-5">
+          <div className="mb-3 text-xl font-semibold text-fog-50">Text size</div>
+          <div
+            role="radiogroup"
+            aria-label="Text size"
+            className="grid grid-cols-3 gap-3"
+          >
+            {TEXT_SCALES.map((s) => {
+              const selected = s === textScale;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setTextScale(s)}
+                  className={[
+                    "child-touch flex flex-col items-center justify-center gap-1 rounded-2xl border p-4 transition-colors",
+                    selected
+                      ? "border-violet-400/60 bg-violet-500/10 text-fog-50"
+                      : "border-white/10 text-fog-300",
+                  ].join(" ")}
+                >
+                  <span
+                    aria-hidden
+                    className="font-semibold leading-none"
+                    style={{ fontSize: `${s}rem` }}
+                  >
+                    Aa
+                  </span>
+                  <span className="text-sm font-medium">{textScaleLabel(s)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Reading ruler */}
+        <button
+          type="button"
+          onClick={() => setReadingRuler((v) => !v)}
+          role="switch"
+          aria-checked={readingRuler}
+          className="child-panel child-touch mt-3 flex w-full items-center gap-4 p-5 text-left"
+        >
+          <span
+            className={[
+              "relative flex h-8 w-14 shrink-0 items-center rounded-full transition-colors",
+              readingRuler ? "bg-violet-500" : "bg-white/15",
+            ].join(" ")}
+          >
+            <span
+              className={[
+                "absolute h-6 w-6 rounded-full bg-white transition-transform",
+                readingRuler ? "translate-x-7" : "translate-x-1",
+              ].join(" ")}
+            />
+          </span>
+          <span className="flex items-center gap-3">
+            <Ruler className="h-6 w-6 shrink-0 text-fog-300" aria-hidden />
+            <span>
+              <span className="block text-xl font-semibold text-fog-50">
+                Reading ruler
+              </span>
+              <span className="block text-base text-fog-400">
+                {readingRuler
+                  ? "A soft strip helps you keep your place while you read."
+                  : "No reading strip."}
+              </span>
             </span>
           </span>
         </button>

@@ -17,6 +17,7 @@ import {
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { normalizeInteraction } from "@/lib/child/interactions";
+import { readingSupportsFromChild, NO_READING_SUPPORTS } from "@/lib/child/reading-supports";
 import { normalizeWorkedExample } from "@/lib/child/worked-examples";
 import { normalizeTeachingAnimation } from "@/lib/child/teaching-animations";
 import type { Question } from "@/components/lesson/lesson-player";
@@ -60,12 +61,14 @@ export default async function ChildLessonPage({
       : await firstTopic("mathematics");
 
   const firstName = child?.full_name.split(" ")[0] ?? "";
+  // SEND-aware reading supports (F3) — dyslexia font, text zoom, reading ruler.
+  const reading = child ? readingSupportsFromChild(child) : NO_READING_SUPPORTS;
 
   // A planned/linked topic that doesn't resolve is never a silent bounce — the
   // child sees a calm "not ready yet" screen with a clear way back (no dead end).
   if (!topicDoc) {
     return (
-      <FocusFrame>
+      <FocusFrame reading={reading}>
         <QuestNotReady firstName={firstName} accent={accent} />
       </FocusFrame>
     );
@@ -79,7 +82,7 @@ export default async function ChildLessonPage({
     : { paused: false, note: null };
   if (handoff.paused) {
     return (
-      <FocusFrame>
+      <FocusFrame reading={reading}>
         <HandoffPause
           variant="resting"
           topicTitle={topicDoc.title}
@@ -131,7 +134,7 @@ export default async function ChildLessonPage({
   // silently bouncing the child home.
   if (questions.length === 0 && masteryQuestions.length === 0) {
     return (
-      <FocusFrame>
+      <FocusFrame reading={reading}>
         <QuestNotReady
           topicTitle={topicDoc.title}
           firstName={firstName}
@@ -150,7 +153,7 @@ export default async function ChildLessonPage({
   const resumeKey = child?._id?.toHexString() ?? "anon";
 
   return (
-    <FocusFrame>
+    <FocusFrame reading={reading}>
       <DailyFlow
         title={topicDoc.title}
         summary={topicDoc.summary}

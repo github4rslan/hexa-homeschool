@@ -4443,6 +4443,9 @@ export async function setChildPreferences(
     narrationAutoplay?: boolean;
     soundCues?: boolean;
     lowText?: boolean;
+    readingFont?: boolean;
+    textScale?: number;
+    readingRuler?: boolean;
   },
 ): Promise<boolean> {
   if (!(await assertOwnsChild(parentId, childId))) return false;
@@ -4453,6 +4456,9 @@ export async function setChildPreferences(
     set.narration_autoplay = prefs.narrationAutoplay;
   if (prefs.soundCues !== undefined) set.sound_cues = prefs.soundCues;
   if (prefs.lowText !== undefined) set.low_text = prefs.lowText;
+  if (prefs.readingFont !== undefined) set.reading_font = prefs.readingFont;
+  if (prefs.textScale !== undefined) set.text_scale = prefs.textScale;
+  if (prefs.readingRuler !== undefined) set.reading_ruler = prefs.readingRuler;
   const col = await getCollection<ChildDoc>(Collections.children);
   const res = await col.updateOne({ _id: childId }, { $set: set });
   return res.matchedCount > 0;
