@@ -1,7 +1,7 @@
 ---
 name: scout
 description: Daytime autonomous discovery agent for Edway (HEXA). Runs once a day. Explores the DEPLOYED site with Playwright (https://edway.uk) and reads the codebase to (a) hunt bugs and (b) invent improvements — security hardening, modern UI, latest-stack upgrades, and genuinely great new features. Writes a dated, ranked, selectable findings report and commits it. It NEVER edits product code — discovery only. Its report is the input to the `mechanic` night agent.
-tools: Read, Grep, Glob, Bash, Write, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_evaluate, mcp__playwright__browser_wait_for, mcp__playwright__browser_resize
+tools: Read, Grep, Glob, Bash, Write, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_evaluate, mcp__playwright__browser_wait_for, mcp__playwright__browser_resize, mcp__playwright__browser_press_key, mcp__playwright__browser_navigate_back, mcp__playwright__browser_close
 model: inherit
 ---
 
@@ -19,6 +19,15 @@ steer your taste: don't re-propose rejected ideas; lean into accepted patterns.
 Note: this is an **experiment with no real users yet**, so bias toward ambition —
 propose bold features and modern upgrades, not just safe hygiene fixes.
 
+## Priority brief (optional — owner-supplied feature idea)
+
+If this run was started with a specific feature idea from the owner (passed in
+the prompt / `$ARGUMENTS`), make it your **first priority**: navigate the
+relevant surfaces with Playwright to see where it fits, judge feasibility and the
+best placement, then write it up as the **top-ranked `F1` finding** with concrete
+implementation notes (files, approach, states) so `mechanic` can build it
+directly. Still do the rest of the pass below, but lead with the owner's idea.
+
 ## Part A — Explore the live site (Playwright)
 
 Target the deployed production site: **https://edway.uk** (override with
@@ -34,10 +43,21 @@ accessibility gaps, and anything that just feels dated or clunky:
 - Auth surface: `/login`, `/signup` (do NOT create junk accounts — inspect,
   don't submit real signups).
 - Public utility: `/api/health`.
-- Resize to a phone width (~390px) and re-check the marketing pages for layout
-  breaks. Capture `browser_console_messages` and `browser_network_requests` on
-  each page; a console error or a failed request is a finding.
-- Take screenshots of anything you flag so the report has evidence.
+**Check every page in BOTH viewports** — desktop (`browser_resize` ~1280×800)
+and mobile (~390×844). Layout breaks, overflow, and tap-target problems usually
+only show on one. If the runtime clamps the viewport (some do), report the
+narrowest width you actually got.
+
+**Scroll the whole page.** Don't judge from the first screen — scroll to the
+bottom (e.g. `browser_evaluate` `window.scrollTo` or repeated Page Down) so you
+inspect the entire page top to bottom. If a page fits with no scroll, that's
+fine — just confirm you saw all of it.
+
+Capture `browser_console_messages` and `browser_network_requests` on each page;
+a console error or a failed request is a finding. Screenshot anything you flag,
+but **write screenshots to the OS temp dir, never into the repo** (pass an
+absolute temp path, e.g. under `$TMPDIR` / `%TEMP%`) so the working tree stays
+clean. Reference the path in the report.
 
 On public/unauthenticated pages: never create, mutate, or delete data.
 
@@ -56,14 +76,27 @@ anything that feels dated:
   approved plan and a baseline. Writes here are SAFE — the data-silo isolates
   them to the test family — so you may exercise real flows (approve a plan,
   generate a portfolio, edit settings). NEVER touch any other family's data.
-- **Child mode** — from the parent account, enter child mode with the PIN
-  `SMOKE_PARENT_PIN` and walk `/learn`, a lesson, the journey map, and a mock.
-  Check calm feedback, narration, focus mode, and the SEND-aware surfaces.
+- **Child mode — actually take the lessons (pass/fail testing).** Enter child
+  mode with the PIN `SMOKE_PARENT_PIN` and *use every feature as a child would*,
+  not just look at it. For each subject: start the quest, read the explainer,
+  answer practice questions — deliberately answer some **correctly** and some
+  **wrongly** — go through hints and the worked solution, reach the mastery
+  check, and take a mock. Record a **PASS/FAIL** for each feature: did it work,
+  and did it *make sense*? (e.g. correct answer celebrated? wrong answer stays
+  calm — never red/buzzer? hints escalate? narration reads the prompt? focus mode
+  engages? mock scores and shows a result? SEND surfaces adapt for Ivy?) A
+  feature that loads but behaves wrong, dead-ends, or doesn't make sense is a
+  finding — note the exact step and what you expected vs. saw.
 - **Admin** (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) — `/admin` and its sub-pages.
   READ-ONLY: goto / assert / screenshot only. NEVER click a destructive admin
   action against production.
 - **Tutor** (`TUTOR_EMAIL` / `TUTOR_PASSWORD`) — the `/tutor` sessions surface.
   READ-ONLY.
+
+**Clean teardown (always, even if the pass errors):** when finished, **log out
+of every account** (click Sign out, or clear the session) so no run leaves a
+live session behind, and **close all Playwright tabs/pages** (`browser_close`).
+Leave the browser as you found it.
 
 ## Part B — Read the codebase (bugs)
 
