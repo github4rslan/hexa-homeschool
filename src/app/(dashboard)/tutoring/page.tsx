@@ -12,9 +12,13 @@ import {
   listTutorBookings,
   listThreadMessagesForParent,
   listOpenEscalationsForParent,
+  getActiveChild,
+  listChildren,
 } from "@/lib/db/repo";
+import { readActiveChildId } from "@/lib/active-child";
 import { requestTutor } from "./actions";
 import { MessageThread, type ThreadMessage } from "@/components/dashboard/message-thread";
+import { InlineChildSwitcher } from "@/components/dashboard/inline-child-switcher";
 
 export const metadata: Metadata = { title: "Human tutoring" };
 export const dynamic = "force-dynamic";
@@ -43,6 +47,16 @@ export default async function TutoringPage({
   const { used, limit } = await tutorQuota(parentId);
   const bookings = await listTutorBookings(parentId);
   const remaining = Math.max(0, limit - used);
+
+  // Active child + siblings for the inline switcher — a booking is made for the
+  // active child, so make it unmistakable which child this page acts on.
+  const activeChild = await getActiveChild(parentId, await readActiveChildId());
+  const siblings = await listChildren(parentId);
+  const childItems = siblings.map((c) => ({
+    id: c._id!.toHexString(),
+    name: c.full_name,
+  }));
+  const activeChildName = activeChild?.full_name.split(" ")[0] ?? "your child";
 
   // Load each booking's message thread (ownership-scoped in the repo).
   const threadsByBooking = new Map<string, ThreadMessage[]>();
@@ -90,16 +104,24 @@ export default async function TutoringPage({
       <main className="mx-auto max-w-3xl px-6 py-10 lg:py-16">
         <PageHeader
           title="Human tutoring"
-          description="When AI reaches its limit, a real tutor steps in. Book a session for your active child."
+          description={`When AI reaches its limit, a real tutor steps in. Book a session for ${activeChildName}.`}
           breadcrumbs={[
             { label: "Dashboard", href: "/dashboard" },
             { label: "Tutoring" },
           ]}
           backFallback="/dashboard"
           action={
-            <Badge variant={remaining > 0 ? "neon" : "amber"} size="lg">
-              {remaining} of {limit} left this month
-            </Badge>
+            <div className="flex flex-wrap items-center gap-3">
+              {activeChild?._id && (
+                <InlineChildSwitcher
+                  items={childItems}
+                  activeId={activeChild._id.toHexString()}
+                />
+              )}
+              <Badge variant={remaining > 0 ? "neon" : "amber"} size="lg">
+                {remaining} of {limit} left this month
+              </Badge>
+            </div>
           }
         />
 
