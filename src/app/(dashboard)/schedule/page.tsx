@@ -11,12 +11,14 @@ import {
   findParentById,
   getActiveChild,
   getOrCreateWeeklySchedule,
+  listChildren,
   swappableTopicsForSubject,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { sendWeeklyPlanEmail } from "@/lib/email/weekly-plan";
 import { approveSchedule, regenerateWeek } from "./actions";
 import { EditableSchedule, type SwapOption } from "@/components/dashboard/editable-schedule";
+import { InlineChildSwitcher } from "@/components/dashboard/inline-child-switcher";
 import type { Subject } from "@/lib/db/types";
 
 export const metadata: Metadata = { title: "Weekly schedule" };
@@ -51,6 +53,12 @@ export default async function SchedulePage() {
 
   const parent = await findParentById(parentId);
   const hasPin = Boolean(parent?.parent_pin_hash);
+  // All the parent's children, for the inline active-child switcher.
+  const siblings = await listChildren(parentId);
+  const childItems = siblings.map((c) => ({
+    id: c._id!.toHexString(),
+    name: c.full_name,
+  }));
 
   const result = await getOrCreateWeeklySchedule(parentId, child._id);
   const schedule = result?.schedule ?? null;
@@ -89,17 +97,23 @@ export default async function SchedulePage() {
           ]}
           backFallback="/dashboard"
           action={
-            schedule?.approved_by_parent ? (
-              <Badge variant="neon" size="lg">
-                <Check className="h-4 w-4" /> Approved
-              </Badge>
-            ) : (
-              <form action={approveSchedule}>
-                <SubmitButton variant="primary" size="md" pendingLabel="Approving…">
-                  Approve this week
-                </SubmitButton>
-              </form>
-            )
+            <div className="flex flex-wrap items-center gap-3">
+              <InlineChildSwitcher
+                items={childItems}
+                activeId={child._id.toHexString()}
+              />
+              {schedule?.approved_by_parent ? (
+                <Badge variant="neon" size="lg">
+                  <Check className="h-4 w-4" /> Approved
+                </Badge>
+              ) : (
+                <form action={approveSchedule}>
+                  <SubmitButton variant="primary" size="md" pendingLabel="Approving…">
+                    Approve this week
+                  </SubmitButton>
+                </form>
+              )}
+            </div>
           }
         />
 
