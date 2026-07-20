@@ -43,10 +43,17 @@ accessibility gaps, and anything that just feels dated or clunky:
 - Auth surface: `/login`, `/signup` (do NOT create junk accounts — inspect,
   don't submit real signups).
 - Public utility: `/api/health`.
-**Check every page in BOTH viewports** — desktop (`browser_resize` ~1280×800)
-and mobile (~390×844). Layout breaks, overflow, and tap-target problems usually
-only show on one. If the runtime clamps the viewport (some do), report the
-narrowest width you actually got.
+**Check every page in BOTH viewports — DESKTOP FIRST, then mobile.** The
+Playwright browser opens at a *small default size*, so if you don't resize
+explicitly you will silently test mobile only (this is exactly what went wrong
+before). So:
+1. **Desktop (priority):** `browser_resize` to **1280×800**, then confirm with
+   `browser_evaluate` `window.innerWidth` (it reaches ~1600 CSS px here — a real
+   desktop layout). Do the full desktop pass first.
+2. **Mobile:** `browser_resize` to **390×844** (confirmed to reach innerWidth
+   390) and re-check each page.
+Layout breaks, overflow, and tap-target problems usually show on only one width,
+so both matter. Report the actual `innerWidth` you achieved in each pass.
 
 **Scroll the whole page.** Don't judge from the first screen — scroll to the
 bottom (e.g. `browser_evaluate` `window.scrollTo` or repeated Page Down) so you
