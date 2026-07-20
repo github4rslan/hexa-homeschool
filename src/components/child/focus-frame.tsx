@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
+import { ReadingRuler } from "@/components/child/reading-ruler";
+import {
+  NO_READING_SUPPORTS,
+  type ReadingSupports,
+} from "@/lib/child/reading-supports";
 
 /**
  * Distraction-free lesson frame (Feature 4). While an active lesson is mounted
@@ -15,7 +20,14 @@ import { ArrowLeft } from "lucide-react";
  * top-right. The faded branding re-reveals on hover/focus of the top edge. The
  * fade is opacity-only (no flashing) and reduced-motion-safe.
  */
-export function FocusFrame({ children }: { children: React.ReactNode }) {
+export function FocusFrame({
+  children,
+  reading = NO_READING_SUPPORTS,
+}: {
+  children: React.ReactNode;
+  /** SEND-aware reading supports (F3) — dyslexia font, text zoom, ruler. */
+  reading?: ReadingSupports;
+}) {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.add("lesson-focus");
@@ -33,9 +45,19 @@ export function FocusFrame({ children }: { children: React.ReactNode }) {
         Exit lesson
       </Link>
 
-      <div className="mx-auto flex min-h-[85svh] w-full max-w-2xl flex-col justify-center">
+      <div
+        className={[
+          "mx-auto flex min-h-[85svh] w-full max-w-2xl flex-col justify-center",
+          reading.font ? "reading-dyslexic" : "",
+        ].join(" ")}
+        // Whole-lesson text zoom (accessibility). `zoom` scales content and its
+        // touch targets proportionally; unsupported browsers simply ignore it.
+        style={reading.scale !== 1 ? { zoom: reading.scale } : undefined}
+      >
         {children}
       </div>
+
+      {reading.ruler && <ReadingRuler />}
     </>
   );
 }

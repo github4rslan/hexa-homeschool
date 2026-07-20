@@ -173,6 +173,17 @@ export interface ChildDoc {
    */
   low_text?: boolean;
   /**
+   * SEND-aware reading supports (F3) — child-controlled in "My stuff", applied
+   * to the lesson focus frame. All legacy-safe (undefined ⇒ off / normal), no
+   * tracking or profiling (Children's Code).
+   *   - `reading_font`  — dyslexia-friendly, well-spaced font treatment.
+   *   - `text_scale`    — whole-lesson text-size multiplier (1 | 1.15 | 1.3).
+   *   - `reading_ruler` — line-focus reading ruler overlay.
+   */
+  reading_font?: boolean;
+  text_scale?: number;
+  reading_ruler?: boolean;
+  /**
    * When the child completed the one-time onboarding diagnostic. Set ONCE on
    * first full completion (the baseline); never overwritten. Optional +
    * legacy-safe: a child with prior non-mock evaluations but no flag is treated
