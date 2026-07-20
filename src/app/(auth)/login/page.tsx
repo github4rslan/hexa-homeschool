@@ -4,17 +4,21 @@ import { Mail, Lock } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { safeInternalPath } from "@/lib/auth/safe-redirect";
 import { login } from "./actions";
 
 export const metadata: Metadata = {
   title: "Sign in",
 };
 
-export default function LoginPage({
+export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string; redirect?: string }>;
 }) {
+  const { redirect: redirectParam } = await searchParams;
+  // Only forward a validated in-site path — never an attacker-supplied host.
+  const redirectTo = safeInternalPath(redirectParam);
   return (
     <Card variant="glass-strong" padding="xl" className="w-full max-w-md">
       <div className="flex flex-col gap-2 mb-8">
@@ -29,6 +33,9 @@ export default function LoginPage({
       <ErrorSurface searchParams={searchParams} />
 
       <form action={login} className="flex flex-col gap-4">
+        {redirectTo && (
+          <input type="hidden" name="redirect" value={redirectTo} />
+        )}
         <Input
           name="email"
           type="email"

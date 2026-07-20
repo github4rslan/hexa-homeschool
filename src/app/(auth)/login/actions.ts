@@ -15,11 +15,16 @@ import { verifyCodeTemplate, twoFactorCodeTemplate } from "@/lib/email/templates
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/auth/client-ip";
 import { resolveRole } from "@/lib/auth/rbac";
+import { safeInternalPath } from "@/lib/auth/safe-redirect";
 import { TWOFA_COOKIE } from "./twofa-cookie";
 
 export async function login(formData: FormData) {
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
+  // A validated in-site `?redirect=` target (e.g. a parent bounced from
+  // /settings) is honoured after sign-in; anything non-local falls back to the
+  // role default below. Guards against open redirects.
+  const redirectTo = safeInternalPath(formData.get("redirect"));
 
   if (!email || !password) {
     redirect(`/login?error=${encodeURIComponent("Email and password are required.")}`);
@@ -115,6 +120,11 @@ export async function login(formData: FormData) {
     tokenVersion: parent.token_version ?? 0,
   });
   const role = resolveRole({ role: parent.role, is_admin: parent.is_admin });
-  // Staff land on their own surface; tutors are intentionally not admins.
-  redirect(role === "tutor" ? "/tutor" : role ? "/admin" : "/dashboard");
+  // A validated intended destination wins (e.g. a parent sent here from
+  // /settings); otherwise land on the role default. Staff land on their own
+  // surface; tutors are intentionally not admins.
+  redirect(
+    redirectTo ??
+      (role === "tutor" ? "/tutor" : role ? "/admin" : "/dashboard"),
+  );
 }
