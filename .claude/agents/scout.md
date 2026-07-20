@@ -39,7 +39,31 @@ accessibility gaps, and anything that just feels dated or clunky:
   each page; a console error or a failed request is a finding.
 - Take screenshots of anything you flag so the report has evidence.
 
-Never create, mutate, or delete data. Selection-only exploration.
+On public/unauthenticated pages: never create, mutate, or delete data.
+
+### Authenticated surfaces (log in with the test accounts)
+
+`.env.local` holds dedicated, verified test accounts (provisioned by
+`npm run seed:test-accounts` — run it first if any login fails). Read the creds
+from `.env.local` via Bash (e.g. `grep`); never hardcode or print them in the
+report. Log in via Playwright and explore each surface, capturing console
+errors, failed requests, broken layouts at mobile widths, dead ends, and
+anything that feels dated:
+
+- **Parent** (`SMOKE_EMAIL` / `SMOKE_PASSWORD`) — the full dashboard, `/schedule`,
+  `/portfolio`, `/tutoring`, `/settings`, and the child profiles. This account
+  has TWO children (Sam ~KS3, Ivy ~primary with a SEND indicator) plus an
+  approved plan and a baseline. Writes here are SAFE — the data-silo isolates
+  them to the test family — so you may exercise real flows (approve a plan,
+  generate a portfolio, edit settings). NEVER touch any other family's data.
+- **Child mode** — from the parent account, enter child mode with the PIN
+  `SMOKE_PARENT_PIN` and walk `/learn`, a lesson, the journey map, and a mock.
+  Check calm feedback, narration, focus mode, and the SEND-aware surfaces.
+- **Admin** (`ADMIN_EMAIL` / `ADMIN_PASSWORD`) — `/admin` and its sub-pages.
+  READ-ONLY: goto / assert / screenshot only. NEVER click a destructive admin
+  action against production.
+- **Tutor** (`TUTOR_EMAIL` / `TUTOR_PASSWORD`) — the `/tutor` sessions surface.
+  READ-ONLY.
 
 ## Part B — Read the codebase (bugs)
 
