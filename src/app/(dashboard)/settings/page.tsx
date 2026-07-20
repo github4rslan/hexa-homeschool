@@ -137,6 +137,20 @@ export default async function SettingsPage({
             <div className="my-6 border-t border-white/5" />
 
             <form action={changePassword} className="flex flex-col gap-4">
+              {/* Hidden username anchors the password fields to the signed-in
+                  account for password managers + accessibility (Chrome DOM
+                  warning). Not submitted as a credential — the server keys off
+                  the session, not this value. */}
+              <input
+                type="text"
+                name="username"
+                autoComplete="username"
+                defaultValue={parent.email}
+                readOnly
+                hidden
+                aria-hidden="true"
+                tabIndex={-1}
+              />
               <Input
                 name="current_password"
                 type="password"
@@ -370,6 +384,18 @@ export default async function SettingsPage({
             <div className="my-6 border-t border-white/5" />
 
             <form action={updateParentPin} className="flex flex-col gap-4">
+              {/* Hidden username for the current-password field (Chrome DOM
+                  warning); the PIN itself is not a saved credential. */}
+              <input
+                type="text"
+                name="username"
+                autoComplete="username"
+                defaultValue={parent.email}
+                readOnly
+                hidden
+                aria-hidden="true"
+                tabIndex={-1}
+              />
               <Input
                 name="current_password"
                 type="password"
@@ -382,6 +408,7 @@ export default async function SettingsPage({
                 type="password"
                 label="4-digit PIN"
                 inputMode="numeric"
+                autoComplete="new-password"
                 pattern="[0-9]{4}"
                 minLength={4}
                 maxLength={4}
@@ -397,6 +424,7 @@ export default async function SettingsPage({
                 type="password"
                 label="Confirm PIN"
                 inputMode="numeric"
+                autoComplete="new-password"
                 pattern="[0-9]{4}"
                 minLength={4}
                 maxLength={4}
