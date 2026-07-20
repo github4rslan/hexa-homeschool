@@ -211,6 +211,29 @@ export async function bumpTokenVersion(parentId: string): Promise<number | null>
   return res ? (res.token_version ?? 0) : null;
 }
 
+/**
+ * Reset a parent's password from the account-recovery flow: set the new hash and
+ * bump token_version in one write, so every existing session AND any outstanding
+ * reset link (bound to the old token_version) is invalidated. The caller has
+ * already verified the single-use reset token snapshot.
+ */
+export async function resetParentPassword(
+  parentId: string,
+  passwordHash: string,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne(
+    { _id: oid },
+    {
+      $set: { password_hash: passwordHash, updated_at: new Date() },
+      $inc: { token_version: 1 },
+    },
+  );
+  return res.matchedCount > 0;
+}
+
 // ── Parents: billing (Stripe) ────────────────────────────
 
 export interface BillingUpdate {

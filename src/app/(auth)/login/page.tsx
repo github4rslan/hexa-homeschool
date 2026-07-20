@@ -14,9 +14,9 @@ export const metadata: Metadata = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; redirect?: string }>;
+  searchParams: Promise<{ error?: string; redirect?: string; reset?: string }>;
 }) {
-  const { redirect: redirectParam } = await searchParams;
+  const { redirect: redirectParam, reset } = await searchParams;
   // Only forward a validated in-site path — never an attacker-supplied host.
   const redirectTo = safeInternalPath(redirectParam);
   return (
@@ -29,6 +29,12 @@ export default async function LoginPage({
           Sign in to your Edway parent account.
         </p>
       </div>
+
+      {reset && (
+        <div className="mb-4 rounded-xl border border-neon-400/30 bg-neon-500/10 px-4 py-3 text-sm text-neon-300">
+          Your password has been reset. Sign in with your new password.
+        </div>
+      )}
 
       <ErrorSurface searchParams={searchParams} />
 

@@ -168,6 +168,47 @@ export async function readTwoFactorSubject(token: string): Promise<string | null
   }
 }
 
+// ── Password-reset tokens ────────────────────────────────────
+// Signed JWT (purpose "password_reset", 1-hour expiry) carrying the parentId and
+// a SNAPSHOT of the account's current password_hash + token_version. On submit we
+// re-derive the snapshot from the live parent doc: if the password has changed or
+// the token_version has moved since the link was issued, the snapshot no longer
+// matches and the token is refused — so a link is single-use (a successful reset
+// bumps token_version) and can't be replayed after a later password change.
+
+/** Stable, opaque binding of a reset link to a point-in-time account state. */
+export function resetSnapshot(passwordHash: string, tokenVersion: number): string {
+  return createHash("sha256")
+    .update(`reset:${passwordHash}:${tokenVersion}`)
+    .digest("hex")
+    .slice(0, 24);
+}
+
+export async function createPasswordResetToken(
+  parentId: string,
+  snapshot: string,
+): Promise<string> {
+  return new SignJWT({ purpose: "password_reset", s: snapshot })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(parentId)
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(secret());
+}
+
+export async function verifyPasswordResetToken(
+  token: string,
+): Promise<{ parentId: string; snapshot: string } | null> {
+  try {
+    const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });
+    if (payload.purpose !== "password_reset" || !payload.sub) return null;
+    if (typeof payload.s !== "string") return null;
+    return { parentId: payload.sub, snapshot: payload.s };
+  } catch {
+    return null;
+  }
+}
+
 export function appUrl(): string {
   return (
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
