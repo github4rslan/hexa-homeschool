@@ -27,3 +27,19 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   never-wired links/params (login drops its own `?redirect=`) — worth grepping for
   dead routes/params each run. Static: 5 npm-audit CVEs open; Tailwind still on
   4.0.0-beta.8 in prod.
+- 2026-07-20 — Second pass, AUTHENTICATED surfaces (parent/child/admin/tutor via
+  test accounts). Data-silo holds under every role (tutor saw only an empty parent
+  shell, no cross-family data). New findings merged into today's report: B4 — child
+  mode's Maths quest is a silent dead-end (lesson page `redirect("/learn")` when a
+  topic has zero playable questions, while other topics load), contradicting the
+  recent "no dead ends" work; B5 — role-blind routing (middleware bounces every
+  authed user to `/dashboard`; parent routes aren't role-gated, so tutors/admins
+  load the parent shell — `/tutor` and `/admin` DO gate correctly); B6 settings
+  password forms miss username/autocomplete; B7 active subscriber still sees
+  "14-day free trial" + admin "1 accounts". New feature: F8 inline child switcher on
+  `/schedule`+`/tutoring` (portfolio already has one; active-child is buried in the
+  hamburger). Pattern: parent per-child surfaces are inconsistent about *which*
+  child they act on, and child-mode dead-ends hide behind seed/keyStage gaps —
+  worth tapping an actual lesson each run, not just eyeballing the hub. Admin/finance
+  panels are honest ("Illustrative — not live" labels). Static unchanged: type-check
+  + lint clean, 5 npm-audit vulns, Tailwind still on beta.
