@@ -61,6 +61,12 @@ export default async function SettingsPage({
   const parent = await findParentById(parentId);
   if (!parent) redirect("/login?redirect=/settings");
   const children = await listChildren(parentId);
+  // A paying subscriber (active/past_due/paused) should never be shown the
+  // trial/upsell CTA — trialing/canceled/diagnostic accounts still are.
+  const hasActiveSubscription =
+    parent.billing_status === "active" ||
+    parent.billing_status === "past_due" ||
+    parent.billing_status === "paused";
 
   return (
     <div className="relative min-h-screen">
@@ -487,6 +493,14 @@ export default async function SettingsPage({
                     secure Stripe portal.
                   </span>
                 </>
+              ) : hasActiveSubscription ? (
+                // Active/paying but no Stripe portal link (e.g. Stripe not
+                // configured in this environment): don't show a trial/upsell CTA
+                // to someone who's already subscribed — just reassure them.
+                <span className="text-xs text-fog-500">
+                  Your plan is active. Billing management opens here once the
+                  payment portal is connected.
+                </span>
               ) : (
                 <>
                   <Button href="/pricing" variant="primary" size="md">

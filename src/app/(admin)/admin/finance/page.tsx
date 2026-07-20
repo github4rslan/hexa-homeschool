@@ -22,6 +22,11 @@ const TIER_LABEL: Record<SubscriptionTier, string> = {
   diagnostic: "Diagnostic (free)",
 };
 
+/** "1 account" / "2 accounts" — singular when exactly one. */
+function accountsLabel(n: number): string {
+  return `${n.toLocaleString()} ${n === 1 ? "account" : "accounts"}`;
+}
+
 function relativeTime(ms: number): string {
   const diffSec = Math.max(0, Math.round((Date.now() - ms) / 1000));
   if (diffSec < 60) return `${diffSec}s ago`;
@@ -79,7 +84,7 @@ export default async function FinancePage() {
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-semibold text-fog-50">Subscription mix</h2>
               <span className="text-xs text-fog-500 font-mono">
-                {summary.totalAccounts.toLocaleString()} accounts
+                {accountsLabel(summary.totalAccounts)}
               </span>
             </div>
             {summary.totalAccounts === 0 ? (
@@ -93,7 +98,7 @@ export default async function FinancePage() {
                     <div className="flex items-center justify-between mb-2 text-sm">
                       <span className="font-medium text-fog-100">{TIER_LABEL[t.tier]}</span>
                       <div className="flex items-center gap-4 font-mono text-xs text-fog-400">
-                        <span>{t.accounts} accounts</span>
+                        <span>{accountsLabel(t.accounts)}</span>
                         <span className="text-fog-200 font-semibold">{formatGbp(t.mrr)}</span>
                       </div>
                     </div>
