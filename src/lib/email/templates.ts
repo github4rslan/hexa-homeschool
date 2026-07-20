@@ -150,6 +150,22 @@ export function verifyEmailTemplate(opts: {
   };
 }
 
+export function passwordResetTemplate(opts: {
+  name: string | null;
+  resetUrl: string;
+}): { subject: string; html: string } {
+  const greeting = opts.name ? `Hi ${opts.name.split(" ")[0]},` : "Hello,";
+  return {
+    subject: "Reset your Edway password",
+    html: WRAP(`
+      ${heading(greeting)}
+      <p style="margin:0 0 22px;">We received a request to reset the password for your Edway account. Click below to choose a new one — for your security this link expires in 1 hour and can be used once.</p>
+      <p style="margin:0 0 24px;text-align:center;">${amberButton(opts.resetUrl, "Reset my password")}</p>
+      <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">If you didn&rsquo;t ask to reset your password, you can safely ignore this email — your password won&rsquo;t change until you use the link above.</p>
+    `),
+  };
+}
+
 // ── Lifecycle (onboarding) emails ────────────────────────
 
 export function welcomeTemplate(opts: {
