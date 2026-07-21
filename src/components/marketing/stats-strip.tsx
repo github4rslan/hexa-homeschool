@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Container } from "@/components/ui/container";
 import { CountUp } from "@/components/fx/count-up";
 
@@ -20,6 +20,7 @@ const STATS: Stat[] = [
 ];
 
 export function StatsStrip() {
+  const reduceMotion = useReducedMotion();
   return (
     <section
       id="stats"
@@ -30,10 +31,11 @@ export function StatsStrip() {
           {STATS.map((stat, i) => (
             <motion.div
               key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              // Reduced-motion: no translate/fade-in, render in place (WCAG 2.3.3).
+              initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+              whileInView={reduceMotion ? undefined : { opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.6, delay: i * 0.1 }}
               className="flex flex-col gap-2"
             >
               <span className="text-4xl md:text-5xl font-semibold tracking-tight text-gradient-violet">
