@@ -4,6 +4,7 @@ import { resolveRole } from "@/lib/auth/rbac";
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { THEME_NOFLASH_SCRIPT } from "@/components/theme/theme";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 
 /**
  * Dashboard group layout. Mounts parents-only analytics (parent identified by
@@ -38,6 +39,7 @@ export default async function DashboardLayout({
         dangerouslySetInnerHTML={{ __html: THEME_NOFLASH_SCRIPT }}
       />
       {children}
+      <InstallPrompt />
       {!isSmoke && <AnalyticsProvider identifyAs={parentId} />}
     </ThemeProvider>
   );
