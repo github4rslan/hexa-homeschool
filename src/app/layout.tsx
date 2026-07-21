@@ -4,6 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import { Fraunces } from "next/font/google";
 import "./globals.css";
 import { SITE_URL } from "@/lib/site";
+import { PWARegister } from "@/components/pwa/pwa-register";
 
 // Editorial serif for the warm marketing theme — heritage, high-trust,
 // "clean editorial typography" per the web brief. Used for marketing display
@@ -111,6 +112,7 @@ export default function RootLayout({
     >
       <body className="font-sans antialiased selection:bg-violet-600 selection:text-white">
         {children}
+        <PWARegister />
       </body>
     </html>
   );
