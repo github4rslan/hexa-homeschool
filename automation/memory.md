@@ -14,7 +14,32 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
 - (empty)
 
 ## Patterns that worked (repeat these)
-- (empty)
+- **Reuse the existing TTS cache for any new audio (F6).** `/api/tts` is
+  session-gated, per-user rate-limited, and Cloudinary-cached by a sha256 of
+  `model:voice:speed:settings:text`. New audio features just POST deterministic
+  text to it (no new route, no new cost on repeat plays). Build the narration as
+  a PURE function in `lib/engine/*` (unit-testable) and let a small client
+  component fetch+play with idle/loading/playing/error states; degrade to a
+  friendly message on 503/403 (ElevenLabs/billing unset) — never a dead control.
+- **Hand-rolled service worker beats adding @serwist for a minimal PWA (F5).**
+  A ~90-line `public/sw.js` (version-tagged cache, cache-first static assets,
+  network-only navigations with an `offline.html` fallback) + a tiny
+  `PWARegister` client (prod-only, best-effort) + a dashboard `beforeinstallprompt`
+  banner passed the gate with zero new deps and no next.config churn. CSP already
+  allowed `worker-src 'self' blob:`. Compliance: the SW NEVER caches HTML/API
+  (parent+child PII) — only immutable static assets — so the distress gate +
+  Checker always run server-side. Register in the ROOT layout (SW scope is
+  origin-wide regardless of where you register).
+
+## Blocked-by-owner-WIP (recurring constraint)
+- **`src/lib/db/repo.ts` and `src/lib/db/types.ts` currently carry the owner's
+  uncommitted 2FA (F4) WIP.** Any item needing a new doc field or repo function
+  is BLOCKED until the owner commits — editing+pushing those files would deploy
+  the half-built 2FA. This blocked **F9** (tutor workspace) this run: its only
+  unbuilt pieces (availability setting + notes-on-child-dashboard) both need
+  repo/types edits. When picking items, check early whether they require repo.ts
+  or types.ts; if so and the WIP is still present, skip/blocked. Pure-logic +
+  new-file + component/route-group-only items (F5/F6/F7) sail through cleanly.
 
 ## Run log
 - 2026-07-20 — System created. Scout runs by day (discovery), Mechanic by night
@@ -46,3 +71,16 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   worth tapping an actual lesson each run, not just eyeballing the hub. Admin/finance
   panels are honest ("Illustrative — not live" labels). Static unchanged: type-check
   + lint clean, 5 npm-audit vulns, Tailwind still on beta.
+- 2026-07-21 — Mechanic build run, DECISION `F5, F6, F7, F9` (4 of 4, within cap).
+  SHIPPED (each green-gated: type-check + 524 tests + lint + build, one commit,
+  pushed to main): **F5** installable offline-resilient PWA (hand-rolled `sw.js`
+  + `offline.html` + `PWARegister` in root layout + dashboard `InstallPrompt`);
+  **F6** parent weekly audio recap (pure `buildWeeklyRecapNarration` + 4 unit
+  tests, `WeeklyRecapPlayer` on the dashboard week-in-review card via the cached
+  `/api/tts`, + a digest-email mention); **F7** `prefers-reduced-motion` in
+  marketing `CountUp` (JS-gated, since rAF ignores the CSS query) + `StatsStrip`
+  fades. BLOCKED: **F9** tutor workspace — already largely built on main; the
+  remaining pieces need repo.ts/types.ts which hold the owner's 2FA WIP (see the
+  constraint note above). Note for the owner: once you commit the 2FA WIP, F9's
+  availability setting + notes-on-child-dashboard are the clean next slice. B1–B7
+  bug lane + F1/F2/F3/F8 were already on main before this run; F4 left untouched.
