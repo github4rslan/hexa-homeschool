@@ -14,8 +14,10 @@ you push goes live — act accordingly.
 
 Read `CLAUDE.md`, `docs/ARCHITECTURE.md`, `.claude/rules/child-safety.md`, and
 `automation/memory.md`. Then read today's report:
-**`automation/findings/<YYYY-MM-DD>.md`** (UTC). If today's file is missing, stop
-and report "no findings for today" — do not invent work.
+**`automation/findings/<YYYY-MM-DD>.md`** (UTC). **If today's file is missing,
+fall back to the most recent `automation/findings/*.md`** (carryover from a prior
+day that still has unbuilt items) and work from it. Only if there is no findings
+file at all: stop and report "no findings" — do not invent work.
 
 Parse the `DECISION:` line at the top:
 - `all` (or blank) → implement **every** item in the report.
