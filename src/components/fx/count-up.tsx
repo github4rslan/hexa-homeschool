@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useInView } from "framer-motion";
+import { useInView, useReducedMotion } from "framer-motion";
 
 interface CountUpProps {
   end: number;
@@ -26,10 +26,17 @@ export function CountUp({
 }: CountUpProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
-  const [value, setValue] = useState(0);
+  const reduceMotion = useReducedMotion();
+  // Reduced-motion users start on the final value — rAF counting can't be
+  // stopped by CSS `prefers-reduced-motion`, so gate it in JS (WCAG 2.3.3).
+  const [value, setValue] = useState(reduceMotion ? end : 0);
 
   useEffect(() => {
     if (!inView) return;
+    if (reduceMotion) {
+      setValue(end);
+      return;
+    }
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
@@ -42,7 +49,7 @@ export function CountUp({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [inView, end, duration]);
+  }, [inView, end, duration, reduceMotion]);
 
   const formatted = value
     .toFixed(decimals)
