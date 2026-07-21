@@ -50,9 +50,9 @@ every cutoff safe:
 
 ## Config
 - Production target: `https://edway.uk` (override via `SCOUT_BASE_URL`).
-- Schedule: **two in-session crons** (this chat), 5 hours apart so each agent
-  gets a fresh session window — **Scout 12:03 PM** (day, discovery) and
-  **Mechanic 5:03 PM** (evening, build). Both daily, local time.
+- Schedule: **two in-session crons** (this chat), 10 hours apart so each agent
+  gets a fully-reset session window — **Scout 12:03 PM** (day, discovery) and
+  **Mechanic 10:03 PM** (night, build). Both daily, local time.
 - **Cap: Mechanic builds at most 4 items per run** (highest-ranked first); the
   rest carry to the next run via checkpoint/resume.
 - Crons live only while this chat is open; re-arm on reopen. Cancel with
