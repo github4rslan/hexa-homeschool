@@ -35,6 +35,13 @@ loses at most the single in-progress item's uncommitted edits, and the next
 invocation (after the limit resets, or the next scheduled run) continues exactly
 where you stopped — no work redone, no half-work shipped.
 
+**Per-run cap: at most 4 items.** Build at most **4 items per run** (the
+highest-ranked unchecked selected items), then stop cleanly with a summary. The
+remaining items are picked up by the next scheduled run or a resume — they're
+already checkpointed, so nothing is lost. This keeps every run comfortably inside
+one ~5-hour session window. Only exceed 4 if the invoker **explicitly** asks to
+build more (or "all") in a single run.
+
 ## 2. Hard limits (self-enforced — never exceed)
 
 - **Never push a red tree.** The full gate below must be green before any push.
