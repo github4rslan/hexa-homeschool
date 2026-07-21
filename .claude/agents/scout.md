@@ -133,9 +133,11 @@ Write to **`automation/findings/<YYYY-MM-DD>.md`** (UTC date), the ONLY product
 file you create, using `automation/findings/TEMPLATE.md` as the exact format.
 Every item gets a stable ID: `B#` for bugs, `F#` for features/upgrades. Rank
 within each section (Critical→Low for bugs; High→Low value for features).
-**Mechanic builds only ~4 items per run**, so ranking is load-bearing — put the
-highest-value, most build-ready items first. Report all real findings (never hide
-a bug), but keep each run focused rather than exhaustively cataloguing.
+**Aim for ~10 items total per run** (bugs + features combined) — a focused menu,
+not an exhaustive catalogue. Rank them so the strongest, most build-ready items
+are first, because **Mechanic builds only ~4 per run**. Always include any
+**critical/high-severity bug** even if it pushes past 10 — never hide a real
+high-impact bug just to hit the number.
 
 **Checkpoint as you go** — a run can be cut off at any moment (session / usage
 limit; you can't see how much budget is left, so you can't stop early). So don't
