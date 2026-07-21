@@ -35,11 +35,25 @@ Top of each `automation/findings/<date>.md`:
 - Never edits the agents' own definitions, `.claude/rules/`, or the invariants.
 - Discovery (Scout) and implementation (Mechanic) are separate runs.
 
+## Session-limit resilience (checkpoint + auto-resume)
+Agents can't see their own usage budget, so instead of stopping early they make
+every cutoff safe:
+- **Checkpointing** — Mechanic commits each item's done-checkbox *with* the item
+  and resumes from the first unchecked one; Scout writes its report progressively
+  and extends today's file rather than restarting. A cutoff loses at most one
+  in-progress item.
+- **Auto-resume protocol (orchestrator)** — when a Scout/Mechanic run dies with a
+  session/usage-limit error, read the reset time from the error and schedule a
+  **one-shot** wake-up ~5 min after it (local Asia/Karachi tz) to resume the same
+  day, instead of waiting for the next daily run. The daily cron's prompt carries
+  this instruction; follow it for manual runs too.
+
 ## Config
 - Production target: `https://edway.uk` (override via `SCOUT_BASE_URL`).
-- Schedule: two daily cloud routines (Scout morning, Mechanic night) — see the
-  schedule set up via the `/schedule` skill. Adjust times/timezone there.
+- Schedule: **in-session cron** (this chat), daily 12:03 PM local — runs Scout
+  then Mechanic. Lives only while this chat is open; re-arm on reopen. Cancel with
+  `CronDelete`. (Not cloud — this repo isn't wired to the GitHub cloud runner.)
 
 ## Running manually (any interactive session)
-- Discovery now:  `use the scout agent`
-- Build today's:  `use the mechanic agent`
+- Discovery now:  `/scout` (or `/scout <a feature idea>`) — or `use the scout agent`
+- Build today's:  `/mechanic` — or `use the mechanic agent`
