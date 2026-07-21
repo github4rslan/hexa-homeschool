@@ -113,3 +113,78 @@ export function buildWeeklySummary(
 
   return { headline, observation, focusLine, standingLine, quiet: false };
 }
+
+/** Input for the spoken parent recap — a plain shape (no DB types) so the
+ *  narration builder stays pure + unit-testable. Maps 1:1 from `weekInReview`. */
+export interface WeeklyRecapInput {
+  childFirstName: string;
+  weekLabel: string;
+  lessonsCompleted: number;
+  /** Titles of topics certified this week. */
+  topicsCertified: string[];
+  /** Consecutive-day streak, if any. */
+  streak: number;
+  /** Subject with the most lessons this week (display label), or null. */
+  bestSubject: string | null;
+  /** Distinct days active this week. */
+  activeDays: number;
+  quiet: boolean;
+}
+
+/**
+ * Build the ~60-second spoken script for the parent weekly audio recap
+ * (F6) — deterministic, no AI, warm register, honest figures only. The string
+ * is fed verbatim to `/api/tts` (ElevenLabs, Cloudinary-cached by content
+ * hash), so identical weeks reuse the same audio. Kept comfortably under the
+ * TTS character cap. Never mentions other children (single-child input) and
+ * never invents a figure it wasn't given.
+ */
+export function buildWeeklyRecapNarration(input: WeeklyRecapInput): string {
+  const name = input.childFirstName;
+  const certified = input.topicsCertified.length;
+
+  if (input.quiet || (input.lessonsCompleted === 0 && certified === 0)) {
+    return (
+      `Here's ${name}'s week on Edway for ${input.weekLabel}. ` +
+      `It was a quiet week — no lessons finished, and that's completely okay. ` +
+      `Whenever it suits, this week's quests are ready to pick back up. ` +
+      `We'll be right here.`
+    );
+  }
+
+  const sentences: string[] = [];
+  sentences.push(`Here's ${name}'s week on Edway for ${input.weekLabel}.`);
+
+  const lessonWord = plural(input.lessonsCompleted, "lesson", "lessons");
+  if (input.activeDays > 0) {
+    const dayWord = plural(input.activeDays, "day", "days");
+    sentences.push(
+      `${name} completed ${input.lessonsCompleted} ${lessonWord} across ${input.activeDays} ${dayWord}.`,
+    );
+  } else {
+    sentences.push(`${name} completed ${input.lessonsCompleted} ${lessonWord} this week.`);
+  }
+
+  if (certified > 0) {
+    const topicWord = plural(certified, "topic", "topics");
+    sentences.push(
+      `That's ${certified} ${topicWord} mastered: ${proseList(input.topicsCertified)}.`,
+    );
+  }
+
+  if (input.bestSubject) {
+    sentences.push(`Most of the focus went into ${input.bestSubject}.`);
+  }
+
+  if (input.streak > 1) {
+    sentences.push(`And ${name} is on a ${input.streak}-day streak — lovely consistency.`);
+  }
+
+  sentences.push(
+    certified > 0
+      ? `A genuinely strong week. See you next week.`
+      : `Steady, honest effort. See you next week.`,
+  );
+
+  return sentences.join(" ");
+}

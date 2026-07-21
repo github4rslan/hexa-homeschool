@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildWeeklySummary } from "@/lib/engine/weekly-summary";
+import {
+  buildWeeklySummary,
+  buildWeeklyRecapNarration,
+} from "@/lib/engine/weekly-summary";
 import { classifyTopicStanding } from "@/lib/engine/insights";
 
 describe("classifyTopicStanding — warm, honest bands", () => {
@@ -104,5 +107,65 @@ describe("buildWeeklySummary — qualitative observations, not bars", () => {
     expect(c.quiet).toBe(false);
     expect(c.observation).toContain("finding 1 topic tricky");
     expect(c.headline).toContain("Sam");
+  });
+});
+
+describe("buildWeeklyRecapNarration — spoken ~60s parent recap (F6)", () => {
+  const base = {
+    childFirstName: "Ada",
+    weekLabel: "2 – 8 June",
+    lessonsCompleted: 4,
+    topicsCertified: ["Fractions", "Cells"],
+    streak: 3,
+    bestSubject: "Maths",
+    activeDays: 3,
+    quiet: false,
+  };
+
+  it("narrates an active week with figures, mastered topics, streak and closer", () => {
+    const script = buildWeeklyRecapNarration(base);
+    expect(script).toContain("Ada");
+    expect(script).toContain("2 – 8 June");
+    expect(script).toContain("4 lessons across 3 days");
+    expect(script).toContain("2 topics mastered");
+    expect(script).toContain("Fractions and Cells");
+    expect(script).toContain("Maths");
+    expect(script).toContain("3-day streak");
+    expect(script).toContain("See you next week.");
+  });
+
+  it("handles the quiet week warmly, with no invented figures", () => {
+    const script = buildWeeklyRecapNarration({
+      ...base,
+      lessonsCompleted: 0,
+      topicsCertified: [],
+      streak: 0,
+      activeDays: 0,
+      quiet: true,
+    });
+    expect(script).toContain("quiet week");
+    expect(script).not.toContain("mastered");
+    expect(script).not.toContain("streak");
+  });
+
+  it("singularises one lesson / one topic and omits a 1-day streak line", () => {
+    const script = buildWeeklyRecapNarration({
+      ...base,
+      lessonsCompleted: 1,
+      topicsCertified: ["Fractions"],
+      streak: 1,
+      activeDays: 1,
+    });
+    expect(script).toContain("1 lesson across 1 day");
+    expect(script).toContain("1 topic mastered");
+    expect(script).not.toContain("streak");
+  });
+
+  it("stays comfortably under the TTS character cap", () => {
+    const script = buildWeeklyRecapNarration({
+      ...base,
+      topicsCertified: ["Fractions", "Cells", "Algebra", "Photosynthesis", "Poetry"],
+    });
+    expect(script.length).toBeLessThan(1200);
   });
 });

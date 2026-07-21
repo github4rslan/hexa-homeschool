@@ -36,6 +36,7 @@ import {
   getFeedbackPromptContext,
 } from "@/lib/db/repo";
 import { shouldShowFeedbackPrompt } from "@/lib/engine/feedback-eligibility";
+import { buildWeeklyRecapNarration } from "@/lib/engine/weekly-summary";
 import { FeedbackPrompt, FeedbackButton } from "@/components/dashboard/feedback-widget";
 import { readActiveChildId } from "@/lib/active-child";
 import { isOnboardingDismissed } from "@/lib/onboarding-dismiss";
@@ -254,6 +255,21 @@ export default async function DashboardPage() {
 
   // Week in Review ("Edway Wrapped") for the active child.
   const review = activeChild ? await weekInReview(parentId!, activeChild) : null;
+  // Spoken ~60s recap script (F6) — deterministic, from the same real data.
+  // Synthesized on demand + cached by the existing TTS path; degrades silently
+  // when ElevenLabs is unconfigured.
+  const recapNarration = review
+    ? buildWeeklyRecapNarration({
+        childFirstName: review.childName.split(" ")[0],
+        weekLabel: review.weekLabel,
+        lessonsCompleted: review.lessonsCompleted,
+        topicsCertified: review.topicsCertified,
+        streak: review.streak,
+        bestSubject: review.bestSubject,
+        activeDays: review.activeDays,
+        quiet: review.quiet,
+      })
+    : null;
 
   // Voluntary sentiment prompt — shown ONLY after a real milestone, at most once
   // per cooldown, always dismissible (pure decision, unit-tested). Parent-side
@@ -331,7 +347,13 @@ export default async function DashboardPage() {
           </section>
         )}
 
-        {review && <WeekInReview review={review} variant="parent" />}
+        {review && (
+          <WeekInReview
+            review={review}
+            variant="parent"
+            recapNarration={recapNarration}
+          />
+        )}
 
         <section className="mb-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6">

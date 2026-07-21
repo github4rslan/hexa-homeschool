@@ -321,6 +321,7 @@ export function weeklyDigestTemplate(opts: {
       ${heading(greeting)}
       <p style="margin:0 0 22px;">Here&rsquo;s how learning went at home this week (${opts.weekLabel}).</p>
       ${sections}
+      <p style="margin:0 0 4px;text-align:center;color:${COLORS.inkSoft};font-size:13px;">Short on time? Play the one-minute audio recap on your dashboard.</p>
       <p style="margin:6px 0 24px;text-align:center;">${amberButton(opts.dashboardUrl, "Open my dashboard")}</p>
       <p style="margin:0;color:${COLORS.inkSoft};font-size:12.5px;">Prefer not to get this weekly summary? You can turn it off in <a href="${opts.settingsUrl}" style="color:${COLORS.clayDeep};">Settings &rarr; Email preferences</a>.</p>
     `),
