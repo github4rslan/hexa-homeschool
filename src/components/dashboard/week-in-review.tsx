@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import type { WeekInReview as WeekInReviewData } from "@/lib/db/repo";
+import { WeeklyRecapPlayer } from "./weekly-recap-player";
 
 // The slideshow + framer-motion + canvas save logic load only when opened —
 // they're not on the dashboard's / child hub's initial JS (perf pass).
@@ -21,9 +22,13 @@ const WeekInReviewModal = dynamic(
 export function WeekInReview({
   review,
   variant = "parent",
+  recapNarration = null,
 }: {
   review: WeekInReviewData;
   variant?: "parent" | "child";
+  /** Spoken ~60s recap script (F6); when present a parent-only audio player is
+   *  shown. Null hides the control (e.g. child variant). */
+  recapNarration?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const first = review.childName.split(" ")[0];
@@ -55,6 +60,10 @@ export function WeekInReview({
           </div>
           <ArrowRight className="h-5 w-5 text-fog-500" />
         </button>
+
+        {variant === "parent" && recapNarration && (
+          <WeeklyRecapPlayer narration={recapNarration} />
+        )}
       </Card>
 
       {open && (
