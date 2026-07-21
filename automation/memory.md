@@ -5,7 +5,10 @@ It's how the loop compounds: taste the owner has shown, patterns that worked,
 mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
 
 ## Owner preferences (accepted / rejected patterns)
-- (empty — fills in as the owner selects or ignores findings)
+- **DO NOT build F4 (TOTP 2FA).** The owner has uncommitted 2FA work in the tree
+  (`totp.ts`, `secret-box.ts`, modified `login/actions.ts`, `repo.ts`, `types.ts`,
+  `verification.ts` + a test). Leave those files untouched until the owner commits
+  it themselves. Skip F4 in any run.
 
 ## Things that broke (do not repeat)
 - (empty)
