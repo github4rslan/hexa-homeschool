@@ -134,6 +134,15 @@ file you create, using `automation/findings/TEMPLATE.md` as the exact format.
 Every item gets a stable ID: `B#` for bugs, `F#` for features/upgrades. Rank
 within each section (Critical→Low for bugs; High→Low value for features).
 
+**Checkpoint as you go** — a run can be cut off at any moment (session / usage
+limit; you can't see how much budget is left, so you can't stop early). So don't
+hold the whole report until the end: write the file early (decision line +
+findings gathered so far) and re-save it after each phase, committing
+periodically. That way a cutoff leaves a usable partial report, and the report
+already carries `DECISION: all` so `mechanic` can still act. If today's file
+already exists (an earlier partial run), extend it — keep existing IDs stable and
+add to them rather than starting over.
+
 The report MUST begin with the decision block from the template:
 
 ```

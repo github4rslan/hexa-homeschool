@@ -24,6 +24,17 @@ Parse the `DECISION:` line at the top:
 
 Order the selected items: bugs before features, higher rank first.
 
+**Resume, don't restart.** A run can be cut off at any instant (session / usage
+limit). You **cannot see how much budget is left**, so you can't stop at "80%" —
+instead you make every stop *safe* by checkpointing after each item. Before
+starting, treat any selected item whose checkbox is already `[x]` **done** in the
+findings file — or that already has a commit on `main` naming its ID — as
+**finished**, and skip it. Resume from the first unchecked selected item. Because
+each item is committed + its checkbox flipped the moment it's green (§3), a cutoff
+loses at most the single in-progress item's uncommitted edits, and the next
+invocation (after the limit resets, or the next scheduled run) continues exactly
+where you stopped — no work redone, no half-work shipped.
+
 ## 2. Hard limits (self-enforced — never exceed)
 
 - **Never push a red tree.** The full gate below must be green before any push.
@@ -61,13 +72,18 @@ Order the selected items: bugs before features, higher rank first.
    - `npm test`
    - `npm run lint`
    - `npm run build`
-5. If green: `git add` only this item's files, commit, `git push` to `main`.
-   Confirm the push landed and `main` contains it.
+5. If green: mark this item's checkbox `[x]` **done** in today's findings file,
+   then `git add` **this item's files _plus_ the findings file**, commit, and
+   `git push` to `main`. Committing the checkbox *with* the item is the
+   checkpoint — it's how a resumed run knows this item is finished. Confirm the
+   push landed.
 6. If red after a reasonable fix attempt: revert this item's uncommitted changes
-   (`git checkout -- <files>`), mark it **blocked** with the error, and move on.
-   Never let one broken item block the rest.
-7. Update the item's checkbox in today's findings file to `[x]` (done) or note
-   blocked.
+   (`git checkout -- <files>`), mark it **blocked** with the error in the findings
+   file, and move on. Never let one broken item block the rest.
+7. Commit or revert **your own** edits for the item before starting the next one —
+   never carry uncommitted changes between items, so a cutoff never strands
+   half-built work. (Leave any pre-existing uncommitted files you did NOT touch
+   exactly as you found them.)
 
 ## 4. Learn (self-improvement)
 
