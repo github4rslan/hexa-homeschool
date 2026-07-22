@@ -200,6 +200,7 @@ export function PracticePlayer({
   savedProgress,
   firstName,
   resumeKey,
+  onPhaseChange,
 }: {
   questions: Question[];
   /** Human-authored mastery bank for deterministic certification attempts. */
@@ -227,6 +228,13 @@ export function PracticePlayer({
   firstName?: string;
   /** Per-child localStorage namespace for instant same-device resume. */
   resumeKey?: string;
+  /**
+   * Lifts the internal lesson sub-phase so the parent DailyFlow phase bar can
+   * light a real "Mastery" segment (practice → mastery/reteach/handoff/complete).
+   */
+  onPhaseChange?: (
+    phase: "practice" | "mastery" | "reteach" | "handoff" | "complete",
+  ) => void;
 }) {
   const accent: AccentPreset = accentPreset(accentId);
   // Eddie only ever uses a sanitised FIRST name — anything unusable degrades
@@ -240,6 +248,10 @@ export function PracticePlayer({
     "practice" | "mastery" | "reteach" | "handoff" | "complete"
   >(questions.length ? "practice" : "mastery");
   const [masteryAttempt, setMasteryAttempt] = useState(1);
+  // Surface the sub-phase so DailyFlow's phase bar can cross into "Mastery".
+  useEffect(() => {
+    onPhaseChange?.(lessonPhase);
+  }, [lessonPhase, onPhaseChange]);
   const [usedMasteryIds, setUsedMasteryIds] = useState<string[]>([]);
   const [masterySet, setMasterySet] = useState<Question[]>(() =>
     selectMasteryAttempt(masteryBank, 1),

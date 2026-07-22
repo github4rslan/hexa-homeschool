@@ -79,12 +79,20 @@ export function DailyFlow({
   const [phase, setPhase] = useState<"explainer" | "practice">(
     canResume ? "practice" : "explainer",
   );
+  // The practice player's internal sub-phase, lifted so the bar can cross into
+  // a real third "Mastery" stage instead of silently reusing "Practise".
+  const [subPhase, setSubPhase] = useState<
+    "practice" | "mastery" | "reteach" | "handoff" | "complete"
+  >("practice");
 
   const PHASES = [
     { key: "explainer", label: "Learn" },
     { key: "practice", label: "Practise" },
+    { key: "mastery", label: "Mastery" },
   ] as const;
-  const phaseIndex = phase === "explainer" ? 0 : 1;
+  // Mastery, reteach, handoff and complete all live in the "prove it" stage.
+  const inMastery = subPhase !== "practice";
+  const phaseIndex = phase === "explainer" ? 0 : inMastery ? 2 : 1;
 
   return (
     <div>
@@ -150,6 +158,7 @@ export function DailyFlow({
               savedProgress={savedProgress}
               firstName={firstName}
               resumeKey={resumeKey}
+              onPhaseChange={setSubPhase}
             />
           )}
         </motion.div>
