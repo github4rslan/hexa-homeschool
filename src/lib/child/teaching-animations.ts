@@ -1,5 +1,6 @@
 export type TeachingAnimationType =
   | "equation_steps"
+  | "fraction_bars"
   | "choice_strategy"
   | "grammar_highlight"
   | "science_sequence";
@@ -35,6 +36,255 @@ function normaliseMath(text: string): string {
     .replace(/\+-/g, "-");
 }
 
+// ── Fractions (F1 — the fraction / area-model "See it") ──────
+
+/** Common vulgar-fraction glyphs → their `n/d` ascii form. */
+const VULGAR_FRACTIONS: Record<string, string> = {
+  "½": "1/2",
+  "⅓": "1/3",
+  "⅔": "2/3",
+  "¼": "1/4",
+  "¾": "3/4",
+  "⅕": "1/5",
+  "⅖": "2/5",
+  "⅗": "3/5",
+  "⅘": "4/5",
+  "⅙": "1/6",
+  "⅚": "5/6",
+  "⅐": "1/7",
+  "⅛": "1/8",
+  "⅜": "3/8",
+  "⅝": "5/8",
+  "⅞": "7/8",
+  "⅑": "1/9",
+  "⅒": "1/10",
+};
+
+/** Denominator → [singular, plural] spoken names (calm, child-readable). */
+const DENOMINATOR_NAMES: Record<number, [string, string]> = {
+  2: ["half", "halves"],
+  3: ["third", "thirds"],
+  4: ["quarter", "quarters"],
+  5: ["fifth", "fifths"],
+  6: ["sixth", "sixths"],
+  7: ["seventh", "sevenths"],
+  8: ["eighth", "eighths"],
+  9: ["ninth", "ninths"],
+  10: ["tenth", "tenths"],
+  12: ["twelfth", "twelfths"],
+};
+
+/** Replace vulgar-fraction glyphs (¾, ⅛…) with their `3/4`, `1/8` ascii forms. */
+export function normaliseFractions(text: string): string {
+  let out = "";
+  for (const ch of text) {
+    const mapped = VULGAR_FRACTIONS[ch];
+    // A digit immediately before a mapped glyph ("2½") keeps a space so it reads
+    // as a whole-plus-fraction, never "21/2".
+    if (mapped) {
+      if (out && /\d$/.test(out)) out += " ";
+      out += mapped;
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
+function gcd(a: number, b: number): number {
+  a = Math.abs(a);
+  b = Math.abs(b);
+  while (b) {
+    [a, b] = [b, a % b];
+  }
+  return a || 1;
+}
+
+function lcm(a: number, b: number): number {
+  return Math.abs((a / gcd(a, b)) * b);
+}
+
+interface Fraction {
+  num: number;
+  den: number;
+}
+
+function simplifyFraction({ num, den }: Fraction): Fraction {
+  const g = gcd(num, den);
+  return { num: num / g, den: den / g };
+}
+
+interface FractionProblem {
+  a: Fraction;
+  b: Fraction;
+  op: "+" | "-" | "×";
+}
+
+/** Parse a simple two-fraction problem (`a/b + c/d`, `-`, `×`). Null if none. */
+export function parseFractionProblem(prompt: string): FractionProblem | null {
+  const text = normaliseFractions(cleanText(prompt));
+  const match = text.match(
+    /(\d+)\s*\/\s*(\d+)\s*([+\-−×x*])\s*(\d+)\s*\/\s*(\d+)/,
+  );
+  if (!match) return null;
+  const a: Fraction = { num: Number(match[1]), den: Number(match[2]) };
+  const b: Fraction = { num: Number(match[4]), den: Number(match[5]) };
+  if (a.den <= 0 || b.den <= 0) return null;
+  const raw = match[3];
+  const op: FractionProblem["op"] =
+    raw === "+" ? "+" : raw === "×" || raw === "x" || raw === "*" ? "×" : "-";
+  return { a, b, op };
+}
+
+/** "3/4" → "3 quarters", "1/2" → "1 half", "6/8" → "6 eighths". */
+function spokenFraction(num: number, den: number): string {
+  const names = DENOMINATOR_NAMES[den];
+  if (!names) return `${num} over ${den}`;
+  return `${num} ${num === 1 ? names[0] : names[1]}`;
+}
+
+/** Speak a fraction expression naturally: "3 quarters plus 1 eighth". */
+export function speakableFractionExpression(expression: string): string {
+  return expression
+    .replace(/\s+/g, " ")
+    .replace(/(\d+)\s*\/\s*(\d+)/g, (_, n: string, d: string) =>
+      spokenFraction(Number(n), Number(d)),
+    )
+    .replace(/=/g, " equals ")
+    .replace(/\+/g, " plus ")
+    .replace(/[-−]/g, " minus ")
+    .replace(/[×x*]/g, " times ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Derive the fraction / area-model "See it" from a fraction-arithmetic prompt
+ * (the owner's `¾ + ⅛` screen). Deterministic + human-derived — the model never
+ * authors the maths (child-safety rule 5). Emits: make the pieces the same size
+ * (common denominator) → combine the tops → simplify → answer. Returns null when
+ * the prompt isn't a two-fraction sum/difference/product.
+ */
+export function deriveFractionSum(
+  prompt: string,
+  _explanation: string,
+): TeachingAnimation | null {
+  void _explanation;
+  const parsed = parseFractionProblem(prompt);
+  if (!parsed) return null;
+  const { a, b, op } = parsed;
+
+  const start = `${a.num}/${a.den} ${op} ${b.num}/${b.den}`;
+  const steps: TeachingAnimationStep[] = [];
+
+  if (op === "×") {
+    const raw: Fraction = { num: a.num * b.num, den: a.den * b.den };
+    const simp = simplifyFraction(raw);
+    steps.push({
+      label: "Start",
+      expression: start,
+      note: "Multiplying fractions — no common size needed, just multiply straight across.",
+      focus: `${a.num}/${a.den}`,
+    });
+    steps.push({
+      label: "Multiply",
+      expression: `${start} = ${raw.num}/${raw.den}`,
+      note: `Multiply the tops (${a.num} × ${b.num} = ${raw.num}) and the bottoms (${a.den} × ${b.den} = ${raw.den}).`,
+      focus: `${raw.num}/${raw.den}`,
+    });
+    if (simp.num !== raw.num || simp.den !== raw.den) {
+      steps.push({
+        label: "Simplify",
+        expression: `${raw.num}/${raw.den} = ${simp.num}/${simp.den}`,
+        note: `Both parts divide by ${gcd(raw.num, raw.den)}, so it tidies to ${simp.num}/${simp.den}.`,
+        focus: `${simp.num}/${simp.den}`,
+      });
+    }
+    steps.push({
+      label: "Answer",
+      expression: `${simp.num}/${simp.den}`,
+      note: fractionAnswerNote(simp),
+      focus: `${simp.num}/${simp.den}`,
+    });
+    return fractionAnimation(steps, true);
+  }
+
+  // Addition / subtraction: make the pieces the same size first.
+  const common = lcm(a.den, b.den);
+  const a2: Fraction = { num: a.num * (common / a.den), den: common };
+  const b2: Fraction = { num: b.num * (common / b.den), den: common };
+  const rawNum = op === "+" ? a2.num + b2.num : a2.num - b2.num;
+  const raw: Fraction = { num: rawNum, den: common };
+  const simp = simplifyFraction(raw);
+
+  steps.push({
+    label: "Start",
+    expression: start,
+    note:
+      op === "+"
+        ? "We're adding two fractions. First the pieces need to be the same size."
+        : "We're taking one fraction from another. First the pieces need to be the same size.",
+    focus: `${a.num}/${a.den}`,
+  });
+
+  if (a.den !== b.den) {
+    steps.push({
+      label: "Same size",
+      expression: `${a2.num}/${common} ${op} ${b2.num}/${common}`,
+      note: `Cut both into ${common}ths so every piece matches: ${a.num}/${a.den} = ${a2.num}/${common}.`,
+      focus: `${a2.num}/${common}`,
+    });
+  }
+
+  steps.push({
+    label: "Combine",
+    expression: `${a2.num}/${common} ${op} ${b2.num}/${common} = ${rawNum}/${common}`,
+    note:
+      op === "+"
+        ? `Now add the tops: ${a2.num} + ${b2.num} = ${rawNum} pieces out of ${common}.`
+        : `Now take away the tops: ${a2.num} − ${b2.num} = ${rawNum} pieces out of ${common}.`,
+    focus: `${rawNum}/${common}`,
+  });
+
+  if (simp.num !== raw.num || simp.den !== raw.den) {
+    steps.push({
+      label: "Simplify",
+      expression: `${rawNum}/${common} = ${simp.num}/${simp.den}`,
+      note: `Divide top and bottom by ${gcd(rawNum, common)} to tidy it to ${simp.num}/${simp.den}.`,
+      focus: `${simp.num}/${simp.den}`,
+    });
+  }
+
+  steps.push({
+    label: "Answer",
+    expression: `${simp.num}/${simp.den}`,
+    note: fractionAnswerNote(simp),
+    focus: `${simp.num}/${simp.den}`,
+  });
+
+  return fractionAnimation(steps, op !== "-");
+}
+
+function fractionAnswerNote(simp: Fraction): string {
+  if (simp.den === 1) return `That makes ${simp.num} whole — nicely done.`;
+  return `So the answer is ${simp.num}/${simp.den}, already in its simplest form.`;
+}
+
+function fractionAnimation(
+  steps: TeachingAnimationStep[],
+  adding: boolean,
+): TeachingAnimation {
+  return {
+    type: "fraction_bars",
+    title: "See the fraction pieces",
+    intro: adding
+      ? "We'll line the fractions up as bars, make the pieces the same size, then join them."
+      : "We'll line the fractions up as bars, make the pieces the same size, then take some away.",
+    coachLine: "Watch the shaded pieces — the picture is the maths.",
+    steps,
+  };
+}
+
 function validStep(step: unknown): step is TeachingAnimationStep {
   if (!step || typeof step !== "object") return false;
   const value = step as Partial<TeachingAnimationStep>;
@@ -51,6 +301,7 @@ function fromRaw(raw: unknown): TeachingAnimation | null {
   const value = raw as Partial<TeachingAnimation>;
   const allowed: TeachingAnimationType[] = [
     "equation_steps",
+    "fraction_bars",
     "choice_strategy",
     "grammar_highlight",
     "science_sequence",
@@ -309,6 +560,17 @@ function deriveChoiceStrategy(prompt: string, explanation: string): TeachingAnim
 export function validateTeachingAnimation(raw: unknown): TeachingAnimation | null {
   const animation = fromRaw(raw);
   if (!animation) return null;
+  if (animation.type === "fraction_bars") {
+    // Fraction glyphs (¾, ⅛) → the renderer's `3/4`, `1/8` bar syntax.
+    return {
+      ...animation,
+      steps: animation.steps.map((step) => ({
+        ...step,
+        expression: normaliseFractions(step.expression),
+        focus: step.focus ? normaliseFractions(step.focus) : step.focus,
+      })),
+    };
+  }
   if (animation.type !== "equation_steps") return animation;
   return {
     ...animation,
@@ -341,6 +603,7 @@ export function normalizeTeachingAnimation(input: {
     fromRaw(input.raw) ??
     deriveSquareEquation(input.prompt) ??
     deriveFactorisedDifference(input.prompt) ??
+    deriveFractionSum(input.prompt, input.explanation) ??
     deriveGrammar(input.prompt, input.explanation) ??
     deriveScience(input.prompt, input.explanation) ??
     deriveChoiceStrategy(input.prompt, input.explanation)
@@ -370,6 +633,13 @@ export function speakableExpression(expression: string): string {
 }
 
 export function stepNarration(step: TeachingAnimationStep): string {
+  // Fraction bars read as fractions ("3 quarters plus 1 eighth"), never as
+  // "3 divided by 4". A bare `n/d` with no equation/root syntax is the tell.
+  const hasFraction = /\d+\s*\/\s*\d+/.test(step.expression);
+  const hasEquationSyntax = /\^|sqrt\(|\+\/-/.test(step.expression);
+  if (hasFraction && !hasEquationSyntax) {
+    return `${step.label}. ${speakableFractionExpression(step.expression)}. ${step.note}`;
+  }
   // Only math-shaped expressions get the spoken-math treatment — prose keeps
   // its hyphens ("re-read" must never become "re minus read").
   const mathy = /[=^]|sqrt\(|\+\/-/.test(step.expression);

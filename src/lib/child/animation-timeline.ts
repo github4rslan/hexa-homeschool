@@ -259,6 +259,73 @@ export function equationBeat(step: TeachingAnimationStep): EquationBeat {
   };
 }
 
+// ── Fraction bars (F1 — the fraction "See it") ───────────────
+
+export interface FractionBar {
+  num: number;
+  den: number;
+  label: string;
+}
+
+export interface FractionStageSpec {
+  /** Operand bars (left of any `=`). */
+  bars: FractionBar[];
+  /** The operator between operands (`+` · `-` · `×`), or null. */
+  op: "+" | "-" | "×" | null;
+  /** The result bar (right of `=`, or a lone answer fraction), or null. */
+  result: FractionBar | null;
+  /** True once every operand bar shares one denominator (pieces now match). */
+  sameSize: boolean;
+}
+
+/** The largest denominator a bar renders before it becomes visual noise. */
+const MAX_FRACTION_SEGMENTS = 24;
+
+function toBar(num: number, den: number): FractionBar {
+  return { num, den, label: `${num}/${den}` };
+}
+
+function parseFractionList(text: string): FractionBar[] {
+  return [...text.matchAll(/(\d+)\s*\/\s*(\d+)/g)]
+    .map((m) => toBar(Number(m[1]), Number(m[2])))
+    .filter((b) => b.den > 0 && b.den <= MAX_FRACTION_SEGMENTS);
+}
+
+/**
+ * Turn one fraction step's expression into a bar-render plan: the operand bars,
+ * the operator between them, and the result bar (from `= r/s`, or a lone answer
+ * fraction). Pure + unit-testable — the component only draws what this returns;
+ * null when there's nothing bar-shaped to show.
+ */
+export function fractionBarsSpec(expression: string): FractionStageSpec | null {
+  const [lhs, rhs = ""] = expression.split("=");
+  const opMatch = lhs.match(/[+\-−×x*]/);
+  const op: FractionStageSpec["op"] = opMatch
+    ? opMatch[0] === "+"
+      ? "+"
+      : opMatch[0] === "×" || opMatch[0] === "x" || opMatch[0] === "*"
+        ? "×"
+        : "-"
+    : null;
+
+  let bars = parseFractionList(lhs);
+  let result = parseFractionList(rhs)[0] ?? null;
+
+  // A lone fraction with no operator (the "Answer" beat) IS the result.
+  if (!op && bars.length === 1 && !result) {
+    result = bars[0];
+    bars = [];
+  }
+
+  if (bars.length === 0 && !result) return null;
+
+  const dens = bars.map((b) => b.den);
+  const sameSize =
+    bars.length >= 2 && dens.every((d) => d === dens[0]);
+
+  return { bars, op, result, sameSize };
+}
+
 // ── Autoplay pacing (band-aware, replaces the fixed STEP_MS) ─
 
 /** Reading-pace per word by UK key stage — KS2 is the calmest. */
@@ -367,12 +434,32 @@ function rotate<T>(items: T[], by: number): T[] {
  * appear. Never AI, never analytics.
  */
 export function buildYourTurn(input: {
-  type: "equation_steps" | "choice_strategy" | "grammar_highlight" | "science_sequence";
+  type:
+    | "equation_steps"
+    | "fraction_bars"
+    | "choice_strategy"
+    | "grammar_highlight"
+    | "science_sequence";
   steps: { label: string; expression: string; focus?: string }[];
   options?: string[];
   correctIndex?: number;
 }): YourTurnTask | null {
   const { type, steps, options, correctIndex } = input;
+
+  if (type === "fraction_bars") {
+    // Recall against the question's REAL options — "which answer would you
+    // keep?" — turning the watched reveal into an active choice. No options
+    // (rare) → no task, the beat simply doesn't appear.
+    if (!options || options.length < 2 || typeof correctIndex !== "number") {
+      return null;
+    }
+    return {
+      kind: "tap_choice",
+      prompt: "Your turn — which fraction is the answer?",
+      choices: [...options],
+      correct: correctIndex,
+    };
+  }
 
   if (type === "equation_steps") {
     const last = steps[steps.length - 1];

@@ -22,10 +22,13 @@ import {
   checkYourTurnTap,
   classifyOptions,
   equationBeat,
+  fractionBarsSpec,
   sentenceWords,
   splitExpression,
   stepDurationMs,
   type AreaModelSpec,
+  type FractionBar as FractionBarSpec,
+  type FractionStageSpec,
   type GraphSpec,
   type NumberLineSpec,
   type YourTurnTask,
@@ -613,6 +616,182 @@ function SquareDots({
       <span className="text-sm font-semibold text-fog-300">
         {dots.length} dots make a {root} × {root} square
       </span>
+    </div>
+  );
+}
+
+/** A stacked fraction glyph (num over den) with a divider rule. */
+function FractionGlyph({
+  bar,
+  accent,
+  emphasis = false,
+}: {
+  bar: FractionBarSpec;
+  accent: AccentPreset;
+  emphasis?: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex flex-col items-center leading-none",
+        emphasis ? accent.text : "text-fog-100",
+      )}
+      aria-hidden
+    >
+      <span className="text-xl font-bold sm:text-2xl">{bar.num}</span>
+      <span
+        className={cn(
+          "my-0.5 h-0.5 w-5 rounded-full",
+          emphasis ? "bg-current" : "bg-fog-400",
+        )}
+      />
+      <span className="text-xl font-bold sm:text-2xl">{bar.den}</span>
+    </span>
+  );
+}
+
+/**
+ * One fraction as a shaded bar: `den` equal segments, `num` filled in the
+ * accent, the rest faint. The shaded pieces ARE the numerator — the child sees
+ * the fraction, not just reads it. Segments pop in with a calm stagger;
+ * reduced motion fills them instantly.
+ */
+function FractionBarView({
+  bar,
+  accent,
+  reduced,
+  result = false,
+}: {
+  bar: FractionBarSpec;
+  accent: AccentPreset;
+  reduced: boolean;
+  result?: boolean;
+}) {
+  const segments = Array.from({ length: bar.den });
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div
+        className={cn(
+          "flex w-40 overflow-hidden rounded-xl border sm:w-48",
+          result ? cn(accent.border, "shadow-lg") : "border-white/15",
+        )}
+        style={{ height: 44 }}
+        role="img"
+        aria-label={`${bar.num} out of ${bar.den} shaded`}
+      >
+        {segments.map((_, i) => {
+          const filled = i < bar.num;
+          return (
+            <motion.div
+              key={i}
+              initial={reduced ? false : { opacity: 0, scaleY: 0.3 }}
+              animate={{ opacity: 1, scaleY: 1 }}
+              transition={
+                reduced ? { duration: 0 } : { ...SPRING, delay: 0.12 + i * 0.06 }
+              }
+              className={cn(
+                "h-full flex-1 origin-bottom border-r border-void/40 last:border-r-0",
+              )}
+              style={{
+                backgroundColor: filled ? accent.swatch : "rgba(255,255,255,0.05)",
+              }}
+            />
+          );
+        })}
+      </div>
+      <FractionGlyph bar={bar} accent={accent} emphasis={result} />
+    </div>
+  );
+}
+
+function FractionOp({ op, accent }: { op: string; accent: AccentPreset }) {
+  const glyph = op === "×" ? "×" : op === "-" ? "−" : "+";
+  return (
+    <span className={cn("text-3xl font-bold sm:text-4xl", accent.text)} aria-hidden>
+      {glyph}
+    </span>
+  );
+}
+
+/**
+ * Fraction / area-model stage (F1): the step's fractions rendered as shaded
+ * bars — operands, the operator, and (once stated) the result — so a child
+ * learning `¾ + ⅛` watches the quarters re-slice into eighths and fill to 7/8.
+ * Transform/opacity only; reduced motion shows the finished bars at once.
+ */
+function FractionStage({
+  step,
+  index,
+  accent,
+  reduced,
+}: {
+  step: TeachingAnimationStep;
+  index: number;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  const spec: FractionStageSpec | null = useMemo(
+    () => fractionBarsSpec(step.expression),
+    [step.expression],
+  );
+
+  return (
+    <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <span className="text-sm font-semibold uppercase tracking-wider text-fog-500">
+          Step {index + 1}
+        </span>
+        <span className={cn("text-sm font-semibold", accent.text)}>
+          {step.label}
+        </span>
+      </div>
+
+      {spec ? (
+        <div className="rounded-3xl border border-white/10 bg-void/35 p-5">
+          {spec.sameSize && (
+            <motion.div
+              initial={reduced ? false : { opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="mb-3 text-center text-sm font-semibold uppercase tracking-wider text-cyan-200"
+            >
+              same-size pieces now
+            </motion.div>
+          )}
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-5">
+            {spec.bars.map((bar, i) => (
+              <div key={`${bar.label}-${i}`} className="flex items-center gap-4 sm:gap-5">
+                <FractionBarView bar={bar} accent={accent} reduced={reduced} />
+                {i < spec.bars.length - 1 && spec.op && (
+                  <FractionOp op={spec.op} accent={accent} />
+                )}
+              </div>
+            ))}
+            {spec.result && (
+              <>
+                {spec.bars.length > 0 && (
+                  <span
+                    className="text-3xl font-bold text-cyan-200 sm:text-4xl"
+                    aria-hidden
+                  >
+                    =
+                  </span>
+                )}
+                <FractionBarView
+                  bar={spec.result}
+                  accent={accent}
+                  reduced={reduced}
+                  result
+                />
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-white/10 bg-void/30 p-4 text-center text-2xl font-semibold text-fog-50">
+          {step.expression}
+        </div>
+      )}
     </div>
   );
 }
@@ -1624,6 +1803,13 @@ export function TeachingAnimation({
           >
             {animation.type === "equation_steps" ? (
               <EquationStage
+                step={step}
+                index={current}
+                accent={accent}
+                reduced={reduced}
+              />
+            ) : animation.type === "fraction_bars" ? (
+              <FractionStage
                 step={step}
                 index={current}
                 accent={accent}
