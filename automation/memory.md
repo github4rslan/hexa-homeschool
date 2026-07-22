@@ -37,6 +37,35 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   committed (F4 shipped), so those files are editable again. No active WIP block.
 
 ## Run log
+- 2026-07-23 — Mechanic build run, DECISION `all` (owner named F1, B1, B2, F2 — 4 of
+  4, within cap). SHIPPED, each green-gated (type-check + tests + lint + build, one
+  commit, pushed to main) AND live-verified on edway.uk with Playwright:
+  **B1** practice actions row `flex-wrap` at 390px (measured scrollWidth 380 ≤ 390,
+  was 416 — overflow gone). **B2** quest dead-wall: new pure
+  `pickPlayableQuestTopic`/`pickScheduleQuestTopic` (+ tests) + repo
+  `resolveDailyQuestTopic`/`playableTopicTagsInBand`; the child hub now resolves each
+  subject to an in-band topic that actually has questions, else a calm "coming soon"
+  card. Live: Science quest resolved to `sci_ks2_living` and opened a real lesson (no
+  "isn't ready yet"). **F1** (owner priority) `fraction_bars` teaching-animation type
+  end-to-end: `deriveFractionSum` parses `a/b ± × c/d` incl. vulgar glyphs (¾ ⅛) →
+  common-denominator/combine/simplify/answer steps; pure `fractionBarsSpec`;
+  `FractionStage` shaded-bar renderer; fraction speech ("6 eighths plus 1 eighth
+  equals 7 eighths"). Live on the owner's `¾ + ⅛` screen: See-it showed 6/8 + 1/8 =
+  7/8 shaded bars with correct narration. **F2** deterministic animated question
+  figure (`deriveMathVisual` → shaded fraction bar / 10×10 percent grid, real alt),
+  replacing the AI PNG when derivable, AI fallback otherwise. Live: the ¾+⅛ figure
+  rendered "Two fraction bars: 3 of 4 parts shaded, added to a bar with 1 of 8 parts
+  shaded." NOT built (remaining, per cap): B3 favicon-32 404 (confirmed still logging
+  on every page — the ONLY console error seen, safe one-liner for next run), B4
+  equal-value MCQ distractors (needs seed), F3 correct-option settle micro-anim, F4
+  mastery phase bar, F5 npm-audit CVE bumps. Patterns: (1) a new animation TYPE is
+  end-to-end but low-risk because normalizeTeachingAnimation is a fallback chain and
+  the AI path is generic over TeachingAnimationType — no exhaustive switches to break.
+  (2) Extract quest/selection ordering into a pure `lib/engine|lib/child` helper so
+  the DB-bound repo change still gets unit tests. (3) The MCP browser profile PERSISTS
+  login between runs (login form was pre-filled); `/logout` is POST-only (GET = 405) —
+  log out with a `fetch('/logout',{method:'POST'})` from the page, then browser_close.
+- 2026-07-22 (earlier entries below)
 - 2026-07-20 — System created. Scout runs by day (discovery), Mechanic by night
   (implementation). Default DECISION is `all`. Production target: https://edway.uk.
   Experiment stage: no real users yet — bias toward ambitious features.
