@@ -73,3 +73,7 @@ docs/bug-fix.md
 
 # Root-level screenshot artifacts (harness output; regenerable)
 /marketing-*.png
+
+# Local-only Scout findings email (never in the public repo)
+scripts/email-findings.ts
+scripts/.findings-email.json
