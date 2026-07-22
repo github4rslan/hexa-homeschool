@@ -41,6 +41,8 @@ export interface Quest {
   certified?: boolean;
   /** Resting for a five-attempt tutor handoff — shown calmly, never as failure. */
   resting?: boolean;
+  /** No in-band lesson seeded yet — a calm "coming soon" card, never a dead link. */
+  comingSoon?: boolean;
   progressLabel: string;
   progressPct: number;
 }
@@ -100,6 +102,10 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
                   <span className="text-sm font-medium text-amber-300">
                     resting
                   </span>
+                ) : q.comingSoon ? (
+                  <span className="text-sm font-medium text-fog-400">
+                    coming soon
+                  </span>
                 ) : (
                   q.certified ? (
                     <span className="text-sm font-medium text-neon-300">
@@ -138,6 +144,11 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
                 <p className="mt-2 text-base text-fog-300">
                   A tutor is coming to help — pick this back up soon. 💛
                 </p>
+              ) : q.comingSoon ? (
+                <p className="mt-2 text-base text-fog-300">
+                  New {q.label} quests are on their way — try another subject
+                  today. ✨
+                </p>
               ) : (
                 <div className="mt-2 flex items-center gap-3">
                   <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
@@ -165,7 +176,7 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
                 </div>
               ) : null}
             </div>
-            {!q.resting && !q.certified && (
+            {!q.resting && !q.certified && !q.comingSoon && (
               <ArrowRight className="h-7 w-7 text-fog-400 transition-transform group-hover:translate-x-1" />
             )}
           </>
@@ -177,6 +188,18 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
               key={q.id}
               className="child-panel flex items-center gap-5 p-6 opacity-90"
               aria-label={`${q.label} is resting while a tutor is lined up`}
+            >
+              {inner}
+            </div>
+          );
+        }
+
+        if (q.comingSoon) {
+          return (
+            <div
+              key={q.id}
+              className="child-panel flex items-center gap-5 p-6 opacity-90"
+              aria-label={`${q.label} quests are coming soon`}
             >
               {inner}
             </div>

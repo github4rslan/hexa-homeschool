@@ -73,6 +73,10 @@ import {
 } from "@/lib/engine/diagnostic-placement";
 import { currentBandFrom } from "@/lib/engine/band-progression";
 import {
+  pickPlayableQuestTopic,
+  pickScheduleQuestTopic,
+} from "@/lib/engine/quest-selection";
+import {
   periodWindowFromWeekStart,
   mockPeriodKey,
 } from "@/lib/engine/assessment-period";
@@ -2045,6 +2049,56 @@ export async function firstTopicInBandForChild(
   return inBand.find((t) => !certified.has(t.topic_tag)) ?? inBand[0] ?? null;
 }
 
+/**
+ * The set of in-band topic tags for a subject that actually have a playable
+ * lesson — i.e. ≥1 practice/mastery question at the band. This is exactly the
+ * readiness test the child lesson page applies, so a quest that survives it
+ * always opens a real lesson (B2: no "quest isn't ready yet" dead-wall).
+ */
+async function playableTopicTagsInBand(
+  subject: Subject,
+  band: KeyStage,
+): Promise<Set<string>> {
+  const questions = await getQuestions({ subject, keyStage: band }, 500);
+  return new Set(
+    questions
+      .filter((q) => q.kind === "practice" || q.kind === "mastery")
+      .map((q) => q.topic_tag),
+  );
+}
+
+/**
+ * Resolve the topic a subject's daily quest should open for a child, guarding
+ * against the B2 dead-wall: prefer the parent-planned topic, but only when it
+ * (or the next in-band topic) actually has a lesson. Returns null when the whole
+ * in-band subject is still unseeded — the hub then shows it as "coming soon"
+ * rather than linking to the calm "not ready yet" screen.
+ */
+export async function resolveDailyQuestTopic(
+  childId: ObjectId,
+  subject: Subject,
+  floor: KeyStage,
+  plannedTag?: string | null,
+): Promise<{ topicTag: string; title: string } | null> {
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const [topics, certifiedRows] = await Promise.all([
+    topicsCol.find({ subject }).sort({ order: 1 }).toArray(),
+    compCol.find({ child_id: childId, state: "certified" }).toArray(),
+  ]);
+  const certified = new Set(certifiedRows.map((c) => c.topic_tag));
+  const band = bandFromData(floor, subject, topics, certified);
+  const inBand = topics.filter((t) => (t.key_stage ?? 4) === band);
+  const playable = await playableTopicTagsInBand(subject, band);
+  const pick = pickPlayableQuestTopic({
+    inBand,
+    certified,
+    playable,
+    plannedTag,
+  });
+  return pick ? { topicTag: pick.topic_tag, title: pick.title } : null;
+}
+
 export async function getQuestions(
   filter: {
     topicTag?: string;
@@ -3085,8 +3139,14 @@ async function buildScheduleItems(childId: ObjectId): Promise<ScheduleItemDoc[]>
     const inBand = allTopics.filter(
       (t) => t.subject === subj && (t.key_stage ?? 4) === band,
     );
-    nextBySubject[subj] =
-      inBand.find((t) => !certifiedTags.has(t.topic_tag)) ?? inBand[0] ?? null;
+    // Prefer a topic that actually has a lesson in-band so the plan never seeds
+    // a dead-wall quest (B2); still assigns something when nothing is seeded.
+    const playable = await playableTopicTagsInBand(subj, band);
+    nextBySubject[subj] = pickScheduleQuestTopic({
+      inBand,
+      certified: certifiedTags,
+      playable,
+    });
   }
 
   const items: ScheduleItemDoc[] = [];
