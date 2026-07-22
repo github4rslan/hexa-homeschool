@@ -8,7 +8,7 @@ import { QuestCards, type Quest } from "@/components/child/quest-cards";
 import {
   currentParentId,
   getActiveChild,
-  firstTopicInBandForChild,
+  resolveDailyQuestTopic,
   childFloorBand,
   certifiedBySubject,
   todaysCheckin,
@@ -66,12 +66,7 @@ export default async function LearnHubPage() {
     if (subj) doneSubjects.add(subj);
   }
 
-  // Band-aware fallback: the child's first in-band topic per subject (used only
-  // when the approved plan has no item for that subject today).
   const floor = childFloorBand(child.date_of_birth);
-  const firstTopics = await Promise.all(
-    SUBJECTS.map((s) => firstTopicInBandForChild(child._id!, s.id, floor)),
-  );
 
   // Today's quests correspond 1:1 to the parent's approved weekly plan: for
   // each subject, prefer the topic the plan assigned to today (same topic,
@@ -79,26 +74,46 @@ export default async function LearnHubPage() {
   // topic when there's no plan item for that subject today.
   const schedule = await getWeeklySchedule(parentId, child._id);
   const todayIndex = (new Date().getDay() + 6) % 7; // 0 = Monday
-  const plannedTodayBySubject = new Map<Subject, { tag: string; title: string }>();
+  const plannedTagBySubject = new Map<Subject, string>();
   for (const item of schedule?.items ?? []) {
-    if (item.day === todayIndex && !plannedTodayBySubject.has(item.subject)) {
-      plannedTodayBySubject.set(item.subject, {
-        tag: item.topic_tag,
-        title: item.topic_title,
-      });
+    if (item.day === todayIndex && !plannedTagBySubject.has(item.subject)) {
+      plannedTagBySubject.set(item.subject, item.topic_tag);
     }
   }
 
-  const quests: Quest[] = SUBJECTS.map((s, i) => {
+  // Resolve each subject to a topic that ACTUALLY has a lesson in-band (B2):
+  // the planned topic when it's ready, else the next playable in-band topic,
+  // else null → the card shows "coming soon" instead of a dead-wall link.
+  const resolvedBySubject = new Map<
+    Subject,
+    { topicTag: string; title: string } | null
+  >();
+  await Promise.all(
+    SUBJECTS.map(async (s) => {
+      resolvedBySubject.set(
+        s.id,
+        await resolveDailyQuestTopic(
+          child._id!,
+          s.id,
+          floor,
+          plannedTagBySubject.get(s.id) ?? null,
+        ),
+      );
+    }),
+  );
+
+  const quests: Quest[] = SUBJECTS.map((s) => {
     const done = certified[s.id] ?? 0;
     const courseDone = Math.min(done, TOPICS_PER_SUBJECT);
     const courseCertified = done >= TOPICS_PER_SUBJECT;
-    const planned = plannedTodayBySubject.get(s.id);
-    const topicTag = planned?.tag ?? firstTopics[i]?.topic_tag;
+    const topicTag = resolvedBySubject.get(s.id)?.topicTag;
     // A topic resting for a tutor handoff shows as a calm "resting" card rather
     // than a normal quest — the child isn't pushed back into it (no advancement
     // past an unmastered topic), other subjects stay open.
     const resting = !!topicTag && pausedTags.has(topicTag);
+    // No in-band topic has a lesson yet → a calm "coming soon" card, never a tap
+    // that dead-walls into "this quest isn't ready yet".
+    const comingSoon = !courseCertified && !resting && !topicTag;
     return {
       id: s.id,
       label: s.label,
@@ -109,10 +124,11 @@ export default async function LearnHubPage() {
           ? `/learn/mock/${s.id}`
           : topicTag
             ? `/learn/lesson?topic=${topicTag}`
-            : "/learn/lesson",
-      practiceHref: topicTag ? `/learn/lesson?topic=${topicTag}` : "/learn/lesson",
+            : "/learn",
+      practiceHref: topicTag ? `/learn/lesson?topic=${topicTag}` : "/learn",
       done: doneSubjects.has(s.id),
       resting,
+      comingSoon,
       certified: courseCertified,
       progressLabel: `${courseDone}/${TOPICS_PER_SUBJECT}`,
       progressPct: Math.round((courseDone / TOPICS_PER_SUBJECT) * 100),
