@@ -5,10 +5,11 @@ It's how the loop compounds: taste the owner has shown, patterns that worked,
 mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
 
 ## Owner preferences (accepted / rejected patterns)
-- **DO NOT build F4 (TOTP 2FA).** The owner has uncommitted 2FA work in the tree
-  (`totp.ts`, `secret-box.ts`, modified `login/actions.ts`, `repo.ts`, `types.ts`,
-  `verification.ts` + a test). Leave those files untouched until the owner commits
-  it themselves. Skip F4 in any run.
+- **F4 (TOTP 2FA) is DONE and shipped** (owner had the assistant finish + commit
+  the previously-uncommitted WIP). The tree is clean again — no 2FA WIP to avoid.
+- **Live tutoring/scheduling stays deferred** (architecture decision). The owner
+  chose to build F9's tutor-availability toggle anyway, but keep it *advisory
+  self-status only* — do NOT build live matching/booking/calendars.
 
 ## Things that broke (do not repeat)
 - (empty)
@@ -32,14 +33,8 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   origin-wide regardless of where you register).
 
 ## Blocked-by-owner-WIP (recurring constraint)
-- **`src/lib/db/repo.ts` and `src/lib/db/types.ts` currently carry the owner's
-  uncommitted 2FA (F4) WIP.** Any item needing a new doc field or repo function
-  is BLOCKED until the owner commits — editing+pushing those files would deploy
-  the half-built 2FA. This blocked **F9** (tutor workspace) this run: its only
-  unbuilt pieces (availability setting + notes-on-child-dashboard) both need
-  repo/types edits. When picking items, check early whether they require repo.ts
-  or types.ts; if so and the WIP is still present, skip/blocked. Pure-logic +
-  new-file + component/route-group-only items (F5/F6/F7) sail through cleanly.
+- RESOLVED (2026-07-22) — the 2FA WIP that was blocking `repo.ts`/`types.ts` is
+  committed (F4 shipped), so those files are editable again. No active WIP block.
 
 ## Run log
 - 2026-07-20 — System created. Scout runs by day (discovery), Mechanic by night
@@ -84,3 +79,12 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   constraint note above). Note for the owner: once you commit the 2FA WIP, F9's
   availability setting + notes-on-child-dashboard are the clean next slice. B1–B7
   bug lane + F1/F2/F3/F8 were already on main before this run; F4 left untouched.
+- 2026-07-22 — Owner-directed manual build (assistant, not the cron). Completed +
+  shipped **F4 TOTP 2FA** (finished the long-uncommitted WIP: crypto/storage were
+  done; wired login enforcement → /login/totp verify page + action, settings
+  enrolment/confirm/recovery-codes/disable, hashRecoveryCode + test). Then shipped
+  **F9 tutor workspace** slice: tutor availability self-status toggle + parent-
+  facing tutor-notes card (ownership-checked listChildTutorNotes). Both green
+  (type-check, 525 tests, lint, build), one commit each. Pattern: a "use server"
+  module may export only async fns — put shared consts (e.g. a cookie name) in a
+  sibling non-action file. All of Scout's 2026-07-20 report is now shipped.
