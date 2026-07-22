@@ -1687,7 +1687,7 @@ export function PracticePlayer({
         </AnimatePresence>
 
         {/* Actions */}
-        <div className="mt-8 flex items-center justify-between gap-4">
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
           {!revealed && !isCorrect ? (
             <div className="flex flex-wrap items-center gap-4">
               {/* ONE big, always-here help button — each press gives the next
