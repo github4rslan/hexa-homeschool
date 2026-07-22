@@ -209,6 +209,33 @@ export async function verifyPasswordResetToken(
   }
 }
 
+// ── TOTP sign-in pending token (F4) ──────────────────────────
+// After a correct password, a TOTP-enrolled parent gets a short-lived signed
+// token (httpOnly cookie) that only asserts "this parentId passed the password
+// step and now owes an authenticator code". The session is issued only once the
+// TOTP (or a recovery code) is verified.
+
+export async function createTotpPendingToken(parentId: string): Promise<string> {
+  return new SignJWT({ purpose: "totp_pending" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setSubject(parentId)
+    .setIssuedAt()
+    .setExpirationTime("10m")
+    .sign(secret());
+}
+
+export async function readTotpPendingSubject(
+  token: string,
+): Promise<string | null> {
+  try {
+    const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });
+    if (payload.purpose !== "totp_pending" || !payload.sub) return null;
+    return payload.sub;
+  } catch {
+    return null;
+  }
+}
+
 export function appUrl(): string {
   return (
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||

@@ -10,13 +10,14 @@ import {
   generateCode,
   createCodeToken,
   createTwoFactorToken,
+  createTotpPendingToken,
 } from "@/lib/email/verification";
 import { verifyCodeTemplate, twoFactorCodeTemplate } from "@/lib/email/templates";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientIp } from "@/lib/auth/client-ip";
 import { resolveRole } from "@/lib/auth/rbac";
 import { safeInternalPath } from "@/lib/auth/safe-redirect";
-import { TWOFA_COOKIE } from "./twofa-cookie";
+import { TWOFA_COOKIE, TOTP_PENDING_COOKIE } from "./twofa-cookie";
 
 export async function login(formData: FormData) {
   const email = String(formData.get("email") || "").trim().toLowerCase();
@@ -91,7 +92,25 @@ export async function login(formData: FormData) {
     redirect(`/signup/verify?email=${encodeURIComponent(parent.email)}`);
   }
 
-  // Two-factor sign-in (opt-in). Only enforceable while email sending is
+  // Authenticator-app (TOTP) two-factor (F4, opt-in). Checked first because it
+  // needs no email provider, so it works even when Brevo is unset. After a
+  // correct password we issue a short-lived "password OK, awaiting code" token
+  // and route to the authenticator step — the session is created only once the
+  // code (or a single-use recovery code) is verified in /login/totp.
+  if (parent.totp_enabled) {
+    const token = await createTotpPendingToken(parent._id.toHexString());
+    const jar = await cookies();
+    jar.set(TOTP_PENDING_COOKIE, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 10,
+    });
+    redirect("/login/totp");
+  }
+
+  // Email two-factor sign-in (opt-in). Only enforceable while email sending is
   // configured — if Brevo is unset, skip rather than lock the parent out.
   if (parent.two_factor_enabled && emailConfigured()) {
     const code = generateCode();

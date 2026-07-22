@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { ObjectId } from "mongodb";
 import { getCollection, Collections } from "@/lib/mongodb";
 import {
@@ -16,14 +17,25 @@ import {
   setMarketingEmailsOptOut,
   setParentPhone,
   setTwoFactorEnabled,
+  stageTotpSecret,
+  activateTotp,
+  disableTotp,
   bumpTokenVersion,
   deleteFamilyData,
 } from "@/lib/db/repo";
 import { hashPassword, verifyPassword } from "@/lib/auth/password";
+import {
+  generateTotpSecret,
+  verifyTotp,
+  generateRecoveryCodes,
+  hashRecoveryCode,
+} from "@/lib/auth/totp";
+import { sealSecret, openSecret } from "@/lib/auth/secret-box";
 import { emailConfigured } from "@/lib/email/send";
 import { validatePhone } from "@/lib/sms/phone";
 import { createSession, destroySession } from "@/lib/auth/session";
 import { getStripe } from "@/lib/billing/stripe";
+import { TOTP_RECOVERY_COOKIE } from "./totp-cookie";
 import type { ParentDoc } from "@/lib/db/types";
 
 export async function updateAccount(formData: FormData) {
@@ -190,6 +202,94 @@ export async function updateTwoFactor(formData: FormData) {
   await setTwoFactorEnabled(parentId!, enabled);
   revalidatePath("/settings");
   redirect("/settings?saved=1");
+}
+
+// ── Authenticator-app (TOTP) 2FA (F4) ────────────────────────
+// Enrolment is a two-step commit: `startTotpSetup` stages a sealed secret
+// (disabled), then `confirmTotpSetup` verifies a live code before switching it
+// on and revealing single-use recovery codes exactly once.
+
+/** Stage a fresh sealed secret, then show the setup panel (secret + code entry). */
+export async function startTotpSetup() {
+  const parentId = await currentParentId();
+  if (!parentId) redirect("/login?redirect=/settings");
+
+  await stageTotpSecret(parentId!, sealSecret(generateTotpSecret()));
+  revalidatePath("/settings");
+  redirect("/settings?totp=setup#security");
+}
+
+/** Verify the first code against the staged secret; on success turn TOTP on. */
+export async function confirmTotpSetup(formData: FormData) {
+  const parentId = await currentParentId();
+  if (!parentId) redirect("/login?redirect=/settings");
+
+  const code = String(formData.get("code") || "").replace(/\D/g, "");
+  const parent = await findParentById(parentId!);
+  if (!parent?.totp_secret_enc) {
+    redirect(`/settings?error=${encodeURIComponent("Start the authenticator setup again.")}#security`);
+  }
+
+  const secret = openSecret(parent!.totp_secret_enc!);
+  if (!secret || !verifyTotp(secret, code)) {
+    redirect(
+      `/settings?totp=setup&error=${encodeURIComponent("That code didn't match — enter the current 6-digit code from your app.")}#security`,
+    );
+  }
+
+  const codes = generateRecoveryCodes();
+  const activated = await activateTotp(parentId!, codes.map(hashRecoveryCode));
+  if (!activated) {
+    redirect(`/settings?error=${encodeURIComponent("Couldn't enable two-factor. Please try again.")}#security`);
+  }
+
+  // Show the plaintext codes exactly once via a short-lived cookie (only hashes
+  // are stored). The page renders then clears it.
+  const jar = await cookies();
+  jar.set(TOTP_RECOVERY_COOKIE, codes.join(","), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 5,
+  });
+  revalidatePath("/settings");
+  redirect("/settings?totp=recovery#security");
+}
+
+/** Discard an un-activated staged secret (parent cancelled setup). */
+export async function cancelTotpSetup() {
+  const parentId = await currentParentId();
+  if (!parentId) redirect("/login?redirect=/settings");
+  await disableTotp(parentId!);
+  revalidatePath("/settings");
+  redirect("/settings#security");
+}
+
+/** Turn TOTP off — password-gated (it's a security downgrade). */
+export async function disableTotpAction(formData: FormData) {
+  const parentId = await currentParentId();
+  if (!parentId) redirect("/login?redirect=/settings");
+
+  const password = String(formData.get("current_password") || "");
+  const parent = await findParentById(parentId!);
+  if (!parent) redirect("/login?redirect=/settings");
+
+  const ok = await verifyPassword(password, parent!.password_hash);
+  if (!ok) {
+    redirect(`/settings?error=${encodeURIComponent("Your current password is incorrect.")}#security`);
+  }
+
+  await disableTotp(parentId!);
+  revalidatePath("/settings");
+  redirect("/settings?saved=1#security");
+}
+
+/** Clear the one-time recovery-code display once the parent has saved them. */
+export async function dismissTotpRecovery() {
+  const jar = await cookies();
+  jar.delete(TOTP_RECOVERY_COOKIE);
+  redirect("/settings?saved=1#security");
 }
 
 export async function updateParentPin(formData: FormData) {
