@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Volume2,
@@ -52,6 +52,8 @@ import {
 import { setCuesEnabled, tapCue } from "@/lib/child/sensory-cues";
 import { useNarration } from "@/lib/child/use-narration";
 import { useQuestionVisual } from "@/lib/child/use-question-visual";
+import { MathVisual } from "@/components/child/math-visual";
+import { deriveMathVisual } from "@/lib/child/math-visual";
 import { buildQuestionNarration } from "@/lib/child/narration-copy";
 import dynamic from "next/dynamic";
 import { StepReveal } from "@/components/child/step-reveal";
@@ -351,6 +353,14 @@ export function PracticePlayer({
   const isMcq = interaction.type === "mcq";
   const { visual: questionVisual, prefetch: prefetchQuestionVisual } =
     useQuestionVisual(question?.id, keyStage);
+  // F2 — a deterministic, animated figure derived from the prompt shape
+  // (fraction bar / percent grid). When present it replaces the AI PNG: clearer,
+  // free, always present, with a real descriptive alt. Non-derivable ⇒ null ⇒
+  // the AI image is used as the fallback.
+  const mathVisual = useMemo(
+    () => (question ? deriveMathVisual(question.prompt) : null),
+    [question],
+  );
 
   const hintLadder = question
     ? buildHintLadder({ hints: question.hints, explanation: question.explanation })
@@ -1432,29 +1442,35 @@ export function PracticePlayer({
         <div
           className={cn(
             "mb-8 grid gap-5",
-            questionVisual && "lg:grid-cols-[1fr_220px] lg:items-start",
+            (mathVisual || questionVisual) &&
+              "lg:grid-cols-[1fr_220px] lg:items-start",
           )}
         >
           <h1 className="text-3xl sm:text-4xl font-semibold text-fog-50 leading-snug">
             {question.prompt}
           </h1>
-          {questionVisual && (
+          {(mathVisual || questionVisual) && (
             <figure
               className={cn(
                 "order-first overflow-hidden rounded-3xl border bg-white/[0.03] p-2 lg:order-none",
                 accent.softBorder,
               )}
             >
-              {/* AI-generated only after automated Checker approval; no spinner
-                  or fallback is shown when unavailable. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={questionVisual.url}
-                alt={questionVisual.alt}
-                className="aspect-[3/2] w-full rounded-2xl object-contain"
-                loading="eager"
-                decoding="async"
-              />
+              {mathVisual ? (
+                // Deterministic, animated, always-present figure (F2).
+                <MathVisual spec={mathVisual} accent={accent} />
+              ) : (
+                // AI-generated only after automated Checker approval; no spinner
+                // or fallback is shown when unavailable.
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={questionVisual!.url}
+                  alt={questionVisual!.alt}
+                  className="aspect-[3/2] w-full rounded-2xl object-contain"
+                  loading="eager"
+                  decoding="async"
+                />
+              )}
             </figure>
           )}
         </div>
