@@ -131,6 +131,7 @@ export const Interaction = forwardRef<InteractionHandle, InteractionProps>(
             correctIndex={correctIndex}
             accent={accent}
             reveal={reveal}
+            wasCorrect={wasCorrect}
             onReadyChange={onReadyChange}
             forceMcqSelect={forceMcqSelect}
           />
@@ -149,13 +150,15 @@ const Mcq = forwardRef<
     correctIndex: number;
     accent: AccentPreset;
     reveal: boolean;
+    wasCorrect?: boolean;
     onReadyChange?: (ready: boolean) => void;
     forceMcqSelect?: number | null;
   }
 >(function Mcq(
-  { options, correctIndex, accent, reveal, onReadyChange, forceMcqSelect },
+  { options, correctIndex, accent, reveal, wasCorrect, onReadyChange, forceMcqSelect },
   ref,
 ) {
+  const reduced = useReducedMotion();
   const [selected, setSelected] = useState<number | null>(null);
 
   // STT bridge — a spoken answer selects the matching option.
@@ -178,6 +181,11 @@ const Mcq = forwardRef<
         const chosen = selected === i;
         const showCorrect = reveal && i === correctIndex;
         const showWrong = reveal && chosen && i !== correctIndex;
+        // Calm-law reward: only the option the child actually chose right gets
+        // the settle flourish (accent sweep + drawn check) — motion ON their
+        // action. A shown-but-not-chosen correct option (child got it wrong)
+        // keeps the quiet static tint.
+        const celebrate = showCorrect && wasCorrect && chosen;
         return (
           <motion.button
             key={i}
@@ -189,7 +197,7 @@ const Mcq = forwardRef<
             whileTap={reveal ? undefined : { scale: 0.98 }}
             transition={{ duration: 0.15, ease: [0.34, 1.56, 0.64, 1] }}
             className={cn(
-              "child-touch flex items-center gap-4 rounded-3xl border-2 px-5 text-left text-xl transition-all",
+              "child-touch relative flex items-center gap-4 overflow-hidden rounded-3xl border-2 px-5 text-left text-xl transition-all",
               "focus-visible:outline-none focus-visible:ring-4",
               accent.ring,
               !reveal && chosen && cn(accent.border, accent.bg),
@@ -202,27 +210,77 @@ const Mcq = forwardRef<
               reveal && !showCorrect && !showWrong && "border-white/5 opacity-50",
             )}
           >
-            <span
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border font-mono text-base",
-                chosen && !reveal
-                  ? cn(accent.border, accent.text)
-                  : "border-white/15 text-fog-400",
-                showCorrect && "border-neon-400 text-neon-400",
-              )}
-              aria-hidden
-            >
-              {String.fromCharCode(65 + i)}
+            {/* Soft accent fill sweeping across the chosen correct option, then
+                settling to a low tint. Reduced motion shows only the static
+                tint above (no sweep). */}
+            {celebrate && !reduced && (
+              <motion.span
+                aria-hidden
+                initial={{ scaleX: 0, opacity: 0.35 }}
+                animate={{ scaleX: 1, opacity: 0.18 }}
+                transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                style={{ originX: 0 }}
+                className={cn(
+                  "pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-r",
+                  accent.bar,
+                )}
+              />
+            )}
+            <span className="relative z-10 flex flex-1 items-center gap-4">
+              <span
+                className={cn(
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border font-mono text-base",
+                  chosen && !reveal
+                    ? cn(accent.border, accent.text)
+                    : "border-white/15 text-fog-400",
+                  showCorrect && "border-neon-400 text-neon-400",
+                )}
+                aria-hidden
+              >
+                {String.fromCharCode(65 + i)}
+              </span>
+              <span className="flex-1 text-fog-50">{option}</span>
+              {showCorrect &&
+                (celebrate ? (
+                  <DrawnCheck reduced={!!reduced} />
+                ) : (
+                  <Check className="h-7 w-7 shrink-0 text-neon-400" />
+                ))}
+              {showWrong && <X className="h-7 w-7 shrink-0 text-fog-400" />}
             </span>
-            <span className="flex-1 text-fog-50">{option}</span>
-            {showCorrect && <Check className="h-7 w-7 shrink-0 text-neon-400" />}
-            {showWrong && <X className="h-7 w-7 shrink-0 text-fog-400" />}
           </motion.button>
         );
       })}
     </div>
   );
 });
+
+/**
+ * A checkmark that draws itself in (stroke pathLength 0 → 1) as the correct
+ * option settles — the calm-law reward lands on the thing the child did.
+ * Reduced motion renders the finished check instantly.
+ */
+function DrawnCheck({ reduced }: { reduced: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-7 w-7 shrink-0 text-neon-400"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={3}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <motion.path
+        d="M5 13l4 4L19 7"
+        initial={reduced ? false : { pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 0.4, ease: "easeOut", delay: 0.12 }}
+      />
+    </svg>
+  );
+}
 
 // ── Tap to reveal ────────────────────────────────────────────
 
