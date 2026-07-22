@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import {
   CreditCard,
   ShieldCheck,
@@ -12,6 +13,7 @@ import {
   UserRound,
   LogOut,
   Sun,
+  KeyRound,
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
@@ -27,10 +29,18 @@ import {
   updateEmailPreferences,
   updateParentPin,
   updateTwoFactor,
+  startTotpSetup,
+  confirmTotpSetup,
+  cancelTotpSetup,
+  disableTotpAction,
+  dismissTotpRecovery,
   updatePhone,
   signOutEverywhere,
   deleteAccount,
 } from "./actions";
+import { TOTP_RECOVERY_COOKIE } from "./totp-cookie";
+import { openSecret } from "@/lib/auth/secret-box";
+import { otpauthUri } from "@/lib/auth/totp";
 import { emailConfigured } from "@/lib/email/send";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -53,7 +63,7 @@ const STATUS_CONTEXT: Record<string, string> = {
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; error?: string; checkout?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string; checkout?: string; totp?: string }>;
 }) {
   const params = await searchParams;
   const parentId = await currentParentId();
@@ -61,6 +71,21 @@ export default async function SettingsPage({
   const parent = await findParentById(parentId);
   if (!parent) redirect("/login?redirect=/settings");
   const children = await listChildren(parentId);
+
+  // Authenticator-app (TOTP) 2FA view state (F4). During setup the sealed secret
+  // is opened server-side to show the manual key + otpauth URI; recovery codes
+  // are shown once from a short-lived cookie right after activation.
+  const totpEnabled = parent.totp_enabled === true;
+  const totpSetup =
+    params.totp === "setup" && !!parent.totp_secret_enc && parent.totp_enabled !== true;
+  const totpSetupSecret = totpSetup ? openSecret(parent.totp_secret_enc!) : null;
+  const totpSetupUri = totpSetupSecret
+    ? otpauthUri({ secretBase32: totpSetupSecret, accountName: parent.email })
+    : null;
+  const totpRecoveryCodes =
+    params.totp === "recovery"
+      ? ((await cookies()).get(TOTP_RECOVERY_COOKIE)?.value?.split(",").filter(Boolean) ?? [])
+      : [];
   // A paying subscriber (active/past_due/paused) should never be shown the
   // trial/upsell CTA — trialing/canceled/diagnostic accounts still are.
   const hasActiveSubscription =
@@ -369,6 +394,128 @@ export default async function SettingsPage({
                 </SubmitButton>
               )}
             </form>
+
+            <div className="my-6 border-t border-white/5" />
+
+            {/* Authenticator app (TOTP) 2FA — F4. No email provider needed. */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start gap-3">
+                <KeyRound className="mt-0.5 h-4 w-4 shrink-0 text-neon-300" />
+                <div>
+                  <p className="text-sm text-fog-200">Authenticator app</p>
+                  <p className="text-xs text-fog-500 mt-0.5">
+                    Use an app like Google Authenticator, Authy or 1Password for
+                    codes — works even without email. Strongest option.
+                  </p>
+                </div>
+                {totpEnabled && !totpRecoveryCodes.length && (
+                  <Badge variant="neon" size="sm" className="ml-auto">On</Badge>
+                )}
+              </div>
+
+              {totpRecoveryCodes.length > 0 ? (
+                /* One-time recovery-code reveal, right after activation. */
+                <div className="rounded-xl border border-neon-400/30 bg-neon-500/[0.06] p-4">
+                  <p className="text-sm font-medium text-fog-100">
+                    Save your recovery codes
+                  </p>
+                  <p className="text-xs text-fog-400 mt-1 mb-3">
+                    Each code works once if you lose your phone. Store them somewhere
+                    safe — you won&apos;t see them again.
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 font-mono text-sm text-fog-100">
+                    {totpRecoveryCodes.map((c) => (
+                      <span key={c} className="rounded bg-white/5 px-2 py-1 text-center tracking-wider">
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                  <form action={dismissTotpRecovery} className="mt-4">
+                    <SubmitButton variant="primary" size="md" pendingLabel="Saving…">
+                      I&apos;ve saved these codes
+                    </SubmitButton>
+                  </form>
+                </div>
+              ) : totpSetup && totpSetupSecret ? (
+                /* Setup panel: manual key + otpauth URI + confirm-code form. */
+                <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+                  <p className="text-xs text-fog-400 mb-2">
+                    In your authenticator app choose <strong>Add account → Enter a
+                    setup key</strong>, then enter this key (account:{" "}
+                    <span className="text-fog-200">{parent.email}</span>):
+                  </p>
+                  <code className="block break-all rounded bg-white/5 px-3 py-2 font-mono text-sm tracking-wider text-neon-200">
+                    {totpSetupSecret.replace(/(.{4})/g, "$1 ").trim()}
+                  </code>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs text-fog-500 hover:text-fog-300">
+                      Or copy the full setup link
+                    </summary>
+                    <code className="mt-1 block break-all rounded bg-white/5 px-3 py-2 font-mono text-[11px] text-fog-400">
+                      {totpSetupUri}
+                    </code>
+                  </details>
+
+                  {params.error && (
+                    <p className="mt-3 text-sm text-crimson-400">{params.error}</p>
+                  )}
+
+                  <form action={confirmTotpSetup} className="mt-4 flex flex-col gap-3">
+                    <Input
+                      name="code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      required
+                      label="Enter the 6-digit code from your app"
+                      placeholder="123456"
+                    />
+                    <div className="flex items-center gap-3">
+                      <SubmitButton variant="primary" size="md" pendingLabel="Verifying…">
+                        Verify &amp; turn on
+                      </SubmitButton>
+                      <form action={cancelTotpSetup}>
+                        <button type="submit" className="text-sm text-fog-400 hover:text-fog-100">
+                          Cancel
+                        </button>
+                      </form>
+                    </div>
+                  </form>
+                </div>
+              ) : totpEnabled ? (
+                /* Enabled: password-gated turn-off. */
+                <form action={disableTotpAction} className="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    name="username"
+                    autoComplete="username"
+                    defaultValue={parent.email}
+                    readOnly
+                    hidden
+                    aria-hidden="true"
+                    tabIndex={-1}
+                  />
+                  <Input
+                    name="current_password"
+                    type="password"
+                    autoComplete="current-password"
+                    required
+                    label="Confirm your password to turn off the authenticator"
+                    placeholder="Current password"
+                  />
+                  <SubmitButton variant="secondary" size="md" className="self-start" pendingLabel="Turning off…">
+                    Turn off authenticator
+                  </SubmitButton>
+                </form>
+              ) : (
+                /* Not set up: start enrolment. */
+                <form action={startTotpSetup}>
+                  <SubmitButton variant="secondary" size="md" className="self-start" pendingLabel="Starting…">
+                    Set up authenticator app
+                  </SubmitButton>
+                </form>
+              )}
+            </div>
 
             <div className="my-6 border-t border-white/5" />
 

@@ -125,6 +125,17 @@ export interface ParentDoc {
    */
   two_factor_enabled?: boolean;
   /**
+   * Authenticator-app (TOTP) two-factor sign-in (F4, opt-in). Unlike email 2FA
+   * it needs no email provider. `totp_secret_enc` is the AES-256-GCM-sealed
+   * shared secret (never stored in plaintext); `totp_enabled` gates the sign-in
+   * step (only true once a code has been verified); `totp_recovery_hashes` are
+   * SHA-256 hashes of single-use backup codes (removed as they're consumed).
+   * All undefined = TOTP not set up.
+   */
+  totp_enabled?: boolean;
+  totp_secret_enc?: string | null;
+  totp_recovery_hashes?: string[];
+  /**
    * Parent-feedback prompt state (voluntary sentiment widget). Drives the pure
    * eligibility function (`lib/engine/feedback-eligibility.ts`) so the milestone
    * prompt can never re-nag: `feedback_last_shown_at` (audit of when it last

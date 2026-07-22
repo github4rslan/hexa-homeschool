@@ -4478,6 +4478,86 @@ export async function setTwoFactorEnabled(
   return res.matchedCount > 0;
 }
 
+// ── Authenticator-app (TOTP) 2FA (F4) ────────────────────
+/**
+ * Stage a pending TOTP secret (sealed) with `totp_enabled: false`. The parent
+ * must verify a code before it's switched on (see `activateTotp`).
+ */
+export async function stageTotpSecret(
+  parentId: string,
+  sealedSecret: string,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne(
+    { _id: oid },
+    {
+      $set: {
+        totp_secret_enc: sealedSecret,
+        totp_enabled: false,
+        updated_at: new Date(),
+      },
+      $unset: { totp_recovery_hashes: "" },
+    },
+  );
+  return res.matchedCount > 0;
+}
+
+/** Turn TOTP on after a verified code, storing the recovery-code hashes. */
+export async function activateTotp(
+  parentId: string,
+  recoveryHashes: string[],
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne(
+    { _id: oid, totp_secret_enc: { $ne: null } },
+    {
+      $set: {
+        totp_enabled: true,
+        totp_recovery_hashes: recoveryHashes,
+        updated_at: new Date(),
+      },
+    },
+  );
+  return res.modifiedCount > 0;
+}
+
+/** Fully remove TOTP from an account (disable + wipe secret + recovery codes). */
+export async function disableTotp(parentId: string): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne(
+    { _id: oid },
+    {
+      $set: { totp_enabled: false, updated_at: new Date() },
+      $unset: { totp_secret_enc: "", totp_recovery_hashes: "" },
+    },
+  );
+  return res.matchedCount > 0;
+}
+
+/** Atomically consume a single-use recovery-code hash. True if it was present. */
+export async function consumeTotpRecoveryCode(
+  parentId: string,
+  codeHash: string,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne(
+    { _id: oid, totp_recovery_hashes: codeHash },
+    {
+      $pull: { totp_recovery_hashes: codeHash },
+      $set: { updated_at: new Date() },
+    },
+  );
+  return res.modifiedCount > 0;
+}
+
 // ── Escalations (Stage 5 safety) ─────────────────────────
 export async function recordEscalation(
   childId: ObjectId,
