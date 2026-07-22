@@ -169,7 +169,7 @@ const QUESTIONS_BY_TOPIC: Record<string, QTuple[]> = {
     [2, "practice", "What is ¾ + ⅛?", ["7/8", "4/12", "1/2", "5/8"], 0, "Convert ¾ to 6/8, then 6/8 + 1/8 = 7/8."],
     [2, "practice", "Write 0.25 as a fraction in simplest form.", ["1/2", "1/4", "2/5", "1/5"], 1, "0.25 = 25/100 = 1/4."],
     [3, "mastery", "What is 20% of 150?", ["20", "30", "15", "25"], 1, "10% of 150 is 15, so 20% is 30."],
-    [3, "mastery", "What is ⅔ × ¾?", ["1/2", "5/7", "6/12", "2/4"], 0, "Multiply tops and bottoms: 6/12 = 1/2."],
+    [3, "mastery", "What is ⅔ × ¾?", ["1/2", "5/7", "7/12", "5/8"], 0, "Multiply tops and bottoms: 6/12 = 1/2."],
     [4, "mastery", "Increase £80 by 15%.", ["£92", "£95", "£88", "£90"], 0, "15% of 80 is 12, so 80 + 12 = £92."],
   ],
   maths_ratio: [
