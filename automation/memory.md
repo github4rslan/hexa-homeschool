@@ -88,3 +88,23 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   (type-check, 525 tests, lint, build), one commit each. Pattern: a "use server"
   module may export only async fns — put shared consts (e.g. a cookie name) in a
   sibling non-action file. All of Scout's 2026-07-20 report is now shipped.
+- 2026-07-22 — Discovery pass, OWNER PRIORITY = child-mode lesson animation features
+  + bug fixes, led by the fraction lesson (`/learn/lesson?topic=maths_fractions`).
+  Walked the fraction lesson end-to-end as Sam (KS3): explainer → 4 practice →
+  3/3 mastery → certified; correct = star burst, wrong = calm no-red, hints +
+  See-it + trophy all PASS. Key insight: the child flow is ALREADY animation-rich
+  (framer-motion everywhere, Celebration, choreographed See-it teaching-animations
+  for equations/grammar/science/choice, Eddie coach, karaoke captions, breath
+  break, reduced-motion + WCAG throughout) — so the real gap is CONTENT-SHAPED:
+  fraction/percentage questions have NO fraction visual (they fall through every
+  deriver in teaching-animations.ts to the generic choice_strategy text panel).
+  Headline feature = F1 a `fraction_bars`/area-model animation type. Bugs found:
+  B1 practice actions row ("I'm stuck"+"Check answer") overflows 26px at 390px
+  (row lacks flex-wrap); B2 today's Science quest (`science_biology_cells`, also
+  on the parent dashboard today-card) dead-walls into the calm "isn't ready yet"
+  screen — advertised but unseeded; B3 favicon-32.png 404 on every page. Static:
+  type-check + lint green; npm audit now 5 vulns (4 high sharp/libvips, moderate
+  postcss) — do NOT `audit fix --force` (downgrades next→9). Prior F1 password
+  reset shipped (login "Forgot password?" → /forgot-password works). Pattern:
+  when the owner asks for "more animation", first inventory what already animates
+  — here the win was a missing VISUAL TYPE, not more motion on existing surfaces.
