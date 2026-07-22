@@ -70,6 +70,12 @@ export interface ParentDoc {
    */
   role?: "admin" | "support" | "tutor";
   /**
+   * Tutor self-status (F9): whether this tutor is currently accepting new
+   * sessions. Advisory only — live matching/scheduling stays deferred — surfaced
+   * on the tutor's own console and to staff. Undefined = treated as available.
+   */
+  tutor_available?: boolean;
+  /**
    * Staff-role provenance (accountability): the admin account id that last
    * granted/changed this account's staff role, and when. Absent on legacy
    * grants made by editing Atlas directly. Set by the audited admin UI.

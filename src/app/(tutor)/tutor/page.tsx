@@ -4,15 +4,24 @@ import { CalendarClock, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { SubmitButton } from "@/components/ui/submit-button";
 import { getSession } from "@/lib/auth/session";
-import { listTutorSessionsForTutor } from "@/lib/db/repo";
+import { findParentById, listTutorSessionsForTutor } from "@/lib/db/repo";
+import { updateTutorAvailability } from "./actions";
 
 export const metadata: Metadata = { title: "Tutor sessions" };
 export const dynamic = "force-dynamic";
 
-export default async function TutorHomePage() {
+export default async function TutorHomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saved?: string }>;
+}) {
+  const { saved } = await searchParams;
   const session = await getSession();
   if (!session) redirect("/login?redirect=/tutor");
+  const account = await findParentById(session.id);
+  const available = account?.tutor_available !== false; // undefined = available
   const sessions = await listTutorSessionsForTutor(session.id);
   const upcoming = sessions.filter((s) => s.booking.status === "scheduled");
   const completed = sessions.filter((s) => s.booking.status === "completed");
@@ -25,6 +34,38 @@ export default async function TutorHomePage() {
           Join scheduled rooms, message families, and complete notes after tutoring.
         </p>
       </div>
+
+      {saved && (
+        <div className="mb-6 flex items-center gap-2 rounded-xl border border-neon-400/30 bg-neon-500/10 px-4 py-3 text-sm text-neon-400">
+          Availability saved.
+        </div>
+      )}
+
+      <Card variant="glass" padding="lg" className="mb-8">
+        <form
+          action={updateTutorAvailability}
+          className="flex flex-wrap items-center justify-between gap-4"
+        >
+          <label className="flex items-start gap-3 text-sm text-fog-200 cursor-pointer">
+            <input
+              type="checkbox"
+              name="tutor_available"
+              defaultChecked={available}
+              className="mt-0.5 rounded border-white/10 bg-white/5"
+            />
+            <span>
+              Available for new sessions
+              <span className="block text-xs text-fog-500 mt-0.5">
+                Let staff know whether you&apos;re currently accepting assignments.
+                Advisory only — this doesn&apos;t change existing bookings.
+              </span>
+            </span>
+          </label>
+          <SubmitButton variant="secondary" size="md" pendingLabel="Saving…">
+            Save availability
+          </SubmitButton>
+        </form>
+      </Card>
 
       <section className="mb-8 grid gap-4 sm:grid-cols-3">
         <Card variant="glass" padding="md">
