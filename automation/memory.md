@@ -65,6 +65,50 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   the DB-bound repo change still gets unit tests. (3) The MCP browser profile PERSISTS
   login between runs (login form was pre-filled); `/logout` is POST-only (GET = 405) —
   log out with a `fetch('/logout',{method:'POST'})` from the page, then browser_close.
+- 2026-07-23 — Mechanic build run #2 (owner named B3, B4, F3, F4 — 4 of 4, within
+  cap; F1/B1/B2/F2 already shipped, F5 left for next run). All four SHIPPED, each
+  green-gated (type-check + 555 tests + lint + build, one commit, pushed to main)
+  AND live-verified on edway.uk with Playwright. **B3** favicon-32 404: `public/`
+  only had `favicon.svg`; generated the missing PNGs from it with **sharp 0.34.5**
+  (already a dep) — favicon-32, apple-touch-icon(180), icon-192/512 + a full-bleed
+  maskable-512 (logo at 70% on #050614). Fixes the head icon 404 AND the latent PWA
+  manifest icon 404s. Live: all five PNGs return 200 image/png; ZERO console errors
+  on dashboard + child mode (favicon-32 was the only one). **B4** equal-value MCQ:
+  the ⅔×¾ mastery Q had 6/12 and 2/4 (both = 1/2) as distractors. KEY GOTCHA: seed
+  upserts questions by natural key `topic_tag + prompt`, so rewording the prompt
+  would INSERT a new row and ORPHAN the old — instead I kept the prompt and only
+  swapped the distractors (→ 7/12, 5/8; kept 5/7 add-across error) so exactly one
+  option equals 1/2. Ran `npm run seed` (idempotent, upsert-in-place, only touches
+  curriculum_topics/questions + indexes, never child/parent data) to push it live;
+  "7 written". Live-verified by a read-only DB query: options now
+  ["1/2","5/7","7/12","5/8"], correctIndex 0. (The Q is KS3 fraction mastery, out of
+  band for the KS2 smoke child Ivy, so DB read was the authoritative live check.)
+  **F3** correct-answer settle micro-anim in `interaction.tsx` Mcq: accent
+  fill-sweep (scaleX 0→1 origin-left, settling opacity 0.35→0.18, `accent.bar`
+  gradient) + a self-drawing check (`motion.path` pathLength 0→1, d="M5 13l4 4L19 7"),
+  gated on `celebrate = showCorrect && wasCorrect && chosen` so ONLY the child's own
+  correct pick gets motion; wrong stays soft dim/desaturate; reduced-motion collapses
+  to static tint + instant check. Button needed `relative overflow-hidden` + inner
+  content wrapped in `relative z-10` so the sweep clips behind text. Live: chose the
+  correct option, DOM confirmed overflow-hidden + neon border + gradient sweep span +
+  the drawn-check path; screenshot showed the teal→violet sweep across the option with
+  "Brilliant!". **F4** real third "Mastery" phase-bar segment: `PracticePlayer` now
+  lifts its internal sub-phase via `onPhaseChange` (a `useState` setter — stable
+  identity, so the reporting effect only fires on real phase change), and `DailyFlow`
+  renders a 3rd segment (Learn→Practise→Mastery), lighting it when subPhase ∈
+  {mastery,reteach,handoff,complete} via the existing motion.div width animation. Live:
+  drove 3/3 practice correct → "Start mastery" → landed in "Mastery check 1"; all three
+  segments filled (216px) with the active fog-200 label — the segment exists AND lights
+  on crossing. Patterns worth repeating: (1) generate missing static icon assets from
+  an existing SVG with the already-installed `sharp` rather than adding tooling — script
+  must run from the PROJECT dir (scratchpad can't resolve `sharp`); copy the .mjs into
+  repo root, run, delete. (2) When editing a seed question, NEVER change the `prompt`
+  (the natural key) or reseed orphans the old row — mutate options/answer in place. (3)
+  To live-verify content behind a deep/out-of-band lesson flow, a read-only Mongo query
+  is a legitimate authoritative check. (4) Lift child-component sub-state to a parent
+  bar via a `useState` setter passed as the callback — no useCallback needed, identity
+  is already stable. MCP browser did NOT persist login this run (had to sign in via the
+  autofilled form); `/logout` POST + browser_close for teardown as before.
 - 2026-07-22 (earlier entries below)
 - 2026-07-20 — System created. Scout runs by day (discovery), Mechanic by night
   (implementation). Default DECISION is `all`. Production target: https://edway.uk.
