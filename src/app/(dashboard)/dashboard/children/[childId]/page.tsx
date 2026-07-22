@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Check, GraduationCap, Activity, BookOpen, TrendingUp } from "lucide-react";
+import { Check, GraduationCap, Activity, BookOpen, TrendingUp, MessageSquare } from "lucide-react";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import {
   evaluationHistory,
   childInsights,
   childCurrentBands,
+  listChildTutorNotes,
   KEY_STAGE_LABEL,
 } from "@/lib/db/repo";
 import { buildAssessmentNarrative } from "@/lib/engine/assessment-narrative";
@@ -58,6 +59,7 @@ export default async function ChildProfilePage({
   const bands = await childCurrentBands(parentId, child._id);
   const insights = await childInsights(parentId, child._id);
   const work = await listMedia({ useCase: "child_work", childId, limit: 12 });
+  const tutorNotes = await listChildTutorNotes(parentId, childId);
   const decision = computeExamDecision(
     child.date_of_birth,
     standings.map((s) => ({
@@ -252,6 +254,34 @@ export default async function ChildProfilePage({
           <div className="mb-6">
             <ExamDecisionCard decision={decision} childName={child.full_name} />
           </div>
+        )}
+
+        {/* Tutor notes (F9) — human-authored notes from logged tutor sessions,
+            surfaced to the owning parent. Safeguarding-relevant; React-escaped. */}
+        {tutorNotes.length > 0 && (
+          <Card variant="glass" padding="xl" className="mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <MessageSquare className="h-4 w-4 text-neon-300" />
+              <h2 className="text-lg font-semibold text-fog-50">Tutor notes</h2>
+            </div>
+            <p className="text-sm text-fog-400 mb-5">
+              What {child.full_name.split(" ")[0]}&apos;s tutor noted after a
+              session, by topic.
+            </p>
+            <div className="flex flex-col gap-3">
+              {tutorNotes.map((n) => (
+                <div
+                  key={n.topicTag}
+                  className="rounded-xl bg-white/[0.03] border border-white/5 p-4"
+                >
+                  <div className="text-sm font-semibold text-fog-50 mb-1">
+                    {n.topicTitle}
+                  </div>
+                  <p className="text-sm leading-relaxed text-fog-300">{n.note}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
         )}
 
         {/* Work evidence (Cloudinary, private) */}

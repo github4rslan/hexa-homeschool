@@ -3464,6 +3464,38 @@ export async function getTutorHandoffState(
   return { paused: !!row?.tutor_paused_at, note: row?.tutor_note ?? null };
 }
 
+export interface ChildTutorNote {
+  topicTag: string;
+  topicTitle: string;
+  note: string;
+}
+
+/**
+ * All tutor notes for a child, surfaced to the OWNING parent (F9). Ownership-
+ * checked; returns only competence rows that carry a tutor note, joined to human
+ * topic titles. Safeguarding-relevant content — parent-scoped, never analytics.
+ */
+export async function listChildTutorNotes(
+  parentId: string,
+  childId: string,
+): Promise<ChildTutorNote[]> {
+  const childOid = toObjectId(childId);
+  if (!childOid || !(await assertOwnsChild(parentId, childOid))) return [];
+  const col = await getCollection<CompetenceDoc>(Collections.competence);
+  const rows = await col
+    .find({ child_id: childOid, tutor_note: { $ne: null } })
+    .toArray();
+  const withNote = rows.filter((r) => r.tutor_note);
+  if (withNote.length === 0) return [];
+  const topics = await listTopics();
+  const titleByTag = new Map(topics.map((t) => [t.topic_tag, t.title]));
+  return withNote.map((r) => ({
+    topicTag: r.topic_tag,
+    topicTitle: titleByTag.get(r.topic_tag) ?? r.topic_tag,
+    note: r.tutor_note as string,
+  }));
+}
+
 export async function listTutorBookings(
   parentId: string,
 ): Promise<TutorBookingDoc[]> {
@@ -4474,6 +4506,21 @@ export async function setTwoFactorEnabled(
   const res = await col.updateOne(
     { _id: oid },
     { $set: { two_factor_enabled: enabled, updated_at: new Date() } },
+  );
+  return res.matchedCount > 0;
+}
+
+/** A tutor sets their own "accepting new sessions" status (F9, self-scoped). */
+export async function setTutorAvailability(
+  tutorId: string,
+  available: boolean,
+): Promise<boolean> {
+  const oid = toObjectId(tutorId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne(
+    { _id: oid },
+    { $set: { tutor_available: available, updated_at: new Date() } },
   );
   return res.matchedCount > 0;
 }

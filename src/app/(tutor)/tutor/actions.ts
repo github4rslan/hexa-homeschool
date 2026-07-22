@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { can, resolveRole } from "@/lib/auth/rbac";
 import {
@@ -8,6 +9,7 @@ import {
   getTutorSessionForTutor,
   logTutorSessionAsStaff,
   postMessageAsStaff,
+  setTutorAvailability,
 } from "@/lib/db/repo";
 import { validateMessageBody } from "@/lib/messaging/validate";
 import { rateLimit } from "@/lib/rate-limit";
@@ -103,4 +105,19 @@ export async function completeTutorSession(
   revalidatePath(`/tutor/sessions/${bookingId}`);
   revalidatePath("/tutoring");
   return { ok: true, message: "Session completed." };
+}
+
+/**
+ * A tutor toggles their own "accepting new sessions" status (F9). Role-gated via
+ * requireTutor and self-scoped — only ever writes the signed-in tutor's account.
+ * Advisory only; live matching/scheduling stays deferred.
+ */
+export async function updateTutorAvailability(formData: FormData) {
+  const auth = await requireTutor();
+  if ("error" in auth) redirect("/login?redirect=/tutor");
+
+  const available = formData.get("tutor_available") === "on";
+  await setTutorAvailability(auth.tutorId, available);
+  revalidatePath("/tutor");
+  redirect("/tutor?saved=1");
 }
