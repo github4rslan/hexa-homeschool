@@ -56,7 +56,6 @@ import { MathVisual } from "@/components/child/math-visual";
 import { deriveMathVisual } from "@/lib/child/math-visual";
 import { buildQuestionNarration } from "@/lib/child/narration-copy";
 import dynamic from "next/dynamic";
-import { StepReveal } from "@/components/child/step-reveal";
 
 // Lazy-mount the choreographed See-it player: its motion tree only downloads
 // and mounts when a child actually opens it (60fps on low-end devices starts
@@ -68,7 +67,6 @@ const TeachingAnimation = dynamic(
     ),
   { ssr: false },
 );
-import { workedSolutionFromExplanation } from "@/lib/child/worked-examples";
 import {
   teachingAnimationNarration,
   validateTeachingAnimation,
@@ -377,13 +375,6 @@ export function PracticePlayer({
   const hintLadder = question
     ? buildHintLadder({ hints: question.hints, explanation: question.explanation })
     : [];
-  const workedSolution = question
-    ? (question.workedSolution ??
-      workedSolutionFromExplanation({
-        prompt: question.prompt,
-        explanation: question.explanation,
-      }))
-    : null;
 
   const stopRecorder = useCallback(() => {
     if (recordTimerRef.current) {
@@ -819,10 +810,14 @@ export function PracticePlayer({
       return next;
     });
 
-    // The endpoint of the ladder: the attempt cap, or a concept gap (hints
-    // leaned on) per the matrix — the animated reveal, then the calm worked
-    // walkthrough, then move on.
-    if (spine.reveal || decision.escalateReteach) openReveal();
+    // Endpoint of the ladder. Only the attempt cap reveals the answer + See-it
+    // and moves on. A concept gap after 2 misses just surfaces the See-it
+    // animation as extra help — the child still has a try, so we don't end it.
+    if (spine.reveal) {
+      openReveal();
+    } else if (decision.escalateReteach && teachingAnimation && nextAttempts >= 2) {
+      setVisualOpen(true);
+    }
 
     // A real calm break when frustration or repeated misses are detected —
     // once per question, always skippable (Feature 7).
@@ -841,41 +836,14 @@ export function PracticePlayer({
   }
 
   /**
-   * The reveal — the endpoint of the help spine ("See it" is the payoff): the
-   * choreographed animation shows the full solution, and the calm worked
-   * walkthrough follows so the child can step through it before moving on.
+   * The reveal at the attempt cap — the child has used all their tries. Show the
+   * correct answer (so they're never stranded) and open the See-it animation as
+   * the resolution, then let them move on. (The old worked-solution walkthrough
+   * was removed — the animation is now the payoff.)
    */
   function openReveal() {
     if (teachingAnimation) setVisualOpen(true);
-    if (workedSolution) setStepByStepOpen(true);
-  }
-
-  /**
-   * ONE big "I'm stuck" button (Phase 3, Feature 4): each press walks the
-   * graduated help spine — next hint rung, then the See-it reveal. Always in
-   * the same place, always a next step, never a dead end.
-   */
-  function imStuck() {
-    tapCue();
-    if (canHint) {
-      showHint();
-    } else if (!revealed) {
-      openReveal();
-    }
-  }
-
-  function showHint() {
-    // Manual "another hint" — one rung per press, starting past the floor
-    // (the misconception panel already covered rung 1 when the floor is set).
-    const next = Math.min(Math.max(hintRung, hintFloor) + 1, hintLadder.length);
-    if (next > hintRung) {
-      hintsTotalRef.current += 1;
-      setHintRung(next);
-      // Everything a child sees is narratable (Phase 3): the new hint is read
-      // aloud so a non-reader gets the same help. Single shared audio engine —
-      // this simply supersedes whatever was playing.
-      if (autoplayOn) void narration.playText(hintLadder[next - 1] ?? "");
-    }
+    setRevealed(true);
   }
 
   function toggleTeachingVisual() {
@@ -1346,9 +1314,6 @@ export function PracticePlayer({
 
   const attemptsLeft = MAX_ATTEMPTS - attempts;
   const isCorrect = outcome === "correct";
-  // Hints not yet exhausted, still has tries, and not solved → can ask for more.
-  const canHint =
-    !revealed && !isCorrect && hintRung < hintLadder.length;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -1487,7 +1452,10 @@ export function PracticePlayer({
           )}
         </div>
 
-        {teachingAnimation && (
+        {/* "See it" unlocks only after 2 wrong answers (or once the answer has
+            been revealed at the attempt cap) — the visual is a considered help,
+            not a shortcut past thinking. */}
+        {teachingAnimation && (attempts >= 2 || revealed) && (
           <div className="mb-6">
             <button
               type="button"
@@ -1670,33 +1638,6 @@ export function PracticePlayer({
           )}
         </AnimatePresence>
 
-        {/* Correct moment — encouraging line; the burst is non-blocking. */}
-        <AnimatePresence>
-          {stepByStepOpen && workedSolution && !isCorrect && (
-            <motion.div
-              key="step-by-step"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-6"
-            >
-              <StepReveal
-                example={workedSolution}
-                onDone={() => setRevealed(true)}
-                doneLabel="Got it"
-                voiceId={voiceId}
-                keyStage={keyStage}
-                accent={accentId}
-                // When the See-it animation is open it owns the voice — the
-                // worked walkthrough stays visual so two clips never compete.
-                autoplay={autoplayOn && !(visualOpen && !!teachingAnimation)}
-                className="border-white/10 bg-white/[0.02]"
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         <AnimatePresence>
           {isCorrect && (
             <motion.div
@@ -1716,29 +1657,13 @@ export function PracticePlayer({
 
         {/* Actions */}
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-          {!revealed && !isCorrect ? (
-            <div className="flex flex-wrap items-center gap-4">
-              {/* ONE big, always-here help button — each press gives the next
-                  rung of the ladder, ending in the See-it reveal. Giant touch
-                  target, keyboardable, calm; never a dead end. */}
-              <button
-                onClick={imStuck}
-                className={cn(
-                  "child-touch inline-flex items-center gap-2 rounded-2xl border px-5 text-lg font-semibold text-fog-100 transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2",
-                  accent.softBg,
-                  accent.softBorder,
-                  accent.ring,
-                )}
-              >
-                <Lightbulb className={cn("h-6 w-6", accent.text)} />
-                I&apos;m stuck
-              </button>
-              {attempts > 0 && (
-                <span className="text-base text-fog-400">
-                  {attemptsLeft} {attemptsLeft === 1 ? "try" : "tries"} left
-                </span>
-              )}
-            </div>
+          {/* No "I'm stuck" button: the gentle text nudges surface on their own
+              after a wrong answer, and "See it" unlocks after 2 misses. We just
+              show how many tries remain. */}
+          {!revealed && !isCorrect && attempts > 0 ? (
+            <span className="text-base text-fog-400">
+              {attemptsLeft} {attemptsLeft === 1 ? "try" : "tries"} left
+            </span>
           ) : (
             <span />
           )}
