@@ -109,6 +109,36 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   bar via a `useState` setter passed as the callback — no useCallback needed, identity
   is already stable. MCP browser did NOT persist login this run (had to sign in via the
   autofilled form); `/logout` POST + browser_close for teardown as before.
+- 2026-07-25 — Mechanic build run, DECISION `all` (owner named B1, B2, B3, F1 — 4 of
+  4, within cap). All four SHIPPED, each green-gated (type-check + tests + lint + build,
+  one commit, pushed to main) AND live-verified on edway.uk. **B1** dashboard "Avg
+  lesson time" false-reassurance: extracted a pure `avgLessonTimeHint(avgSec)` (+ test)
+  → below/within/above the 45–60 min band; live card now reads "4m · below the 45–60
+  min target" (was hardcoded "within … target"). **B2** double name greeting: passed
+  `firstName={null}` to `TodayBriefingHeader` so the personalised name lives only in the
+  topbar; live shows "Good to see you, Scout" (topbar) + "Good evening" (briefing, no
+  name). **B3** raw ISO week key: new pure `formatUkDate(iso)` in `lib/utils.ts` (+ test,
+  UTC-anchored so the day never shifts) → live "/schedule" reads "Week of 20 July 2026".
+  **F1** every marketing page a real `<h1>`: added an `as?: "h1"|"h2"` prop to the shared
+  `SectionHeader` (default h2, identical Tailwind classes — only the tag changes) and set
+  `as="h1"` on the FIRST header of the 12 pages that led with an h2 (pricing, how-it-works,
+  safety, for-parents, agents, demo, compliance, roadmap, resources, gallery, why-now,
+  contact). Live curl across all 16 marketing pages: each now has EXACTLY one h1 — the 4
+  pre-existing ones (/, /about, /childrens-code, /local-authorities) did NOT double. Zero
+  console errors on dashboard/schedule. Patterns worth repeating: (1) The MCP browser
+  profile PERSISTED the login *form autofill* this run — the SMOKE email+password were
+  pre-filled on /login, so I just clicked "Sign in" and never had to type/print the
+  password (privacy-clean login). Teardown: `fetch('/logout',{method:'POST'})` → 200, then
+  browser_close. (2) For a shared heading component used in multiple sections per page,
+  add an `as` prop (default the section level) and opt the lead header into h1 per-page —
+  never blanket-flip the component or you get multiple h1s. (3) `curl -sL` h1 counts across
+  all marketing routes is a fast, authoritative live check for the F1-class SEO/a11y fix —
+  poll it in a loop to confirm the Vercel deploy actually landed before asserting (deploy
+  took ~75s this run). NOT built (remaining, per cap): F2 (npm-audit CVEs — sharp bump +
+  non-force audit fix), F3 (multiplication-array math visual), F4 (dyslexia reading mode),
+  F5 (mastery certificate), F6 (annual billing toggle), F7 (dashboard skeletons). NOTE: the
+  cron's stale "never build F4/2FA" line is OBSOLETE — 2FA shipped long ago; today's F4 is
+  dyslexia reading mode, just out of scope under the 4-item cap.
 - 2026-07-22 (earlier entries below)
 - 2026-07-20 — System created. Scout runs by day (discovery), Mechanic by night
   (implementation). Default DECISION is `all`. Production target: https://edway.uk.
