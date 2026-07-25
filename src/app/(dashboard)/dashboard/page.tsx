@@ -36,6 +36,7 @@ import {
   getFeedbackPromptContext,
 } from "@/lib/db/repo";
 import { shouldShowFeedbackPrompt } from "@/lib/engine/feedback-eligibility";
+import { avgLessonTimeHint } from "@/lib/engine/dashboard-stats";
 import { buildWeeklyRecapNarration } from "@/lib/engine/weekly-summary";
 import { FeedbackPrompt, FeedbackButton } from "@/components/dashboard/feedback-widget";
 import { readActiveChildId } from "@/lib/active-child";
@@ -390,7 +391,7 @@ export default async function DashboardPage() {
             <StatCard
               label="Avg lesson time"
               value={avgSec ? `${Math.round(avgSec / 60)}m` : "—"}
-              hint={avgSec ? "within 45–60 min target" : "no lessons yet"}
+              hint={avgLessonTimeHint(avgSec)}
               accent="cyan"
               icon={<Clock className="h-4 w-4" />}
             />
