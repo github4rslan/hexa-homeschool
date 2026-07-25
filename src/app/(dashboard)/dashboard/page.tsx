@@ -335,10 +335,10 @@ export default async function DashboardPage() {
         {todayCards.length > 0 && (
           <section className="mb-10">
             <div className="mb-6">
-              <TodayBriefingHeader
-                firstName={parent?.full_name?.split(" ")[0] ?? null}
-                summary={todaySummary}
-              />
+              {/* Name-personalised greeting lives in the topbar only — the
+                  briefing leads with the time-of-day + child summary so the
+                  parent isn't greeted by name twice (B2). */}
+              <TodayBriefingHeader firstName={null} summary={todaySummary} />
             </div>
             <div className="grid gap-4 lg:grid-cols-2">
               {todayCards.map((card, i) => (
