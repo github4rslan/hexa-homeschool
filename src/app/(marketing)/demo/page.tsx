@@ -14,6 +14,7 @@ export default function DemoPage() {
     <>
       <Section padded className="pt-16">
         <SectionHeader
+          as="h1"
           eyebrow="Live walkthrough"
           title={
             <>

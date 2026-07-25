@@ -35,6 +35,7 @@ export default function CompliancePage() {
       <BreadcrumbJsonLd items={[{ name: "Compliance", path: "/compliance" }]} />
       <Section padded className="pt-16">
         <SectionHeader
+          as="h1"
           eyebrow="Trust & Compliance"
           title={
             <>

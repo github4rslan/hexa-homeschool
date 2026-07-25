@@ -20,6 +20,7 @@ export default async function GalleryPage() {
     <>
       <Section padded className="pt-16">
         <SectionHeader
+          as="h1"
           eyebrow="Success gallery"
           title={
             <>

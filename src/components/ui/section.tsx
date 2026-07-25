@@ -34,12 +34,20 @@ export function SectionHeader({
   description,
   align = "center",
   className,
+  as: Heading = "h2",
 }: {
   eyebrow?: string;
   title: React.ReactNode;
   description?: React.ReactNode;
   align?: "left" | "center";
   className?: string;
+  /**
+   * Heading level for the title. Defaults to `h2` (a section heading). Set to
+   * `h1` for the FIRST header on a page so every marketing page has exactly one
+   * top-level `<h1>` (SEO + WCAG 2.4 document outline). Same visual styling
+   * either way — only the tag changes.
+   */
+  as?: "h1" | "h2";
 }) {
   return (
     <div
@@ -59,9 +67,9 @@ export function SectionHeader({
           {eyebrow}
         </div>
       )}
-      <h2 className="text-4xl font-semibold tracking-tight text-fog-50 md:text-5xl lg:text-6xl">
+      <Heading className="text-4xl font-semibold tracking-tight text-fog-50 md:text-5xl lg:text-6xl">
         {title}
-      </h2>
+      </Heading>
       {description && (
         <p className="text-lg leading-relaxed text-fog-300 md:text-xl max-w-2xl">
           {description}

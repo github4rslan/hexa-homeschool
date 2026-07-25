@@ -15,6 +15,7 @@ export default function AgentsPage() {
     <>
       <Section padded className="pt-16">
         <SectionHeader
+          as="h1"
           eyebrow="Multi-Agent Architecture"
           title={
             <>

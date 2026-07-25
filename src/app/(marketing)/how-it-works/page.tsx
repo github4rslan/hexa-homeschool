@@ -16,6 +16,7 @@ export default function HowItWorksPage() {
       <BreadcrumbJsonLd items={[{ name: "How it works", path: "/how-it-works" }]} />
       <Section padded className="pt-16">
         <SectionHeader
+          as="h1"
           eyebrow="How it works"
           title={
             <>

@@ -67,6 +67,7 @@ export default function PricingPage() {
       <TrackOnMount event="pricing_viewed" />
       <Section padded className="pt-16">
         <SectionHeader
+          as="h1"
           eyebrow="Pricing"
           title={
             <>
