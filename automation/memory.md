@@ -181,3 +181,23 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   reset shipped (login "Forgot password?" → /forgot-password works). Pattern:
   when the owner asks for "more animation", first inventory what already animates
   — here the win was a missing VISUAL TYPE, not more motion on existing surfaces.
+- 2026-07-25 — Discovery pass. OWNER PRIORITY = verify the reworked child help flow
+  ("See it" gates after 2 wrong, "I'm stuck"+worked-example removed, cap reveals
+  answer+See-it). Drove Maths KS2 arithmetic end-to-end as Ivy: **PASS, no
+  regression** — wrong#1 calm nudge (no See-it/no I'm-stuck, "2 tries left"),
+  wrong#2 See-it unlocks ("1 try left"), See-it opens Eddie walkthrough, cap
+  reveals correct option (green border+check, wrong pick dimmed never red) +
+  "Keep going" (never stranded), correct=celebration, mastery 3/3=certified.
+  Mobile 390 no overflow (prior B1 flex-wrap holds). All 3 subjects playable, no
+  dead-walls; mocks gated at 10 certified (honest lock). Site is clean: ZERO
+  console errors across marketing/dashboard/child/admin; type-check+lint green;
+  /api/health 200. Findings are modest (mature codebase): best = F1 twelve
+  marketing pages have NO <h1> (top heading is h2 — SEO/a11y, curl-verified),
+  F2 five high npm-audit CVEs (postcss via next + sharp<0.35; fix WITHOUT
+  --force), F3 multiplication-array math visual (extends accepted fraction-bars
+  pattern). Bugs all Low: B1 dashboard "avg lesson time … within 45–60 min
+  target" hardcoded (shows "3m · within 45–60 min target"), B2 double name
+  greeting, B3 raw ISO "WEEK OF 2026-07-20" on /schedule. COVERAGE GAP: tutor
+  surface untested — TUTOR_EMAIL/PASSWORD absent from .env.local (seed:test-accounts
+  aborts without them). Pattern: curl -sL against www (apex→www redirect eats
+  bare curl) is a fast way to audit <h1>/meta across all static pages at once.
