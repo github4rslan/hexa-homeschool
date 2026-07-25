@@ -45,6 +45,7 @@ export default function SafetyPage() {
       <BreadcrumbJsonLd items={[{ name: "Safety", path: "/safety" }]} />
       <Section padded className="pt-16">
         <SectionHeader
+          as="h1"
           eyebrow="The Safety Net"
           title={
             <>

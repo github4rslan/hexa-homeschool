@@ -40,6 +40,7 @@ export default function RoadmapPage() {
     <>
       <Section padded className="pt-16">
         <SectionHeader
+          as="h1"
           eyebrow="Roadmap"
           title={
             <>

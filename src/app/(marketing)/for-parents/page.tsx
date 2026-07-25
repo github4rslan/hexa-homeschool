@@ -73,6 +73,7 @@ export default function ForParentsPage() {
       <BreadcrumbJsonLd items={[{ name: "For parents", path: "/for-parents" }]} />
       <Section padded className="pt-16">
         <SectionHeader
+          as="h1"
           eyebrow="For UK Parents"
           title={
             <>

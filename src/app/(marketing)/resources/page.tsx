@@ -20,6 +20,7 @@ export default async function ResourcesPage() {
     <>
       <Section padded className="pt-16">
         <SectionHeader
+          as="h1"
           eyebrow="Resources"
           title={
             <>
