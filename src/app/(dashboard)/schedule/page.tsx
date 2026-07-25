@@ -20,6 +20,7 @@ import { approveSchedule, regenerateWeek } from "./actions";
 import { EditableSchedule, type SwapOption } from "@/components/dashboard/editable-schedule";
 import { InlineChildSwitcher } from "@/components/dashboard/inline-child-switcher";
 import type { Subject } from "@/lib/db/types";
+import { formatUkDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Weekly schedule" };
 export const dynamic = "force-dynamic";
@@ -122,7 +123,7 @@ export default async function SchedulePage() {
             <div className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4 text-violet-300" />
               <span className="text-sm font-mono uppercase tracking-widest text-fog-500">
-                Week of {schedule?.week_start}
+                Week of {schedule?.week_start ? formatUkDate(schedule.week_start) : "—"}
               </span>
             </div>
             <form action={regenerateWeek}>

@@ -17,6 +17,24 @@ export function formatNumber(value: number): string {
 }
 
 /**
+ * Format an ISO date ("YYYY-MM-DD", e.g. a weekly-schedule `week_start`) into a
+ * friendly UK long date, "20 July 2026". Parsed and formatted in UTC so the
+ * calendar day never shifts by timezone. Returns the input unchanged if it
+ * isn't a parseable YYYY-MM-DD string (legacy-safe).
+ */
+export function formatUkDate(iso: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}/.test(iso)) return iso;
+  const d = new Date(`${iso.slice(0, 10)}T00:00:00.000Z`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+/**
  * Format a duration in minutes into a human-readable string.
  */
 export function formatDuration(minutes: number): string {
