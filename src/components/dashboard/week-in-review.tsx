@@ -55,7 +55,7 @@ export function WeekInReview({
             <p className="mt-0.5 text-sm text-fog-400">
               {review.quiet
                 ? "A quiet week — open for a gentle recap."
-                : `${review.lessonsCompleted} lessons · ${review.topicsCertified.length} certified · ${review.weekLabel}`}
+                : `${review.lessonsCompleted} lesson${review.lessonsCompleted === 1 ? "" : "s"} · ${review.topicsCertified.length} topic${review.topicsCertified.length === 1 ? "" : "s"} certified · ${review.weekLabel}`}
             </p>
           </div>
           <ArrowRight className="h-5 w-5 text-fog-500" />
