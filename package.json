@@ -46,11 +46,15 @@
     "autoprefixer": "^10.4.20",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.5.18",
-    "postcss": "^8.4.49",
+    "postcss": "^8.5.18",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.22.4",
     "typescript": "^5.7.2",
     "vitest": "^4.1.8"
+  },
+  "overrides": {
+    "postcss": "$postcss",
+    "sharp": "^0.35.0"
   },
   "engines": {
     "node": ">=20.0.0"
