@@ -26,7 +26,7 @@ export default async function LoginPage({
           Welcome back
         </h1>
         <p className="text-sm text-fog-400">
-          Sign in to your Edway parent account.
+          Sign in to your Edway account.
         </p>
       </div>
 
