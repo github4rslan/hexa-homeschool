@@ -12,7 +12,19 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   self-status only* — do NOT build live matching/booking/calendars.
 
 ## Things that broke (do not repeat)
-- (empty)
+- **`npm audit fix` (non-force) does NOT clear the next/postcss/sharp highs** as a
+  2026-07-26 finding claimed — it only bumped next 15.5.20→15.5.22 and still
+  offered `--force` (→ next 9, forbidden). The real fix: pin the NESTED deps via
+  npm `overrides` (`"postcss": "$postcss"` + `"sharp": "^0.35.0"`) → resolves
+  8.5.23 / 0.35.3 and clears all 5 targeted advisories with next staying on the
+  15.5 backport line. GOTCHA: an override for a pkg that's ALSO a direct dep must
+  match the direct spec or use `$name` (else `EOVERRIDE`) — so I also bumped the
+  direct devDep postcss to `^8.5.18`. Verify sharp with a raw `require('sharp')`
+  render (NOT `require('sharp/package.json')` — 0.35 drops that export → false
+  failure). Residual 9 highs are dev-only `brace-expansion`/`minimatch` DoS
+  (GHSA-mh99-v99m-4gvg, range `<=5.0.7` covers ALL published versions ⇒ no fix
+  exists yet) via the eslint + @sentry/bundler toolchain — never in the prod
+  runtime; overriding brace-expansion did NOT help, so I left it out.
 
 ## Patterns that worked (repeat these)
 - **Reuse the existing TTS cache for any new audio (F6).** `/api/tts` is
@@ -139,6 +151,36 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   F5 (mastery certificate), F6 (annual billing toggle), F7 (dashboard skeletons). NOTE: the
   cron's stale "never build F4/2FA" line is OBSOLETE — 2FA shipped long ago; today's F4 is
   dyslexia reading mode, just out of scope under the 4-item cap.
+- 2026-07-26 — Mechanic build run, DECISION `all` (owner named B1, B2, F2, F6 — 4 of
+  4, within cap). All four SHIPPED, each green-gated (type-check + tests + lint +
+  build, one commit, pushed to main) AND live-verified on edway.uk with Playwright.
+  **B1** `week-in-review.tsx:58` pluralization: inline `${n} lesson${n===1?"":"s"} ·
+  ${c} topic${c===1?"":"s"} certified` (adds the missing "topic(s)" noun too). Live:
+  parent dashboard card now reads "2 lessons · 2 topics certified · 20 July – 26 July"
+  (data moved to 2 since Scout saw 1; the new "topics certified" phrasing confirms the
+  fix is live; singular path is unit-logic + local-verified). **B2** `/login` subtitle
+  "parent account"→"Edway account" (shared tutor/admin sign-in). Live: page renders
+  "Sign in to your Edway account." **F2** cleared the 5 targeted high CVEs
+  (next/postcss/sharp/fast-uri) — see the "Things that broke" note for the overrides
+  recipe. No user-facing surface (dep bump); gate-verified + no-regression: authed
+  dashboard zero organic console errors, sharp-generated PNGs 200, sharp render smoke
+  passed. **F6** monthly/annual billing toggle on `/pricing`: new `BillingInterval` in
+  `lib/billing/stripe.ts` — `priceIdForTier(tier, interval)` reads
+  `STRIPE_PRICE_{STANDARD,FAMILY}_ANNUAL`, `annualBillingConfigured()` gates the UI,
+  `tierForPriceId` now also matches annual ids so the price-derived webhook is
+  unchanged; checkout route takes `&interval=annual`; a client `PricingPlans` renders
+  the segmented toggle (2 months free = 17%) + cards. Live (annual price ids NOT set on
+  prod, as expected): toggle HIDDEN, prices £49/£99 monthly, CTAs `?tier=standard|family`
+  with no interval, and BOTH "17%" copy lines gated OFF — clean degradation, no broken
+  promise. Patterns worth repeating: (1) to fix a transitive/nested CVE without a real
+  patched release of the PARENT pkg, `overrides` the nested dep to a patched version and
+  keep the parent on its security-backport line — don't `--force` a major downgrade. (2)
+  Gate a marketing feature (and its promotional copy) behind a server-read env check
+  (`annualBillingConfigured()`) and pass a boolean into a `"use client"` component — the
+  page stays static, degrades to a truthful monthly-only view when unprovisioned. (3) MCP
+  browser profile STILL persists the SMOKE login-form autofill (session cookie expired, but
+  email+password pre-filled — one click to sign in, no typing/printing the password);
+  teardown `fetch('/logout',{method:'POST'})`→200 then browser_close, as always.
 - 2026-07-22 (earlier entries below)
 - 2026-07-20 — System created. Scout runs by day (discovery), Mechanic by night
   (implementation). Default DECISION is `all`. Production target: https://edway.uk.
