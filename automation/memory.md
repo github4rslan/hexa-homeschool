@@ -231,3 +231,27 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   surface untested — TUTOR_EMAIL/PASSWORD absent from .env.local (seed:test-accounts
   aborts without them). Pattern: curl -sL against www (apex→www redirect eats
   bare curl) is a fast way to audit <h1>/meta across all static pages at once.
+- 2026-07-26 — Discovery pass, FULL coverage restored (tutor/admin/child creds all in
+  .env.local this run). Took the Maths KS2 lesson end-to-end as Ivy (Learn→Practise
+  3/3→Mastery 3/3→certified): wrong#1 calm name-nudge/no-red/2-left, wrong#2 See-it
+  unlocks/hints escalate/1-left, correct=star burst, mock honestly gated (2/10). English
+  + Science playable; admin (4 sub-pages) + tutor console both READ-ONLY clean; tutor saw
+  only an empty "No sessions assigned yet" queue (silo holds). ZERO console errors on EVERY
+  surface, no 390px overflow anywhere. Prior fixes verified live-shipped: 2026-07-25 B1/B2/B3
+  (avg-time honest, single greeting, "WEEK OF 20 JULY 2026"), settings pw autocomplete,
+  finance no "1 accounts". KEY: carried-over **F4 dyslexia reading mode is now SHIPPED** —
+  My-stuff has a full Easier-to-read suite (easy-read font, text size, reading ruler, colour,
+  read-aloud); dropped it. Findings modest (very mature codebase): only NEW bug = B1
+  "1 lessons · 1 certified" pluralization in `week-in-review.tsx:58` (helper `plural()` already
+  exists in weekly/daily-summary — reuse); B2 login says "parent account" on a shared
+  tutor/admin sign-in. Re-included still-valid carryovers F2 (npm audit now 5 high: next+postcss+
+  sharp+fast-uri, NON-force fix now available), F3 (math visual — broadened to include the
+  "½ of 16" fraction-of-amount case, whose See-it is still the generic strategy panel), F5
+  (mastery certificate — cert screen has no download, confirmed live), F6 (annual billing —
+  17% still promised ×2, monthly-only checkout), F7 (skeletons — "Loading…" flash on dashboard
+  AND lesson). New ambitious: F8 spaced-repetition "Daily review" quest (next_review_at already
+  stored, never resurfaced to child), F9 in-lesson tap-to-define glossary (SEND/EAL, human-authored).
+  Static: type-check+lint green, security headers all strong (CSP/HSTS-2yr/X-Frame-DENY/nosniff/
+  Permissions-Policy), stack current (Next 15.5.18, React 19, Tailwind 4.3.3 off beta). Pattern:
+  MCP profile persists the SMOKE login form autofill (parent = one click, no typing); for
+  admin/tutor you must clear+fill the fields; `/logout` POST between account switches + browser_close.
