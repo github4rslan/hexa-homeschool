@@ -5,6 +5,7 @@ import {
   getStripe,
   priceIdForTier,
   isPaidTier,
+  isBillingInterval,
   TRIAL_PERIOD_DAYS,
   BillingConfigError,
 } from "@/lib/billing/stripe";
@@ -13,10 +14,12 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/billing/checkout?tier=standard|family
+ * GET /api/billing/checkout?tier=standard|family[&interval=monthly|annual]
  *
  * Linked directly from the /pricing tier buttons. Signed-in parents are
  * redirected to a Stripe Checkout session; visitors are sent to /signup first.
+ * `interval` defaults to monthly; annual uses the tier's annual price id when
+ * provisioned (falls through to a friendly config banner otherwise).
  * Billing state is NOT written here — the webhook is the single writer, so a
  * completed payment always wins over an abandoned tab.
  */
@@ -33,6 +36,9 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/pricing", url));
   }
 
+  const intervalParam = url.searchParams.get("interval") ?? "monthly";
+  const interval = isBillingInterval(intervalParam) ? intervalParam : "monthly";
+
   const parent = await findParentById(parentId);
   if (!parent) {
     return NextResponse.redirect(new URL("/login?redirect=/pricing", url));
@@ -47,12 +53,12 @@ export async function GET(request: Request) {
       ...(parent.stripe_customer_id
         ? { customer: parent.stripe_customer_id }
         : { customer_email: parent.email }),
-      line_items: [{ price: priceIdForTier(tier), quantity: 1 }],
+      line_items: [{ price: priceIdForTier(tier, interval), quantity: 1 }],
       subscription_data: {
         trial_period_days: TRIAL_PERIOD_DAYS,
-        metadata: { parentId },
+        metadata: { parentId, interval },
       },
-      metadata: { parentId, tier },
+      metadata: { parentId, tier, interval },
       allow_promotion_codes: true,
       success_url: new URL("/settings?checkout=success", url).toString(),
       cancel_url: new URL("/pricing", url).toString(),
@@ -61,7 +67,7 @@ export async function GET(request: Request) {
     if (!session.url) {
       throw new Error("Stripe returned a checkout session without a URL.");
     }
-    captureServer(parentId, "checkout_started", { tier });
+    captureServer(parentId, "checkout_started", { tier, interval });
     return NextResponse.redirect(session.url, 303);
   } catch (err) {
     if (err instanceof BillingConfigError) {

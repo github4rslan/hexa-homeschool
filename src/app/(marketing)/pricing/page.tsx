@@ -1,29 +1,20 @@
 import type { Metadata } from "next";
-import { Check, Plus, Star } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Section, SectionHeader } from "@/components/ui/section";
-import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { CTA } from "@/components/marketing/cta";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { TrackOnMount } from "@/components/analytics/analytics-provider";
+import { PricingPlans, type PricingTier } from "@/components/marketing/pricing-plans";
+import { annualBillingConfigured } from "@/lib/billing/stripe";
 
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Edway Complete £49/mo, Edway Partner £99/mo. Additional subjects £15/mo each. Annual payment saves 17%. 14-day free trial. Cancel anytime.",
+    "Edway Complete £49/mo, Edway Partner £99/mo. Additional subjects £15/mo each. 14-day free trial. Cancel anytime.",
 };
 
-interface Tier {
-  name: string;
-  /** ParentDoc.subscription_tier value this plan checks out as. */
-  tier: "standard" | "family";
-  price: number;
-  features: string[];
-  highlighted?: boolean;
-  badge?: string;
-}
-
-const TIERS: Tier[] = [
+const TIERS: PricingTier[] = [
   {
     name: "Edway Complete",
     tier: "standard",
@@ -61,6 +52,7 @@ const ADDITIONAL_SUBJECTS = [
 ];
 
 export default function PricingPage() {
+  const annualEnabled = annualBillingConfigured();
   return (
     <>
       <BreadcrumbJsonLd items={[{ name: "Pricing", path: "/pricing" }]} />
@@ -75,64 +67,12 @@ export default function PricingPage() {
               <span className="text-gradient-forest">No surprises.</span>
             </>
           }
-          description="Annual payment saves 17%. 14-day free trial. Cancel anytime. All prices in GBP and include UK VAT."
+          description={`${
+            annualEnabled ? "Save 17% when you pay annually. " : ""
+          }14-day free trial. Cancel anytime. All prices in GBP and include UK VAT.`}
         />
 
-        <div className="mt-16 grid md:grid-cols-2 gap-6 max-w-4xl mx-auto items-start">
-          {TIERS.map((tier) => (
-            <div
-              key={tier.name}
-              className={`relative rounded-3xl p-8 md:p-10 ${
-                tier.highlighted
-                  ? "card-warm-tint ring-forest border-2 border-forest-600/30"
-                  : "card-warm"
-              }`}
-            >
-              {tier.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-clay-500 px-3 py-1 text-xs font-semibold text-linen-50">
-                    <Star className="h-3 w-3 fill-linen-50" />
-                    {tier.badge}
-                  </span>
-                </div>
-              )}
-
-              <h3 className="font-editorial text-2xl font-semibold tracking-tight text-forest-900">
-                {tier.name}
-              </h3>
-
-              <div className="mt-5 flex items-baseline gap-1">
-                <span className="font-editorial text-5xl font-semibold tracking-tight text-forest-900">
-                  £{tier.price}
-                </span>
-                <span className="text-sm text-ink-600">/ month</span>
-              </div>
-
-              {/* Signed-in parents go straight to Stripe Checkout; visitors
-                  are bounced to /signup by the route. */}
-              <Button
-                href={`/api/billing/checkout?tier=${tier.tier}`}
-                variant={tier.highlighted ? "forest" : "warm-outline"}
-                size="md"
-                className="mt-7 w-full"
-              >
-                Start free trial
-              </Button>
-
-              <ul className="mt-8 flex flex-col gap-3">
-                {tier.features.map((f) => (
-                  <li
-                    key={f}
-                    className="flex items-start gap-2.5 text-sm text-ink-700"
-                  >
-                    <Check className="h-4 w-4 text-forest-600 mt-0.5 shrink-0" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+        <PricingPlans tiers={TIERS} annualEnabled={annualEnabled} />
       </Section>
 
       {/* Additional subjects */}
@@ -177,7 +117,8 @@ export default function PricingPage() {
       </Section>
 
       <p className="mt-4 text-center text-sm text-ink-600 px-6">
-        Annual payment saves 17%. 14-day free trial. Cancel anytime.
+        {annualEnabled ? "Annual payment saves 17%. " : ""}14-day free trial.
+        Cancel anytime.
       </p>
 
       <CTA />
