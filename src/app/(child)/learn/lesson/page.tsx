@@ -17,6 +17,7 @@ import {
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { normalizeInteraction } from "@/lib/child/interactions";
+import { normaliseGlossary } from "@/lib/child/glossary";
 import { readingSupportsFromChild, NO_READING_SUPPORTS } from "@/lib/child/reading-supports";
 import { normalizeWorkedExample } from "@/lib/child/worked-examples";
 import { normalizeTeachingAnimation } from "@/lib/child/teaching-animations";
@@ -158,6 +159,7 @@ export default async function ChildLessonPage({
         title={topicDoc.title}
         summary={topicDoc.summary}
         points={points.length ? points : [topicDoc.summary]}
+        glossary={normaliseGlossary(topicDoc.glossary)}
         workedExample={normalizeWorkedExample(topicDoc.worked_example)}
         questions={questions}
         masteryQuestions={masteryQuestions}

@@ -387,6 +387,14 @@ export interface CurriculumTopicDoc {
    * without it keep the summary + points explainer.
    */
   worked_example?: unknown;
+  /**
+   * Optional human-authored tap-to-define glossary for this topic (F9 — SEND /
+   * EAL). Each `{ term, definition }` is child-voice curriculum content; the
+   * model never authors it (same rule as questions/answers). Matched in the
+   * explainer prose by `lib/child/glossary.ts`. Legacy-safe: absent ⇒ plain
+   * text, no glossary chips.
+   */
+  glossary?: { term: string; definition: string }[];
   created_at: Date;
 }
 

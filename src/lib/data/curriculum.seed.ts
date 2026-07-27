@@ -27,6 +27,8 @@ export interface SeedTopic {
   order: number;
   prerequisite_tags: string[];
   worked_example?: unknown;
+  /** Optional human-authored tap-to-define glossary (F9). */
+  glossary?: { term: string; definition: string }[];
 }
 
 export interface SeedQuestion {
