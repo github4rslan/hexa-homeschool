@@ -321,3 +321,50 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   (parent = one click); admin/tutor need clear+fill; `/logout` POST between switches + browser_close.
   Radio options use U+2212 minus in labels — `getByRole('radio',{name})` is flaky; click by DOM index
   (`[role=radio]`) instead. Emailed owner the scenario summary via scripts/email-findings.ts (Brevo).
+- 2026-07-27 — Mechanic build run, DECISION `all` (owner named the whole ~10-item list, no cap).
+  ALL 10 SHIPPED + green-gated (type-check + tests + lint + build, one commit each, pushed to main)
+  + LIVE-VERIFIED on edway.uk with Playwright. **B1** admin recent-activity now maps topic_tag→
+  curriculum title (new `adminRecentLogs` returns `AdminRecentLog` w/ `topic_title`, humanised-slug
+  fallback) — live admin showed "Negative Numbers & Powers", "Fractions & Measures", not "Maths Ks3
+  Negatives". **B2** admin metric hint "completed sessions"→"completed this week" (banned-glossary
+  copy) — live confirmed. **B3** added `public/favicon.ico` — sharp CAN'T write .ico, so I generated
+  16/32/48 PNGs via sharp and hand-wrapped them in an ICO container (6-byte ICONDIR + 16-byte dir
+  entries + PNG payloads); live `/favicon.ico`→200 `image/vnd.microsoft.icon`. **F3** number-line /
+  dot-array / groups math figures in `deriveMathVisual` (parses `a±b` incl. U+2212 & bracketed
+  negatives, `a×b`/`a²`, `½/¼/word of N` — capped: line span ≤20, dots ≤144) + SVG renderers; live
+  the "−3 + 7" practice figure read `img "A number line: start at -3, move 7 right to land on 4."`
+  **F5** per-topic mastery certificate: new `topicCertificate(parentId,child,tag)` (SHA-256 over
+  facts, ownership-checked) + child `/learn/certificate?topic=` route + print-to-PDF view + "Save my
+  certificate" button on the mastered screen; live rendered "Ivy · Negative Numbers & Powers · Awarded
+  27 July 2026 · <hash>". **F7** skeleton loading: dashboard + `/learn` already had skeletons; added
+  `(admin)/admin/loading.tsx` (kills the generic root "Initialising" splash on ALL admin pages incl
+  finance) + `(child)/learn/lesson/loading.tsx`. reduced-motion is already globally neutralised
+  (globals.css `animation-duration:0.01ms`), so no per-skeleton guard needed. **F8** the spaced-rep
+  review loop was ALREADY fully built on main (`/learn/warmup` + `dueReviewWarmup` + `recordReviewResult`
+  + map "review comes up in N days") — the only missing piece the finding named was OVERDUENESS ORDER;
+  added pure `dueReviewTopics(candidates,now,max?)` (most-overdue first, legacy no-schedule rows front)
+  + wired into `dueReviewWarmup`, unit-tested. **F9** tap-to-define glossary: pure `lib/child/glossary.ts`
+  (`normaliseGlossary`+`splitByGlossary` — whole-word, longest-first, first-occurrence-only, reconstructs
+  text exactly) + `<GlossaryText>` popover (keyboard+touch, Escape/outside-close, Read-aloud via existing
+  useNarration) threaded topic.glossary → DailyFlow → Explainer → StepReveal + LegacyExplainer; authored
+  human glossary for 4 topics in curriculum.seed.bands.ts and RAN `npm run seed` (idempotent, curriculum-
+  only: "4 topics / 6 questions written") to push live; live the negatives worked-example "number line"
+  rendered as a chip whose popover showed the authored definition + Read-aloud. **F10** achievement shelf:
+  pure `buildAchievementShelf(subjects)` (certified→badges, most-recent first, earned/total counts) +
+  `<AchievementShelf>` on `/learn/map`, each badge links to its F5 certificate + calm "Not yet" locked
+  slots; live showed "3 badges earned" (Negatives 27 Jul / Fractions 26 Jul / Arithmetic 25 Jul). **F11**
+  printable weekly plan: `/schedule/print` route + `<SchedulePrintView>` (print-to-PDF, @media print
+  CSS) fed by ownership-checked `getWeeklySchedule`, "Print / PDF" button on /schedule; live rendered
+  "Ivy's week · Week of 27 July 2026" with per-day subject+topic+reason. ZERO console errors on child
+  lesson + admin overview + finance. Teardown: `fetch('/logout',{method:'POST'})`→200 + browser_close.
+  KEY LEARNINGS: (1) several "carried-over" findings were STALE — F8's whole flow + F5's per-SUBJECT
+  parent certificate + F7's dashboard/lesson skeletons already existed on main; the honest move is to
+  ship the specific unmet SLICE (F8 overdueness ordering; F5 per-TOPIC child cert; F7 admin skeleton) not
+  re-build. Always grep for the feature before assuming it's absent. (2) To make a data-driven feature
+  (F9 glossary) actually live-visible you must author + seed the data AND ensure the term appears in the
+  SHOWN prose — all 12 bands topics use the worked-example (StepReveal) explainer, NOT summary/points, so
+  glossary had to render in StepReveal scenario/steps and terms had to be words that appear there
+  (checked "number line"/"like terms"/"tissues" against each worked example before authoring). (3) sharp
+  has NO .ico encoder — build the ICO byte container by hand around sharp PNGs. (4) MCP profile still
+  persists the SMOKE(parent) autofill (one-click); admin needs clear-then-fill; child mode needs no PIN
+  when already authed as the owning parent + active-child cookie set.
