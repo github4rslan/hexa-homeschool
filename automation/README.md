@@ -53,8 +53,9 @@ every cutoff safe:
 - Schedule: **two in-session crons** (this chat), 10 hours apart so each agent
   gets a fully-reset session window — **Scout 12:03 PM** (day, discovery) and
   **Mechanic 10:03 PM** (night, build). Both daily, local time.
-- **Cap: Mechanic builds at most 4 items per run** (highest-ranked first); the
-  rest carry to the next run via checkpoint/resume.
+- **No per-run cap: Mechanic builds the whole findings list** each run
+  (highest-ranked first). If it hits a session limit partway, checkpoint +
+  auto-resume continue it from the first unchecked item — nothing lost.
 - Crons live only while this chat is open; re-arm on reopen. Cancel with
   `CronDelete`. (Not cloud — this repo isn't wired to the GitHub cloud runner.)
 

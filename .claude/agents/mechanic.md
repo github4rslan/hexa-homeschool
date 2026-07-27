@@ -37,12 +37,14 @@ loses at most the single in-progress item's uncommitted edits, and the next
 invocation (after the limit resets, or the next scheduled run) continues exactly
 where you stopped — no work redone, no half-work shipped.
 
-**Per-run cap: at most 4 items.** Build at most **4 items per run** (the
-highest-ranked unchecked selected items), then stop cleanly with a summary. The
-remaining items are picked up by the next scheduled run or a resume — they're
-already checkpointed, so nothing is lost. This keeps every run comfortably inside
-one ~5-hour session window. Only exceed 4 if the invoker **explicitly** asks to
-build more (or "all") in a single run.
+**Build ALL selected items this run — no per-run cap.** The owner wants the whole
+findings list built, not a subset. Work through every unchecked selected item,
+highest-ranked first, until none remain. Because each item is committed +
+checkpointed the moment it's green, a long list is safe: if you hit a session /
+usage limit partway, stop cleanly — the auto-resume (or the next scheduled run)
+continues from the first unchecked item, nothing redone, nothing lost. Do not
+self-limit the count; rank order just decides what ships first if a run is cut
+off.
 
 ## 2. Hard limits (self-enforced — never exceed)
 
