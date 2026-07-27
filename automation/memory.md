@@ -297,3 +297,27 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   Permissions-Policy), stack current (Next 15.5.18, React 19, Tailwind 4.3.3 off beta). Pattern:
   MCP profile persists the SMOKE login form autofill (parent = one click, no typing); for
   admin/tutor you must clear+fill the fields; `/logout` POST between account switches + browser_close.
+- 2026-07-27 — Discovery pass, FULL coverage (parent/child/admin/tutor). Took the **Maths KS3
+  negatives** lesson end-to-end as Ivy (she cross-band progressed: age 10 but Maths band now KS3,
+  Year 7 "Negative Numbers & Powers", having certified all KS2 Maths) — Learn→Practise 3/3→Mastery
+  3/3→certified: wrong#1 calm name-nudge/no-red/2-left, wrong#2 See-it unlocks/hints escalate/1-left,
+  correct=star burst, phase bar (Learn→Practise→Mastery) lights per stage. English+Science playable,
+  admin (overview+finance) + tutor console READ-ONLY clean, tutor saw empty queue (silo holds). ZERO
+  console errors on EVERY surface, no 390px overflow anywhere (all sw 380≤390). Findings modest (very
+  mature codebase): NEW bugs all admin-facing/low — B1 admin "Recent learning activity" prints raw
+  topic slugs ("Maths Ks3 Negatives") via `topic_tag.replace(/_/g," ")` at admin/page.tsx:99 instead
+  of curriculum title; B2 admin metric hint "completed sessions" (banned glossary synonym) at
+  admin/page.tsx:61; B3 /favicon.ico 404 on raw JSON responses (only /api/health etc — app pages
+  declare svg/png icons, so 0 errors there; no root favicon.ico exists). Re-included carryovers
+  F3 (math figures — CONFIRMED live: negatives explainer describes a number line but renders only a
+  text chip; "5−8" practice fell to a generic placeholder img with weak alt "Helpful visual for this
+  mathematics question"; math-visual.ts only derives fraction+percent today), F5 (mastery cert — cert
+  screen still no download), F7 (skeletons — "Loading…" on dashboard, "INITIALISING" on admin/finance),
+  F8 (spaced-rep Daily review — next_review_at stored, never a child quest; map shows no "review in N
+  days"), F9 (glossary). Added new: F10 child achievement-shelf/badges on My journey, F11 printable/PDF
+  weekly plan. Static: type-check+lint green; npm audit 9 high but ALL dev-only eslint toolchain
+  (minimatch/brace-expansion, no fix) — prod CVEs stay cleared (overrides intact). Test family now has
+  3 children (Sam Smoke, Ivy Test, Sam Test). Pattern: MCP profile persisted the SMOKE login autofill
+  (parent = one click); admin/tutor need clear+fill; `/logout` POST between switches + browser_close.
+  Radio options use U+2212 minus in labels — `getByRole('radio',{name})` is flaky; click by DOM index
+  (`[role=radio]`) instead. Emailed owner the scenario summary via scripts/email-findings.ts (Brevo).
