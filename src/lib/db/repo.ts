@@ -1069,6 +1069,64 @@ export async function masteryCertificate(
   };
 }
 
+export interface TopicCertificate {
+  childFirstName: string;
+  topicTitle: string;
+  subjectLabel: string;
+  /** When this topic was certified (the achievement date). */
+  achievedAt: Date;
+  /** Tamper-evident SHA-256 over the certificate facts. */
+  verificationHash: string;
+}
+
+/**
+ * Build a print-ready certificate for a single certified topic — the one-tap
+ * reward on the child's "Topic mastered!" screen (F5). Returns null unless the
+ * child has certified this topic. Same trust primitive (SHA-256 over canonical
+ * facts) as the subject-level mastery certificate + compliance dossiers.
+ * Ownership enforced; carries no PII beyond the child's first name.
+ */
+export async function topicCertificate(
+  parentId: string,
+  child: ChildDoc,
+  topicTag: string,
+): Promise<TopicCertificate | null> {
+  const childId = child._id!;
+  if (!(await assertOwnsChild(parentId, childId))) return null;
+
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const comp = await compCol.findOne({
+    child_id: childId,
+    topic_tag: topicTag,
+    state: "certified",
+  });
+  if (!comp) return null;
+
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const topic = await topicsCol.findOne({ topic_tag: topicTag });
+  if (!topic) return null;
+
+  const achievedAt = comp.certified_at ? new Date(comp.certified_at) : new Date();
+  const firstName = child.full_name.split(" ")[0];
+  const subjectLabel = SUBJECT_DISPLAY[topic.subject];
+  const verificationHash = await sha256Hex(
+    JSON.stringify({
+      kind: "topic-certificate",
+      childFirstName: firstName,
+      topic: topicTag,
+      achievedAt: achievedAt.toISOString().slice(0, 10),
+    }),
+  );
+
+  return {
+    childFirstName: firstName,
+    topicTitle: topic.title,
+    subjectLabel,
+    achievedAt,
+    verificationHash,
+  };
+}
+
 /**
  * Deterministic learning insights for a child's detail page. Pulls completed
  * lessons + check-ins, hands them to the pure `buildInsights` engine, and
