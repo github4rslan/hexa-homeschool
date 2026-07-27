@@ -92,6 +92,157 @@ function PercentGrid({
   );
 }
 
+function NumberLine({
+  spec,
+  accent,
+  reduced,
+}: {
+  spec: Extract<MathVisualSpec, { kind: "number_line" }>;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  const { a, result, min, max } = spec;
+  const span = max - min;
+  const ticks = Array.from({ length: span + 1 }, (_, i) => min + i);
+  // Viewbox in abstract units; padding keeps end labels inside.
+  const W = 100;
+  const padX = 4;
+  const usable = W - padX * 2;
+  const x = (v: number) => padX + ((v - min) / span) * usable;
+  const axisY = 30;
+
+  return (
+    <svg viewBox="0 0 100 48" className="w-full" style={{ maxHeight: 150 }}>
+      {/* axis */}
+      <line x1={x(min)} y1={axisY} x2={x(max)} y2={axisY} stroke="rgba(255,255,255,0.3)" strokeWidth={0.6} />
+      {ticks.map((t) => (
+        <g key={t}>
+          <line x1={x(t)} y1={axisY - 2} x2={x(t)} y2={axisY + 2} stroke="rgba(255,255,255,0.35)" strokeWidth={0.5} />
+          <text x={x(t)} y={axisY + 8} textAnchor="middle" fontSize={3.2} fill={t === 0 ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.5)"}>
+            {t}
+          </text>
+        </g>
+      ))}
+      {/* jump arc from a to result */}
+      <motion.path
+        d={`M ${x(a)} ${axisY} Q ${(x(a) + x(result)) / 2} ${axisY - 14} ${x(result)} ${axisY}`}
+        fill="none"
+        stroke={accent.swatch}
+        strokeWidth={1.1}
+        strokeLinecap="round"
+        initial={reduced ? false : { pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={reduced ? { duration: 0 } : { duration: 0.7, ease: "easeInOut" }}
+      />
+      {/* start + end markers */}
+      <circle cx={x(a)} cy={axisY} r={1.6} fill="rgba(255,255,255,0.7)" />
+      <motion.circle
+        cx={x(result)}
+        cy={axisY}
+        r={2.1}
+        fill={accent.swatch}
+        initial={reduced ? false : { scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={reduced ? { duration: 0 } : { delay: 0.7, type: "spring", stiffness: 300, damping: 18 }}
+        style={{ transformOrigin: `${x(result)}px ${axisY}px` }}
+      />
+      <text x={x(a)} y={axisY - 4} textAnchor="middle" fontSize={3.4} fill="rgba(255,255,255,0.7)">
+        {a}
+      </text>
+      <text x={x(result)} y={axisY - 16.5} textAnchor="middle" fontSize={4} fontWeight="bold" fill={accent.swatch}>
+        {result}
+      </text>
+    </svg>
+  );
+}
+
+function DotArray({
+  rows,
+  cols,
+  accent,
+  reduced,
+}: {
+  rows: number;
+  cols: number;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div
+        className="grid gap-[5px]"
+        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      >
+        {Array.from({ length: rows * cols }).map((_, i) => (
+          <motion.span
+            key={i}
+            initial={reduced ? false : { opacity: 0, scale: 0.3 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={reduced ? { duration: 0 } : { duration: 0.22, delay: 0.02 * i }}
+            className="aspect-square rounded-full"
+            style={{ width: rows * cols > 64 ? 10 : 14, backgroundColor: accent.swatch }}
+          />
+        ))}
+      </div>
+      <span className={cn("text-sm font-bold", accent.text)}>
+        {rows} × {cols} = {rows * cols}
+      </span>
+    </div>
+  );
+}
+
+function GroupsVisual({
+  spec,
+  accent,
+  reduced,
+}: {
+  spec: Extract<MathVisualSpec, { kind: "groups" }>;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  const { groups, shadedGroups, perGroup, total, result } = spec;
+  let dot = 0;
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-wrap items-start justify-center gap-2">
+        {Array.from({ length: groups }).map((g, gi) => {
+          const shaded = gi < shadedGroups;
+          return (
+            <div
+              key={gi}
+              className={cn(
+                "flex flex-wrap content-start justify-center gap-[3px] rounded-lg border p-1.5",
+                shaded ? accent.border : "border-white/15",
+              )}
+              style={{ maxWidth: perGroup > 6 ? 72 : 999 }}
+            >
+              {Array.from({ length: perGroup }).map((_, i) => {
+                const delay = 0.03 * dot++;
+                return (
+                  <motion.span
+                    key={i}
+                    initial={reduced ? false : { opacity: 0, scale: 0.3 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={reduced ? { duration: 0 } : { duration: 0.2, delay }}
+                    className="aspect-square rounded-full"
+                    style={{
+                      width: 11,
+                      backgroundColor: shaded ? accent.swatch : "rgba(255,255,255,0.14)",
+                    }}
+                  />
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+      <span className={cn("text-sm font-bold", accent.text)}>
+        {shadedGroups}/{groups} of {total} = {result}
+      </span>
+    </div>
+  );
+}
+
 export function MathVisual({
   spec,
   accent,
@@ -112,6 +263,12 @@ export function MathVisual({
     >
       {spec.kind === "percent" ? (
         <PercentGrid value={spec.value} accent={accent} reduced={reduced} />
+      ) : spec.kind === "number_line" ? (
+        <NumberLine spec={spec} accent={accent} reduced={reduced} />
+      ) : spec.kind === "array" ? (
+        <DotArray rows={spec.rows} cols={spec.cols} accent={accent} reduced={reduced} />
+      ) : spec.kind === "groups" ? (
+        <GroupsVisual spec={spec} accent={accent} reduced={reduced} />
       ) : (
         <div className="flex w-full items-center justify-center gap-2">
           <div className="min-w-0 flex-1">

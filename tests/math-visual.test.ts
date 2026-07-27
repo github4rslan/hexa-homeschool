@@ -46,4 +46,88 @@ describe("deriveMathVisual", () => {
     const spec = deriveMathVisual("Express 3/4 as 75%");
     expect(spec?.kind).toBe("percent");
   });
+
+  it("draws a number line for a negative addition (−3 + 7)", () => {
+    const spec = deriveMathVisual("What is −3 + 7?");
+    expect(spec?.kind).toBe("number_line");
+    if (spec?.kind !== "number_line") throw new Error("expected number_line");
+    expect(spec.a).toBe(-3);
+    expect(spec.b).toBe(7);
+    expect(spec.op).toBe("+");
+    expect(spec.result).toBe(4);
+    expect(spec.min).toBeLessThanOrEqual(-3);
+    expect(spec.max).toBeGreaterThanOrEqual(4);
+  });
+
+  it("draws a number line for a subtraction that goes negative (5 − 8)", () => {
+    const spec = deriveMathVisual("Work out 5 − 8");
+    if (spec?.kind !== "number_line") throw new Error("expected number_line");
+    expect(spec.result).toBe(-3);
+    expect(spec.op).toBe("-");
+  });
+
+  it("handles a bracketed negative addend (−6 + (−4))", () => {
+    const spec = deriveMathVisual("−6 + (−4)");
+    if (spec?.kind !== "number_line") throw new Error("expected number_line");
+    expect(spec.a).toBe(-6);
+    expect(spec.b).toBe(-4);
+    expect(spec.result).toBe(-10);
+  });
+
+  it("skips a number line whose span is too wide to read", () => {
+    expect(deriveMathVisual("100 + 5")).toBeNull();
+  });
+
+  it("draws a dot array for a multiplication (4 × 3)", () => {
+    const spec = deriveMathVisual("What is 4 × 3?");
+    if (spec?.kind !== "array") throw new Error("expected array");
+    expect(spec.rows).toBe(4);
+    expect(spec.cols).toBe(3);
+  });
+
+  it("draws a square array for a power (4²)", () => {
+    const spec = deriveMathVisual("Work out 4²");
+    if (spec?.kind !== "array") throw new Error("expected array");
+    expect(spec.rows).toBe(4);
+    expect(spec.cols).toBe(4);
+  });
+
+  it("skips a cube it can't lay out flat (2³)", () => {
+    expect(deriveMathVisual("Work out 2³")).toBeNull();
+  });
+
+  it("caps an oversized product (13 × 13 → fallback)", () => {
+    expect(deriveMathVisual("13 × 13")).toBeNull();
+  });
+
+  it("draws grouped dots for a fraction of an amount (½ of 16)", () => {
+    const spec = deriveMathVisual("What is ½ of 16?");
+    if (spec?.kind !== "groups") throw new Error("expected groups");
+    expect(spec.total).toBe(16);
+    expect(spec.groups).toBe(2);
+    expect(spec.shadedGroups).toBe(1);
+    expect(spec.perGroup).toBe(8);
+    expect(spec.result).toBe(8);
+  });
+
+  it("handles a non-unit fraction of an amount (3/4 of 20)", () => {
+    const spec = deriveMathVisual("Find 3/4 of 20");
+    if (spec?.kind !== "groups") throw new Error("expected groups");
+    expect(spec.groups).toBe(4);
+    expect(spec.shadedGroups).toBe(3);
+    expect(spec.result).toBe(15);
+  });
+
+  it("handles the word form (a third of 12)", () => {
+    const spec = deriveMathVisual("What is a third of 12?");
+    if (spec?.kind !== "groups") throw new Error("expected groups");
+    expect(spec.perGroup).toBe(4);
+    expect(spec.result).toBe(4);
+  });
+
+  it("skips a fraction of an amount that won't divide evenly (1/3 of 16)", () => {
+    // 16 not divisible by 3 → no clean grouping picture.
+    const spec = deriveMathVisual("What is 1/3 of 16?");
+    expect(spec?.kind).not.toBe("groups");
+  });
 });
