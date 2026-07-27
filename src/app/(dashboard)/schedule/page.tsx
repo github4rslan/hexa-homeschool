@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { ArrowRight, CalendarDays, Check, KeyRound, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, Check, KeyRound, Printer, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -126,11 +126,18 @@ export default async function SchedulePage() {
                 Week of {schedule?.week_start ? formatUkDate(schedule.week_start) : "—"}
               </span>
             </div>
-            <form action={regenerateWeek}>
-              <SubmitButton variant="ghost" size="sm" pendingLabel="Regenerating…">
-                <Sparkles className="h-3.5 w-3.5" /> Regenerate week
-              </SubmitButton>
-            </form>
+            <div className="flex items-center gap-2">
+              {schedule && schedule.items.length > 0 && (
+                <Button href="/schedule/print" variant="ghost" size="sm">
+                  <Printer className="h-3.5 w-3.5" /> Print / PDF
+                </Button>
+              )}
+              <form action={regenerateWeek}>
+                <SubmitButton variant="ghost" size="sm" pendingLabel="Regenerating…">
+                  <Sparkles className="h-3.5 w-3.5" /> Regenerate week
+                </SubmitButton>
+              </form>
+            </div>
           </div>
 
           {schedule ? (
