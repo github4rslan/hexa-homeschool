@@ -2237,10 +2237,44 @@ export async function getAdminStats(): Promise<AdminStats> {
   };
 }
 
+export interface AdminRecentLog {
+  _id?: ObjectId;
+  timestamp_start: Date;
+  status: LessonLogDoc["status"];
+  topic_tag: string;
+  /** Human-authored curriculum title, or the humanised slug for legacy tags. */
+  topic_title: string;
+  mastery_score: number | null;
+}
+
 /** Recent lesson activity across all children (admin live feed). */
-export async function adminRecentLogs(limit = 8): Promise<LessonLogDoc[]> {
+export async function adminRecentLogs(limit = 8): Promise<AdminRecentLog[]> {
   const col = await getCollection<LessonLogDoc>(Collections.lessonLogs);
-  return col.find({}).sort({ timestamp_start: -1 }).limit(limit).toArray();
+  const logs = await col
+    .find({})
+    .sort({ timestamp_start: -1 })
+    .limit(limit)
+    .toArray();
+  const tags = [...new Set(logs.map((l) => l.topic_tag))];
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const topicDocs =
+    tags.length > 0 ? await topicsCol.find({ topic_tag: { $in: tags } }).toArray() : [];
+  const titleByTag = new Map(topicDocs.map((t) => [t.topic_tag, t.title]));
+  return logs.map((l) => ({
+    _id: l._id,
+    timestamp_start: l.timestamp_start,
+    status: l.status,
+    topic_tag: l.topic_tag,
+    topic_title: titleByTag.get(l.topic_tag) ?? humaniseTag(l.topic_tag),
+    mastery_score: l.mastery_score,
+  }));
+}
+
+/** Fallback for legacy topic tags with no authored curriculum title. */
+function humaniseTag(tag: string): string {
+  return tag
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /** All open escalations across the platform (admin triage). */

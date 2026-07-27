@@ -95,8 +95,8 @@ export default async function AdminOverviewPage() {
                     <span className="font-semibold uppercase text-[10px] text-fog-400 tracking-wider w-16 shrink-0">
                       {l.status}
                     </span>
-                    <span className="text-fog-200 flex-1 capitalize">
-                      {l.topic_tag.replace(/_/g, " ")}
+                    <span className="text-fog-200 flex-1">
+                      {l.topic_title}
                       {l.mastery_score != null ? ` · ${l.mastery_score}%` : ""}
                     </span>
                   </li>
