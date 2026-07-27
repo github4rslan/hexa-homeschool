@@ -6,6 +6,8 @@ import { currentParentId, getActiveChild, competenceMapForChild } from "@/lib/db
 import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
 import { SubjectPath } from "@/components/child/subject-path";
+import { AchievementShelf } from "@/components/child/achievement-shelf";
+import { buildAchievementShelf } from "@/lib/engine/achievements";
 
 export const metadata: Metadata = { title: "My journey" };
 export const dynamic = "force-dynamic";
@@ -27,6 +29,18 @@ export default async function ProgressMapPage({
   if (!child?._id) redirect("/dashboard");
 
   const map = await competenceMapForChild(child._id);
+  const shelf = buildAchievementShelf(
+    SUBJECT_META.map((s) => ({
+      subject: s.id,
+      accent: s.accent,
+      nodes: map[s.id].map((n) => ({
+        topicTag: n.topicTag,
+        title: n.title,
+        state: n.state,
+        certifiedAt: n.certifiedAt,
+      })),
+    })),
+  );
   const firstName = child.full_name.split(" ")[0];
   const { highlight } = await searchParams;
   // Which subject contains the highlighted topic (deep-linked from a lesson).
@@ -53,6 +67,14 @@ export default async function ProgressMapPage({
           Every topic you&apos;ll master — and how far you&apos;ve come.
         </p>
       </div>
+
+      {shelf.totalCount > 0 && (
+        <AchievementShelf
+          badges={shelf.badges}
+          earnedCount={shelf.earnedCount}
+          totalCount={shelf.totalCount}
+        />
+      )}
 
       <div className="flex flex-col gap-12">
         {SUBJECT_META.map((s) => (
