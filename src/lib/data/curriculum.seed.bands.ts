@@ -173,10 +173,32 @@ const WORKED_EXAMPLES_BY_TOPIC: Record<string, SeedTopic["worked_example"]> = {
   },
 };
 
+// Human-authored tap-to-define glossary (F9 — SEND / EAL comprehension). Each
+// term appears in the topic's explainer prose above; definitions are written in
+// a calm child voice. The model NEVER authors these (same rule as questions).
+const GLOSSARY_BY_TOPIC: Record<string, { term: string; definition: string }[]> = {
+  maths_ks3_negatives: [
+    { term: "number line", definition: "A straight line with numbers marked in order. You can count along it to add (move right) or take away (move left)." },
+  ],
+  maths_ks3_expressions: [
+    { term: "like terms", definition: "Parts of an expression that use the same letter, such as 4x and 2x. Only like terms can be added together." },
+    { term: "coefficients", definition: "The number in front of a letter. In 4x the coefficient is 4 — it tells you how many x you have." },
+  ],
+  maths_ks2_fractions: [
+    { term: "quarter", definition: "One of four equal parts of something. Four quarters make a whole." },
+  ],
+  sci_ks3_cells: [
+    { term: "tissues", definition: "Groups of similar cells working together, like muscle tissue or leaf tissue." },
+  ],
+};
+
 export const SEED_TOPICS_BANDS: SeedTopic[] = BASE_SEED_TOPICS_BANDS.map((topic) => ({
   ...topic,
   ...(WORKED_EXAMPLES_BY_TOPIC[topic.topic_tag]
     ? { worked_example: WORKED_EXAMPLES_BY_TOPIC[topic.topic_tag] }
+    : {}),
+  ...(GLOSSARY_BY_TOPIC[topic.topic_tag]
+    ? { glossary: GLOSSARY_BY_TOPIC[topic.topic_tag] }
     : {}),
 }));
 

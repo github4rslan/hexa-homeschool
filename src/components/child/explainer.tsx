@@ -16,7 +16,9 @@ import { useNarration } from "@/lib/child/use-narration";
 import { buildExplainerNarration } from "@/lib/child/narration-copy";
 import { cn } from "@/lib/utils";
 import { StepReveal } from "./step-reveal";
+import { GlossaryText } from "./glossary-text";
 import type { WorkedExample } from "@/lib/child/worked-examples";
+import type { GlossaryTerm } from "@/lib/child/glossary";
 
 /**
  * Explainer step (Brief: Daily Flow step 2). Phase-1 uses a clear written
@@ -27,6 +29,7 @@ export function Explainer({
   title,
   summary,
   points,
+  glossary,
   workedExample,
   onContinue,
   voiceId,
@@ -38,6 +41,8 @@ export function Explainer({
   title: string;
   summary: string;
   points: string[];
+  /** Human-authored tap-to-define glossary for the explainer prose (F9). */
+  glossary?: GlossaryTerm[];
   workedExample?: WorkedExample;
   onContinue: () => void;
   /** Child-chosen narration voice; falls back to the server default when unset. */
@@ -63,6 +68,7 @@ export function Explainer({
           keyStage={keyStage}
           accent={accentId}
           autoplay={autoplay}
+          glossary={glossary}
         />
       </div>
     );
@@ -73,6 +79,7 @@ export function Explainer({
       title={title}
       summary={summary}
       points={points}
+      glossary={glossary}
       onContinue={onContinue}
       voiceId={voiceId}
       keyStage={keyStage}
@@ -118,6 +125,7 @@ function LegacyExplainer({
   title,
   summary,
   points,
+  glossary,
   onContinue,
   voiceId,
   keyStage,
@@ -128,6 +136,7 @@ function LegacyExplainer({
   title: string;
   summary: string;
   points: string[];
+  glossary?: GlossaryTerm[];
   onContinue: () => void;
   voiceId?: string | null;
   keyStage?: number;
@@ -200,7 +209,15 @@ function LegacyExplainer({
           </button>
         </div>
 
-        <p className="text-xl text-fog-200 leading-relaxed mb-6">{summary}</p>
+        <p className="text-xl text-fog-200 leading-relaxed mb-6">
+          <GlossaryText
+            text={summary}
+            glossary={glossary}
+            voiceId={voiceId}
+            keyStage={keyStage}
+            accent={accentId}
+          />
+        </p>
 
         <ul className="flex flex-col gap-3 mb-8">
           {points.map((p, i) => (
@@ -220,7 +237,13 @@ function LegacyExplainer({
               >
                 {i + 1}
               </span>
-              {p}
+              <GlossaryText
+                text={p}
+                glossary={glossary}
+                voiceId={voiceId}
+                keyStage={keyStage}
+                accent={accentId}
+              />
             </motion.li>
           ))}
         </ul>

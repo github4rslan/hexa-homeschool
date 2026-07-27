@@ -9,6 +9,7 @@ import { resolveResumeStep, type SavedProgress } from "@/lib/child/interactions"
 import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
 import type { WorkedExample } from "@/lib/child/worked-examples";
+import type { GlossaryTerm } from "@/lib/child/glossary";
 
 /**
  * Sequences the child's lesson: Explainer → Practice/Mastery.
@@ -21,6 +22,7 @@ export function DailyFlow({
   title,
   summary,
   points,
+  glossary,
   workedExample,
   questions,
   masteryQuestions,
@@ -40,6 +42,8 @@ export function DailyFlow({
   title: string;
   summary: string;
   points: string[];
+  /** Human-authored tap-to-define glossary for the explainer prose (F9). */
+  glossary?: GlossaryTerm[];
   workedExample?: WorkedExample;
   questions: Question[];
   masteryQuestions?: Question[];
@@ -134,6 +138,7 @@ export function DailyFlow({
               title={title}
               summary={summary}
               points={points}
+              glossary={glossary}
               workedExample={workedExample}
               onContinue={() => setPhase("practice")}
               voiceId={voiceId}

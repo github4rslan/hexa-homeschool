@@ -19,6 +19,8 @@ import {
   workedExampleNarration,
   type WorkedExample,
 } from "@/lib/child/worked-examples";
+import { GlossaryText } from "./glossary-text";
+import type { GlossaryTerm } from "@/lib/child/glossary";
 import { cn } from "@/lib/utils";
 
 export function StepReveal({
@@ -30,6 +32,7 @@ export function StepReveal({
   accent: accentId,
   autoplay = true,
   className,
+  glossary,
 }: {
   example: WorkedExample;
   onDone?: () => void;
@@ -39,6 +42,8 @@ export function StepReveal({
   accent?: string | null;
   autoplay?: boolean;
   className?: string;
+  /** Human-authored tap-to-define glossary for the worked-example prose (F9). */
+  glossary?: GlossaryTerm[];
 }) {
   const accent = accentPreset(accentId);
   const reducedMotion = useReducedMotion();
@@ -95,7 +100,13 @@ export function StepReveal({
           </h2>
           {example.scenario && (
             <p className="mt-3 text-lg leading-relaxed text-fog-200">
-              {example.scenario}
+              <GlossaryText
+                text={example.scenario}
+                glossary={glossary}
+                voiceId={voiceId}
+                keyStage={keyStage}
+                accent={accentId}
+              />
             </p>
           )}
         </div>
@@ -143,7 +154,15 @@ export function StepReveal({
                 {index + 1}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-lg leading-relaxed text-fog-100">{step.line}</p>
+                <p className="text-lg leading-relaxed text-fog-100">
+                  <GlossaryText
+                    text={step.line}
+                    glossary={glossary}
+                    voiceId={voiceId}
+                    keyStage={keyStage}
+                    accent={accentId}
+                  />
+                </p>
                 {step.visual && (
                   <div className="mt-3 inline-flex max-w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
                     <Lightbulb className={cn("h-5 w-5 shrink-0", accent.text)} />
