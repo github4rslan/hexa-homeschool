@@ -61,3 +61,33 @@ export function isReviewDue(
   if (!nextReviewAt) return true; // legacy certified rows are due now
   return nextReviewAt.getTime() <= nowMs;
 }
+
+export interface ReviewCandidate {
+  nextReviewAt: Date | null | undefined;
+}
+
+/**
+ * From a set of certified topics, select those due for review, ordered
+ * **most-overdue first** so the child refreshes the shakiest memory soonest.
+ * Legacy certified rows (no schedule) are treated as maximally overdue.
+ * Optionally capped to `max`. Pure + deterministic — the daily review quest
+ * and the warm-up both order through this.
+ */
+export function dueReviewTopics<T extends ReviewCandidate>(
+  candidates: T[],
+  nowMs: number = Date.now(),
+  max?: number,
+): T[] {
+  const due = candidates
+    .filter((c) => isReviewDue(c.nextReviewAt, nowMs))
+    .map((c) => ({
+      c,
+      // How long past due (ms). No schedule ⇒ maximally overdue (front of queue).
+      overdue: c.nextReviewAt
+        ? nowMs - c.nextReviewAt.getTime()
+        : Number.MAX_SAFE_INTEGER,
+    }))
+    .sort((a, b) => b.overdue - a.overdue)
+    .map((x) => x.c);
+  return max != null ? due.slice(0, max) : due;
+}

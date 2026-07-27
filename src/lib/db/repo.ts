@@ -17,6 +17,7 @@ import {
   scheduleFirstReview,
   nextReview,
   isReviewDue,
+  dueReviewTopics,
 } from "@/lib/engine/spaced-repetition";
 import { shouldQueueHandoff } from "@/lib/engine/remediation";
 import type {
@@ -1736,9 +1737,12 @@ export async function dueReviewWarmup(
     .find({ child_id: childId, state: "certified" })
     .toArray();
 
-  const dueTags = certified
-    .filter((c) => isReviewDue(c.next_review_at))
-    .map((c) => c.topic_tag);
+  // Order most-overdue first so the shakiest memory refreshes soonest; a
+  // topic without a question is skipped in the loop below, so order all due
+  // topics rather than pre-capping.
+  const dueTags = dueReviewTopics(
+    certified.map((c) => ({ topicTag: c.topic_tag, nextReviewAt: c.next_review_at })),
+  ).map((c) => c.topicTag);
   if (dueTags.length === 0) return [];
 
   const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);

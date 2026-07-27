@@ -3,6 +3,7 @@ import {
   scheduleFirstReview,
   nextReview,
   isReviewDue,
+  dueReviewTopics,
   FIRST_REVIEW_DAYS,
   MIN_INTERVAL_DAYS,
   MAX_INTERVAL_DAYS,
@@ -54,5 +55,39 @@ describe("spaced repetition scheduling", () => {
     expect(isReviewDue(new Date(NOW - 1), NOW)).toBe(true);
     expect(isReviewDue(new Date(NOW), NOW)).toBe(true);
     expect(isReviewDue(new Date(NOW + DAY), NOW)).toBe(false);
+  });
+});
+
+describe("dueReviewTopics (spaced-repetition daily review selection)", () => {
+  const cand = (tag: string, offsetDays: number | null) => ({
+    tag,
+    nextReviewAt: offsetDays === null ? null : new Date(NOW + offsetDays * DAY),
+  });
+
+  it("returns only due topics, ordered most-overdue first", () => {
+    const items = [
+      cand("a", -1), // 1 day overdue
+      cand("b", 5), // not due yet
+      cand("c", -10), // 10 days overdue (most)
+      cand("d", -3), // 3 days overdue
+    ];
+    const out = dueReviewTopics(items, NOW);
+    expect(out.map((x) => x.tag)).toEqual(["c", "d", "a"]);
+  });
+
+  it("puts legacy (no-schedule) certified rows at the front", () => {
+    const items = [cand("old", -2), cand("legacy", null)];
+    const out = dueReviewTopics(items, NOW);
+    expect(out[0].tag).toBe("legacy");
+    expect(out.map((x) => x.tag)).toEqual(["legacy", "old"]);
+  });
+
+  it("caps to `max` when provided", () => {
+    const items = [cand("a", -1), cand("b", -2), cand("c", -3)];
+    expect(dueReviewTopics(items, NOW, 2).map((x) => x.tag)).toEqual(["c", "b"]);
+  });
+
+  it("returns nothing when no topic is due", () => {
+    expect(dueReviewTopics([cand("a", 3), cand("b", 10)], NOW)).toEqual([]);
   });
 });
