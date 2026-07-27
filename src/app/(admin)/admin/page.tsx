@@ -58,7 +58,7 @@ export default async function AdminOverviewPage() {
             <MetricCard
               label="Lessons this week"
               value={stats.lessonsThisWeek.toLocaleString()}
-              hint="completed sessions"
+              hint="completed this week"
               accent="neon"
             />
             <MetricCard
