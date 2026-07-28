@@ -114,6 +114,15 @@ export default async function LearnHubPage() {
     // No in-band topic has a lesson yet → a calm "coming soon" card, never a tap
     // that dead-walls into "this quest isn't ready yet".
     const comingSoon = !courseCertified && !resting && !topicTag;
+    // F6: the parent's planned focus for today — a gentle "start here" nudge on
+    // an active, not-yet-done quest. Advisory only (no forced ordering lock).
+    const todaysPlan =
+      plannedTagBySubject.has(s.id) &&
+      !!topicTag &&
+      !resting &&
+      !comingSoon &&
+      !courseCertified &&
+      !doneSubjects.has(s.id);
     return {
       id: s.id,
       label: s.label,
@@ -130,10 +139,16 @@ export default async function LearnHubPage() {
       resting,
       comingSoon,
       certified: courseCertified,
+      todaysPlan,
       progressLabel: `${courseDone}/${TOPICS_PER_SUBJECT}`,
       progressPct: Math.round((courseDone / TOPICS_PER_SUBJECT) * 100),
     };
   });
+
+  // Lead-position: gently float today's planned subject to the top so the
+  // parent's "Tuesday: English" plan connects to the child's day. Stable sort
+  // preserves the Maths→English→Science order for everything else.
+  quests.sort((a, b) => Number(b.todaysPlan) - Number(a.todaysPlan));
 
   const firstName = child.full_name.split(" ")[0];
   const accent = accentPreset(child.accent);
