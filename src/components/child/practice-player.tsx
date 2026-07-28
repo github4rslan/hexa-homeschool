@@ -1447,11 +1447,16 @@ export function PracticePlayer({
                 <MathVisual spec={mathVisual} accent={accent} />
               ) : (
                 // AI-generated only after automated Checker approval; no spinner
-                // or fallback is shown when unavailable.
+                // or fallback is shown when unavailable. B1: this generic
+                // fallback carries no honest per-image description (its alt is a
+                // fixed template), so it's rendered DECORATIVELY — assistive tech
+                // and auto-narration skip it instead of reading meaningless
+                // filler. (Derived figures above keep their real, honest alt.)
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   src={questionVisual!.url}
-                  alt={questionVisual!.alt}
+                  alt=""
+                  role="presentation"
                   className="aspect-[3/2] w-full rounded-2xl object-contain"
                   loading="eager"
                   decoding="async"
