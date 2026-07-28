@@ -368,6 +368,52 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   has NO .ico encoder — build the ICO byte container by hand around sharp PNGs. (4) MCP profile still
   persists the SMOKE(parent) autofill (one-click); admin needs clear-then-fill; child mode needs no PIN
   when already authed as the owning parent + active-child cookie set.
+- 2026-07-28 — Mechanic build run, DECISION `all` (owner named B1 + F1–F6 — 7 items, no cap).
+  ALL 7 SHIPPED, each green-gated (type-check + tests + lint + build, one commit, pushed to main)
+  AND live-verified on edway.uk with Playwright. **B1** generic AI question-figure made decorative
+  (`alt=""` + `role="presentation"` on the AI-fallback `<img>` in practice-player.tsx) so
+  screen-reader/narration skip meaningless filler; derived figures keep honest alt. Live: the
+  algebra figure now announces a real description (see F1) — the exact prompts B1 flagged.
+  **F1** (headline) `algebra_tiles` MathVisualSpec + parser in `lib/child/math-visual.ts` (collect
+  like terms `ax±bx`, expand `a(x±b)`, scale `a×v`; capped coeff ≤12, rows ≤6) + accent tile
+  renderer in `math-visual.tsx` + 11 unit tests. Pure fallback at the END of the deriveMathVisual
+  chain (numeric derivers run first, so `4×3` stays an array; algebra needs a variable letter, so
+  no collision). Live on "Simplify 4x + 2x": rendered `xxxx + xx = 6x` tiles with alt "Algebra
+  tiles: 4 x-tiles combined with 2 more make 6 x-tiles, so 4x + 2x = 6x." Resolves B1 for algebra.
+  **F2** distractor-aware "Why isn't that right?" — a wrong mcq answer offers an opt-in tap that
+  calls the existing Checker-gated `/api/tutor` with the child's EXACT wrong option as
+  `studentAnswer`; new PURE `distractorExplanation` helper (interactions.ts, 4 tests) renders AI
+  text ONLY when `aiVerified`, else the human misconception/worked answer. Distress gate still runs
+  first. Shown only when the concept-gap reteach isn't already offered (one calm AI-help control).
+  Live: picked "8x" for 4x+2x → button appeared → tap → Checker-PASSED explanation "…add the
+  coefficients of x together… simplified expression is 6x." **F3** child certs → parent portfolio:
+  new ownership-checked `listTopicCertificates` (SAME SHA-256 canonical facts as the child-side
+  `topicCertificate`, so hashes match) + "Mastery certificates" section on the child profile with
+  per-topic download (parent `certificate` route now takes `?topic=`, new dashboard
+  `TopicCertificateView`) + folded certified titles into the portfolio dossier Implementation
+  evidence (optional param, byte-for-byte backward compatible → no portfolio test/hash break).
+  Live: Ivy's profile listed 4 certs; downloaded "Algebraic Expressions · Maths · Awarded 28 July
+  2026 · <hash>". **F4** `loading.tsx` skeletons for /learn/map|my-stuff|mock|warmup|certificate
+  (only /learn + /learn/lesson had them) — kills the bare "Loading…" flash. Purely presentational.
+  **F5** authored human glossary for the 8 topics that lacked one (terms chosen to appear in each
+  topic's worked-example STEP/scenario prose, not the title) + `npm run seed` (curriculum-only,
+  idempotent: "8 topics written"). Live: English Reading & Spelling step 2 rendered "spelling" as a
+  chip whose popover showed the authored definition. **F6** highlight today's-plan subject on the
+  child hub: new `todaysPlan` Quest flag (planned-today ∧ active ∧ not-done) → "Start here · today's
+  plan" pill + accent ring + stable-sort lead position. Live (Tuesday = English plan, 0/10 not
+  done): English led the cards with the pill. ZERO console errors across dashboard/child-profile/
+  certificate/hub/two lessons/map. KEY LEARNINGS: (1) a new deriveMathVisual KIND is safe to add at
+  the tail of the chain — the numeric parsers require digits on both sides, so algebra (which needs
+  a letter) never collides; verify with a "4 × 3 stays an array" test. (2) When live-verifying a
+  just-pushed UI change, the FIRST /learn load raced the Vercel deploy (F6 pill absent), a reload
+  ~60s later showed it — always reload once if a fresh change looks missing before calling it a
+  regression. (3) Glossary chips render in the worked-example STEP/scenario prose, NOT the title —
+  author terms that appear in a `steps[].line` or `scenario`, and advance the StepReveal to reveal
+  later steps when checking live. (4) Reused the parent CertificateView pattern for a per-TOPIC
+  parent cert; identical SHA-256 canonical-facts hashing on both sides keeps LA verification
+  consistent. Teardown: `fetch('/logout',{method:'POST'})`→200 + browser_close, as always. The
+  cron's stale "never build F4/2FA" line remains OBSOLETE (2FA shipped; today's F4 was child
+  skeletons — built).
 - 2026-07-28 — Discovery pass, FULL coverage (parent/child/admin/tutor). Took the **Maths KS3
   Algebraic Expressions** lesson end-to-end as Ivy (Learn→Practise 3/3→Mastery 3/3→certified):
   wrong#1 calm name-nudge/no-red/2-left, correct=star burst, phase bar lit per stage. ALL of the
