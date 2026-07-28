@@ -130,4 +130,76 @@ describe("deriveMathVisual", () => {
     const spec = deriveMathVisual("What is 1/3 of 16?");
     expect(spec?.kind).not.toBe("groups");
   });
+
+  // ── F1: algebra tiles ──
+  it("collects like terms into algebra tiles (4x + 2x)", () => {
+    const spec = deriveMathVisual("Simplify 4x + 2x");
+    if (spec?.kind !== "algebra_tiles") throw new Error("expected algebra_tiles");
+    expect(spec.mode).toBe("collect");
+    expect(spec.a).toBe(4);
+    expect(spec.b).toBe(2);
+    expect(spec.op).toBe("+");
+    expect(spec.variable).toBe("x");
+    expect(spec.resultCoeff).toBe(6);
+    expect(spec.resultLabel).toBe("6x");
+  });
+
+  it("collects a subtraction of like terms (5x − 2x)", () => {
+    const spec = deriveMathVisual("Simplify 5x − 2x");
+    if (spec?.kind !== "algebra_tiles") throw new Error("expected algebra_tiles");
+    expect(spec.mode).toBe("collect");
+    expect(spec.op).toBe("-");
+    expect(spec.resultCoeff).toBe(3);
+    expect(spec.resultLabel).toBe("3x");
+  });
+
+  it("treats a bare like term as coefficient 1 (x + x)", () => {
+    const spec = deriveMathVisual("Simplify x + x");
+    if (spec?.kind !== "algebra_tiles") throw new Error("expected algebra_tiles");
+    expect(spec.a).toBe(1);
+    expect(spec.b).toBe(1);
+    expect(spec.resultCoeff).toBe(2);
+  });
+
+  it("skips a subtraction that would leave zero or negative tiles (2x − 2x)", () => {
+    expect(deriveMathVisual("Simplify 2x − 2x")).toBeNull();
+  });
+
+  it("expands a single bracket into rows of tiles (2(x + 5))", () => {
+    const spec = deriveMathVisual("Expand 2(x + 5)");
+    if (spec?.kind !== "algebra_tiles") throw new Error("expected algebra_tiles");
+    expect(spec.mode).toBe("expand");
+    expect(spec.a).toBe(2);
+    expect(spec.b).toBe(5);
+    expect(spec.op).toBe("+");
+    expect(spec.resultLabel).toBe("2x + 10");
+  });
+
+  it("expands a subtraction bracket (3(x − 2))", () => {
+    const spec = deriveMathVisual("Expand 3(x − 2)");
+    if (spec?.kind !== "algebra_tiles") throw new Error("expected algebra_tiles");
+    expect(spec.mode).toBe("expand");
+    expect(spec.resultLabel).toBe("3x − 6");
+  });
+
+  it("simplifies a product to tiles (3 × n)", () => {
+    const spec = deriveMathVisual("Write 3 × n as simply as possible");
+    if (spec?.kind !== "algebra_tiles") throw new Error("expected algebra_tiles");
+    expect(spec.mode).toBe("scale");
+    expect(spec.a).toBe(3);
+    expect(spec.variable).toBe("n");
+    expect(spec.resultLabel).toBe("3n");
+  });
+
+  it("caps an oversized expand multiplier (8(x + 1) → fallback)", () => {
+    expect(deriveMathVisual("Expand 8(x + 1)")).toBeNull();
+  });
+
+  it("does not treat a plain multiplication as algebra (4 × 3 stays an array)", () => {
+    expect(deriveMathVisual("What is 4 × 3?")?.kind).toBe("array");
+  });
+
+  it("returns null for a non-algebra text prompt", () => {
+    expect(deriveMathVisual("Which word is an adjective?")).toBeNull();
+  });
 });

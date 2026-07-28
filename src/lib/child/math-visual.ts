@@ -70,10 +70,36 @@ export type MathVisualSpec =
       /** Answer = perGroup × shadedGroups. */
       result: number;
       alt: string;
+    }
+  | {
+      kind: "algebra_tiles";
+      /**
+       * collect — `ax ± bx` → combine like terms into `resultCoeff` tiles.
+       * expand — `a(x ± b)` → `a` rows of one x-tile + `b` unit-tiles.
+       * scale  — `a × v` → `a` variable-tiles (write a product "as simply as possible").
+       */
+      mode: "collect" | "expand" | "scale";
+      /** First coefficient (collect), the multiplier/rows (expand), or the factor (scale). */
+      a: number;
+      /** Second coefficient (collect) or the bracket constant (expand); 0 for scale. */
+      b: number;
+      /** Sign between the terms (collect) or inside the bracket (expand). */
+      op: "+" | "-";
+      /** The single-letter variable, e.g. "x" or "n". */
+      variable: string;
+      /** Resulting coefficient of the variable (collect/scale) or per-row x count (expand = a). */
+      resultCoeff: number;
+      /** The simplified answer, e.g. "6x", "2x + 10", "3n". */
+      resultLabel: string;
+      alt: string;
     };
 
 /** The largest denominator a fraction bar renders before it becomes noise. */
 const MAX_DEN = 24;
+/** Cap algebra-tile coefficients so a big value can't explode the tile grid. */
+const MAX_ALG_COEFF = 12;
+/** Cap the number of expand rows (a big multiplier stacks too tall). */
+const MAX_ALG_ROWS = 6;
 /** Cap rendered dots so a big product can't explode the SVG. */
 const MAX_DOTS = 144;
 /** Cap the number-line span so a wide range stays legible. */
@@ -207,11 +233,114 @@ function deriveArray(prompt: string): MathVisualSpec | null {
 }
 
 /**
+ * Parse a KS3 algebra prompt → an algebra-tiles spec, or null. Handles the exact
+ * band the child is working in: collecting like terms (`4x + 2x`), expanding a
+ * single bracket (`2(x + 5)`), and simplifying a product (`3 × n`). Each tile
+ * picture is concrete, free, always present, and carries an honest descriptive
+ * alt (this is what resolves B1 for the algebra prompts that used to fall to a
+ * generic AI PNG). Non-algebra prompts return null and fall through the chain.
+ */
+function deriveAlgebraTiles(prompt: string): MathVisualSpec | null {
+  const text = prompt.replace(/−/g, "-");
+
+  // ── collect like terms: ax ± bx (same variable) ──
+  const collect = text.match(/(-?\d*)\s*([a-z])\s*([+-])\s*(\d*)\s*\2/i);
+  if (collect) {
+    const a = collect[1] === "" ? 1 : Number(collect[1]);
+    const b = collect[4] === "" ? 1 : Number(collect[4]);
+    const op = collect[3] === "+" ? "+" : "-";
+    const variable = collect[2].toLowerCase();
+    const resultCoeff = op === "+" ? a + b : a - b;
+    if (
+      Number.isInteger(a) &&
+      Number.isInteger(b) &&
+      a >= 1 &&
+      b >= 1 &&
+      a <= MAX_ALG_COEFF &&
+      b <= MAX_ALG_COEFF &&
+      resultCoeff >= 1
+    ) {
+      const resultLabel = `${resultCoeff}${variable}`;
+      const alt =
+        op === "+"
+          ? `Algebra tiles: ${a} ${variable}-tiles combined with ${b} more make ${resultCoeff} ${variable}-tiles, so ${a}${variable} + ${b}${variable} = ${resultLabel}.`
+          : `Algebra tiles: start with ${a} ${variable}-tiles and take away ${b}, leaving ${resultCoeff} ${variable}-tiles, so ${a}${variable} − ${b}${variable} = ${resultLabel}.`;
+      return {
+        kind: "algebra_tiles",
+        mode: "collect",
+        a,
+        b,
+        op,
+        variable,
+        resultCoeff,
+        resultLabel,
+        alt,
+      };
+    }
+  }
+
+  // ── expand a single bracket: a(x ± b) ──
+  const expand = text.match(/(-?\d+)\s*\(\s*([a-z])\s*([+-])\s*(\d+)\s*\)/i);
+  if (expand) {
+    const a = Number(expand[1]);
+    const b = Number(expand[4]);
+    const op = expand[3] === "+" ? "+" : "-";
+    const variable = expand[2].toLowerCase();
+    if (
+      Number.isInteger(a) &&
+      Number.isInteger(b) &&
+      a >= 2 &&
+      a <= MAX_ALG_ROWS &&
+      b >= 1 &&
+      b <= MAX_ALG_COEFF
+    ) {
+      const constant = a * b;
+      const resultLabel = `${a}${variable} ${op === "+" ? "+" : "−"} ${constant}`;
+      return {
+        kind: "algebra_tiles",
+        mode: "expand",
+        a,
+        b,
+        op,
+        variable,
+        resultCoeff: a,
+        resultLabel,
+        alt: `Algebra tiles: ${a} rows of an ${variable}-tile and ${b} unit-tiles show ${a}(${variable} ${op === "+" ? "+" : "−"} ${b}) = ${resultLabel}.`,
+      };
+    }
+  }
+
+  // ── simplify a product: a × v (× · * only — never the letter x, to avoid
+  //    colliding with an "x" variable) ──
+  const scale = text.match(/(-?\d+)\s*[×*·]\s*([a-z])(?![a-z])/i);
+  if (scale) {
+    const a = Number(scale[1]);
+    const variable = scale[2].toLowerCase();
+    if (Number.isInteger(a) && a >= 2 && a <= MAX_ALG_COEFF) {
+      const resultLabel = `${a}${variable}`;
+      return {
+        kind: "algebra_tiles",
+        mode: "scale",
+        a,
+        b: 0,
+        op: "+",
+        variable,
+        resultCoeff: a,
+        resultLabel,
+        alt: `Algebra tiles: ${a} ${variable}-tiles show ${a} × ${variable} = ${resultLabel}.`,
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
  * Derive a deterministic figure from a question prompt, or null when the prompt
  * isn't an arithmetic shape we can draw. Percentages win first (a hundred-square
  * reads instantly), then "fraction of an amount" groupings, then fraction
  * problems / lone fractions, then a number line (± / negatives), then a
- * multiplication dot-array.
+ * multiplication dot-array, then KS3 algebra tiles.
  */
 export function deriveMathVisual(prompt: string): MathVisualSpec | null {
   const percentMatch = prompt.match(/(\d{1,3})\s*%/);
@@ -260,6 +389,9 @@ export function deriveMathVisual(prompt: string): MathVisualSpec | null {
 
   const array = deriveArray(prompt);
   if (array) return array;
+
+  const algebra = deriveAlgebraTiles(prompt);
+  if (algebra) return algebra;
 
   return null;
 }

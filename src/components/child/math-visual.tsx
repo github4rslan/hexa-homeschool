@@ -243,6 +243,125 @@ function GroupsVisual({
   );
 }
 
+/** A single accent-filled variable tile (e.g. an "x" tile). */
+function VarTile({
+  label,
+  accent,
+  reduced,
+  delay,
+}: {
+  label: string;
+  accent: AccentPreset;
+  reduced: boolean;
+  delay: number;
+}) {
+  return (
+    <motion.span
+      initial={reduced ? false : { opacity: 0, scale: 0.4 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={reduced ? { duration: 0 } : { ...SPRING, delay }}
+      className={cn(
+        "flex h-9 min-w-[28px] items-center justify-center rounded-md border px-2 text-sm font-bold text-white",
+        accent.border,
+      )}
+      style={{ backgroundColor: accent.swatch }}
+    >
+      {label}
+    </motion.span>
+  );
+}
+
+/** A small neutral unit tile (the "+ b" ones in an expand). */
+function UnitTile({ reduced, delay }: { reduced: boolean; delay: number }) {
+  return (
+    <motion.span
+      initial={reduced ? false : { opacity: 0, scale: 0.4 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={reduced ? { duration: 0 } : { ...SPRING, delay }}
+      className="h-7 w-7 rounded-md border border-white/20 bg-white/10"
+    />
+  );
+}
+
+function AlgebraTiles({
+  spec,
+  accent,
+  reduced,
+}: {
+  spec: Extract<MathVisualSpec, { kind: "algebra_tiles" }>;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  const { mode, a, b, op, variable, resultCoeff, resultLabel } = spec;
+  let i = 0;
+
+  if (mode === "collect") {
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-1">
+            {Array.from({ length: a }).map((_, k) => (
+              <VarTile key={`a${k}`} label={variable} accent={accent} reduced={reduced} delay={0.04 * i++} />
+            ))}
+          </div>
+          <span className={cn("px-1 text-2xl font-bold", accent.text)} aria-hidden>
+            {op === "+" ? "+" : "−"}
+          </span>
+          <div className="flex flex-wrap justify-center gap-1">
+            {Array.from({ length: b }).map((_, k) => (
+              <VarTile
+                key={`b${k}`}
+                label={variable}
+                accent={accent}
+                reduced={reduced}
+                delay={0.04 * i++}
+              />
+            ))}
+          </div>
+        </div>
+        <span className={cn("text-sm font-bold", accent.text)}>= {resultLabel}</span>
+      </div>
+    );
+  }
+
+  if (mode === "expand") {
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col gap-1.5">
+          {Array.from({ length: a }).map((_, row) => (
+            <div key={row} className="flex items-center gap-1">
+              <VarTile label={variable} accent={accent} reduced={reduced} delay={0.05 * i++} />
+              {op === "-" && (
+                <span className="px-0.5 text-sm font-bold text-fog-300" aria-hidden>
+                  −
+                </span>
+              )}
+              <div className="flex gap-1">
+                {Array.from({ length: b }).map((_, k) => (
+                  <UnitTile key={k} reduced={reduced} delay={0.05 * i++} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <span className={cn("text-sm font-bold", accent.text)}>= {resultLabel}</span>
+      </div>
+    );
+  }
+
+  // scale — a copies of the variable tile
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className="flex flex-wrap justify-center gap-1">
+        {Array.from({ length: resultCoeff }).map((_, k) => (
+          <VarTile key={k} label={variable} accent={accent} reduced={reduced} delay={0.04 * i++} />
+        ))}
+      </div>
+      <span className={cn("text-sm font-bold", accent.text)}>= {resultLabel}</span>
+    </div>
+  );
+}
+
 export function MathVisual({
   spec,
   accent,
@@ -269,6 +388,8 @@ export function MathVisual({
         <DotArray rows={spec.rows} cols={spec.cols} accent={accent} reduced={reduced} />
       ) : spec.kind === "groups" ? (
         <GroupsVisual spec={spec} accent={accent} reduced={reduced} />
+      ) : spec.kind === "algebra_tiles" ? (
+        <AlgebraTiles spec={spec} accent={accent} reduced={reduced} />
       ) : (
         <div className="flex w-full items-center justify-center gap-2">
           <div className="min-w-0 flex-1">
