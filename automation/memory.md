@@ -368,3 +368,27 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   has NO .ico encoder — build the ICO byte container by hand around sharp PNGs. (4) MCP profile still
   persists the SMOKE(parent) autofill (one-click); admin needs clear-then-fill; child mode needs no PIN
   when already authed as the owning parent + active-child cookie set.
+- 2026-07-28 — Discovery pass, FULL coverage (parent/child/admin/tutor). Took the **Maths KS3
+  Algebraic Expressions** lesson end-to-end as Ivy (Learn→Practise 3/3→Mastery 3/3→certified):
+  wrong#1 calm name-nudge/no-red/2-left, correct=star burst, phase bar lit per stage. ALL of the
+  2026-07-27 batch verified live + working: F3 math figures, F5 per-topic certificate
+  (/learn/certificate rendered "Ivy · Algebraic Expressions · Awarded 28 July 2026 · <hash>"),
+  F7 skeletons (dashboard/lesson/admin), F8 spaced-rep (hub renders a warm-up card only when
+  dueReviewWarmup>0 — none due for Ivy today, correct behaviour, NOT a gap), F9 glossary
+  ("like terms"/"coefficients" popovers + Read-aloud), F10 badge shelf ("4 badges earned"),
+  F11 printable plan. Admin (overview/finance/users) + tutor READ-ONLY clean, tutor empty queue
+  (silo holds). ZERO console errors on EVERY surface; no 390px overflow anywhere. type-check+lint
+  green; npm audit 9 high but ALL dev-only eslint toolchain (no fix). Findings modest (mature): only
+  real defect = B1 (Low a11y) — question figure always uses generic alt "Helpful visual for this
+  {subject} question" incl. the AI-fallback path for algebra/text prompts (screen-reader/narration
+  noise); fix = mark decorative (alt=""/role=presentation) when no derived MathVisualSpec. New
+  ambitious features: F1 algebra-tiles visual + See-it animation (extends accepted deriveMathVisual
+  fraction→number_line→array→algebra_tiles chain; serves Ivy's CURRENT KS3 algebra band; the algebra
+  practice/mastery Qs "4x+2x","2(x+5)" all fall to the generic AI PNG today), F2 distractor-aware
+  "why that's not right" (checker-gated /api/tutor, human fallback), F3 child certs→parent
+  portfolio/LA evidence, F4 finish child sub-page skeletons (/learn/map|my-stuff|mock|warmup|
+  certificate have NO loading.tsx — confirmed bare "Loading…" flash on /learn/map; only /learn +
+  /learn/lesson have loading.tsx), F5 extend glossary to remaining KS2/KS3 topics (only 4 authored),
+  F6 highlight today's-plan subject on child hub. Pattern: GREP before proposing — F8's warmup card
+  IS wired in learn/page.tsx (warmupCount>0 gate); absence on screen just meant no reviews due, not a
+  missing feature. Teardown: fetch('/logout',{method:'POST'})→200 between each role switch + browser_close.
