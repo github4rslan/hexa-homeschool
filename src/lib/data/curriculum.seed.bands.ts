@@ -190,6 +190,36 @@ const GLOSSARY_BY_TOPIC: Record<string, { term: string; definition: string }[]> 
   sci_ks3_cells: [
     { term: "tissues", definition: "Groups of similar cells working together, like muscle tissue or leaf tissue." },
   ],
+  maths_ks2_arithmetic: [
+    { term: "tens", definition: "The tens tell you how many groups of ten a number has. In 45 the 4 means four tens, which is 40." },
+    { term: "ones", definition: "The ones are the single units in a number. In 45 the 5 means five ones." },
+  ],
+  eng_ks2_reading: [
+    { term: "spelling", definition: "The way the letters of a word are put in the right order to make the word correct." },
+  ],
+  eng_ks2_writing: [
+    { term: "capital letter", definition: "A big letter like A or B. We use one to start a sentence and for people's names." },
+    { term: "full stop", definition: "The small dot we put at the end of a sentence to show it has finished." },
+  ],
+  eng_ks3_grammar: [
+    { term: "verb", definition: "A doing word — it tells you the action, like run, jump or sprinted." },
+    { term: "action word", definition: "Another name for a verb — the word that tells you what someone or something does." },
+  ],
+  eng_ks3_reading: [
+    { term: "personification", definition: "A way of writing that gives a thing or animal a human action, like 'the sun smiled'." },
+    { term: "human action", definition: "Something only a person can really do, like smiling, talking or whispering." },
+  ],
+  sci_ks2_living: [
+    { term: "soil", definition: "The top layer of earth that plants grow in. Roots take in water from the soil." },
+    { term: "seed", definition: "A tiny part a new plant grows from when it has water, warmth and light." },
+  ],
+  sci_ks2_materials: [
+    { term: "waterproof", definition: "Something that keeps water out so it cannot soak through, like plastic." },
+  ],
+  sci_ks3_forces: [
+    { term: "gravity", definition: "The pulling force that brings everything down towards the Earth." },
+    { term: "friction", definition: "A force that slows things down when two surfaces rub together." },
+  ],
 };
 
 export const SEED_TOPICS_BANDS: SeedTopic[] = BASE_SEED_TOPICS_BANDS.map((topic) => ({
