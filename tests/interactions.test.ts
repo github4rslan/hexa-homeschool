@@ -7,6 +7,7 @@ import {
   checkMcq,
   checkTapReveal,
   clampResumeScore,
+  distractorExplanation,
   normalizeInteraction,
   pickMisconception,
   resolveResumeStep,
@@ -303,5 +304,52 @@ describe("resume math", () => {
     expect(clampResumeScore({ step: 3, score: 99, total: 7 }, 3)).toBe(3);
     expect(clampResumeScore({ step: 3, score: -2, total: 7 }, 3)).toBe(0);
     expect(clampResumeScore({ step: 3, score: 2, total: 7 }, 3)).toBe(2);
+  });
+});
+
+describe("distractorExplanation (F2 — why isn't that right?)", () => {
+  const workedExplanation = "Add the coefficients: 4 + 2 = 6, so 4x + 2x = 6x.";
+
+  it("uses the Checker-verified AI text when it passed", () => {
+    expect(
+      distractorExplanation({
+        aiExplanation: "You multiplied 4 and 2, but like terms are added.",
+        aiVerified: true,
+        misconception: "That's multiplying, not adding.",
+        workedExplanation,
+      }),
+    ).toBe("You multiplied 4 and 2, but like terms are added.");
+  });
+
+  it("NEVER uses unverified AI text (falls back to the human line)", () => {
+    expect(
+      distractorExplanation({
+        aiExplanation: "some unchecked model output",
+        aiVerified: false,
+        misconception: "That's multiplying, not adding.",
+        workedExplanation,
+      }),
+    ).toBe("Let's look at that choice. That's multiplying, not adding.");
+  });
+
+  it("falls back to the misconception when there is no AI text", () => {
+    expect(
+      distractorExplanation({
+        aiVerified: false,
+        misconception: "That's multiplying, not adding.",
+        workedExplanation,
+      }),
+    ).toBe("Let's look at that choice. That's multiplying, not adding.");
+  });
+
+  it("falls back to the worked explanation when nothing else is available", () => {
+    expect(
+      distractorExplanation({
+        aiVerified: true,
+        aiExplanation: "   ",
+        misconception: null,
+        workedExplanation,
+      }),
+    ).toBe(`Let's look at this another way. ${workedExplanation}`);
   });
 });

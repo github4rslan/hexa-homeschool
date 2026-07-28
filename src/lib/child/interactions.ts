@@ -397,6 +397,43 @@ export function pickMisconception({
   return trimmed.length > 0 ? trimmed : null;
 }
 
+// ── Distractor-aware "Why isn't that right?" (F2) ────────────
+
+export interface DistractorExplanationInput {
+  /** The Checker-gated AI explanation, only present when it PASSED (≥95%). */
+  aiExplanation?: string | null;
+  /** True only when the Teaching Checker verified the AI text. */
+  aiVerified?: boolean;
+  /** Human-authored misconception line for the chosen wrong option, if any. */
+  misconception?: string | null;
+  /** Human-authored worked explanation for the question (always available). */
+  workedExplanation: string;
+}
+
+/**
+ * Resolve the text shown when a child taps "Why isn't that right?" on a wrong
+ * answer. Child-safety: AI text is used ONLY when the Teaching Checker passed it
+ * (`aiVerified` + non-empty `aiExplanation`); otherwise we fall back to the
+ * human-authored misconception line (targeted at the exact distractor) and then
+ * to the worked explanation. Pure + deterministic — the model never authors the
+ * canonical answer, and unverified model output can never reach the child.
+ */
+export function distractorExplanation({
+  aiExplanation,
+  aiVerified,
+  misconception,
+  workedExplanation,
+}: DistractorExplanationInput): string {
+  const ai = typeof aiExplanation === "string" ? aiExplanation.trim() : "";
+  if (aiVerified && ai.length > 0) return ai;
+
+  const human = typeof misconception === "string" ? misconception.trim() : "";
+  if (human.length > 0) {
+    return `Let's look at that choice. ${human}`;
+  }
+  return `Let's look at this another way. ${workedExplanation}`;
+}
+
 // ── Resume math (Feature 3) ──────────────────────────────────
 
 export interface SavedProgress {
