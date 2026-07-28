@@ -52,8 +52,24 @@ export function buildPortfolioRecord(input: {
   childName: string;
   term: string;
   subjects?: string[];
+  /**
+   * Titles of topics the child has certified (F3). When present, each becomes a
+   * named, tamper-evident piece of Implementation evidence in the dossier —
+   * folding the mastery certificates into the LA compliance story. Omitting it
+   * (or passing an empty list) preserves the previous record byte-for-byte.
+   */
+  certifiedTopics?: string[];
 }): PortfolioRecord {
   const subjects = input.subjects ?? ["Mathematics", "English", "Science"];
+  const certifiedTopics = (input.certifiedTopics ?? []).filter(
+    (t) => typeof t === "string" && t.trim().length > 0,
+  );
+  const implementationEvidence = [
+    "Lesson completion logs",
+    "Time-on-task telemetry",
+    "Mastery-check records",
+    ...certifiedTopics.map((t) => `Mastery certificate — ${t}`),
+  ];
   return {
     childName: input.childName,
     term: input.term,
@@ -74,11 +90,7 @@ export function buildPortfolioRecord(input: {
         key: "implementation",
         heading: "Implementation",
         body: "Daily lessons were delivered in an explainer, adaptive-practice and mastery-check structure. Each session was logged with time-on-task, attempts and outcomes.",
-        evidence: [
-          "Lesson completion logs",
-          "Time-on-task telemetry",
-          "Mastery-check records",
-        ],
+        evidence: implementationEvidence,
       },
       {
         key: "impact",
@@ -109,6 +121,7 @@ export async function generateVerifiedPortfolio(input: {
   childName: string;
   term: string;
   subjects?: string[];
+  certifiedTopics?: string[];
 }): Promise<VerifiedPortfolio> {
   const record = buildPortfolioRecord(input);
   const verificationHash = await sha256Hex(canonicalise(record));
