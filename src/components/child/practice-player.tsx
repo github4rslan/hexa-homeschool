@@ -29,6 +29,7 @@ import {
 import {
   buildHintLadder,
   decideHelpSpine,
+  distractorExplanation,
   pickMisconception,
   resolveResumeStep,
   clampResumeScore,
@@ -284,6 +285,12 @@ export function PracticePlayer({
   // per question+band, degrading to the human-authored explanation.
   const [reteachInline, setReteachInline] = useState<string | null>(null);
   const [reteachInlineLoading, setReteachInlineLoading] = useState(false);
+  // Distractor-aware "Why isn't that right?" (F2): a Checker-gated explanation
+  // targeted at the EXACT wrong option the child chose, degrading to the
+  // human-authored misconception / worked answer. Opt-in — never blocks the flow.
+  const [whyNotText, setWhyNotText] = useState<string | null>(null);
+  const [whyNotLoading, setWhyNotLoading] = useState(false);
+  const [chosenWrongIndex, setChosenWrongIndex] = useState<number | null>(null);
   // Agentic "Explain it my way" (Wave 8, Phase 2): a Checker-PASSED tailored
   // animation that swaps into the See-it panel. Deterministic always shows
   // first; null = keep deterministic. Cached per question+band for the lesson.
@@ -745,6 +752,12 @@ export function PracticePlayer({
     // Specific feedback: the human-authored line for the EXACT wrong option the
     // child picked (mcq only; deterministic, no API). Null ⇒ no targeted line.
     const selectedIndex = interactionRef.current?.selectedIndex() ?? null;
+    // Remember the exact wrong option so "Why isn't that right?" (F2) can target it.
+    setChosenWrongIndex(
+      selectedIndex !== null && selectedIndex !== question.correctIndex
+        ? selectedIndex
+        : null,
+    );
     const misconception = pickMisconception({
       misconceptions: question.misconceptions,
       selectedIndex,
@@ -877,6 +890,9 @@ export function PracticePlayer({
     setFeedback(null);
     setReteachInline(null);
     setReteachInlineLoading(false);
+    setWhyNotText(null);
+    setWhyNotLoading(false);
+    setChosenWrongIndex(null);
     setTailoredAnimation(null);
     setTailoredLoading(false);
     setBreakOpen(false);
@@ -955,6 +971,77 @@ export function PracticePlayer({
       setReteachText(fallback);
     } finally {
       setReteachLoading(false);
+    }
+  }
+
+  /**
+   * Distractor-aware "Why isn't that right?" (F2). Calls the existing
+   * Checker-gated `/api/tutor` with the child's EXACT wrong option as
+   * `studentAnswer`, so a passing explanation targets the specific mistake.
+   * Child-safety: AI text is rendered ONLY when the Teaching Checker verified it
+   * (`aiVerified`); otherwise `distractorExplanation` degrades to the
+   * human-authored misconception line, then the worked explanation. A distress
+   * match on any path freezes the lesson first. Opt-in + cached per option.
+   */
+  async function fetchWhyNot() {
+    if (!question || whyNotLoading || chosenWrongIndex === null) return;
+    tapCue();
+    const chosen = question.options[chosenWrongIndex];
+    const misconception = pickMisconception({
+      misconceptions: question.misconceptions,
+      selectedIndex: chosenWrongIndex,
+      correctIndex: question.correctIndex,
+    });
+    const key = `whynot:${question.id}:${chosenWrongIndex}:${keyStage ?? "na"}`;
+    const cached = reteachCacheRef.current.get(key);
+    if (cached) {
+      setWhyNotText(cached);
+      return;
+    }
+    setWhyNotLoading(true);
+    try {
+      const res = await fetch("/api/tutor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: question.prompt,
+          correctAnswer: question.options[question.correctIndex],
+          topic: curriculumTopic,
+          studentAnswer: chosen,
+          wasCorrect: false,
+          keyStage,
+        }),
+      });
+      const data = (await res.json()) as {
+        explanation?: string;
+        aiVerified?: boolean;
+        frozen?: boolean;
+        message?: string;
+      };
+      if (data.frozen) {
+        narration.stop();
+        stopRecorder();
+        setFrozen(data.message ?? "");
+        return;
+      }
+      const text = distractorExplanation({
+        aiExplanation: data.explanation,
+        aiVerified: res.ok && data.aiVerified === true,
+        misconception,
+        workedExplanation: question.explanation,
+      });
+      reteachCacheRef.current.set(key, text);
+      setWhyNotText(text);
+    } catch {
+      const text = distractorExplanation({
+        aiVerified: false,
+        misconception,
+        workedExplanation: question.explanation,
+      });
+      reteachCacheRef.current.set(key, text);
+      setWhyNotText(text);
+    } finally {
+      setWhyNotLoading(false);
     }
   }
 
@@ -1571,6 +1658,36 @@ export function PracticePlayer({
                     Stand up, stretch, and take three slow breaths.
                   </p>
                 )}
+
+                {/* Distractor-aware "Why isn't that right?" (F2) — a
+                    Checker-gated explanation aimed at the EXACT wrong option the
+                    child picked, turning the error into a teachable moment.
+                    Shown for mcq misses when the concept-gap reteach below isn't
+                    already offered, so there's a single, calm AI-help affordance.
+                    Opt-in (a tap), cached, degrades to the human-authored line. */}
+                {isMcq &&
+                  chosenWrongIndex !== null &&
+                  !feedback.escalateReteach &&
+                  (whyNotText ? (
+                    <p className="mt-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-base text-fog-100">
+                      {whyNotText}
+                    </p>
+                  ) : (
+                    <button
+                      onClick={() => void fetchWhyNot()}
+                      disabled={whyNotLoading}
+                      className="child-touch mt-3 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 text-base font-semibold text-fog-200 transition-all hover:border-white/30 hover:bg-white/[0.08] focus-visible:outline-none focus-visible:ring-2 disabled:opacity-60"
+                    >
+                      {whyNotLoading ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-5 w-5" />
+                      )}
+                      {whyNotLoading
+                        ? "Looking at your answer…"
+                        : "Why isn't that right?"}
+                    </button>
+                  ))}
 
                 {/* Optional richer reteach (concept gap) — the agentic
                     "Explain it my way" path: deterministic See-it opens
