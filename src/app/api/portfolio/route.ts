@@ -8,6 +8,7 @@ import {
   getMockState,
   certifiedBySubject,
   latestEvaluationsBySubject,
+  listTopicCertificates,
   recentLogs,
   listMedia,
 } from "@/lib/db/repo";
@@ -191,7 +192,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const portfolio = await generateVerifiedPortfolio({ childName, term });
+    // Fold the child's mastery certificates into the dossier as named,
+    // tamper-evident Implementation evidence (F3). Ownership-checked; empty for
+    // free-text (no id) callers, preserving the prior record byte-for-byte.
+    const certifiedTopics = ownedChild
+      ? (await listTopicCertificates(authParentId, ownedChild)).map(
+          (c) => c.topicTitle,
+        )
+      : [];
+    const portfolio = await generateVerifiedPortfolio({
+      childName,
+      term,
+      certifiedTopics,
+    });
     const persisted = await persistDossier(
       { childId: childId || undefined, childName },
       term,

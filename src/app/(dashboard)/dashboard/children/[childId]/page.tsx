@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Check, GraduationCap, Activity, BookOpen, TrendingUp, MessageSquare } from "lucide-react";
+import { Check, GraduationCap, Activity, BookOpen, TrendingUp, MessageSquare, Award, Printer } from "lucide-react";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import {
   childInsights,
   childCurrentBands,
   listChildTutorNotes,
+  listTopicCertificates,
   KEY_STAGE_LABEL,
 } from "@/lib/db/repo";
 import { buildAssessmentNarrative } from "@/lib/engine/assessment-narrative";
@@ -60,6 +61,7 @@ export default async function ChildProfilePage({
   const insights = await childInsights(parentId, child._id);
   const work = await listMedia({ useCase: "child_work", childId, limit: 12 });
   const tutorNotes = await listChildTutorNotes(parentId, childId);
+  const certificates = await listTopicCertificates(parentId, child);
   const decision = computeExamDecision(
     child.date_of_birth,
     standings.map((s) => ({
@@ -278,6 +280,57 @@ export default async function ChildProfilePage({
                     {n.topicTitle}
                   </div>
                   <p className="text-sm leading-relaxed text-fog-300">{n.note}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Mastery certificates (F3) — tamper-evident per-topic evidence that
+            folds into the Local Authority portfolio. Each row links to a
+            printable/downloadable certificate carrying the same SHA-256 hash as
+            the child-side one, so an LA can independently verify it. */}
+        {certificates.length > 0 && (
+          <Card variant="glass" padding="xl" className="mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <Award className="h-4 w-4 text-amber-300" />
+              <h2 className="text-lg font-semibold text-fog-50">
+                Mastery certificates
+              </h2>
+            </div>
+            <p className="text-sm text-fog-400 mb-5">
+              {certificates.length} topic{certificates.length === 1 ? "" : "s"}{" "}
+              certified. Each certificate is tamper-evident and counts as Local
+              Authority evidence — download any to print or attach.
+            </p>
+            <div className="flex flex-col gap-3">
+              {certificates.map((c) => (
+                <div
+                  key={c.topicTag}
+                  className="flex items-center justify-between gap-4 rounded-xl bg-white/[0.03] border border-white/5 p-4"
+                >
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-fog-50 truncate">
+                      {c.topicTitle}
+                    </div>
+                    <div className="text-xs text-fog-500 mt-0.5">
+                      {c.subjectLabel} · Awarded{" "}
+                      {c.achievedAt.toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </div>
+                  </div>
+                  <Button
+                    href={`/dashboard/children/${childId}/certificate?topic=${encodeURIComponent(c.topicTag)}`}
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0"
+                  >
+                    <Printer className="h-4 w-4" />
+                    Download
+                  </Button>
                 </div>
               ))}
             </div>

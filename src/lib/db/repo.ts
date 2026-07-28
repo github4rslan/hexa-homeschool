@@ -1127,6 +1127,66 @@ export async function topicCertificate(
   };
 }
 
+export interface TopicCertificateSummary extends TopicCertificate {
+  /** The topic tag, so the parent view can deep-link to the printable cert. */
+  topicTag: string;
+}
+
+/**
+ * List every certified topic for a child as print-ready certificate summaries —
+ * the parent-facing "Certificates" evidence (F3). Each verification hash is
+ * computed over the SAME canonical facts as the child-side `topicCertificate`,
+ * so a Local Authority re-computing either gets an identical reference.
+ * Most-recent first. Ownership enforced; carries no PII beyond the first name.
+ */
+export async function listTopicCertificates(
+  parentId: string,
+  child: ChildDoc,
+): Promise<TopicCertificateSummary[]> {
+  const childId = child._id!;
+  if (!(await assertOwnsChild(parentId, childId))) return [];
+
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const comps = await compCol
+    .find({ child_id: childId, state: "certified" })
+    .toArray();
+  if (comps.length === 0) return [];
+
+  const tags = comps.map((c) => c.topic_tag);
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const topics = await topicsCol.find({ topic_tag: { $in: tags } }).toArray();
+  const topicByTag = new Map(topics.map((t) => [t.topic_tag, t]));
+  const firstName = child.full_name.split(" ")[0];
+
+  const out: TopicCertificateSummary[] = [];
+  for (const comp of comps) {
+    const topic = topicByTag.get(comp.topic_tag);
+    if (!topic) continue;
+    const achievedAt = comp.certified_at
+      ? new Date(comp.certified_at)
+      : new Date();
+    const verificationHash = await sha256Hex(
+      JSON.stringify({
+        kind: "topic-certificate",
+        childFirstName: firstName,
+        topic: comp.topic_tag,
+        achievedAt: achievedAt.toISOString().slice(0, 10),
+      }),
+    );
+    out.push({
+      topicTag: comp.topic_tag,
+      childFirstName: firstName,
+      topicTitle: topic.title,
+      subjectLabel: SUBJECT_DISPLAY[topic.subject],
+      achievedAt,
+      verificationHash,
+    });
+  }
+
+  out.sort((a, b) => b.achievedAt.getTime() - a.achievedAt.getTime());
+  return out;
+}
+
 /**
  * Deterministic learning insights for a child's detail page. Pulls completed
  * lessons + check-ins, hands them to the pure `buildInsights` engine, and
