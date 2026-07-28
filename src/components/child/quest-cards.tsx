@@ -43,6 +43,9 @@ export interface Quest {
   resting?: boolean;
   /** No in-band lesson seeded yet — a calm "coming soon" card, never a dead link. */
   comingSoon?: boolean;
+  /** This subject is the parent's planned focus for today — a gentle "start here"
+   *  nudge + lead position. Advisory only: the child can still pick any subject. */
+  todaysPlan?: boolean;
   progressLabel: string;
   progressPct: number;
 }
@@ -96,8 +99,13 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
               )}
             </div>
             <div className="flex-1">
-              <div className="flex items-center gap-2 text-2xl font-semibold text-fog-50">
+              <div className="flex flex-wrap items-center gap-2 text-2xl font-semibold text-fog-50">
                 {q.label}
+                {q.todaysPlan && (
+                  <span className="rounded-full bg-neon-500/15 px-2.5 py-0.5 text-sm font-semibold text-neon-200">
+                    Start here · today&apos;s plan
+                  </span>
+                )}
                 {q.resting ? (
                   <span className="text-sm font-medium text-amber-300">
                     resting
@@ -224,6 +232,7 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
             className={[
               "child-touch child-panel group flex items-center gap-5 p-6 transition-all hover:scale-[1.01]",
               q.done ? "opacity-90" : "",
+              q.todaysPlan ? "ring-2 ring-neon-400/50" : "",
             ].join(" ")}
           >
             {inner}
