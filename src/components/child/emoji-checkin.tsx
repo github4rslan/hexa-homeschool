@@ -31,12 +31,20 @@ export function EmojiCheckin({ done = false }: { done?: boolean }) {
   }
 
   if (completed) {
+    // Acknowledge a tough day warmly (F4): a low mood gets a gentler line and a
+    // "one quest is plenty" framing rather than the upbeat default. Encouraging,
+    // never diagnostic.
+    const low = picked !== null && picked <= 2;
     return (
       <div className="child-panel p-6 text-center animate-child-pop">
         <p className="text-2xl font-semibold text-fog-50">
-          Thanks for checking in! 🌟
+          {low ? "Thanks for sharing. 💛" : "Thanks for checking in! 🌟"}
         </p>
-        <p className="mt-2 text-fog-300">Let&apos;s have a great session.</p>
+        <p className="mt-2 text-fog-300">
+          {low
+            ? "Let's keep it light today — one quest is plenty."
+            : "Let's have a great session."}
+        </p>
       </div>
     );
   }
