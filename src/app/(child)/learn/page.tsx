@@ -50,7 +50,11 @@ export default async function LearnHubPage() {
   if (!child?._id) redirect("/dashboard");
 
   const certified = await certifiedBySubject(child._id);
-  const checkedIn = !!(await todaysCheckin(child._id));
+  const checkin = await todaysCheckin(child._id);
+  const checkedIn = !!checkin;
+  // F4: a low mood (≤2) already nudges difficulty silently — also acknowledge it
+  // warmly so the calm ethos is visible. Encouraging framing, never diagnostic.
+  const lowMood = !!checkin && checkin.mood <= 2;
   const streak = await childStreak(child._id);
   const doneTags = await todaysCompletedTopicTags(child._id);
   const warmupCount = (await dueReviewWarmup(child._id, 3)).length;
@@ -167,9 +171,11 @@ export default async function LearnHubPage() {
         <p className="mt-3 text-xl text-fog-300">
           {isBirthday
             ? "Hope your day is wonderful — here are today's quests when you're ready."
-            : streak.current > 1
-              ? `${streak.current} days in a row — lovely work.`
-              : "Here are today's quests."}
+            : lowMood
+              ? "Let's take it gentle today — one quest is plenty. 💛"
+              : streak.current > 1
+                ? `${streak.current} days in a row — lovely work.`
+                : "Here are today's quests."}
         </p>
       </div>
 
