@@ -55,6 +55,8 @@ import { useNarration } from "@/lib/child/use-narration";
 import { useQuestionVisual } from "@/lib/child/use-question-visual";
 import { MathVisual } from "@/components/child/math-visual";
 import { deriveMathVisual } from "@/lib/child/math-visual";
+import { ScienceVisual } from "@/components/child/science-visual";
+import { deriveScienceVisual } from "@/lib/child/science-visual";
 import { buildQuestionNarration } from "@/lib/child/narration-copy";
 import dynamic from "next/dynamic";
 
@@ -377,6 +379,19 @@ export function PracticePlayer({
   const mathVisual = useMemo(
     () => (question ? deriveMathVisual(question.prompt) : null),
     [question],
+  );
+  // B1 — a deterministic, honestly-described science figure (plant parts,
+  // life-cycle ring, food chain, states of matter, cell). Derived from the topic
+  // + prompt, it replaces the generic AI PNG for science questions so a sighted
+  // child sees a concept-tied diagram and a screen-reader/narration child gets a
+  // real description — closing the maths↔science consistency/a11y gap. Only used
+  // when maths didn't derive; non-derivable ⇒ null ⇒ the AI image fallback.
+  const scienceVisual = useMemo(
+    () =>
+      question && !mathVisual
+        ? deriveScienceVisual(curriculumTopic, question.prompt)
+        : null,
+    [question, mathVisual, curriculumTopic],
   );
 
   const hintLadder = question
@@ -1515,14 +1530,14 @@ export function PracticePlayer({
         <div
           className={cn(
             "mb-8 grid gap-5",
-            (mathVisual || questionVisual) &&
+            (mathVisual || scienceVisual || questionVisual) &&
               "lg:grid-cols-[1fr_220px] lg:items-start",
           )}
         >
           <h1 className="text-3xl sm:text-4xl font-semibold text-fog-50 leading-snug">
             {question.prompt}
           </h1>
-          {(mathVisual || questionVisual) && (
+          {(mathVisual || scienceVisual || questionVisual) && (
             <figure
               className={cn(
                 "order-first overflow-hidden rounded-3xl border bg-white/[0.03] p-2 lg:order-none",
@@ -1532,6 +1547,10 @@ export function PracticePlayer({
               {mathVisual ? (
                 // Deterministic, animated, always-present figure (F2).
                 <MathVisual spec={mathVisual} accent={accent} />
+              ) : scienceVisual ? (
+                // Deterministic science figure (B1) — precise + honestly
+                // described, replacing the generic AI PNG for science prompts.
+                <ScienceVisual spec={scienceVisual} accent={accent} />
               ) : (
                 // AI-generated only after automated Checker approval; no spinner
                 // or fallback is shown when unavailable. B1: this generic
