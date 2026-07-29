@@ -2,8 +2,46 @@ import { describe, expect, it } from "vitest";
 import {
   attemptsPhrase,
   buildParentEventCopy,
+  masteryHighlightLine,
   type ParentEventType,
 } from "@/lib/engine/parent-events";
+
+describe("masteryHighlightLine — same-day dashboard highlight (F3)", () => {
+  it("returns empty string for no masteries", () => {
+    expect(masteryHighlightLine([])).toBe("");
+  });
+
+  it("reads specifically for a single topic with attempt phrasing", () => {
+    expect(
+      masteryHighlightLine([
+        { childFirstName: "Ada", topicTitle: "Fractions", attempts: 1 },
+      ]),
+    ).toBe("Ada mastered Fractions today — first try 🎉");
+  });
+
+  it("uses multi-attempt phrasing when it took more than one go", () => {
+    expect(
+      masteryHighlightLine([
+        { childFirstName: "Ben", topicTitle: "Forces & Energy", attempts: 3 },
+      ]),
+    ).toBe("Ben mastered Forces & Energy today — 3 attempts 🎉");
+  });
+
+  it("rolls several topics up, grouped by child", () => {
+    const line = masteryHighlightLine([
+      { childFirstName: "Ada", topicTitle: "Fractions", attempts: 1 },
+      { childFirstName: "Ada", topicTitle: "Cells", attempts: 2 },
+      { childFirstName: "Ben", topicTitle: "Forces", attempts: 1 },
+    ]);
+    expect(line).toBe("3 topics mastered today 🎉 — Ada: Fractions, Cells; Ben: Forces");
+  });
+
+  it("falls back to a safe topic word when a title is missing", () => {
+    expect(
+      masteryHighlightLine([{ childFirstName: "Ada", topicTitle: "", attempts: 1 }]),
+    ).toBe("Ada mastered a new topic today — first try 🎉");
+  });
+});
 
 describe("attemptsPhrase — honest, kind attempt wording", () => {
   it("treats 0, 1, null and undefined as 'first try'", () => {

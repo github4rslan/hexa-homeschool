@@ -4649,6 +4649,40 @@ export async function listActivityFeed(
   return items.slice(0, limit);
 }
 
+export interface TodayMastery {
+  childName: string;
+  topicTitle: string;
+  subject: Subject | null;
+  attempts: number | null;
+  at: Date;
+}
+
+/**
+ * Topics a parent's children certified TODAY (London day), newest first — the
+ * live source for the dashboard "mastered today" highlight (F3). Reads the same
+ * mastery `parent_events` written the instant a topic certifies, so it reflects
+ * live-certified state and never double-counts with the weekly digest (a
+ * separate, week-scoped summary). Parent-scoped ⇒ the data-silo holds. [] when
+ * nothing was mastered today.
+ */
+export async function todaysMasteries(parentId: string): Promise<TodayMastery[]> {
+  const parentOid = toObjectId(parentId);
+  if (!parentOid) return [];
+  const dayStart = londonDayStart();
+  const col = await getCollection<ParentEventDoc>(Collections.parentEvents);
+  const rows = await col
+    .find({ parent_id: parentOid, type: "mastery", created_at: { $gte: dayStart } })
+    .sort({ created_at: -1 })
+    .toArray();
+  return rows.map((e) => ({
+    childName: e.child_name,
+    topicTitle: e.topic_title ?? "a topic",
+    subject: e.subject ?? null,
+    attempts: e.attempts ?? null,
+    at: e.created_at,
+  }));
+}
+
 /**
  * Children of a parent who have NOT completed a lesson today (UTC) but were
  * active in the last 14 days — the honest signal for a gentle parent
