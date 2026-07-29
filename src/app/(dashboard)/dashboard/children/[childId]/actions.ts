@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { currentParentId, updateChild } from "@/lib/db/repo";
+import { currentParentId, updateChild, setChildNote } from "@/lib/db/repo";
 
 export async function saveChildProfile(childId: string, formData: FormData) {
   const parentId = await currentParentId();
@@ -37,4 +37,25 @@ export async function saveChildProfile(childId: string, formData: FormData) {
   revalidatePath(`/dashboard/children/${childId}`);
   revalidatePath("/dashboard");
   redirect(`/dashboard/children/${childId}?saved=1`);
+}
+
+/**
+ * Save (or clear) the short parent → child encouragement note shown on the
+ * child hub (F1). Ownership-checked + length-capped in the repo layer.
+ */
+export async function saveChildNote(childId: string, formData: FormData) {
+  const parentId = await currentParentId();
+  if (!parentId) redirect("/login");
+
+  const note = String(formData.get("parent_note") || "");
+  const ok = await setChildNote(parentId, childId, note);
+  if (!ok) {
+    redirect(
+      `/dashboard/children/${childId}?error=${encodeURIComponent("Could not save your note. Please try again.")}`,
+    );
+  }
+
+  revalidatePath(`/dashboard/children/${childId}`);
+  revalidatePath("/learn");
+  redirect(`/dashboard/children/${childId}?saved=note`);
 }

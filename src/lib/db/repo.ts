@@ -379,6 +379,30 @@ export async function updateChild(
   return true;
 }
 
+/** The maximum length of a parent → child encouragement note (F1). */
+export const CHILD_NOTE_MAX = 140;
+
+/**
+ * Set (or clear) the short parent → child encouragement note shown on the child
+ * hub (F1). Ownership-checked, trimmed and length-capped; an empty string clears
+ * the note. Human-authored warmth only — no AI, no analytics.
+ */
+export async function setChildNote(
+  parentId: string,
+  childId: string,
+  text: string,
+): Promise<boolean> {
+  const childOid = toObjectId(childId);
+  if (!childOid || !(await assertOwnsChild(parentId, childOid))) return false;
+  const trimmed = text.trim().slice(0, CHILD_NOTE_MAX);
+  const col = await getCollection<ChildDoc>(Collections.children);
+  await col.updateOne(
+    { _id: childOid },
+    { $set: { parent_note: trimmed || null, updated_at: new Date() } },
+  );
+  return true;
+}
+
 /** Ownership guard — returns the child ObjectId only if owned by this parent. */
 async function assertOwnsChild(
   parentId: string,

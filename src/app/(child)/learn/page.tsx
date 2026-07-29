@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Map as MapIcon, Sparkles, GraduationCap, Settings2 } from "lucide-react";
 import { EmojiCheckin } from "@/components/child/emoji-checkin";
+import { ParentNoteCard } from "@/components/child/parent-note-card";
 import { StreakFlame } from "@/components/child/streak-flame";
 import { QuestCards, type Quest } from "@/components/child/quest-cards";
 import {
@@ -171,6 +172,14 @@ export default async function LearnHubPage() {
               : "Here are today's quests."}
         </p>
       </div>
+
+      {child.parent_note && child._id && (
+        <ParentNoteCard
+          note={child.parent_note}
+          childId={child._id.toHexString()}
+          accentText={accent.text}
+        />
+      )}
 
       {!checkedIn && (
         <div className="mb-8">
