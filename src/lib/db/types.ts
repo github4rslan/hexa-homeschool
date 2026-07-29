@@ -213,6 +213,13 @@ export interface ChildDoc {
    * Optional + legacy-safe: absent ⇒ none sent yet.
    */
   daily_summary_sent_on?: string;
+  /**
+   * A short parent → child encouragement note (F1) shown gently at the top of
+   * the child hub — human-authored warmth, no AI. Length-capped (~140 chars,
+   * enforced in `setChildNote`), rendered React-escaped. Optional + legacy-safe:
+   * absent/empty ⇒ no card. Never used for analytics/profiling.
+   */
+  parent_note?: string | null;
   created_at: Date;
   updated_at: Date;
 }

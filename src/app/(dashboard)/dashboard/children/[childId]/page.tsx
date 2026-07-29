@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { Check, GraduationCap, Activity, BookOpen, TrendingUp, MessageSquare, Award, Printer } from "lucide-react";
+import { Check, GraduationCap, Activity, BookOpen, TrendingUp, MessageSquare, Award, Printer, Heart } from "lucide-react";
 import { DashboardTopbar } from "@/components/dashboard/topbar";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import {
   childCurrentBands,
   listChildTutorNotes,
   listTopicCertificates,
+  CHILD_NOTE_MAX,
   KEY_STAGE_LABEL,
 } from "@/lib/db/repo";
 import { buildAssessmentNarrative } from "@/lib/engine/assessment-narrative";
@@ -28,7 +29,7 @@ import { TrajectoryChart } from "@/components/dashboard/trajectory-chart";
 import { InsightsPanel } from "@/components/dashboard/insights-panel";
 import { computeExamDecision } from "@/lib/engine/exam-decision";
 import { cloudinaryThumb } from "@/lib/media/cloudinary";
-import { saveChildProfile } from "./actions";
+import { saveChildProfile, saveChildNote } from "./actions";
 
 export const metadata: Metadata = { title: "Child profile" };
 export const dynamic = "force-dynamic";
@@ -71,6 +72,8 @@ export default async function ChildProfilePage({
     })),
   );
   const save = saveChildProfile.bind(null, childId);
+  const saveNote = saveChildNote.bind(null, childId);
+  const firstName = child.full_name.split(" ")[0];
 
   // Plain-English narrative grounded in the same standings + this week's plan
   // (read-only — visiting the profile never generates a schedule).
@@ -106,7 +109,10 @@ export default async function ChildProfilePage({
 
         {sp.saved && (
           <div className="mb-6 flex items-center gap-2 rounded-xl border border-neon-400/30 bg-neon-500/10 px-4 py-3 text-sm text-neon-400">
-            <Check className="h-4 w-4" /> Profile saved.
+            <Check className="h-4 w-4" />{" "}
+            {sp.saved === "note"
+              ? `Note saved — it'll greet ${firstName} on the hub.`
+              : "Profile saved."}
           </div>
         )}
         {sp.error && (
@@ -158,6 +164,39 @@ export default async function ChildProfilePage({
           <p className="mt-4 text-xs text-fog-500">
             {certified} topic{certified === 1 ? "" : "s"} certified so far.
           </p>
+        </Card>
+
+        {/* Note to child (F1) — a short human encouragement that appears gently
+            at the top of {firstName}'s hub. No AI, private to your family. */}
+        <Card variant="glass" padding="xl" className="mb-6">
+          <div className="flex items-center gap-2 mb-1">
+            <Heart className="h-4 w-4 text-rose-300" />
+            <h2 className="text-lg font-semibold text-fog-50">
+              A note for {firstName}
+            </h2>
+          </div>
+          <p className="text-sm text-fog-400 mb-5">
+            Leave a short message of encouragement — it shows up warmly at the top
+            of {firstName}&apos;s learning hub. Just for them.
+          </p>
+          <form action={saveNote} className="grid gap-3">
+            <textarea
+              name="parent_note"
+              rows={2}
+              maxLength={CHILD_NOTE_MAX}
+              defaultValue={child.parent_note ?? ""}
+              placeholder={`e.g. Proud of you, ${firstName} — one quest at a time 💛`}
+              className="w-full rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-fog-50 placeholder:text-fog-500 transition-all focus:border-rose-400/60 focus:bg-white/[0.05] focus:outline-none focus:ring-2 focus:ring-rose-400/20"
+            />
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs text-fog-500">
+                Up to {CHILD_NOTE_MAX} characters. Leave empty to remove it.
+              </p>
+              <Button type="submit" variant="primary" size="md" className="shrink-0">
+                Save note
+              </Button>
+            </div>
+          </form>
         </Card>
 
         {/* Working level — warm, parent-facing stage per subject. The plan and
