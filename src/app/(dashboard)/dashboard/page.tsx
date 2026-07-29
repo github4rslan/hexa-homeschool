@@ -33,8 +33,10 @@ import {
   type TodayCard as TodayCardData,
   weekInReview,
   listActivityFeed,
+  todaysMasteries,
   getFeedbackPromptContext,
 } from "@/lib/db/repo";
+import { masteryHighlightLine } from "@/lib/engine/parent-events";
 import { shouldShowFeedbackPrompt } from "@/lib/engine/feedback-eligibility";
 import { avgLessonTimeHint } from "@/lib/engine/dashboard-stats";
 import { buildWeeklyRecapNarration } from "@/lib/engine/weekly-summary";
@@ -42,7 +44,7 @@ import { FeedbackPrompt, FeedbackButton } from "@/components/dashboard/feedback-
 import { readActiveChildId } from "@/lib/active-child";
 import { isOnboardingDismissed } from "@/lib/onboarding-dismiss";
 import { birthdayAge } from "@/lib/child/birthday";
-import { Cake } from "lucide-react";
+import { Cake, PartyPopper } from "lucide-react";
 import { GettingStarted, type ChecklistStep } from "@/components/dashboard/getting-started";
 import { TodayCard } from "@/components/dashboard/today-card";
 import { TodayBriefingHeader } from "@/components/dashboard/today-briefing-header";
@@ -278,6 +280,18 @@ export default async function DashboardPage() {
   const fbContext = await getFeedbackPromptContext(parentId!);
   const feedbackDecision = shouldShowFeedbackPrompt(fbContext.state, fbContext.signal);
 
+  // Same-day mastery highlight (F3): topics certified TODAY, surfaced the day it
+  // happens (not just in the Monday digest). Reads the live mastery events, so
+  // it never double-counts with the weekly digest.
+  const masteredToday = await todaysMasteries(parentId!);
+  const masteryLine = masteryHighlightLine(
+    masteredToday.map((m) => ({
+      childFirstName: m.childName.split(" ")[0],
+      topicTitle: m.topicTitle,
+      attempts: m.attempts,
+    })),
+  );
+
   // Birthday: one tasteful banner if any child has a birthday today.
   const birthdayChild = kids
     .map((k) => ({ name: k.full_name.split(" ")[0], age: birthdayAge(k.date_of_birth) }))
@@ -321,6 +335,13 @@ export default async function DashboardPage() {
                 </Link>
               </div>
             </div>
+          </div>
+        )}
+
+        {masteryLine && (
+          <div className="mb-6 flex items-center gap-3 rounded-xl border border-neon-400/30 bg-neon-500/10 px-4 py-3">
+            <PartyPopper className="h-5 w-5 shrink-0 text-neon-300" />
+            <p className="text-sm font-medium text-fog-100">{masteryLine}</p>
           </div>
         )}
 

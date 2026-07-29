@@ -42,6 +42,40 @@ export interface ParentEventCopy {
   smsBody: string;
 }
 
+export interface MasteryHighlightItem {
+  /** Child's first name (already split from the full name). */
+  childFirstName: string;
+  topicTitle: string;
+  attempts?: number | null;
+}
+
+/**
+ * One warm "mastered today" headline for the dashboard same-day highlight (F3).
+ * A single topic reads specifically ("Ada mastered Fractions today — first try
+ * 🎉"); several read as a celebratory roll-up grouped by child. Returns "" for
+ * an empty list. Pure — figures come from the real certified-today record.
+ */
+export function masteryHighlightLine(items: MasteryHighlightItem[]): string {
+  if (items.length === 0) return "";
+  const topicOf = (t: string) => (t ?? "").trim() || "a new topic";
+
+  if (items.length === 1) {
+    const it = items[0];
+    return `${it.childFirstName} mastered ${topicOf(it.topicTitle)} today — ${attemptsPhrase(it.attempts)} 🎉`;
+  }
+
+  const byChild = new Map<string, string[]>();
+  for (const it of items) {
+    const list = byChild.get(it.childFirstName) ?? [];
+    list.push(topicOf(it.topicTitle));
+    byChild.set(it.childFirstName, list);
+  }
+  const parts = [...byChild.entries()].map(
+    ([name, topics]) => `${name}: ${topics.join(", ")}`,
+  );
+  return `${items.length} topics mastered today 🎉 — ${parts.join("; ")}`;
+}
+
 /** "first try" / "2 attempts" / "5 attempts" — honest, kind attempt phrasing. */
 export function attemptsPhrase(attempts: number | null | undefined): string {
   if (!attempts || attempts <= 1) return "first try";
