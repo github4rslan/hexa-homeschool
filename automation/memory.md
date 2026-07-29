@@ -438,3 +438,24 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   F6 highlight today's-plan subject on child hub. Pattern: GREP before proposing — F8's warmup card
   IS wired in learn/page.tsx (warmupCount>0 gate); absence on screen just meant no reviews due, not a
   missing feature. Teardown: fetch('/logout',{method:'POST'})→200 between each role switch + browser_close.
+- 2026-07-29 — Discovery pass, FULL coverage (parent/child/admin/tutor, desktop 1280 + mobile 390).
+  Took the **Science KS2 "Living Things" (sci_ks2_living)** lesson end-to-end as Ivy (Learn→Practise
+  3/3→Mastery 3/3→certified): glossary popover ("seed"→def+Read-aloud) worked FIRST TRY — the prior
+  run's glossary stall was TRANSIENT, not reproducible (per the launcher's "be resilient" note: clicked
+  once, it responded, moved on). wrong#1 calm name-nudge/no-red/2-left + "Why isn't that right?" (F2),
+  correct=star burst, phase bar lit per stage, Save-certificate + badge shelf ("5 badges" incl. Living
+  Things). Admin (overview/finance/curriculum/escalations) + tutor READ-ONLY clean, tutor empty queue
+  (silo holds). ZERO console errors on EVERY surface; NO 390px overflow anywhere; /api/health 200. Static:
+  type-check+lint GREEN; npm audit 9 high but ALL dev-only eslint toolchain (no non-breaking fix). Stack
+  current (Next 15.5.18/React 19.0.0/Tailwind 4.3.3). Findings HONEST-SHORT (site is exceptionally mature):
+  only 1 Low bug = B1 science questions render a decorative/generic AI PNG figure while maths shows a precise
+  DERIVED figure (deriveMathVisual is maths-only) — consistency/a11y gap, overlaps F2. Features: F1 parent→
+  child encouragement note (NEW, confirmed absent — headline human touch), F2 science derived question
+  figures (extend the accepted math-visual chain into science, Ivy's active subject), F3 immediate "topic
+  mastered" parent moment (only Monday digest exists today), F4 acknowledge low-mood check-in (mood already
+  nudges difficulty silently — child never sees it), F5 in-lesson "show your working" photo→portfolio
+  (ambitious, flagged child-safety), F6 dev-only eslint CVEs + React/Next patch (low). Pattern: GREP BEFORE
+  PROPOSING paid off again — science See-it (ScienceStage) + autoplay narration + streak grace-day + mood→
+  difficulty + parent insights panel + exam-decision card ALL already exist; dropped those. MCP profile
+  persisted the SMOKE parent login (one-click); admin/tutor needed clear+type creds; `/logout` POST between
+  each role switch + browser_close. Emailed owner the scenario summary via scripts/email-findings.ts.
