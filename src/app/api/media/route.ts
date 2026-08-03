@@ -24,6 +24,7 @@ export async function POST(request: Request) {
     publicId?: unknown;
     secureUrl?: unknown;
     resourceType?: unknown;
+    topicTag?: unknown;
   };
   try {
     body = await request.json();
@@ -35,6 +36,13 @@ export async function POST(request: Request) {
   const publicId = typeof body.publicId === "string" ? body.publicId : "";
   const secureUrl = typeof body.secureUrl === "string" ? body.secureUrl : "";
   const childId = typeof body.childId === "string" ? body.childId : undefined;
+  // Optional certified-topic tag (F5): links a work photo to a mastered topic so
+  // it becomes named evidence in the LA portfolio. Only meaningful for
+  // child_work; sanitised to a bounded tag string.
+  const topicTag =
+    typeof body.topicTag === "string"
+      ? body.topicTag.trim().slice(0, 80).replace(/[^a-z0-9_-]/gi, "")
+      : "";
   const resourceType =
     body.resourceType === "video" || body.resourceType === "raw"
       ? body.resourceType
@@ -82,6 +90,10 @@ export async function POST(request: Request) {
     secure_url: secureUrl,
     resource_type: resourceType as MediaDoc["resource_type"],
     is_public: isPublic,
+    // Tag child_work photos with a mastered topic when the parent chose one (F5).
+    ...(useCase === "child_work" && topicTag
+      ? { meta: { topic_tag: topicTag } }
+      : {}),
   });
 
   return NextResponse.json({ id }, { headers: { "Cache-Control": "no-store" } });
