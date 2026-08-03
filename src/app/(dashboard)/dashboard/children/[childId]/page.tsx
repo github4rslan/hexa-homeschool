@@ -23,7 +23,7 @@ import {
   KEY_STAGE_LABEL,
 } from "@/lib/db/repo";
 import { buildAssessmentNarrative } from "@/lib/engine/assessment-narrative";
-import { UploadButton } from "@/components/media/upload-button";
+import { WorkEvidenceUploader } from "@/components/media/work-evidence-uploader";
 import { ExamDecisionCard } from "@/components/dashboard/exam-decision-card";
 import { TrajectoryChart } from "@/components/dashboard/trajectory-chart";
 import { InsightsPanel } from "@/components/dashboard/insights-panel";
@@ -63,6 +63,10 @@ export default async function ChildProfilePage({
   const work = await listMedia({ useCase: "child_work", childId, limit: 12 });
   const tutorNotes = await listChildTutorNotes(parentId, childId);
   const certificates = await listTopicCertificates(parentId, child);
+  // Map a work photo's stored topic tag → human title (F5), for the chip below.
+  const workTopicTitleByTag = new Map(
+    certificates.map((c) => [c.topicTag, c.topicTitle]),
+  );
   const decision = computeExamDecision(
     child.date_of_birth,
     standings.map((s) => ({
@@ -387,7 +391,10 @@ export default async function ChildProfilePage({
                 and stay private to your family.
               </p>
             </div>
-            <UploadButton useCase="child_work" childId={childId} label="Add work" />
+            <WorkEvidenceUploader
+              childId={childId}
+              topics={certificates.map((c) => ({ tag: c.topicTag, title: c.topicTitle }))}
+            />
           </div>
           {work.length > 0 ? (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -397,7 +404,7 @@ export default async function ChildProfilePage({
                   href={m.secure_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
+                  className="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
                 >
                   {/* Thumbnail via Cloudinary f_auto,q_auto,w_400 (bandwidth).
                       Signed-asset delivery doesn't go through next/image; the
@@ -409,6 +416,13 @@ export default async function ChildProfilePage({
                     loading="lazy"
                     className="h-full w-full object-cover"
                   />
+                  {/* Topic tag chip (F5) — names which mastered topic this
+                      working evidences, mirroring the LA portfolio entry. */}
+                  {m.meta?.topic_tag && workTopicTitleByTag.get(m.meta.topic_tag) && (
+                    <span className="absolute inset-x-1 bottom-1 truncate rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium text-fog-100">
+                      {workTopicTitleByTag.get(m.meta.topic_tag)}
+                    </span>
+                  )}
                 </a>
               ))}
             </div>

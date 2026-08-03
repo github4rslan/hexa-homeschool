@@ -59,9 +59,19 @@ export function buildPortfolioRecord(input: {
    * (or passing an empty list) preserves the previous record byte-for-byte.
    */
   certifiedTopics?: string[];
+  /**
+   * Titles of certified topics that have a parent-attached photo of the child's
+   * handwritten working (F5). Each becomes a named piece of Implementation
+   * evidence — real, human artefacts strengthen an LA review. Omitting it (or an
+   * empty list) preserves the previous record byte-for-byte.
+   */
+  workEvidenceTopics?: string[];
 }): PortfolioRecord {
   const subjects = input.subjects ?? ["Mathematics", "English", "Science"];
   const certifiedTopics = (input.certifiedTopics ?? []).filter(
+    (t) => typeof t === "string" && t.trim().length > 0,
+  );
+  const workEvidenceTopics = (input.workEvidenceTopics ?? []).filter(
     (t) => typeof t === "string" && t.trim().length > 0,
   );
   const implementationEvidence = [
@@ -69,6 +79,7 @@ export function buildPortfolioRecord(input: {
     "Time-on-task telemetry",
     "Mastery-check records",
     ...certifiedTopics.map((t) => `Mastery certificate — ${t}`),
+    ...workEvidenceTopics.map((t) => `Photo of written working — ${t}`),
   ];
   return {
     childName: input.childName,
@@ -122,6 +133,7 @@ export async function generateVerifiedPortfolio(input: {
   term: string;
   subjects?: string[];
   certifiedTopics?: string[];
+  workEvidenceTopics?: string[];
 }): Promise<VerifiedPortfolio> {
   const record = buildPortfolioRecord(input);
   const verificationHash = await sha256Hex(canonicalise(record));

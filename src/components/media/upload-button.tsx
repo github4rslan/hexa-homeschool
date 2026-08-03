@@ -12,12 +12,15 @@ import { Button } from "@/components/ui/button";
 export function UploadButton({
   useCase,
   childId,
+  topicTag,
   label = "Upload",
   accept = "image/*",
   onUploaded,
 }: {
   useCase: "marketing" | "child_work" | "resource";
   childId?: string;
+  /** Optional certified-topic tag to attach to a child_work photo (F5). */
+  topicTag?: string;
   label?: string;
   accept?: string;
   onUploaded?: (secureUrl: string) => void;
@@ -64,6 +67,7 @@ export function UploadButton({
         body: JSON.stringify({
           useCase,
           childId,
+          topicTag,
           publicId: up.public_id,
           secureUrl: up.secure_url,
           resourceType: up.resource_type === "image" ? "image" : "raw",

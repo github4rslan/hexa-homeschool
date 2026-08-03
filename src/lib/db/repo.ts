@@ -3030,6 +3030,8 @@ export async function listMedia(filter: {
   ownerId?: string;
   childId?: string;
   publicOnly?: boolean;
+  /** Filter child_work to a specific certified topic (F5 working photos). */
+  topicTag?: string;
   limit?: number;
 }): Promise<MediaDoc[]> {
   const col = await getCollection<MediaDoc>(Collections.media);
@@ -3043,11 +3045,36 @@ export async function listMedia(filter: {
     const cid = toObjectId(filter.childId);
     if (cid) query.child_id = cid;
   }
+  if (filter.topicTag) query["meta.topic_tag"] = filter.topicTag;
   return col
     .find(query)
     .sort({ created_at: -1 })
     .limit(filter.limit ?? 60)
     .toArray();
+}
+
+/**
+ * Map of certified-topic tag → count of parent-attached working photos for a
+ * child (F5). Ownership-checked; used to badge the child profile and to fold
+ * "photo of working" into the LA portfolio evidence. Empty when none attached.
+ */
+export async function topicWorkCounts(
+  parentId: string,
+  childId: string,
+): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  if (!(await parentOwnsChild(parentId, childId))) return counts;
+  const media = await listMedia({
+    useCase: "child_work",
+    childId,
+    ownerId: parentId,
+    limit: 200,
+  });
+  for (const m of media) {
+    const tag = m.meta?.topic_tag;
+    if (tag) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  }
+  return counts;
 }
 
 /**

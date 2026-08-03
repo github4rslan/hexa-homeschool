@@ -9,6 +9,7 @@ import {
   certifiedBySubject,
   latestEvaluationsBySubject,
   listTopicCertificates,
+  topicWorkCounts,
   recentLogs,
   listMedia,
 } from "@/lib/db/repo";
@@ -195,15 +196,24 @@ export async function POST(request: Request) {
     // Fold the child's mastery certificates into the dossier as named,
     // tamper-evident Implementation evidence (F3). Ownership-checked; empty for
     // free-text (no id) callers, preserving the prior record byte-for-byte.
-    const certifiedTopics = ownedChild
-      ? (await listTopicCertificates(authParentId, ownedChild)).map(
-          (c) => c.topicTitle,
-        )
+    const certs = ownedChild
+      ? await listTopicCertificates(authParentId, ownedChild)
       : [];
+    const certifiedTopics = certs.map((c) => c.topicTitle);
+    // F5: certified topics with a parent-attached photo of the child's written
+    // working become named "Photo of written working" evidence in the dossier.
+    const workCounts =
+      ownedChild?._id
+        ? await topicWorkCounts(authParentId, ownedChild._id.toHexString())
+        : new Map<string, number>();
+    const workEvidenceTopics = certs
+      .filter((c) => workCounts.has(c.topicTag))
+      .map((c) => c.topicTitle);
     const portfolio = await generateVerifiedPortfolio({
       childName,
       term,
       certifiedTopics,
+      workEvidenceTopics,
     });
     const persisted = await persistDossier(
       { childId: childId || undefined, childName },
