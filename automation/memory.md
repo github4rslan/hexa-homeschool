@@ -459,3 +459,27 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   difficulty + parent insights panel + exam-decision card ALL already exist; dropped those. MCP profile
   persisted the SMOKE parent login (one-click); admin/tutor needed clear+type creds; `/logout` POST between
   each role switch + browser_close. Emailed owner the scenario summary via scripts/email-findings.ts.
+- 2026-08-03 — Discovery pass (run at 2026-08-04 ~14:35 UTC; filename kept at owner-named 2026-08-03), FULL coverage
+  (parent/child/admin/tutor, desktop 1280 + mobile 390 both confirmed). Took the **English KS2 "Reading & Spelling"
+  (eng_ks2_reading)** lesson end-to-end as Ivy (mood "Tough day"→F4 warm ack; explainer; wrong#1 calm no-red/"Why isn't
+  that right?"/2-left; correct star burst; practice 2/2→mastery 3/3→certified; phase bar per stage). Warm-up (spaced-rep)
+  + mock (honest 1/10 lock) both work. Re-verified F5 (Work-evidence photo section + topic dropdown) shipped on the child
+  profile; F1 text note + 5 certs also present. Admin (overview/finance/escalations) + tutor READ-ONLY clean, tutor empty
+  queue (silo holds). ZERO console errors on EVERY surface; NO overflow in either viewport; /api/health 200. type-check +
+  lint GREEN. npm audit now only **2 high, BOTH dev/build-only** (brace-expansion via eslint; fast-uri via @sentry
+  webpack-plugin→ajv — a BUILD dep, not prod runtime) — no prod CVE. Findings HONEST-SHORT (very mature): only real bug =
+  B1 (Low-Med) child profile "Current standing → Not yet assessed — run the diagnostic" shown for ALL 3 subjects while the
+  same page reads "5 topics certified" + "Working at GCSE level" — contradiction; standings come only from evaluation_records
+  (diagnostic/mock), ignoring lesson-based competence/band already in scope (bands, countCertified). Features: F1 English
+  derived question figures (extend the accepted math/science-visual chain — English is the last subject rendering an EMPTY
+  <figure>, confirmed live on "plural of box"; most build-ready), F2 SEND-aware reading defaults (send_indicators has
+  "dyslexia" for Ivy but reading-supports default ALL OFF with no link to the flag — auto-default font-on when never-set),
+  F3 parent AUDIO encouragement note (extends shipped F1 text note; MediaRecorder→/api/media/sign→child doc; accessibility
+  win for a dyslexic reader), F4 web push milestones (reuse hand-rolled public/sw.js + VAPID, parents-only), F5 child
+  "Today I learned" chip reflection→parent feed, F6 clear the 2 dev-only audit highs + Next/React patch (audit now says
+  non-force fix available). INVESTIGATED-NOT-A-BUG: dashboard "no quests planned today" vs child hub "today's plan" pill was
+  a load-order artifact (dashboard read before /schedule generated the doc; both use approval-tolerant getWeeklySchedule —
+  todayCard reads schedule.items with no approved_by_parent filter), not a real inconsistency — checked repo.ts before
+  reporting. Pattern: GREP/READ before reporting a cross-surface mismatch — it was a generate-on-first-access timing thing,
+  not a bug. Teardown: /logout POST between each role switch + browser_close. Emailed owner the scenario summary via
+  scripts/email-findings.ts (Brevo).
