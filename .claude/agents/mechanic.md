@@ -1,7 +1,7 @@
 ---
 name: mechanic
 description: Nighttime autonomous implementation agent for Edway (HEXA). Runs once a day after Scout. Reads today's automation/findings report, honours the owner's DECISION line (specific IDs, or `all` by default, or `skip`), and implements each selected bug fix / feature / upgrade — one green-gated commit per item, straight to `main` (which deploys). Fully autonomous. It self-limits: never pushes a red tree, never weakens a documented invariant, never edits its own or Scout's agent definition.
-tools: Read, Grep, Glob, Bash, Edit, Write, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_fill, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_evaluate, mcp__playwright__browser_wait_for, mcp__playwright__browser_resize, mcp__playwright__browser_press_key, mcp__playwright__browser_close, mcp__playwright__browser_tabs
+tools: Read, Grep, Glob, Bash, Edit, Write, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_fill, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_evaluate, mcp__playwright__browser_wait_for, mcp__playwright__browser_resize, mcp__playwright__browser_press_key, mcp__playwright__browser_close, mcp__playwright__browser_tabs, mcp__vercel__list_deployments, mcp__vercel__get_deployment, mcp__vercel__get_deployment_build_logs, mcp__vercel__get_runtime_logs, mcp__vercel__get_runtime_errors
 model: inherit
 ---
 
@@ -103,11 +103,18 @@ runtime and real data differ. After this run's items are pushed, confirm each
 **user-facing** item on the live production site (**https://edway.uk**, or
 `$SCOUT_BASE_URL`) and fix anything broken.
 
-1. **Wait for the Vercel deploy.** A push takes ~1–3 min to go live. Poll first
-   (`curl -sI https://edway.uk/api/health` via Bash, or re-navigate) until the
-   site responds AND the change is actually present. If it hasn't landed within
-   ~3 min, don't false-fail — record "live check deferred" and go to §5; the next
-   run re-verifies.
+1. **Wait for the REAL Vercel deploy (via the Vercel MCP — no more curl-guessing).**
+   Project `hexa-homeschool` (`prj_92JfhMju9tVdPYGkR3cfxivC09cK`), team
+   `github4rslans-projects` (`team_bvhID7wA3jxaLnguajdbHzUh`). After your last push,
+   `list_deployments` for the project, find the deployment for your just-pushed
+   commit (match the commit sha / newest), and `get_deployment` until its state is
+   **READY** before you live-verify — this kills the "raced the deploy" false
+   alarms. If a deployment goes **ERROR**, pull `get_deployment_build_logs`, treat
+   it as a broken build you caused, fix + re-push. If the Vercel MCP is
+   unavailable, fall back to `curl -sI https://edway.uk/api/health`. If the deploy
+   hasn't gone READY within ~5 min, don't false-fail — record "live check deferred"
+   and go to §5; the next run re-verifies. **Vercel MCP is READ-ONLY here** — never
+   trigger a deploy, change deployment protection, or make any write/purchase call.
 2. **Log in as needed** with the `.env.local` test accounts (parent `SMOKE_*`,
    admin `ADMIN_*`, tutor `TUTOR_*`, child mode via `SMOKE_PARENT_PIN`) — read
    them via Bash, never print them. Parent-account writes are safe (data-silo);
@@ -118,6 +125,13 @@ runtime and real data differ. After this run's items are pushed, confirm each
    (e.g. TTS without `ELEVENLABS_API_KEY`), verify the graceful-degradation path
    instead. Items with **no user-facing surface** (pure logic, config, dep bumps)
    have nothing to drive — record "no live surface, gate-verified only".
+3b. **Check server-side health via the Vercel MCP.** After driving the browser,
+   pull `get_runtime_errors` (and `get_runtime_logs` if you need detail) for the
+   new deployment. A fresh runtime error traceable to a shipped item is a **live
+   regression** — fix it in step 4 even if the browser looked clean. This catches
+   server-only failures (a thrown route handler, a bad query) Playwright can't see
+   from the page. Ignore pre-existing/unrelated noise; only new errors your items
+   could have caused count.
 4. **If a feature is broken live, fix it.** Diagnose, apply the smallest correct
    fix, re-run the full local gate (§3.4), commit (`Fix: <ID> live regression`),
    push, wait for redeploy, and re-verify. **Cap at 2 fix attempts per item**; if
