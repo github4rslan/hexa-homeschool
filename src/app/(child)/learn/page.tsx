@@ -184,6 +184,7 @@ export default async function LearnHubPage() {
           note={child.parent_note}
           childId={child._id.toHexString()}
           accentText={accent.text}
+          voiceId={child.voice_id ?? undefined}
         />
       )}
 
