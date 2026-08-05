@@ -112,6 +112,58 @@ export async function findParentById(id: string): Promise<ParentDoc | null> {
   return col.findOne({ _id: oid });
 }
 
+/**
+ * Store (or refresh) a Web Push subscription on the parent doc (F4). Keyed by
+ * endpoint: an existing entry for the same endpoint is replaced, so re-subscribing
+ * the same browser never duplicates. Parent-scoped by the session `parentId`.
+ */
+export async function addPushSubscription(
+  parentId: string,
+  sub: { endpoint: string; keys: { p256dh: string; auth: string } },
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  if (!sub.endpoint || !sub.keys?.p256dh || !sub.keys?.auth) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  // Remove any prior entry for this endpoint, then push the fresh one.
+  await col.updateOne(
+    { _id: oid },
+    { $pull: { push_subscriptions: { endpoint: sub.endpoint } } },
+  );
+  const res = await col.updateOne(
+    { _id: oid },
+    {
+      $push: {
+        push_subscriptions: {
+          endpoint: sub.endpoint,
+          keys: { p256dh: sub.keys.p256dh, auth: sub.keys.auth },
+          created_at: new Date(),
+        },
+      },
+      $set: { updated_at: new Date() },
+    },
+  );
+  return res.matchedCount > 0;
+}
+
+/** Remove a Web Push subscription by endpoint (parent unsubscribed, or expired). */
+export async function removePushSubscription(
+  parentId: string,
+  endpoint: string,
+): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid || !endpoint) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const res = await col.updateOne(
+    { _id: oid },
+    {
+      $pull: { push_subscriptions: { endpoint } },
+      $set: { updated_at: new Date() },
+    },
+  );
+  return res.matchedCount > 0;
+}
+
 export async function createParent(input: {
   email: string;
   fullName: string | null;
