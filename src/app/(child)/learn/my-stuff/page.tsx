@@ -4,7 +4,7 @@ import { currentParentId, getActiveChild } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { CHILD_VOICES, ELEVENLABS_DEFAULT_VOICE_ID } from "@/lib/ai/config";
 import { ACCENTS, DEFAULT_ACCENT } from "@/lib/child/accents";
-import { normalizeTextScale } from "@/lib/child/reading-supports";
+import { normalizeTextScale, resolveReadingFont } from "@/lib/child/reading-supports";
 import { MyStuffPanel } from "@/components/child/my-stuff-panel";
 
 export const metadata: Metadata = { title: "My stuff" };
@@ -26,7 +26,7 @@ export default async function MyStuffPage() {
         currentNarrationAutoplay={child.narration_autoplay !== false}
         currentSoundCues={child.sound_cues !== false}
         currentLowText={child.low_text === true}
-        currentReadingFont={child.reading_font === true}
+        currentReadingFont={resolveReadingFont(child)}
         currentTextScale={normalizeTextScale(child.text_scale)}
         currentReadingRuler={child.reading_ruler === true}
       />

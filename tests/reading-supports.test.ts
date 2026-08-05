@@ -3,6 +3,8 @@ import {
   normalizeTextScale,
   textScaleLabel,
   readingSupportsFromChild,
+  resolveReadingFont,
+  hasDyslexiaIndicator,
   DEFAULT_TEXT_SCALE,
   NO_READING_SUPPORTS,
 } from "@/lib/child/reading-supports";
@@ -53,5 +55,41 @@ describe("readingSupportsFromChild", () => {
   it("only turns on when explicitly true (legacy-safe)", () => {
     expect(readingSupportsFromChild({ reading_font: false }).font).toBe(false);
     expect(readingSupportsFromChild({ text_scale: 99 }).scale).toBe(1);
+  });
+});
+
+describe("hasDyslexiaIndicator", () => {
+  it("matches dyslexia / dyslexic case-insensitively", () => {
+    expect(hasDyslexiaIndicator(["dyslexia"])).toBe(true);
+    expect(hasDyslexiaIndicator(["ADHD", "Dyslexic"])).toBe(true);
+  });
+  it("is false for no/other indicators", () => {
+    expect(hasDyslexiaIndicator([])).toBe(false);
+    expect(hasDyslexiaIndicator(["ADHD"])).toBe(false);
+    expect(hasDyslexiaIndicator(undefined)).toBe(false);
+    expect(hasDyslexiaIndicator(null)).toBe(false);
+  });
+});
+
+describe("resolveReadingFont (F2 — SEND-aware default)", () => {
+  it("defaults font ON when never set and a dyslexia indicator is present", () => {
+    expect(resolveReadingFont({ send_indicators: ["dyslexia"] })).toBe(true);
+    expect(
+      readingSupportsFromChild({ send_indicators: ["dyslexia"] }).font,
+    ).toBe(true);
+  });
+
+  it("stays OFF when never set and no dyslexia indicator", () => {
+    expect(resolveReadingFont({ send_indicators: ["ADHD"] })).toBe(false);
+    expect(resolveReadingFont({})).toBe(false);
+  });
+
+  it("an explicit choice always beats the SEND default (both directions)", () => {
+    // explicit OFF wins even with a dyslexia flag
+    expect(
+      resolveReadingFont({ reading_font: false, send_indicators: ["dyslexia"] }),
+    ).toBe(false);
+    // explicit ON wins with no flag
+    expect(resolveReadingFont({ reading_font: true })).toBe(true);
   });
 });

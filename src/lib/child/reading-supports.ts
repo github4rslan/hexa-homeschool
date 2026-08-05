@@ -47,14 +47,41 @@ export const NO_READING_SUPPORTS: ReadingSupports = {
   ruler: false,
 };
 
+/** True when a child's SEND indicators mention dyslexia (case-insensitive). */
+export function hasDyslexiaIndicator(indicators?: string[] | null): boolean {
+  if (!Array.isArray(indicators)) return false;
+  return indicators.some((s) => /dyslex/i.test(String(s)));
+}
+
+/**
+ * Effective dyslexia-friendly-font default for a child (F2).
+ *
+ * The font is child-controlled, but for a child flagged dyslexic in
+ * `send_indicators` we turn it ON *by default* — so the SEND promise is visible
+ * without anyone hunting through My-stuff. This only changes the INITIAL default:
+ * once the child (or parent) sets the toggle, that explicit choice always wins.
+ *   - `reading_font === true`  → on (explicit choice)
+ *   - `reading_font === false` → off (explicit choice — beats the SEND default)
+ *   - never set (undefined/null) → on iff a dyslexia indicator is present
+ */
+export function resolveReadingFont(child: {
+  reading_font?: boolean | null;
+  send_indicators?: string[] | null;
+}): boolean {
+  if (child.reading_font === true) return true;
+  if (child.reading_font === false) return false;
+  return hasDyslexiaIndicator(child.send_indicators);
+}
+
 /** Build the effective supports from a child doc's (legacy-safe) fields. */
 export function readingSupportsFromChild(child: {
-  reading_font?: boolean;
+  reading_font?: boolean | null;
   text_scale?: number;
   reading_ruler?: boolean;
+  send_indicators?: string[] | null;
 }): ReadingSupports {
   return {
-    font: child.reading_font === true,
+    font: resolveReadingFont(child),
     scale: normalizeTextScale(child.text_scale),
     ruler: child.reading_ruler === true,
   };
