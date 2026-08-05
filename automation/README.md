@@ -50,9 +50,13 @@ every cutoff safe:
 
 ## Config
 - Production target: `https://edway.uk` (override via `SCOUT_BASE_URL`).
-- Schedule: **two in-session crons** (this chat), 10 hours apart so each agent
-  gets a fully-reset session window — **Scout 12:03 PM** (day, discovery) and
-  **Mechanic 10:03 PM** (night, build). Both daily, local time.
+- Schedule: **three in-session crons** (this chat). **Scout 12:03 PM** (day,
+  discovery) and **Mechanic 10:03 PM** (night, build) — daily, 10h apart so each
+  gets a fresh session window. Plus a **HEALTH-CHECK every 6h** (`:17`) that runs
+  Mechanic in health-check mode (§H): via the read-only Vercel MCP it confirms the
+  live deploy is READY + scans runtime errors, safely self-corrects a clear
+  recent-commit regression, and emails an alert for anything it shouldn't fix
+  (env/config/child-safety) — quiet when healthy. Manual: `/health`.
 - **No per-run cap: Mechanic builds the whole findings list** each run
   (highest-ranked first). If it hits a session limit partway, checkpoint +
   auto-resume continue it from the first unchecked item — nothing lost.
