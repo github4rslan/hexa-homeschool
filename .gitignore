@@ -77,3 +77,7 @@ docs/bug-fix.md
 # Local-only Scout findings email (never in the public repo)
 scripts/email-findings.ts
 scripts/.findings-email.json
+
+# Local Loom / demo scripts (not for the repo)
+/EDWAY-LOOM-SCRIPT.md
+/EDWAY-SCRIPT-WHATSAPP.txt
