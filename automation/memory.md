@@ -459,6 +459,58 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   difficulty + parent insights panel + exam-decision card ALL already exist; dropped those. MCP profile
   persisted the SMOKE parent login (one-click); admin/tutor needed clear+type creds; `/logout` POST between
   each role switch + browser_close. Emailed owner the scenario summary via scripts/email-findings.ts.
+- 2026-08-05 — Mechanic build run, DECISION `all` (owner named B1 + F1–F6 — 7 items, no cap; findings file
+  2026-08-03). ALL 7 SHIPPED, each green-gated (type-check + tests + lint + build, one commit, pushed to main)
+  AND live-verified on edway.uk with Playwright (except F5's deep end-state — see below). **B1** child profile
+  "Current standing" now shows lesson-based competence: when a subject has no diagnostic/mock evaluation but has
+  certified topics, it renders "Working at {band} · {n} certified" instead of "Not yet assessed" (added
+  `certifiedBySubject` fetch + `bandBySubject` map to the page; presentation-only, exam-decision inputs
+  untouched). Live: Ivy showed Maths "Working at GCSE level · 4 certified", English/Science "primary level · 1"
+  — the "Not yet assessed" contradiction is gone. **F1** English derived question figures: new pure
+  `lib/child/english-visual.ts` (`deriveEnglishVisual` → `plural_rule` build for "plural of X" + `letter_tiles`
+  for a single quoted word; `pluralRuleFor` s/x/z/ch/sh→es, cons+y→ies, else s) + `EnglishVisual` tile renderer,
+  wired in practice-player AFTER math+science (englishVisual = !math && !science). 10 unit tests. Live on the
+  exact Scout-flagged "plural of 'box'": rendered "B O X + es · Words ending in 'x' add e-s", honest alt, and it
+  deliberately does NOT spell "boxes" (base tiles + separate ending, teaches the rule without pre-answering the
+  MCQ). **F2** SEND-aware reading default: `resolveReadingFont(child)` + `hasDyslexiaIndicator` — font defaults
+  ON when `reading_font` is never-set AND `send_indicators` includes dyslexia; an explicit true/false always wins
+  (both directions). Threaded through `readingSupportsFromChild` (lesson) + the My-stuff `currentReadingFont`.
+  6 new tests. Live: Ivy's My-stuff "Easy-read font" = checked ON by default (ruler/size stay off), no dyslexia
+  label shown to the child, still toggleable. **F3** parent note read-aloud on the child hub: extended
+  `ParentNoteCard` with a "Hear it read to you" control that POSTs the note text to the CACHED `/api/tts` in the
+  child's `voice_id` (the proven memory pattern — no new route/cost). Degrades by HIDING the control on 503/403.
+  Live: set a note on Ivy, tapped it in child mode → button advanced to "Play again" (TTS fetch+playback
+  succeeded end-to-end), zero console errors. **F4** parent-only Web Push (size L): added the `web-push` dep
+  (LEAN tree — asn1.js/http_ece/https-proxy-agent/jws/minimist, NO minimatch/brace-expansion, so no new prod
+  audit surface — chose the battle-tested lib over hand-rolled RFC-8291 crypto I couldn't live-verify).
+  `lib/notify/web-push.ts` (VAPID env-gated `webPushConfigured`/`sendWebPush`, expiry 404/410 → prune),
+  `PushSubscriptionDoc` on ParentDoc + repo `addPushSubscription`/`removePushSubscription` (keyed by endpoint),
+  `/api/push/{public-key,subscribe,unsubscribe}`, SW `push`+`notificationclick` handlers (cache v2), emit from
+  `pushEventNotification` alongside email/SMS (same `event_notifications_opt_out` gate), a `PushToggle` on
+  /settings. Live: WEB_PUSH unset on prod ⇒ `/api/push/public-key` → subscribe control HIDDEN (graceful). **F5**
+  child "Today I learned" chip reflection: pure `lib/child/reflection.ts` (5-chip enum + `reflectionFeedLine`),
+  `submitReflection` server action (selection-only ⇒ NO free-text ⇒ no distress-gate surface), stored as a new
+  `parent_events` type "reflection" (topic_title = warm feed line, one per child/day, re-tap updates), rendered
+  on the dashboard activity feed (new kind + Heart style). 5 tests. Gated on `finishedToday` (a lesson done today
+  AND all quests handled). **F6** cleared BOTH npm-audit highs (brace-expansion + fast-uri) via NON-force
+  `npm audit fix` → 0 vulnerabilities (the advisory DB now HAS a fix — the 2026-07 "no fix exists" note is now
+  STALE for these two; only lockfile transitive versions changed, no direct dep, gate stayed green). Next already
+  at latest 15.5.22; React pinned 19.0.0 has no higher 19.0.x patch (19.1+ is a minor, out of "patch" scope —
+  left it). KEY LEARNINGS: (1) a passive `fetch` to an endpoint that 503s logs a RED console error in the browser
+  on every page load — my first F4 cut had /api/push/public-key return 503 when unconfigured, which broke Scout's
+  zero-console-errors baseline on /settings. FIX (shipped as "Fix: F4 live regression"): return 200 `{key:null}`
+  and let the client treat null as unavailable. Pattern: for an env-gated "is this feature on?" probe the client
+  hits on load, return 200 with a null/flag payload, NEVER a 4xx/5xx, or you dirty the console. (2) When adding a
+  push/crypto capability you can't fully live-verify (VAPID unset on prod), prefer the battle-tested lib over
+  hand-rolled encryption — but FIRST check its dep tree (`npm view <pkg> dependencies`) so you don't drag
+  minimatch/yargs into the prod runtime and undo the audit hygiene. (3) A new deriveVisual chain extends safely by
+  running the new deriver LAST and gating it on the earlier ones being null (english = !math && !science) — no
+  collisions, and the quoted-word regex must require the closing quote right after the word so a quoted SENTENCE
+  never triggers a misleading single-word figure. (4) F5's live surface sits behind an expensive end-state
+  (finish ALL of today's quests = 3 full lessons) — gate-verified + unit-tested + wired into the confirmed
+  child hub, live all-done drive deferred rather than risk a fragile 30-interaction Playwright run (per the
+  resilience note). Teardown: `fetch('/logout',{method:'POST'})`→200 + browser_close. MCP browser persisted the
+  SMOKE login form autofill (one-click sign-in, no password typed).
 - 2026-08-03 — Discovery pass (run at 2026-08-04 ~14:35 UTC; filename kept at owner-named 2026-08-03), FULL coverage
   (parent/child/admin/tutor, desktop 1280 + mobile 390 both confirmed). Took the **English KS2 "Reading & Spelling"
   (eng_ks2_reading)** lesson end-to-end as Ivy (mood "Tough day"→F4 warm ack; explainer; wrong#1 calm no-red/"Why isn't
