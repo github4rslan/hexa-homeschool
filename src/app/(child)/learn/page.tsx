@@ -6,6 +6,7 @@ import { EmojiCheckin } from "@/components/child/emoji-checkin";
 import { ParentNoteCard } from "@/components/child/parent-note-card";
 import { StreakFlame } from "@/components/child/streak-flame";
 import { QuestCards, type Quest } from "@/components/child/quest-cards";
+import { TodayReflection } from "@/components/child/today-reflection";
 import {
   currentParentId,
   getActiveChild,
@@ -155,6 +156,13 @@ export default async function LearnHubPage() {
   // preserves the Maths→English→Science order for everything else.
   quests.sort((a, b) => Number(b.todaysPlan) - Number(a.todaysPlan));
 
+  // F5: once the child has finished today (at least one lesson done AND nothing
+  // actionable left — every quest done/certified/resting/coming-soon), offer the
+  // calm, optional "Today I learned" reflection.
+  const finishedToday =
+    doneSubjects.size > 0 &&
+    quests.every((q) => q.done || q.certified || q.resting || q.comingSoon);
+
   const firstName = child.full_name.split(" ")[0];
   const accent = accentPreset(child.accent);
   const isBirthday = isBirthdayToday(child.date_of_birth);
@@ -216,6 +224,8 @@ export default async function LearnHubPage() {
       )}
 
       <QuestCards quests={quests} />
+
+      {finishedToday && <TodayReflection accentText={accent.text} />}
 
       {review && !review.quiet && (
         <div className="mt-5">

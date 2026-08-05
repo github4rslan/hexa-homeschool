@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import {
   Award,
   CheckCircle2,
+  Heart,
   LifeBuoy,
   Moon,
   PlayCircle,
@@ -19,6 +20,7 @@ export interface ActivityFeedRow {
     | "mastery"
     | "handoff"
     | "inactivity"
+    | "reflection"
     | "lesson_completed"
     | "lesson_started";
   childName: string;
@@ -49,6 +51,11 @@ const STYLES: Record<ActivityFeedRow["kind"], Style> = {
     Icon: Moon,
     ring: "bg-white/[0.04] border-white/10",
     icon: "text-fog-400",
+  },
+  reflection: {
+    Icon: Heart,
+    ring: "bg-rose-500/10 border-rose-400/25",
+    icon: "text-rose-300",
   },
   lesson_completed: {
     Icon: CheckCircle2,
@@ -82,6 +89,13 @@ function present(row: ActivityFeedRow): { title: string; detail: string } {
       return {
         title: "No lesson yet today",
         detail: `${first} · a gentle reminder`,
+      };
+    case "reflection":
+      // topicTitle already carries the warm, first-name feed line ("Ada felt
+      // faster today"); fall back gently if it's somehow missing.
+      return {
+        title: "How today felt",
+        detail: row.topicTitle?.trim() || `${first} · shared a reflection`,
       };
     case "lesson_completed":
       return { title: "Completed a lesson", detail: `${first} · ${topic}` };
