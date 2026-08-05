@@ -593,8 +593,12 @@ export interface ParentEventDoc {
   child_id: ObjectId;
   /** Snapshot of the child's full name at event time (feed rendering). */
   child_name: string;
-  type: "mastery" | "handoff" | "inactivity";
-  /** Human topic title for mastery/handoff events; absent for inactivity. */
+  type: "mastery" | "handoff" | "inactivity" | "reflection";
+  /**
+   * Human topic title for mastery/handoff events; absent for inactivity. For a
+   * "reflection" (F5) this carries the warm parent-feed line, e.g. "Ada felt
+   * faster today".
+   */
   topic_title?: string | null;
   subject?: Subject | null;
   /** Mastery only: how many attempts it took to certify (≥ 1). */

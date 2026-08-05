@@ -5,9 +5,11 @@ import {
   currentParentId,
   getActiveChild,
   recordCheckin,
+  recordChildReflection,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { verifyParentPin } from "@/lib/auth/parent-pin";
+import { isReflectionKey, reflectionFeedLine } from "@/lib/child/reflection";
 
 export interface CheckinResult {
   ok: boolean;
@@ -25,6 +27,31 @@ export async function submitCheckin(mood: number): Promise<CheckinResult> {
   const res = await recordCheckin(parentId, child._id, safeMood);
   revalidatePath("/learn");
   return { ok: res.ok, difficultyDelta: res.difficultyDelta };
+}
+
+/**
+ * Record the child's optional one-tap "Today I learned" reflection (F5).
+ * Selection-only (a fixed enum) ⇒ no free-text, no distress-gate surface. Stored
+ * as a warm line on the parent activity feed, one per child per day. A bad/unknown
+ * key is silently ignored (never throws — the child flow must never break).
+ */
+export async function submitReflection(
+  key: string,
+): Promise<{ ok: boolean }> {
+  if (!isReflectionKey(key)) return { ok: false };
+  const parentId = await currentParentId();
+  if (!parentId) return { ok: false };
+  const child = await getActiveChild(parentId, await readActiveChildId());
+  if (!child?._id) return { ok: false };
+
+  const firstName = child.full_name.split(" ")[0];
+  const res = await recordChildReflection(
+    parentId,
+    child,
+    reflectionFeedLine(firstName, key),
+  );
+  revalidatePath("/learn");
+  return { ok: res.ok };
 }
 
 export interface ParentGateResult {

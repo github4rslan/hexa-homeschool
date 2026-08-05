@@ -4633,6 +4633,49 @@ export async function recordParentEvent(
 }
 
 /**
+ * Record a child's optional one-tap "Today I learned" reflection (F5) onto the
+ * parent activity feed. Ownership-checked; one row per child per UTC day (the
+ * dedupe key), and a same-day re-tap UPDATES the choice + floats it to now, so
+ * the child can change their mind without spamming the feed. `key` must be a
+ * known reflection enum (validated by the caller); `feedLine` is the pre-built
+ * warm parent-feed phrase. Best-effort, never throws upstream flows.
+ */
+export async function recordChildReflection(
+  parentId: string,
+  child: ChildDoc,
+  feedLine: string,
+): Promise<{ ok: boolean }> {
+  const parentOid = toObjectId(parentId);
+  if (!parentOid || !child._id) return { ok: false };
+  if (!(await assertOwnsChild(parentId, child._id))) return { ok: false };
+
+  const dayKey = new Date().toISOString().slice(0, 10);
+  const dedupeKey = `reflection:${child._id.toHexString()}:${dayKey}`;
+  const col = await getCollection<ParentEventDoc>(Collections.parentEvents);
+  const now = new Date();
+  await col.updateOne(
+    { parent_id: parentOid, dedupe_key: dedupeKey },
+    {
+      $set: {
+        topic_title: feedLine,
+        child_name: child.full_name,
+        created_at: now,
+      },
+      $setOnInsert: {
+        parent_id: parentOid,
+        child_id: child._id,
+        type: "reflection",
+        subject: null,
+        attempts: null,
+        dedupe_key: dedupeKey,
+      },
+    },
+    { upsert: true },
+  );
+  return { ok: true };
+}
+
+/**
  * How many completed lessons a child has logged on a topic — the honest
  * "attempts it took" figure for the mastery celebration. At least 1 for a topic
  * that has just been certified.
@@ -4651,7 +4694,13 @@ export async function masteryAttemptCount(
 }
 
 export interface ActivityFeedItem {
-  kind: "mastery" | "handoff" | "inactivity" | "lesson_completed" | "lesson_started";
+  kind:
+    | "mastery"
+    | "handoff"
+    | "inactivity"
+    | "reflection"
+    | "lesson_completed"
+    | "lesson_started";
   childName: string;
   /** Topic title (events) or humanised topic tag (lessons); may be null. */
   topicTitle: string | null;
