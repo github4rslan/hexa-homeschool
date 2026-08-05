@@ -57,6 +57,8 @@ import { MathVisual } from "@/components/child/math-visual";
 import { deriveMathVisual } from "@/lib/child/math-visual";
 import { ScienceVisual } from "@/components/child/science-visual";
 import { deriveScienceVisual } from "@/lib/child/science-visual";
+import { EnglishVisual } from "@/components/child/english-visual";
+import { deriveEnglishVisual } from "@/lib/child/english-visual";
 import { buildQuestionNarration } from "@/lib/child/narration-copy";
 import dynamic from "next/dynamic";
 
@@ -392,6 +394,19 @@ export function PracticePlayer({
         ? deriveScienceVisual(curriculumTopic, question.prompt)
         : null,
     [question, mathVisual, curriculumTopic],
+  );
+  // F1 — a deterministic, honestly-described English figure (plural spelling-rule
+  // build, or letter tiles for a word the question is about). Derived from the
+  // topic + prompt, it fills the previously-empty English `<figure>` so a sighted
+  // child sees a concept-tied diagram and a screen-reader/narration child gets a
+  // real description. Only used when maths/science didn't derive; non-derivable ⇒
+  // null ⇒ the AI image fallback.
+  const englishVisual = useMemo(
+    () =>
+      question && !mathVisual && !scienceVisual
+        ? deriveEnglishVisual(curriculumTopic, question.prompt)
+        : null,
+    [question, mathVisual, scienceVisual, curriculumTopic],
   );
 
   const hintLadder = question
@@ -1530,14 +1545,14 @@ export function PracticePlayer({
         <div
           className={cn(
             "mb-8 grid gap-5",
-            (mathVisual || scienceVisual || questionVisual) &&
+            (mathVisual || scienceVisual || englishVisual || questionVisual) &&
               "lg:grid-cols-[1fr_220px] lg:items-start",
           )}
         >
           <h1 className="text-3xl sm:text-4xl font-semibold text-fog-50 leading-snug">
             {question.prompt}
           </h1>
-          {(mathVisual || scienceVisual || questionVisual) && (
+          {(mathVisual || scienceVisual || englishVisual || questionVisual) && (
             <figure
               className={cn(
                 "order-first overflow-hidden rounded-3xl border bg-white/[0.03] p-2 lg:order-none",
@@ -1551,6 +1566,10 @@ export function PracticePlayer({
                 // Deterministic science figure (B1) — precise + honestly
                 // described, replacing the generic AI PNG for science prompts.
                 <ScienceVisual spec={scienceVisual} accent={accent} />
+              ) : englishVisual ? (
+                // Deterministic English figure (F1) — plural spelling-rule build
+                // or letter tiles, filling the previously-empty English figure.
+                <EnglishVisual spec={englishVisual} accent={accent} />
               ) : (
                 // AI-generated only after automated Checker approval; no spinner
                 // or fallback is shown when unavailable. B1: this generic

@@ -1,0 +1,72 @@
+import { describe, expect, it } from "vitest";
+import { deriveEnglishVisual, pluralRuleFor } from "@/lib/child/english-visual";
+
+describe("deriveEnglishVisual", () => {
+  it("ignores non-English topics", () => {
+    expect(deriveEnglishVisual("maths_ks2_arith", "What is the plural of 'box'?")).toBeNull();
+    expect(deriveEnglishVisual("sci_ks2_living", "Which animal is a mammal?")).toBeNull();
+  });
+
+  it("builds a plural spelling-rule figure for 'plural of box' (add es)", () => {
+    const spec = deriveEnglishVisual("eng_ks2_reading", "What is the plural of 'box'?");
+    expect(spec?.kind).toBe("plural_rule");
+    if (spec?.kind !== "plural_rule") throw new Error("expected plural_rule");
+    expect(spec.base).toBe("box");
+    expect(spec.ending).toBe("es");
+    expect(spec.rule).toMatch(/x/);
+  });
+
+  it("uses the 'ch' rule for 'plural of church'", () => {
+    const spec = deriveEnglishVisual("eng_ks2_reading", "What is the plural of 'church'?");
+    expect(spec?.kind).toBe("plural_rule");
+    if (spec?.kind !== "plural_rule") throw new Error("expected plural_rule");
+    expect(spec.base).toBe("church");
+    expect(spec.ending).toBe("es");
+    expect(spec.rule).toMatch(/ch/);
+  });
+
+  it("never spells out the finished plural in the alt or rule (no pre-answer)", () => {
+    const spec = deriveEnglishVisual("eng_ks2_reading", "What is the plural of 'box'?");
+    expect(spec?.alt.toLowerCase()).not.toContain("boxes");
+    if (spec?.kind === "plural_rule") expect(spec.rule.toLowerCase()).not.toContain("boxes");
+  });
+
+  it("shows letter tiles for a single quoted word (opposite of 'begin')", () => {
+    const spec = deriveEnglishVisual("eng_ks2_reading", "What is the opposite of 'begin'?");
+    expect(spec?.kind).toBe("letter_tiles");
+    if (spec?.kind !== "letter_tiles") throw new Error("expected letter_tiles");
+    expect(spec.word).toBe("begin");
+  });
+
+  it("does not trigger on a quoted sentence (no misleading single-word figure)", () => {
+    expect(
+      deriveEnglishVisual("eng_ks3_grammar", "Which word is the verb? 'The athlete sprinted quickly.'"),
+    ).toBeNull();
+    expect(
+      deriveEnglishVisual("eng_ks3_reading", "'The room was an oven.' This is a:"),
+    ).toBeNull();
+  });
+
+  it("returns null for a spelling prompt with no quoted word", () => {
+    expect(deriveEnglishVisual("eng_ks2_reading", "Which word is spelled correctly?")).toBeNull();
+  });
+});
+
+describe("pluralRuleFor", () => {
+  it("adds -es for words ending in s/x/z/ch/sh", () => {
+    expect(pluralRuleFor("box").ending).toBe("es");
+    expect(pluralRuleFor("bus").ending).toBe("es");
+    expect(pluralRuleFor("church").ending).toBe("es");
+    expect(pluralRuleFor("dish").ending).toBe("es");
+  });
+
+  it("turns consonant + y into -ies", () => {
+    expect(pluralRuleFor("baby").ending).toBe("ies");
+    expect(pluralRuleFor("party").ending).toBe("ies");
+  });
+
+  it("just adds -s otherwise (incl. vowel + y)", () => {
+    expect(pluralRuleFor("cat").ending).toBe("s");
+    expect(pluralRuleFor("day").ending).toBe("s");
+  });
+});
