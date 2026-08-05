@@ -47,8 +47,13 @@ export function PushToggle() {
           if (!cancelled) setStatus("unavailable");
           return;
         }
-        const { key } = (await res.json()) as { key: string };
+        const { key } = (await res.json()) as { key: string | null };
         if (cancelled) return;
+        // Unconfigured server (key null) ⇒ push unavailable, control hidden.
+        if (!key) {
+          setStatus("unavailable");
+          return;
+        }
         setVapidKey(key);
         const reg = await navigator.serviceWorker.ready;
         const existing = await reg.pushManager.getSubscription();
