@@ -12,6 +12,7 @@ import {
   getChildById,
   latestEvaluationsBySubject,
   countCertified,
+  certifiedBySubject,
   listMedia,
   getWeeklySchedule,
   evaluationHistory,
@@ -58,7 +59,11 @@ export default async function ChildProfilePage({
   const standings = await latestEvaluationsBySubject(child._id);
   const history = await evaluationHistory(child._id);
   const certified = await countCertified(child._id);
+  const certifiedCounts = await certifiedBySubject(child._id);
   const bands = await childCurrentBands(parentId, child._id);
+  // Per-subject working band, so a subject with no diagnostic/mock evaluation
+  // but real lesson-based progress still shows an honest standing (B1).
+  const bandBySubject = new Map(bands.map((b) => [b.subject, b.keyStage]));
   const insights = await childInsights(parentId, child._id);
   const work = await listMedia({ useCase: "child_work", childId, limit: 12 });
   const tutorNotes = await listChildTutorNotes(parentId, childId);
@@ -155,6 +160,17 @@ export default async function ChildProfilePage({
                     <div className="text-[10px] font-mono uppercase tracking-widest text-fog-500">
                       {s.fromMock ? "Mock score" : "Readiness"}
                       {s.grade ? ` · Grade ${s.grade}` : ""}
+                    </div>
+                  </>
+                ) : certifiedCounts[s.subject] > 0 ? (
+                  <>
+                    <div className="mt-2 text-sm text-cyan-200">
+                      Working at{" "}
+                      {KEY_STAGE_LABEL[bandBySubject.get(s.subject) ?? 4]}
+                    </div>
+                    <div className="text-[10px] font-mono uppercase tracking-widest text-fog-500">
+                      {certifiedCounts[s.subject]} topic
+                      {certifiedCounts[s.subject] === 1 ? "" : "s"} certified
                     </div>
                   </>
                 ) : (
