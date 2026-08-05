@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { PushToggle } from "@/components/dashboard/push-toggle";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SubmitButton } from "@/components/ui/submit-button";
@@ -312,6 +313,8 @@ export default async function SettingsPage({
                 Save preferences
               </SubmitButton>
             </form>
+            {/* Web Push opt-in (F4) — self-hides when unconfigured/unsupported. */}
+            <PushToggle />
           </Card>
 
           {/* 3 — Children */}

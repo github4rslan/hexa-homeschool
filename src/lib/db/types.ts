@@ -153,6 +153,14 @@ export interface ParentDoc {
   feedback_last_submitted_at?: Date | null;
   feedback_last_dismissed_at?: Date | null;
   feedback_opt_out?: boolean;
+  /**
+   * Web Push subscriptions (F4) — one per browser/device the parent opted into
+   * on-device milestone notifications. Parents-only (never registered in child
+   * mode). Stored keyed by endpoint (unique), pruned automatically when a push
+   * returns 404/410 (expired). Absent = no push subscriptions. VAPID keys unset
+   * on the server ⇒ the whole feature is off and this stays empty.
+   */
+  push_subscriptions?: PushSubscriptionDoc[];
   subscription_tier: "diagnostic" | "standard" | "family";
   billing_status: "trialing" | "active" | "past_due" | "canceled" | "paused";
   /** Stripe linkage — absent until the parent first goes through Checkout. */
@@ -160,6 +168,13 @@ export interface ParentDoc {
   stripe_subscription_id?: string | null;
   created_at: Date;
   updated_at: Date;
+}
+
+/** A stored Web Push subscription (the browser PushSubscription, serialised). */
+export interface PushSubscriptionDoc {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  created_at: Date;
 }
 
 export interface ChildDoc {

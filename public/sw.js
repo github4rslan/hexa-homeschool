@@ -12,7 +12,7 @@
  * Cache is versioned; bump CACHE_VERSION on any SW logic change so old caches
  * are dropped on activate (deploy-safe invalidation).
  */
-const CACHE_VERSION = "edway-static-v1";
+const CACHE_VERSION = "edway-static-v2";
 const OFFLINE_URL = "/offline.html";
 
 // Precache only the offline fallback — everything else is cached at runtime.
@@ -90,4 +90,50 @@ self.addEventListener("fetch", (event) => {
       })
     );
   }
+});
+
+/*
+ * Web Push (F4) — parent-only milestone notifications. The push payload is a
+ * small JSON blob ({ title, body, url }) built server-side; no PII beyond the
+ * child's first name + topic the parent already sees on the dashboard. These
+ * subscriptions are only ever created from the parent dashboard, never in child
+ * mode. When VAPID is unconfigured no push can arrive, so these handlers are
+ * simply dormant.
+ */
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = {};
+  }
+  const title = data.title || "Edway";
+  const options = {
+    body: data.body || "",
+    icon: "/icon-192.png",
+    badge: "/favicon-32.png",
+    data: { url: data.url || "/dashboard" },
+    tag: data.url || "edway-milestone",
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || "/dashboard";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      // Focus an existing Edway tab if one is open, else open a new one.
+      for (const client of clients) {
+        if (client.url.includes(target) && "focus" in client) return client.focus();
+      }
+      for (const client of clients) {
+        if ("focus" in client && "navigate" in client) {
+          client.focus();
+          return client.navigate(target);
+        }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(target);
+    })
+  );
 });

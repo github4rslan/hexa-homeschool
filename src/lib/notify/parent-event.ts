@@ -3,6 +3,7 @@ import {
   findParentById,
   recordParentEvent,
   masteryAttemptCount,
+  removePushSubscription,
 } from "@/lib/db/repo";
 import type { ChildDoc, Subject } from "@/lib/db/types";
 import { buildParentEventCopy } from "@/lib/engine/parent-events";
@@ -10,6 +11,7 @@ import { sendEmail, emailConfigured } from "@/lib/email/send";
 import { parentEventTemplate } from "@/lib/email/templates";
 import { appUrl } from "@/lib/email/verification";
 import { sendSms, smsConfigured } from "@/lib/sms/twilio";
+import { sendWebPush, webPushConfigured } from "@/lib/notify/web-push";
 
 /**
  * Event-driven parent notifications (Wave 7, Phase 5).
@@ -160,5 +162,24 @@ async function pushEventNotification(params: {
 
   if (smsConfigured() && parent.phone) {
     await sendSms(parent.phone, copy.smsBody);
+  }
+
+  // Web Push (F4): the most immediate, free channel for a parent who installed
+  // the PWA + opted in. Same opt-out gate as email/SMS above. Best-effort per
+  // device; an expired (404/410) subscription is pruned so the store self-heals.
+  const subs = parent.push_subscriptions ?? [];
+  if (webPushConfigured() && subs.length > 0) {
+    await Promise.all(
+      subs.map(async (sub) => {
+        const result = await sendWebPush(sub, {
+          title: copy.emailSubject,
+          body: copy.feedDetail,
+          url: params.ctaPath,
+        });
+        if (result.expired) {
+          await removePushSubscription(params.parentId, sub.endpoint).catch(() => {});
+        }
+      }),
+    );
   }
 }
