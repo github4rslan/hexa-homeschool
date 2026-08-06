@@ -3130,6 +3130,34 @@ export async function topicWorkCounts(
 }
 
 /**
+ * Map of certified-topic tag → the parent-attached working-photo secure URLs for
+ * a child (F2). Ownership-checked; lets the LA portfolio embed the real image
+ * artefacts (viewable links), not just a text line. Order is deterministic
+ * (newest first) so a regenerated dossier hashes stably. Empty when none.
+ */
+export async function topicWorkEvidence(
+  parentId: string,
+  childId: string,
+): Promise<Map<string, string[]>> {
+  const byTag = new Map<string, string[]>();
+  if (!(await parentOwnsChild(parentId, childId))) return byTag;
+  const media = await listMedia({
+    useCase: "child_work",
+    childId,
+    ownerId: parentId,
+    limit: 200,
+  });
+  for (const m of media) {
+    const tag = m.meta?.topic_tag;
+    if (!tag || !m.secure_url) continue;
+    const list = byTag.get(tag) ?? [];
+    list.push(m.secure_url);
+    byTag.set(tag, list);
+  }
+  return byTag;
+}
+
+/**
  * Look up a cached Checker-passed agentic animation (Wave 8, Phase 2).
  * Question-scoped cache — no ownership check needed (carries no child data,
  * mirroring the `media` cache pattern).
