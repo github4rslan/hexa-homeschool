@@ -141,6 +141,7 @@ export function DailyFlow({
               glossary={glossary}
               workedExample={workedExample}
               onContinue={() => setPhase("practice")}
+              topic={curriculumTopic}
               voiceId={voiceId}
               keyStage={keyStage}
               accent={accentId}
