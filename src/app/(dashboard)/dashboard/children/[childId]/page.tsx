@@ -280,6 +280,7 @@ export default async function ChildProfilePage({
           <TrajectoryChart
             history={history}
             targetWindow={child.target_exam_window}
+            certifiedAt={certificates.map((c) => c.achievedAt)}
           />
         </Card>
 

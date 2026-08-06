@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { projectGrade, parseTargetWindow } from "@/lib/engine/trajectory";
+import {
+  projectGrade,
+  parseTargetWindow,
+  certificationSeries,
+} from "@/lib/engine/trajectory";
 
 const DAY = 24 * 60 * 60 * 1000;
 const T0 = Date.UTC(2026, 0, 1);
@@ -51,6 +55,30 @@ describe("projectGrade", () => {
     const p = projectGrade(points, T0 + 90 * DAY);
     expect(p.hasTrend).toBe(true);
     expect(p.projectedGrade).toBe(5); // mean, flat
+  });
+});
+
+describe("certificationSeries (F5)", () => {
+  it("returns an empty series for no dates", () => {
+    expect(certificationSeries([])).toEqual([]);
+  });
+
+  it("builds a cumulative, time-sorted series", () => {
+    const series = certificationSeries([
+      new Date(T0 + 2 * DAY),
+      new Date(T0),
+      new Date(T0 + 1 * DAY),
+    ]);
+    expect(series).toEqual([
+      { t: T0, count: 1 },
+      { t: T0 + DAY, count: 2 },
+      { t: T0 + 2 * DAY, count: 3 },
+    ]);
+  });
+
+  it("drops invalid dates", () => {
+    const series = certificationSeries([new Date(T0), new Date("not a date")]);
+    expect(series).toEqual([{ t: T0, count: 1 }]);
   });
 });
 
