@@ -362,6 +362,144 @@ function AlgebraTiles({
   );
 }
 
+function RoundingLine({
+  spec,
+  accent,
+  reduced,
+}: {
+  spec: Extract<MathVisualSpec, { kind: "rounding" }>;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  const { value, lower, upper, rounded, place } = spec;
+  const span = upper - lower;
+  const mid = lower + span / 2;
+  const W = 100;
+  const padX = 8;
+  const usable = W - padX * 2;
+  const x = (v: number) => padX + ((v - lower) / span) * usable;
+  const axisY = 30;
+  const roundsUp = rounded === upper;
+
+  return (
+    <div className="flex w-full flex-col items-center gap-1">
+      <svg viewBox="0 0 100 44" className="w-full" style={{ maxHeight: 150 }}>
+        {/* axis */}
+        <line x1={x(lower)} y1={axisY} x2={x(upper)} y2={axisY} stroke="rgba(255,255,255,0.3)" strokeWidth={0.6} />
+        {/* midpoint tick (the tipping point) */}
+        <line x1={x(mid)} y1={axisY - 3} x2={x(mid)} y2={axisY + 3} stroke="rgba(255,255,255,0.25)" strokeWidth={0.5} strokeDasharray="1 1" />
+        {/* endpoints */}
+        {[lower, upper].map((t) => {
+          const isTarget = t === rounded;
+          return (
+            <g key={t}>
+              <circle cx={x(t)} cy={axisY} r={isTarget ? 2.1 : 1.5} fill={isTarget ? accent.swatch : "rgba(255,255,255,0.4)"} />
+              <text x={x(t)} y={axisY + 8} textAnchor="middle" fontSize={3.4} fontWeight={isTarget ? "bold" : "normal"} fill={isTarget ? accent.swatch : "rgba(255,255,255,0.55)"}>
+                {t}
+              </text>
+            </g>
+          );
+        })}
+        {/* the value being rounded, with a drop line + snap arc to its target */}
+        <line x1={x(value)} y1={axisY - 10} x2={x(value)} y2={axisY} stroke="rgba(255,255,255,0.55)" strokeWidth={0.5} />
+        <text x={x(value)} y={axisY - 12} textAnchor="middle" fontSize={4} fontWeight="bold" fill="rgba(255,255,255,0.85)">
+          {value}
+        </text>
+        <motion.path
+          d={`M ${x(value)} ${axisY - 6} Q ${(x(value) + x(rounded)) / 2} ${axisY - 15} ${x(rounded)} ${axisY - 2}`}
+          fill="none"
+          stroke={accent.swatch}
+          strokeWidth={1}
+          strokeLinecap="round"
+          markerEnd=""
+          initial={reduced ? false : { pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={reduced ? { duration: 0 } : { duration: 0.7, ease: "easeInOut" }}
+        />
+      </svg>
+      <span className={cn("text-sm font-bold", accent.text)}>
+        {value} rounds {roundsUp ? "up" : "down"} to {rounded}
+        <span className="text-fog-400 font-normal"> (nearest {place})</span>
+      </span>
+    </div>
+  );
+}
+
+function PlaceValueColumns({
+  spec,
+  accent,
+  reduced,
+}: {
+  spec: Extract<MathVisualSpec, { kind: "place_value" }>;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  const { digits, labels, highlightIndex, digit, placeValue } = spec;
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex items-end gap-1">
+        {digits.map((d, i) => {
+          const on = i === highlightIndex;
+          return (
+            <motion.div
+              key={i}
+              initial={reduced ? false : { opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={reduced ? { duration: 0 } : { ...SPRING, delay: 0.05 * i }}
+              className="flex flex-col items-center gap-1"
+            >
+              <span className={cn("text-[10px] font-mono uppercase tracking-wide", on ? accent.text : "text-fog-500")}>
+                {labels[i]}
+              </span>
+              <span
+                className={cn(
+                  "flex h-10 w-8 items-center justify-center rounded-md border text-lg font-bold",
+                  on ? accent.border : "border-white/15",
+                  on ? "text-white" : "text-fog-300",
+                )}
+                style={on ? { backgroundColor: accent.swatch } : undefined}
+              >
+                {d}
+              </span>
+            </motion.div>
+          );
+        })}
+      </div>
+      <span className={cn("text-sm font-bold", accent.text)}>
+        {digit} is worth {placeValue}
+      </span>
+    </div>
+  );
+}
+
+function StandardFormVisual({
+  spec,
+  accent,
+  reduced,
+}: {
+  spec: Extract<MathVisualSpec, { kind: "standard_form" }>;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  const { original, a, exponent, shiftPlaces, shiftDir } = spec;
+  return (
+    <motion.div
+      initial={reduced ? false : { opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={reduced ? { duration: 0 } : { ...SPRING }}
+      className="flex flex-col items-center gap-2 text-center"
+    >
+      <span className="text-lg font-bold text-fog-200">{original}</span>
+      <span className="text-xs text-fog-400">
+        move the point {shiftPlaces} {shiftPlaces === 1 ? "place" : "places"} {shiftDir}
+      </span>
+      <span className={cn("text-2xl font-bold", accent.text)}>
+        {a} × 10<sup className="text-base align-super">{exponent}</sup>
+      </span>
+    </motion.div>
+  );
+}
+
 export function MathVisual({
   spec,
   accent,
@@ -390,6 +528,12 @@ export function MathVisual({
         <GroupsVisual spec={spec} accent={accent} reduced={reduced} />
       ) : spec.kind === "algebra_tiles" ? (
         <AlgebraTiles spec={spec} accent={accent} reduced={reduced} />
+      ) : spec.kind === "rounding" ? (
+        <RoundingLine spec={spec} accent={accent} reduced={reduced} />
+      ) : spec.kind === "place_value" ? (
+        <PlaceValueColumns spec={spec} accent={accent} reduced={reduced} />
+      ) : spec.kind === "standard_form" ? (
+        <StandardFormVisual spec={spec} accent={accent} reduced={reduced} />
       ) : (
         <div className="flex w-full items-center justify-center gap-2">
           <div className="min-w-0 flex-1">

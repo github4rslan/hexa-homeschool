@@ -92,6 +92,48 @@ export type MathVisualSpec =
       /** The simplified answer, e.g. "6x", "2x + 10", "3n". */
       resultLabel: string;
       alt: string;
+    }
+  | {
+      kind: "rounding";
+      /** The number being rounded. */
+      value: number;
+      /** The rounding place: 10, 100 or 1000. */
+      place: number;
+      /** Nearest multiple below (or equal). */
+      lower: number;
+      /** Nearest multiple above. */
+      upper: number;
+      /** Which multiple `value` snaps to. */
+      rounded: number;
+      alt: string;
+    }
+  | {
+      kind: "place_value";
+      /** Digits of the number, left → right. */
+      digits: number[];
+      /** Column abbreviation aligned to each digit (O/T/H/Th/…). */
+      labels: string[];
+      /** Index (into `digits`) of the highlighted digit. */
+      highlightIndex: number;
+      /** The digit whose place value is asked for. */
+      digit: number;
+      /** digit × 10^k for its column. */
+      placeValue: number;
+      alt: string;
+    }
+  | {
+      kind: "standard_form";
+      /** The number as originally written (commas stripped). */
+      original: string;
+      /** Mantissa 1 ≤ |a| < 10, formatted. */
+      a: string;
+      /** Power of ten. */
+      exponent: number;
+      /** How many places the decimal point moves. */
+      shiftPlaces: number;
+      /** Direction the point moves to reach the mantissa. */
+      shiftDir: "left" | "right";
+      alt: string;
     };
 
 /** The largest denominator a fraction bar renders before it becomes noise. */
@@ -335,12 +377,141 @@ function deriveAlgebraTiles(prompt: string): MathVisualSpec | null {
   return null;
 }
 
+/** Place names → power of ten, for both digit and word forms. */
+const PLACE_WORDS: Record<string, number> = {
+  ten: 10,
+  hundred: 100,
+  thousand: 1000,
+  "10": 10,
+  "100": 100,
+  "1000": 1000,
+};
+
+/** Column abbreviations by position-from-right (ones = index 0). */
+const PLACE_ABBR = ["O", "T", "H", "Th", "TTh", "HTh", "M"];
+/** Full column names by position-from-right, for the honest alt text. */
+const PLACE_FULL = [
+  "ones",
+  "tens",
+  "hundreds",
+  "thousands",
+  "ten thousands",
+  "hundred thousands",
+  "millions",
+];
+
+/**
+ * Parse "round N to the nearest 10/100/1000" (digit or word place) → a rounding
+ * number-line spec. Marks N between the two neighbouring multiples and shows
+ * which it snaps to. Integers only, so the line stays clean.
+ */
+function deriveRounding(prompt: string): MathVisualSpec | null {
+  const text = prompt.toLowerCase().replace(/,/g, "");
+  const m = text.match(
+    /round\s+(-?\d+)\s+to\s+the\s+nearest\s+(ten|hundred|thousand|10|100|1000)\b/,
+  );
+  if (!m) return null;
+  const value = Number(m[1]);
+  const place = PLACE_WORDS[m[2]];
+  if (!Number.isInteger(value) || !place) return null;
+
+  const lower = Math.floor(value / place) * place;
+  const upper = lower + place;
+  const rounded = Math.round(value / place) * place;
+  return {
+    kind: "rounding",
+    value,
+    place,
+    lower,
+    upper,
+    rounded,
+    alt: `A number line from ${lower} to ${upper} with ${value} marked; it rounds to ${rounded}, the nearer multiple of ${place}.`,
+  };
+}
+
+/**
+ * Parse "value of D in N" (optionally "the digit D") → a place-value-columns
+ * spec, highlighting D's column. First occurrence of D wins.
+ */
+function derivePlaceValue(prompt: string): MathVisualSpec | null {
+  const text = prompt.toLowerCase();
+  const m = text.match(/value of (?:the digit )?(\d)\s+in\s+([\d,]+)/);
+  if (!m) return null;
+  const digit = Number(m[1]);
+  const nStr = m[2].replace(/,/g, "");
+  if (!/^\d+$/.test(nStr) || nStr.length < 1 || nStr.length > PLACE_ABBR.length) {
+    return null;
+  }
+  const digits = nStr.split("").map(Number);
+  const idx = digits.indexOf(digit);
+  if (idx === -1) return null;
+  const posFromRight = digits.length - 1 - idx;
+  const placeValue = digit * Math.pow(10, posFromRight);
+  const labels = digits.map((_, i) => PLACE_ABBR[digits.length - 1 - i]);
+  return {
+    kind: "place_value",
+    digits,
+    labels,
+    highlightIndex: idx,
+    digit,
+    placeValue,
+    alt: `Place-value columns for ${nStr}: the digit ${digit} sits in the ${PLACE_FULL[posFromRight]} column, so its value is ${placeValue}.`,
+  };
+}
+
+/** Clean float noise from a mantissa and trim trailing zeros. */
+function formatMantissa(a: number): string {
+  return Number(a.toPrecision(12)).toString();
+}
+
+/**
+ * Parse "write X in standard form" → a standard-form spec (a × 10ⁿ with the
+ * decimal-point shift). Handles both large (4500) and small (0.0045) numbers.
+ */
+function deriveStandardForm(prompt: string): MathVisualSpec | null {
+  const text = prompt.toLowerCase().replace(/,/g, "");
+  const m = text.match(/write\s+(-?\d+(?:\.\d+)?)\s+in\s+standard\s+form/);
+  if (!m) return null;
+  const original = m[1];
+  const x = Number(original);
+  if (!Number.isFinite(x) || x === 0) return null;
+
+  let exponent = Math.floor(Math.log10(Math.abs(x)));
+  let a = x / Math.pow(10, exponent);
+  // Correct for floating-point error at exact powers of ten.
+  if (Math.abs(a) >= 10) {
+    exponent += 1;
+    a = x / Math.pow(10, exponent);
+  } else if (Math.abs(a) < 1) {
+    exponent -= 1;
+    a = x / Math.pow(10, exponent);
+  }
+  a = Number(a.toPrecision(12));
+  if (!(Math.abs(a) >= 1 && Math.abs(a) < 10)) return null;
+
+  const shiftPlaces = Math.abs(exponent);
+  const shiftDir = exponent < 0 ? "right" : "left";
+  const aStr = formatMantissa(a);
+  return {
+    kind: "standard_form",
+    original,
+    a: aStr,
+    exponent,
+    shiftPlaces,
+    shiftDir,
+    alt: `${original} in standard form: move the decimal point ${shiftPlaces} ${
+      shiftPlaces === 1 ? "place" : "places"
+    } ${shiftDir} to get ${aStr} × 10 to the power ${exponent}.`,
+  };
+}
+
 /**
  * Derive a deterministic figure from a question prompt, or null when the prompt
  * isn't an arithmetic shape we can draw. Percentages win first (a hundred-square
  * reads instantly), then "fraction of an amount" groupings, then fraction
  * problems / lone fractions, then a number line (± / negatives), then a
- * multiplication dot-array, then KS3 algebra tiles.
+ * multiplication dot-array, then KS3 algebra tiles, then the place-and-rounding
+ * shapes (rounding number-line, place-value columns, standard form).
  */
 export function deriveMathVisual(prompt: string): MathVisualSpec | null {
   const percentMatch = prompt.match(/(\d{1,3})\s*%/);
@@ -392,6 +563,15 @@ export function deriveMathVisual(prompt: string): MathVisualSpec | null {
 
   const algebra = deriveAlgebraTiles(prompt);
   if (algebra) return algebra;
+
+  const rounding = deriveRounding(prompt);
+  if (rounding) return rounding;
+
+  const placeValue = derivePlaceValue(prompt);
+  if (placeValue) return placeValue;
+
+  const standardForm = deriveStandardForm(prompt);
+  if (standardForm) return standardForm;
 
   return null;
 }
