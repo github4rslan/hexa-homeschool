@@ -17,6 +17,11 @@ import { buildExplainerNarration } from "@/lib/child/narration-copy";
 import { cn } from "@/lib/utils";
 import { StepReveal } from "./step-reveal";
 import { GlossaryText } from "./glossary-text";
+import { ExplainAnotherWay } from "./explain-another-way";
+import {
+  reexplainFromWorkedExample,
+  reexplainFromSummary,
+} from "@/lib/child/reexplain";
 import type { WorkedExample } from "@/lib/child/worked-examples";
 import type { GlossaryTerm } from "@/lib/child/glossary";
 
@@ -32,6 +37,7 @@ export function Explainer({
   glossary,
   workedExample,
   onContinue,
+  topic,
   voiceId,
   keyStage,
   accent: accentId,
@@ -45,6 +51,8 @@ export function Explainer({
   glossary?: GlossaryTerm[];
   workedExample?: WorkedExample;
   onContinue: () => void;
+  /** Curriculum topic tag — context for the checker-gated re-teach (F4). */
+  topic?: string;
   /** Child-chosen narration voice; falls back to the server default when unset. */
   voiceId?: string | null;
   /** Child's UK key stage, used only as a narration pace hint. */
@@ -70,6 +78,15 @@ export function Explainer({
           autoplay={autoplay}
           glossary={glossary}
         />
+        {/* Calm, opt-in re-teach of the same worked example in fresh words,
+            via the checker-gated /api/tutor pipeline (F4). */}
+        <ExplainAnotherWay
+          context={reexplainFromWorkedExample(workedExample)}
+          topic={topic}
+          keyStage={keyStage}
+          voiceId={voiceId}
+          accent={accentId}
+        />
       </div>
     );
   }
@@ -81,6 +98,7 @@ export function Explainer({
       points={points}
       glossary={glossary}
       onContinue={onContinue}
+      topic={topic}
       voiceId={voiceId}
       keyStage={keyStage}
       accent={accentId}
@@ -127,6 +145,7 @@ function LegacyExplainer({
   points,
   glossary,
   onContinue,
+  topic,
   voiceId,
   keyStage,
   accent: accentId,
@@ -138,6 +157,7 @@ function LegacyExplainer({
   points: string[];
   glossary?: GlossaryTerm[];
   onContinue: () => void;
+  topic?: string;
   voiceId?: string | null;
   keyStage?: number;
   accent?: string | null;
@@ -248,7 +268,16 @@ function LegacyExplainer({
           ))}
         </ul>
 
-        <div className="flex justify-end">
+        {/* Opt-in re-teach of the same summary in fresh words (F4). */}
+        <ExplainAnotherWay
+          context={reexplainFromSummary(title, summary, points)}
+          topic={topic}
+          keyStage={keyStage}
+          voiceId={voiceId}
+          accent={accentId}
+        />
+
+        <div className="mt-6 flex justify-end">
           <Button
             onClick={() => {
               narration.stop();
