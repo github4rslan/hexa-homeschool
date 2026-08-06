@@ -535,3 +535,31 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   reporting. Pattern: GREP/READ before reporting a cross-surface mismatch — it was a generate-on-first-access timing thing,
   not a bug. Teardown: /logout POST between each role switch + browser_close. Emailed owner the scenario summary via
   scripts/email-findings.ts (Brevo).
+- 2026-08-06 — Discovery pass, FULL coverage (parent/child/admin/tutor; desktop 1280 + mobile 390 both
+  confirmed innerWidth; whole-page scroll). Took the **Maths KS4 "Number & Place Value" (maths_number)**
+  lesson end-to-end as Ivy (Learn→Practise 4/4→Mastery 3/3→certified): wrong#1 = misconception-specific
+  calm nudge ("You picked 480 — that's 486 to the nearest ten…", no red/buzzer, "Why isn't that right?",
+  2 tries left), correct = star burst, phase bar lit per stage, "Save my certificate"/"See it on my
+  journey" at the end. Spaced-rep warm-up works ("½ of 16 → Spot on! Half of 16 is 8."); mock honestly
+  gated (Maths now 5/10 after my cert). Admin (overview/finance/escalations) + tutor READ-ONLY clean,
+  tutor empty queue (silo holds), my "Number & Place Value · 100%" showed in admin recent activity 5m
+  after. ZERO console errors on EVERY surface, NO overflow either viewport, /api/health 200. Static:
+  type-check + lint GREEN; **npm audit 0 vulnerabilities** (the 08-05 F6 audit-fix holds). Findings
+  HONEST-SHORT (exceptionally mature): only bug = B1 (Low) child profile now shows band info TWICE —
+  "Current standing" (post-08-05 fix = lesson-based band) duplicates the pre-existing "Working level"
+  section. Headline feature = F1 rounding/place-value/standard-form derived question visuals — Ivy's
+  ACTIVE maths topic renders generic AI figures because deriveMathVisual has no deriver for those shapes
+  (only percent/groups/fraction/number-line[a±b]/array/algebra_tiles). Also F2 embed the REAL
+  work-evidence photo URLs in the LA portfolio (portfolio.ts adds only a text line "Photo of written
+  working — {topic}" today, no viewable link), F3 remaining bare "Loading…" text→skeleton (dashboard
+  main island + lesson bootstrap still flash it), F4 "Explain it another way" on the explainer
+  (checker-gated /api/tutor), F5 non-empty readiness trajectory for lesson-only families (mocks locked
+  till 10/10 so trajectory empty for months), F6 child "See it" rounding/place-value teaching animation,
+  F7 earlier first insight (MIN_SAMPLES too high — "Still learning Ivy's rhythm" despite many lessons),
+  F8 React 19.x patch bump. NOT-A-BUG checks: "9×6" in a KS4 maths_number set is authored KS4 content
+  (seed.extra.ts), not a band leak; "Edway Complete/Partner" tier labels are consistent across
+  pricing + admin finance (real product names). Pattern: GREP the deriver/portfolio source before
+  proposing — confirmed the visual gap (math-visual.ts has 6 kinds, none for round/place-value/standard
+  form) and that work-evidence is text-only in the dossier, so both features are real not filler.
+  Teardown: fetch('/logout',{method:'POST'})→200 between each role switch + browser_close. Emailed owner
+  the scenario summary via scripts/email-findings.ts.
