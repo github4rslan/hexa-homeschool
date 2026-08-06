@@ -10,51 +10,6 @@ unattended, after `scout`. You turn today's findings into shipped, verified
 commits. This repo is **push-to-`main`-deploys-to-production**, so every commit
 you push goes live — act accordingly.
 
-## Mode switch — read this first
-
-You run in one of two modes; the prompt says which:
-
-- **BUILD mode (default)** — implement today's findings. Do §1–§5 below.
-- **HEALTH-CHECK mode** — a periodic production watchdog (do §H below and stop).
-  Triggered when the prompt says "health check" / "watchdog" / "deploy health".
-  You build NO findings in this mode.
-
-## §H. Health-check mode (production watchdog)
-
-A lightweight, mostly-quiet check that the live deployment is healthy, with SAFE
-self-correction. Vercel project `hexa-homeschool`
-(`prj_92JfhMju9tVdPYGkR3cfxivC09cK`), team `github4rslans-projects`
-(`team_bvhID7wA3jxaLnguajdbHzUh`). Vercel MCP is **READ-ONLY** — never trigger a
-deploy or any write/purchase call.
-
-1. **Deploy state** — `list_deployments`, take the newest production deployment,
-   `get_deployment`. READY + `curl -sI https://edway.uk/api/health` = 200 → the
-   site is up.
-2. **Failed build** — if the newest deployment is **ERROR/CANCELED**,
-   `get_deployment_build_logs`, identify the culprit (usually the latest
-   commit(s)). If it's a clear, safe code error you can fix: apply the smallest
-   correct fix, run the FULL local gate (`type-check` + `test` + `lint` +
-   `build`), commit (`Fix: <desc> (health-check)`), push, and confirm the new
-   deploy goes READY.
-3. **Runtime errors** — `get_runtime_errors` (+ `get_runtime_logs` for detail) on
-   the current deployment. A NEW error clearly caused by a recent commit → fix it
-   the same way (green-gated, one commit).
-4. **When NOT to auto-fix — escalate instead.** Do NOT auto-fix if: the cause is
-   env/config/secrets (you can't and shouldn't), it touches a documented
-   invariant or any child-safety / distress / AI-checker path, it's ambiguous or
-   not clearly from a recent commit, or a fix would exceed a small correct change.
-   In those cases DON'T guess — write a brief owner alert and email it: create
-   `scripts/.findings-email.json` = `{ date, intro, items: [ { kind: "bug", id:
-   "ALERT", title, scenario: "<what's wrong + what you checked + why you didn't
-   auto-fix>" } ] }` and run `npx tsx scripts/email-findings.ts`.
-5. **Report.** If everything is healthy, do nothing but say so (stay quiet — no
-   commit, no email, no invented work). If you fixed something, email a one-line
-   "auto-fixed X" note the same way. End with: deploy state, what (if anything)
-   you did, and anything the owner should see.
-
-The invariants in §2 and the green-gate in §3.4 apply to any fix you make here.
-Never push a red tree; if a fix can't pass the gate, revert it and escalate.
-
 ## 1. Load the work
 
 Read `CLAUDE.md`, `docs/ARCHITECTURE.md`, `.claude/rules/child-safety.md`, and
@@ -194,6 +149,17 @@ mistake and its cause, and any pattern worth repeating or avoiding. This is how
 future runs get better — be concrete.
 
 Then commit the updated findings file + memory (`Chore: mechanic log <date>`).
+
+## 6. Final health check (always, even if nothing was built)
+
+Before finishing, do one **simple** production health check via the read-only
+Vercel MCP (project `hexa-homeschool`, team `github4rslans-projects`): the newest
+production deployment is **READY**, `https://edway.uk/api/health` returns 200, and
+`get_runtime_errors` for that deployment is clean. If a runtime error is clearly
+from an item you just shipped, treat it as a live regression and fix it (§4). If
+it's something you shouldn't touch (env/config/child-safety/ambiguous), don't
+guess — note it for the owner. Report the result in one line. (Ignore the known
+Dependabot PR preview build failures — unmerged branches, not production.)
 
 ## Final message
 List: committed+pushed (item IDs + how verified — **including the live Playwright
