@@ -9,7 +9,7 @@ import {
   certifiedBySubject,
   latestEvaluationsBySubject,
   listTopicCertificates,
-  topicWorkCounts,
+  topicWorkEvidence,
   recentLogs,
   listMedia,
 } from "@/lib/db/repo";
@@ -200,20 +200,26 @@ export async function POST(request: Request) {
       ? await listTopicCertificates(authParentId, ownedChild)
       : [];
     const certifiedTopics = certs.map((c) => c.topicTitle);
-    // F5: certified topics with a parent-attached photo of the child's written
-    // working become named "Photo of written working" evidence in the dossier.
-    const workCounts =
+    // F2/F5: certified topics with a parent-attached photo of the child's written
+    // working become named "Photo of written working" evidence — now carrying the
+    // real, viewable Cloudinary URL so an LA reviewer can see the artefact, not
+    // just its name. Ordered by cert order then newest-photo-first (deterministic
+    // hash). Only topics that are certified are surfaced.
+    const workByTag =
       ownedChild?._id
-        ? await topicWorkCounts(authParentId, ownedChild._id.toHexString())
-        : new Map<string, number>();
-    const workEvidenceTopics = certs
-      .filter((c) => workCounts.has(c.topicTag))
-      .map((c) => c.topicTitle);
+        ? await topicWorkEvidence(authParentId, ownedChild._id.toHexString())
+        : new Map<string, string[]>();
+    const workEvidence = certs.flatMap((c) =>
+      (workByTag.get(c.topicTag) ?? []).map((url) => ({
+        title: c.topicTitle,
+        url,
+      })),
+    );
     const portfolio = await generateVerifiedPortfolio({
       childName,
       term,
       certifiedTopics,
-      workEvidenceTopics,
+      workEvidence,
     });
     const persisted = await persistDossier(
       { childId: childId || undefined, childName },

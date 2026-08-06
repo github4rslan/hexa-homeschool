@@ -19,6 +19,19 @@ import { Input } from "@/components/ui/input";
 import type { VerifiedPortfolio } from "@/lib/compliance/portfolio";
 import { emailPortfolio } from "@/app/(dashboard)/portfolio/actions";
 
+/**
+ * Cloudinary delivery thumbnail — mirrors `cloudinaryThumb` but inlined here
+ * (that helper lives in a server-only module). Pure string work; no-op for
+ * non-Cloudinary URLs. Full-res still opens via the anchor href.
+ */
+function thumbUrl(url: string, width = 320): string {
+  if (!url.includes("res.cloudinary.com")) return url;
+  return url.replace(
+    /\/(upload|authenticated)\/(?!.*\/(upload|authenticated)\/)/,
+    `/$1/f_auto,q_auto,w_${width},c_limit/`,
+  );
+}
+
 type PortfolioResponse = VerifiedPortfolio & {
   persisted?: boolean;
   readiness?: {
@@ -43,6 +56,8 @@ type PortfolioResponse = VerifiedPortfolio & {
     }[];
   } | null;
 };
+
+type WorkEvidenceItem = NonNullable<VerifiedPortfolio["workEvidence"]>[number];
 
 function formatUkDateTime(value: string): string {
   return new Date(value).toLocaleString("en-GB", {
@@ -451,6 +466,49 @@ export function PortfolioGenerator({
                 </div>
               ))}
             </div>
+
+            {/* Work-evidence gallery (F2) — the real, viewable photos of the
+                child's handwritten working, each tied to its certified topic.
+                The strongest home-ed evidence, now visible not just named. */}
+            {portfolio.workEvidence && portfolio.workEvidence.length > 0 && (
+              <div className="mt-8 pt-6 border-t border-white/10">
+                <div className="flex items-center gap-2 mb-1">
+                  <FileCheck className="h-4 w-4 text-violet-300" />
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-violet-300">
+                    Work evidence
+                  </h3>
+                </div>
+                <p className="mb-4 text-sm text-fog-400">
+                  Photographs of {portfolio.childName}&apos;s written working,
+                  attached to the topic each demonstrates. Click any to view the
+                  full image.
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                  {portfolio.workEvidence.map((w: WorkEvidenceItem, i) => (
+                    <a
+                      key={`${w.url}-${i}`}
+                      href={w.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]"
+                    >
+                      <span className="relative block aspect-square overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={thumbUrl(w.url)}
+                          alt={`Written working — ${w.title}`}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-transform group-hover:scale-[1.03]"
+                        />
+                      </span>
+                      <span className="truncate px-2.5 py-2 text-xs font-medium text-fog-200">
+                        {w.title}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Verification footer */}
             <div className="mt-8 pt-6 border-t border-white/10">

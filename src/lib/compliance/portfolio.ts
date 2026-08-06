@@ -17,12 +17,27 @@ export interface PortfolioSection {
   evidence: string[];
 }
 
+/** A real, viewable work-evidence artefact folded into the dossier (F2). */
+export interface WorkEvidenceItem {
+  /** Certified topic the working evidences. */
+  title: string;
+  /** Cloudinary secure URL of the child's handwritten working. */
+  url: string;
+}
+
 export interface PortfolioRecord {
   childName: string;
   term: string;
   generatedAt: string; // ISO timestamp
   subjects: string[];
   sections: PortfolioSection[];
+  /**
+   * Viewable photos of the child's written working, each tied to a certified
+   * topic (F2). Present only when the child has attached working photos, so a
+   * dossier without any hashes byte-for-byte as before. Part of the canonical
+   * record → the LA-verifiable hash covers the artefact URLs too.
+   */
+  workEvidence?: WorkEvidenceItem[];
 }
 
 export interface VerifiedPortfolio extends PortfolioRecord {
@@ -60,20 +75,30 @@ export function buildPortfolioRecord(input: {
    */
   certifiedTopics?: string[];
   /**
-   * Titles of certified topics that have a parent-attached photo of the child's
-   * handwritten working (F5). Each becomes a named piece of Implementation
-   * evidence — real, human artefacts strengthen an LA review. Omitting it (or an
-   * empty list) preserves the previous record byte-for-byte.
+   * Certified topics that have a parent-attached photo of the child's
+   * handwritten working (F2/F5), each with the viewable Cloudinary URL. Each
+   * becomes a named piece of Implementation evidence AND a viewable artefact in
+   * the dossier — real, human artefacts strengthen an LA review. Omitting it (or
+   * an empty list) preserves the previous record byte-for-byte.
    */
-  workEvidenceTopics?: string[];
+  workEvidence?: WorkEvidenceItem[];
 }): PortfolioRecord {
   const subjects = input.subjects ?? ["Mathematics", "English", "Science"];
   const certifiedTopics = (input.certifiedTopics ?? []).filter(
     (t) => typeof t === "string" && t.trim().length > 0,
   );
-  const workEvidenceTopics = (input.workEvidenceTopics ?? []).filter(
-    (t) => typeof t === "string" && t.trim().length > 0,
+  const workEvidence = (input.workEvidence ?? []).filter(
+    (w) =>
+      w &&
+      typeof w.title === "string" &&
+      w.title.trim().length > 0 &&
+      typeof w.url === "string" &&
+      w.url.trim().length > 0,
   );
+  // The named text lines stay identical to before (one per distinct topic), so
+  // the Implementation evidence list reads the same; the URLs live in the
+  // dedicated `workEvidence` field.
+  const workEvidenceTopics = [...new Set(workEvidence.map((w) => w.title))];
   const implementationEvidence = [
     "Lesson completion logs",
     "Time-on-task telemetry",
@@ -81,7 +106,7 @@ export function buildPortfolioRecord(input: {
     ...certifiedTopics.map((t) => `Mastery certificate — ${t}`),
     ...workEvidenceTopics.map((t) => `Photo of written working — ${t}`),
   ];
-  return {
+  const record: PortfolioRecord = {
     childName: input.childName,
     term: input.term,
     generatedAt: new Date().toISOString(),
@@ -125,6 +150,10 @@ export function buildPortfolioRecord(input: {
       },
     ],
   };
+  // Only attach when present, so a dossier without working photos serialises
+  // (and hashes) byte-for-byte as it did before this field existed.
+  if (workEvidence.length) record.workEvidence = workEvidence;
+  return record;
 }
 
 /** Assemble + hash in one step. */
@@ -133,7 +162,7 @@ export async function generateVerifiedPortfolio(input: {
   term: string;
   subjects?: string[];
   certifiedTopics?: string[];
-  workEvidenceTopics?: string[];
+  workEvidence?: WorkEvidenceItem[];
 }): Promise<VerifiedPortfolio> {
   const record = buildPortfolioRecord(input);
   const verificationHash = await sha256Hex(canonicalise(record));
