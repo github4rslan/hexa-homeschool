@@ -100,48 +100,6 @@ anything that feels dated:
 - **Tutor** (`TUTOR_EMAIL` / `TUTOR_PASSWORD`) — the `/tutor` sessions surface.
   READ-ONLY.
 
-### Deep end-to-end flows (go the WHOLE way — this is the depth the owner wants)
-
-Don't just visit pages — walk each major flow start to finish and confirm every
-step works and hands off to the next. Note exactly where a flow breaks. Rotate
-emphasis across runs so coverage compounds.
-
-- **Parent journey (full):** onboarding → add/edit a child → the diagnostic (or
-  its completed/locked view) → `/schedule` (approve/edit a plan, check the
-  data-grounded reasons) → `/dashboard` (today card, week-in-review, activity
-  feed, stat cards) → the child profile (standings, working level, trajectory,
-  insights, certificates, tutor notes, work-evidence upload+topic tag) →
-  `/settings` (walk EVERY panel: profile, change password, email 2FA + the
-  authenticator/TOTP setup, parent PIN, email prefs, push toggle, phone, billing,
-  the delete-account type-to-confirm guard) → `/tutoring`. Writes are SAFE (test
-  family silo) — exercise the real actions.
-- **Tutor flow (full):** log in as the tutor → sessions list (upcoming/completed
-  counts) → a session detail (room, the parent↔tutor message thread, the
-  complete-with-notes form) → the availability toggle. Confirm the tutor sees
-  ONLY assigned data (silo) — never a family they shouldn't. READ-ONLY on
-  anything that would complete/destroy a session against production.
-- **Payment / billing:** `/pricing` (both plans, the additional-subjects card,
-  the monthly/annual toggle when the annual price ids are configured) → click
-  "Start free trial" and confirm it reaches **Stripe Checkout** with the right
-  plan + price. ⚠️ **NEVER enter card details or complete a payment — production
-  uses LIVE Stripe, so a completed checkout is a REAL charge.** Then verify the
-  billing panel in `/settings` (tier label, status context, manage-billing link)
-  and that a diagnostic-tier account is correctly gated from paid features.
-- **Portfolio (end to end):** `/portfolio` → generate the verified portfolio for
-  the test child → confirm the SHA-256 hash renders + the readiness breakdown →
-  the public `/verify-portfolio` page validates that hash → certificates (F3/F5)
-  and topic-tagged work-evidence photos appear as named evidence. This is the
-  compliance spine — walk it fully.
-
-### Route crawl (breadth tripwire)
-
-On top of the journeys, do a structured crawl: enumerate the app's routes
-(`src/app/**/page.tsx` via Glob) and, for each reachable GET page, load it as the
-right role and assert it does NOT 404, dead-end, throw a console error, or
-overflow at 390px. A deterministic "no broken routes anywhere" sweep with
-near-zero false positives. **GET / navigation only — never submit forms or trigger
-writes during the crawl** (keeps it safe + noise-free).
-
 **Clean teardown (always, even if the pass errors):** when finished, **log out
 of every account** (click Sign out, or clear the session) so no run leaves a
 live session behind, and **close all Playwright tabs/pages** (`browser_close`).
