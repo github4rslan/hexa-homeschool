@@ -1,7 +1,12 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Award } from "lucide-react";
 import { EmptyIllustration } from "@/components/fx/empty-illustration";
-import { projectGrade, parseTargetWindow, type GradePoint } from "@/lib/engine/trajectory";
+import {
+  projectGrade,
+  parseTargetWindow,
+  certificationSeries,
+  type GradePoint,
+} from "@/lib/engine/trajectory";
 import type { EvaluationPoint } from "@/lib/db/repo";
 import type { Subject } from "@/lib/db/types";
 
@@ -34,21 +39,36 @@ function yForGrade(grade: number): number {
 export function TrajectoryChart({
   history,
   targetWindow,
+  certifiedAt = [],
 }: {
   history: EvaluationPoint[];
   targetWindow: string | null;
+  /**
+   * Dates each topic was certified (F5). When there aren't yet two grade
+   * assessments to project from, we chart these certification milestones as
+   * honest PROGRESS evidence (never a predicted grade) instead of an empty state.
+   */
+  certifiedAt?: Date[];
 }) {
   const hasData = history.length >= 2;
 
   if (!hasData) {
+    const certSeries = certificationSeries(certifiedAt);
+    // A lesson-only family: show real certification milestones over time rather
+    // than an empty "run a mock" panel. Labelled as progress, not a grade.
+    if (certSeries.length >= 2) {
+      return <CertificationChart series={certSeries} />;
+    }
     return (
       <div className="rounded-xl border border-white/5 bg-white/[0.02] p-8 text-center">
         <EmptyIllustration name="chart" className="mx-auto mb-3 text-fog-500" />
         <p className="text-sm text-fog-300">
-          Run a mock exam to see the trajectory.
+          Run a mock exam to see the readiness trajectory.
         </p>
         <p className="mt-1 text-xs text-fog-500">
-          We&apos;ll chart progress here once there are at least two assessments.
+          {certSeries.length === 1
+            ? "One topic certified so far — certify another and your progress starts charting here."
+            : "We’ll chart progress here as topics get certified, and readiness once there are two assessments."}
         </p>
         <Link
           href="/learn/mock"
@@ -177,6 +197,100 @@ export function TrajectoryChart({
         <span className="text-fog-500">
           Filled dot = mock exam · open dot = diagnostic · dashed = projection
           {targetWindow ? ` to ${targetWindow}` : ""}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Certification-milestones chart (F5) — a cumulative "topics certified over
+ * time" line for families doing daily lessons before mocks unlock. Honest
+ * progress evidence, explicitly NOT a predicted grade. Pure server component.
+ */
+function CertificationChart({
+  series,
+}: {
+  series: { t: number; count: number }[];
+}) {
+  const times = series.map((p) => p.t);
+  const minT = Math.min(...times);
+  const maxT = Math.max(...times);
+  const spanT = Math.max(1, maxT - minT);
+  const maxCount = series[series.length - 1].count;
+
+  const xForTime = (t: number) => PAD.left + ((t - minT) / spanT) * PLOT_W;
+  const yForCount = (c: number) => {
+    const frac = maxCount <= 1 ? 1 : c / maxCount;
+    return PAD.top + (1 - frac) * PLOT_H;
+  };
+
+  const path = series
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${xForTime(p.t)} ${yForCount(p.count)}`)
+    .join(" ");
+
+  const fmt = (t: number) =>
+    new Date(t).toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      timeZone: "Europe/London",
+    });
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center gap-2">
+        <Award className="h-4 w-4 text-neon-300" />
+        <p className="text-sm text-fog-300">
+          Topics certified over time — real progress while mock exams unlock.
+        </p>
+      </div>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="w-full"
+        role="img"
+        aria-label={`Topics certified over time: ${maxCount} so far`}
+      >
+        {/* Baseline */}
+        <line
+          x1={PAD.left}
+          x2={W - PAD.right}
+          y1={PAD.top + PLOT_H}
+          y2={PAD.top + PLOT_H}
+          stroke="rgba(255,255,255,0.08)"
+          strokeWidth={1}
+        />
+        <path d={path} fill="none" stroke="#84cc16" strokeWidth={2} pathLength={1} className="traj-line" />
+        {series.map((p, i) => (
+          <g key={i}>
+            <circle
+              cx={xForTime(p.t)}
+              cy={yForCount(p.count)}
+              r={3}
+              fill="#a3e635"
+              stroke="#84cc16"
+              strokeWidth={1.5}
+            />
+            {(i === 0 || i === series.length - 1) && (
+              <text
+                x={xForTime(p.t)}
+                y={H - 8}
+                fontSize={10}
+                fill="rgba(255,255,255,0.4)"
+                textAnchor={i === 0 ? "start" : "end"}
+              >
+                {fmt(p.t)}
+              </text>
+            )}
+          </g>
+        ))}
+      </svg>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-x-5 gap-y-2 text-xs text-fog-400">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-neon-400" />
+          {maxCount} topic{maxCount === 1 ? "" : "s"} certified
+        </span>
+        <span className="text-fog-500">
+          Progress evidence — not a predicted grade. Readiness charts once mocks begin.
         </span>
       </div>
     </div>

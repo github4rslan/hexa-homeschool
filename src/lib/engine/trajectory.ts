@@ -57,6 +57,32 @@ export function projectGrade(points: GradePoint[], targetT: number): Projection 
 }
 
 /**
+ * A cumulative "topics certified over time" point (F5). This is PROGRESS
+ * EVIDENCE, never a predicted grade — it charts real certification milestones so
+ * a family doing daily lessons sees an honest upward line long before mocks
+ * unlock. Deterministic, no AI.
+ */
+export interface CertificationPoint {
+  /** Epoch ms of the certification. */
+  t: number;
+  /** Cumulative count of topics certified up to and including this point. */
+  count: number;
+}
+
+/**
+ * Build the cumulative certification series from certification dates. Sorted
+ * ascending by time; ties keep a stable cumulative count. Invalid dates are
+ * dropped. Returns an empty array when there's nothing to chart.
+ */
+export function certificationSeries(dates: Date[]): CertificationPoint[] {
+  const times = dates
+    .map((d) => d.getTime())
+    .filter((t) => Number.isFinite(t))
+    .sort((a, b) => a - b);
+  return times.map((t, i) => ({ t, count: i + 1 }));
+}
+
+/**
  * Parse a target exam window label (e.g. "Summer 2028", "June 2027",
  * "2028") to an approximate epoch ms. Returns null when nothing parseable.
  * Summer → June, Autumn/Winter → November, otherwise mid-year.
