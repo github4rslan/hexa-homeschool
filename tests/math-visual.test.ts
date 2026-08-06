@@ -202,4 +202,68 @@ describe("deriveMathVisual", () => {
   it("returns null for a non-algebra text prompt", () => {
     expect(deriveMathVisual("Which word is an adjective?")).toBeNull();
   });
+
+  // ── F1: rounding, place value, standard form ──
+  it("rounds up to the nearest hundred (486 → 500)", () => {
+    const spec = deriveMathVisual("Round 486 to the nearest 100");
+    if (spec?.kind !== "rounding") throw new Error("expected rounding");
+    expect(spec.value).toBe(486);
+    expect(spec.place).toBe(100);
+    expect(spec.lower).toBe(400);
+    expect(spec.upper).toBe(500);
+    expect(spec.rounded).toBe(500);
+  });
+
+  it("rounds down to the nearest thousand, word form (7,482 → 7000)", () => {
+    const spec = deriveMathVisual("Round 7,482 to the nearest thousand");
+    if (spec?.kind !== "rounding") throw new Error("expected rounding");
+    expect(spec.value).toBe(7482);
+    expect(spec.place).toBe(1000);
+    expect(spec.lower).toBe(7000);
+    expect(spec.upper).toBe(8000);
+    expect(spec.rounded).toBe(7000);
+  });
+
+  it("does not treat a rounding prompt as a number line", () => {
+    // "486 to the nearest 100" has no ± operator; must reach the rounding deriver.
+    expect(deriveMathVisual("Round 486 to the nearest 100")?.kind).toBe("rounding");
+  });
+
+  it("reads place value of a digit (6 in 3,652 → 600)", () => {
+    const spec = deriveMathVisual("What is the value of 6 in 3,652?");
+    if (spec?.kind !== "place_value") throw new Error("expected place_value");
+    expect(spec.digits).toEqual([3, 6, 5, 2]);
+    expect(spec.digit).toBe(6);
+    expect(spec.highlightIndex).toBe(1);
+    expect(spec.placeValue).toBe(600);
+    expect(spec.labels).toEqual(["Th", "H", "T", "O"]);
+  });
+
+  it("skips place value when the digit isn't in the number", () => {
+    expect(deriveMathVisual("What is the value of 9 in 3,652?")).toBeNull();
+  });
+
+  it("writes a small number in standard form (0.0045 → 4.5 × 10⁻³)", () => {
+    const spec = deriveMathVisual("Write 0.0045 in standard form");
+    if (spec?.kind !== "standard_form") throw new Error("expected standard_form");
+    expect(spec.a).toBe("4.5");
+    expect(spec.exponent).toBe(-3);
+    expect(spec.shiftPlaces).toBe(3);
+    expect(spec.shiftDir).toBe("right");
+  });
+
+  it("writes a large number in standard form (4500 → 4.5 × 10³)", () => {
+    const spec = deriveMathVisual("Write 4500 in standard form");
+    if (spec?.kind !== "standard_form") throw new Error("expected standard_form");
+    expect(spec.a).toBe("4.5");
+    expect(spec.exponent).toBe(3);
+    expect(spec.shiftDir).toBe("left");
+  });
+
+  it("handles an exact power of ten in standard form (1000 → 1 × 10³)", () => {
+    const spec = deriveMathVisual("Write 1000 in standard form");
+    if (spec?.kind !== "standard_form") throw new Error("expected standard_form");
+    expect(spec.a).toBe("1");
+    expect(spec.exponent).toBe(3);
+  });
 });
