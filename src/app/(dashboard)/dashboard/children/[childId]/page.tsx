@@ -130,12 +130,19 @@ export default async function ChildProfilePage({
           </div>
         )}
 
-        {/* Current standing */}
+        {/* Current standing — one place for each subject's level: readiness/mock
+            score where assessed, otherwise the lesson-based working band (B1: the
+            standalone "Working level" block was merged in here so the same band
+            isn't shown twice). */}
         <Card variant="glass-strong" padding="xl" className="mb-6">
-          <div className="flex items-center gap-2 mb-5">
+          <div className="flex items-center gap-2 mb-1">
             <Activity className="h-4 w-4 text-violet-300" />
             <h2 className="text-lg font-semibold text-fog-50">Current standing</h2>
           </div>
+          <p className="text-sm text-fog-400 mb-5">
+            {firstName}&apos;s lessons are pitched at the right level for each
+            subject — this moves up automatically as topics are mastered.
+          </p>
           <div className="grid sm:grid-cols-3 gap-4">
             {standings.map((s) => (
               <div
@@ -161,6 +168,11 @@ export default async function ChildProfilePage({
                       {s.fromMock ? "Mock score" : "Readiness"}
                       {s.grade ? ` · Grade ${s.grade}` : ""}
                     </div>
+                    {bandBySubject.has(s.subject) && (
+                      <div className="mt-1 text-xs text-cyan-200">
+                        Working at {KEY_STAGE_LABEL[bandBySubject.get(s.subject) ?? 4]}
+                      </div>
+                    )}
                   </>
                 ) : certifiedCounts[s.subject] > 0 ? (
                   <>
@@ -218,38 +230,6 @@ export default async function ChildProfilePage({
             </div>
           </form>
         </Card>
-
-        {/* Working level — warm, parent-facing stage per subject. The plan and
-            lessons select content at this level; it advances automatically as
-            topics are mastered. Never surfaced to the child. */}
-        {bands.length > 0 && (
-          <Card variant="glass" padding="xl" className="mb-6">
-            <div className="flex items-center gap-2 mb-1">
-              <GraduationCap className="h-4 w-4 text-cyan-300" />
-              <h2 className="text-lg font-semibold text-fog-50">Working level</h2>
-            </div>
-            <p className="text-sm text-fog-400 mb-5">
-              {child.full_name.split(" ")[0]}&apos;s lessons are pitched at the
-              right level for each subject — this moves up automatically as topics
-              are mastered.
-            </p>
-            <div className="grid sm:grid-cols-3 gap-4">
-              {bands.map((b) => (
-                <div
-                  key={b.subject}
-                  className="rounded-xl bg-white/[0.03] border border-white/5 p-4"
-                >
-                  <div className="text-sm font-semibold text-fog-50">
-                    {SUBJECT_LABEL[b.subject]}
-                  </div>
-                  <div className="mt-1 text-sm text-cyan-200">
-                    Working at {KEY_STAGE_LABEL[b.keyStage]}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
 
         {/* Understanding these results — deterministic plain-English narrative */}
         {assessed && (
