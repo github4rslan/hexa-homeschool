@@ -73,6 +73,7 @@ import {
   type KeyStage,
 } from "@/lib/engine/diagnostic-placement";
 import { currentBandFrom } from "@/lib/engine/band-progression";
+import { buildRoadmapTopics, type RoadmapTopic } from "@/lib/engine/roadmap";
 import {
   pickPlayableQuestTopic,
   pickScheduleQuestTopic,
@@ -2247,6 +2248,51 @@ export async function childCurrentBands(
     subjects.map((subject) => currentBandForSubject(childId, subject, floor)),
   );
   return subjects.map((subject, i) => ({ subject, keyStage: bands[i] }));
+}
+
+/**
+ * Per-subject curriculum roadmap for a child (F4, parent-facing only): the
+ * ordered topics in the child's CURRENT band with a certified / current /
+ * upcoming state, so a homeschooling parent sees what's mastered and what's
+ * coming. Pure read, deterministic, no AI. Ownership enforced; band language is
+ * parent-only and never surfaced to the child.
+ */
+export async function childSubjectRoadmap(
+  parentId: string,
+  childId: ObjectId,
+): Promise<
+  { subject: Subject; keyStage: KeyStage; topics: RoadmapTopic[] }[]
+> {
+  if (!(await assertOwnsChild(parentId, childId))) return [];
+  const child = await getChildById(parentId, childId.toHexString());
+  if (!child) return [];
+  const floor = childFloorBand(child.date_of_birth);
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const certifiedRows = await compCol
+    .find({ child_id: childId, state: "certified" })
+    .toArray();
+  const certified = new Set(certifiedRows.map((c) => c.topic_tag));
+  const subjects: Subject[] = ["mathematics", "english", "science"];
+  const out = await Promise.all(
+    subjects.map(async (subject) => {
+      const topics = await topicsCol
+        .find({ subject })
+        .sort({ order: 1 })
+        .toArray();
+      const band = bandFromData(floor, subject, topics, certified);
+      const inBand = topics.filter((t) => (t.key_stage ?? 4) === band);
+      return {
+        subject,
+        keyStage: band,
+        topics: buildRoadmapTopics(
+          inBand.map((t) => ({ topic_tag: t.topic_tag, title: t.title })),
+          certified,
+        ),
+      };
+    }),
+  );
+  return out;
 }
 
 /**
