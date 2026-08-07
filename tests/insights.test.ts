@@ -4,7 +4,9 @@ import {
   hintsInsight,
   moodInsight,
   buildInsights,
+  gettingStartedInsight,
   MIN_BUCKET,
+  MIN_GETTING_STARTED,
   type LessonSample,
   type MoodSample,
 } from "@/lib/engine/insights";
@@ -109,11 +111,57 @@ describe("moodInsight", () => {
   });
 });
 
+describe("gettingStartedInsight", () => {
+  it("is silent below the lessons floor with no certification", () => {
+    expect(gettingStartedInsight(lessons(MIN_GETTING_STARTED - 1, { mastery: 80 }))).toBeNull();
+  });
+
+  it("surfaces a lessons-completed rhythm at the floor", () => {
+    const insight = gettingStartedInsight(lessons(MIN_GETTING_STARTED, { mastery: 80 }));
+    expect(insight?.key).toBe("getting-started");
+    expect(insight?.text).toContain(`${MIN_GETTING_STARTED} lessons completed`);
+  });
+
+  it("prefers a mastery-milestone line as soon as one topic is certified", () => {
+    const insight = gettingStartedInsight([
+      ...lessons(1, { mastery: 100, certified: true }),
+      ...lessons(2, { mastery: 70 }),
+    ]);
+    expect(insight?.text).toContain("1 mastery milestone reached");
+  });
+
+  it("never judges the child — descriptive rhythm only", () => {
+    const insight = gettingStartedInsight(lessons(MIN_GETTING_STARTED, { mastery: 40 }));
+    // A count of activity, not a verdict on ability.
+    expect(insight?.text).not.toMatch(/behind|struggl|weak|poor|bad/i);
+  });
+});
+
 describe("buildInsights", () => {
-  it("marks learning=true with thin data", () => {
+  it("marks learning=true with truly thin data (below the getting-started floor)", () => {
     const { learning, insights } = buildInsights(lessons(3, { mastery: 80 }), []);
     expect(learning).toBe(true);
     expect(insights).toEqual([]);
+  });
+
+  it("shows a getting-started line (learning=false) once the rhythm forms", () => {
+    const { learning, insights } = buildInsights(
+      lessons(MIN_GETTING_STARTED, { mastery: 80 }),
+      [],
+    );
+    expect(learning).toBe(false);
+    expect(insights).toHaveLength(1);
+    expect(insights[0].key).toBe("getting-started");
+  });
+
+  it("replaces the getting-started line once statistical insights unlock", () => {
+    const ls = [
+      ...lessons(MIN_BUCKET, { hour: 9, mastery: 90, certified: true }),
+      ...lessons(MIN_BUCKET, { hour: 15, mastery: 60, certified: true }),
+    ];
+    const { insights } = buildInsights(ls, []);
+    expect(insights.some((i) => i.key === "getting-started")).toBe(false);
+    expect(insights.some((i) => i.key === "best-window")).toBe(true);
   });
 
   it("collects multiple insights when data supports them", () => {

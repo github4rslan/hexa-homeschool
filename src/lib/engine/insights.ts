@@ -150,6 +150,42 @@ export function classifyTopicStanding(s: TopicSignal): TopicStanding | null {
 }
 
 /**
+ * Lessons completed before a "getting started" line is worth showing — enough
+ * that a genuine rhythm exists, but well below MIN_BUCKET so an engaged family
+ * isn't stuck on the empty "still learning" message for weeks.
+ */
+export const MIN_GETTING_STARTED = 5;
+
+/**
+ * A single low-floor "getting started" line for the gap BEFORE the richer,
+ * statistically-backed insights unlock. Deterministic and strictly DESCRIPTIVE
+ * — a count of real activity, never a judgement of the child and never a
+ * premature best-window claim on a thin sample (Children's Code). Prefers the
+ * more encouraging TRUE statement: a mastery milestone if any topic is
+ * certified, otherwise the lessons-completed rhythm. Null when there's too
+ * little to say honestly.
+ */
+export function gettingStartedInsight(samples: LessonSample[]): Insight | null {
+  const certified = samples.filter((s) => s.certified).length;
+  if (certified >= 1) {
+    return {
+      key: "getting-started",
+      text: `${certified} mastery ${
+        certified === 1 ? "milestone" : "milestones"
+      } reached so far — that's secure knowledge banked. As more lessons build up, patterns like the best time of day will appear here too.`,
+    };
+  }
+  const graded = samples.filter((s) => s.mastery !== null).length;
+  if (graded >= MIN_GETTING_STARTED) {
+    return {
+      key: "getting-started",
+      text: `${graded} lessons completed so far — a steady rhythm is forming. Patterns like the best time of day will appear here as more come in.`,
+    };
+  }
+  return null;
+}
+
+/**
  * Build the full insight set. Returns `{ insights, learning }` — when `learning`
  * is true there isn't enough data yet and the caller shows the "still learning
  * their rhythm" message instead of an empty panel.
@@ -158,13 +194,21 @@ export function buildInsights(
   lessons: LessonSample[],
   moods: MoodSample[],
 ): { insights: Insight[]; learning: boolean } {
-  const insights = [
+  const statistical = [
     bestWindowInsight(lessons),
     hintsInsight(lessons),
     moodInsight(moods),
   ].filter((i): i is Insight => i !== null);
 
-  // Not enough total evidence to say anything responsibly.
-  const learning = lessons.filter((l) => l.mastery !== null).length < MIN_BUCKET;
+  // Once the statistically-backed lines exist, show those. Before then, a single
+  // low-floor "getting started" line keeps the panel honest AND alive for an
+  // engaged family, instead of a blank "still learning" wall for weeks.
+  const insights =
+    statistical.length > 0
+      ? statistical
+      : [gettingStartedInsight(lessons)].filter((i): i is Insight => i !== null);
+
+  // Only truly-empty (no honest line at all) shows the "still learning" message.
+  const learning = insights.length === 0;
   return { insights, learning };
 }
