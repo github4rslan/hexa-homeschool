@@ -23,6 +23,7 @@ import {
   classifyOptions,
   equationBeat,
   fractionBarsSpec,
+  placeValueStageSpec,
   sentenceWords,
   splitExpression,
   stepDurationMs,
@@ -31,6 +32,7 @@ import {
   type FractionStageSpec,
   type GraphSpec,
   type NumberLineSpec,
+  type PlaceValueStageSpec,
   type YourTurnTask,
 } from "@/lib/child/animation-timeline";
 import { Celebration } from "@/components/fx/celebration";
@@ -1247,6 +1249,234 @@ function ScienceStage({
 }
 
 /**
+ * The rounding number line: `value` sits between the two nearest multiples,
+ * with the halfway tick shown. From the answer beat the nearer end lights up and
+ * a short arrow snaps `value` onto it — the child SEES which way it rounds.
+ * Transform/opacity only; reduced motion shows the finished line at once.
+ */
+function RoundingLine({
+  spec,
+  index,
+  accent,
+  reduced,
+}: {
+  spec: Extract<PlaceValueStageSpec, { kind: "rounding" }>;
+  index: number;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  const { value, lower, upper, mid, rounded, place } = spec;
+  const pos = Math.max(0, Math.min(100, ((value - lower) / (upper - lower)) * 100));
+  const roundedUp = rounded === upper;
+  const revealAnswer = index >= 3;
+  const showMid = index >= 2;
+
+  const End = ({ label, active }: { label: number; active: boolean }) => (
+    <div className="flex flex-col items-center gap-1">
+      <div
+        className={cn(
+          "h-3 w-3 -translate-y-1/2 rounded-full border-2",
+          active ? cn(accent.bg, accent.border) : "border-white/30 bg-white/10",
+        )}
+      />
+      <span
+        className={cn(
+          "text-base font-bold",
+          active ? accent.text : "text-fog-300",
+        )}
+      >
+        {label}
+      </span>
+    </div>
+  );
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-void/35 p-5">
+      <div className="relative mt-6 h-16">
+        <div className="absolute inset-x-6 top-1/2 h-px bg-white/25">
+          {/* Halfway tick */}
+          {showMid && (
+            <motion.div
+              initial={reduced ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+              className="absolute left-1/2 top-0 -translate-x-1/2"
+            >
+              <div className="mx-auto h-3 w-px -translate-y-1/2 bg-white/30" />
+              <div className="mt-1.5 whitespace-nowrap text-center text-xs font-semibold text-fog-500">
+                halfway {mid}
+              </div>
+            </motion.div>
+          )}
+          {/* Endpoints */}
+          <div className="absolute left-0 top-0 -translate-x-1/2">
+            <End label={lower} active={revealAnswer && !roundedUp} />
+          </div>
+          <div className="absolute right-0 top-0 translate-x-1/2">
+            <End label={upper} active={revealAnswer && roundedUp} />
+          </div>
+          {/* The value marker snaps to the rounded end on the answer beat */}
+          <motion.div
+            initial={reduced ? false : { opacity: 0, y: -18 }}
+            animate={{
+              opacity: 1,
+              y: 0,
+              left: revealAnswer ? (roundedUp ? "100%" : "0%") : `${pos}%`,
+            }}
+            transition={reduced ? { duration: 0 } : { ...SPRING, delay: 0.2 }}
+            className="absolute top-0 -translate-x-1/2"
+          >
+            <div
+              className={cn(
+                "flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border-2 shadow-lg",
+                accent.bg,
+                accent.border,
+              )}
+            >
+              <div className={cn("h-2 w-2 rounded-full", accent.text)} style={{ backgroundColor: "currentColor" }} />
+            </div>
+            <div className={cn("mt-1 text-center text-sm font-bold", accent.text)}>
+              {value}
+            </div>
+          </motion.div>
+        </div>
+      </div>
+      {revealAnswer && (
+        <motion.div
+          initial={reduced ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: reduced ? 0 : 0.3 }}
+          className="mt-4 text-center text-lg font-semibold text-fog-50"
+        >
+          {value} rounds to{" "}
+          <span className={accent.text}>{rounded}</span>{" "}
+          <span className="text-fog-400">
+            (nearest {place})
+          </span>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Place-value columns: each digit of the number sits in its Th/H/T/O column;
+ * the target digit's column lights up from the "its column" beat, and the
+ * `digit × multiplier = value` line reveals on the answer beat. The columns ARE
+ * the maths. Transform/opacity only; reduced motion is instant.
+ */
+function PlaceValueColumns({
+  spec,
+  index,
+  accent,
+  reduced,
+}: {
+  spec: Extract<PlaceValueStageSpec, { kind: "columns" }>;
+  index: number;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  const { digits, labels, highlightIndex, digit, multiplier, placeValue } = spec;
+  const highlight = index >= 2;
+  const revealAnswer = index >= 3;
+
+  return (
+    <div className="rounded-3xl border border-white/10 bg-void/35 p-5">
+      <div className="flex flex-wrap justify-center gap-2">
+        {digits.map((d, i) => {
+          const lit = highlight && i === highlightIndex;
+          return (
+            <motion.div
+              key={i}
+              initial={reduced ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0, scale: lit && !reduced ? 1.05 : 1 }}
+              transition={reduced ? { duration: 0 } : { ...SPRING, delay: 0.1 + i * 0.06 }}
+              className={cn(
+                "flex w-14 flex-col items-center overflow-hidden rounded-2xl border",
+                lit ? cn(accent.bg, accent.border, "shadow-lg") : "border-white/12 bg-white/[0.03]",
+              )}
+            >
+              <span
+                className={cn(
+                  "w-full py-1 text-center text-xs font-semibold uppercase tracking-wider",
+                  lit ? accent.text : "text-fog-500",
+                )}
+              >
+                {labels[i]}
+              </span>
+              <span
+                className={cn(
+                  "w-full border-t border-white/10 py-2 text-center text-2xl font-bold",
+                  lit ? accent.text : "text-fog-100",
+                )}
+              >
+                {d}
+              </span>
+            </motion.div>
+          );
+        })}
+      </div>
+      {revealAnswer && (
+        <motion.div
+          initial={reduced ? false : { opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, delay: reduced ? 0 : 0.25 }}
+          className="mt-4 text-center text-xl font-semibold text-fog-50"
+        >
+          {digit} × {multiplier} ={" "}
+          <span className={accent.text}>{placeValue}</span>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Number & place-value stage (F6): rounding on a number line, or a digit's value
+ * in place-value columns — the "See it" for Ivy's active band. The geometry is
+ * derived once from the animation's canonical first step; the current beat index
+ * drives the reveal. Falls back to the plain expression if neither shape parses.
+ */
+function PlaceValueStage({
+  steps,
+  step,
+  index,
+  accent,
+  reduced,
+}: {
+  steps: TeachingAnimationStep[];
+  step: TeachingAnimationStep;
+  index: number;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  const spec = useMemo(() => placeValueStageSpec(steps), [steps]);
+
+  return (
+    <div className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <span className="text-sm font-semibold uppercase tracking-wider text-fog-500">
+          Step {index + 1}
+        </span>
+        <span className={cn("text-sm font-semibold", accent.text)}>
+          {step.label}
+        </span>
+      </div>
+
+      {spec?.kind === "rounding" ? (
+        <RoundingLine spec={spec} index={index} accent={accent} reduced={reduced} />
+      ) : spec?.kind === "columns" ? (
+        <PlaceValueColumns spec={spec} index={index} accent={accent} reduced={reduced} />
+      ) : (
+        <div className="rounded-2xl border border-white/10 bg-void/30 p-4 text-center text-2xl font-semibold text-fog-50">
+          {step.expression}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * "Your turn" — ONE short active-recall beat after the reveal (Feature 6).
  * Deterministic (built from the animation's own steps + the real options), no
  * AI, no analytics. Optional and skippable; calm confirm on success, a
@@ -1824,6 +2054,14 @@ export function TeachingAnimation({
               />
             ) : animation.type === "science_sequence" ? (
               <ScienceStage
+                steps={animation.steps}
+                step={step}
+                index={current}
+                accent={accent}
+                reduced={reduced}
+              />
+            ) : animation.type === "place_value" ? (
+              <PlaceValueStage
                 steps={animation.steps}
                 step={step}
                 index={current}

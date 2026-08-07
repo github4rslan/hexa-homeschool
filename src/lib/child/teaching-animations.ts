@@ -3,7 +3,8 @@ export type TeachingAnimationType =
   | "fraction_bars"
   | "choice_strategy"
   | "grammar_highlight"
-  | "science_sequence";
+  | "science_sequence"
+  | "place_value";
 
 export interface TeachingAnimationStep {
   label: string;
@@ -305,6 +306,7 @@ function fromRaw(raw: unknown): TeachingAnimation | null {
     "choice_strategy",
     "grammar_highlight",
     "science_sequence",
+    "place_value",
   ];
   if (
     value.type &&
@@ -521,6 +523,202 @@ function deriveScience(prompt: string, explanation: string): TeachingAnimation |
   };
 }
 
+// ── Number & place value (F6 — rounding number-line + place-value columns) ──
+
+/** Column abbreviations by position-from-right (ones = index 0). */
+const PLACE_ABBR = ["O", "T", "H", "Th", "TTh", "HTh", "M"];
+/** Full column names by position-from-right, for calm spoken notes. */
+const PLACE_FULL = [
+  "ones",
+  "tens",
+  "hundreds",
+  "thousands",
+  "ten thousands",
+  "hundred thousands",
+  "millions",
+];
+/** Rounding place words / digits → their power of ten. */
+const ROUND_PLACES: Record<string, number> = {
+  ten: 10,
+  hundred: 100,
+  thousand: 1000,
+  "10": 10,
+  "100": 100,
+  "1000": 1000,
+};
+
+export interface RoundingLesson {
+  value: number;
+  place: number;
+  /** Nearest multiple at or below `value`. */
+  lower: number;
+  /** Nearest multiple above `value`. */
+  upper: number;
+  /** The halfway point between lower and upper. */
+  mid: number;
+  /** Which multiple `value` snaps to (round half up). */
+  rounded: number;
+}
+
+/**
+ * Parse "round N to the nearest 10/100/1000" (digit or word place), integers
+ * only so the number line stays clean. Pure — shared by the deriver (for the
+ * spoken notes) and the renderer's stage-spec builder (for the geometry).
+ */
+export function parseRoundingLesson(prompt: string): RoundingLesson | null {
+  const text = normaliseMath(prompt).toLowerCase().replace(/,/g, "");
+  const m = text.match(
+    /round\s+(-?\d+)\s+to\s+the\s+nearest\s+(ten|hundred|thousand|10|100|1000)\b/,
+  );
+  if (!m) return null;
+  const value = Number(m[1]);
+  const place = ROUND_PLACES[m[2]];
+  if (!Number.isInteger(value) || !place) return null;
+  const lower = Math.floor(value / place) * place;
+  const upper = lower + place;
+  const mid = lower + place / 2;
+  const rounded = Math.round(value / place) * place;
+  return { value, place, lower, upper, mid, rounded };
+}
+
+export interface PlaceValueLesson {
+  /** The whole number with any commas stripped. */
+  number: string;
+  /** Digits left → right. */
+  digits: number[];
+  /** Column abbreviation aligned to each digit (Th/H/T/O). */
+  labels: string[];
+  /** Index (into `digits`) of the highlighted digit. */
+  highlightIndex: number;
+  /** The digit whose value is asked for. */
+  digit: number;
+  /** 10^k for the digit's column. */
+  multiplier: number;
+  /** digit × multiplier. */
+  placeValue: number;
+  /** Full column name, e.g. "hundreds". */
+  columnName: string;
+}
+
+/**
+ * Parse "value of D in N" (optionally "the digit D") → the place-value columns.
+ * First occurrence of D wins. Pure — shared by deriver and renderer.
+ */
+export function parsePlaceValueLesson(prompt: string): PlaceValueLesson | null {
+  const text = cleanText(prompt).toLowerCase();
+  const m = text.match(/value of (?:the digit )?(\d)\s+in\s+([\d,]+)/);
+  if (!m) return null;
+  const digit = Number(m[1]);
+  const number = m[2].replace(/,/g, "");
+  if (!/^\d+$/.test(number) || number.length > PLACE_ABBR.length) return null;
+  const digits = number.split("").map(Number);
+  const idx = digits.indexOf(digit);
+  if (idx === -1) return null;
+  const posFromRight = digits.length - 1 - idx;
+  const multiplier = Math.pow(10, posFromRight);
+  const placeValue = digit * multiplier;
+  const labels = digits.map((_, i) => PLACE_ABBR[digits.length - 1 - i]);
+  return {
+    number,
+    digits,
+    labels,
+    highlightIndex: idx,
+    digit,
+    multiplier,
+    placeValue,
+    columnName: PLACE_FULL[posFromRight],
+  };
+}
+
+function roundingAnimation(l: RoundingLesson): TeachingAnimation {
+  const snapsUp = l.rounded === l.upper;
+  const nearer =
+    l.value === l.mid
+      ? `${l.value} is exactly halfway, so we round up`
+      : `${l.value} is nearer to ${l.rounded}`;
+  return {
+    type: "place_value",
+    title: "Land it on the number line",
+    intro: `We'll place ${l.value} between the two nearest ${l.place}s and see which it's closer to.`,
+    coachLine: "Watch where the number lands — the nearer end wins.",
+    steps: [
+      {
+        label: "Start",
+        expression: `round ${l.value} to the nearest ${l.place}`,
+        note: `Which multiple of ${l.place} is ${l.value} closest to?`,
+        focus: `${l.value}`,
+      },
+      {
+        label: "Neighbours",
+        expression: `${l.lower} … ${l.value} … ${l.upper}`,
+        note: `${l.value} sits between ${l.lower} and ${l.upper}.`,
+        focus: `${l.value}`,
+      },
+      {
+        label: "Halfway",
+        expression: `halfway is ${l.mid}`,
+        note: `The halfway point is ${l.mid}. ${nearer}.`,
+        focus: `${l.mid}`,
+      },
+      {
+        label: "Answer",
+        expression: `${l.value} rounds to ${l.rounded}`,
+        note: `So ${l.value} rounds ${snapsUp ? "up" : "down"} to ${l.rounded}.`,
+        focus: `${l.rounded}`,
+      },
+    ],
+  };
+}
+
+function placeValueColumnsAnimation(l: PlaceValueLesson): TeachingAnimation {
+  return {
+    type: "place_value",
+    title: "See it in the columns",
+    intro: `We'll line ${l.number} up in place-value columns and read what the ${l.digit} is worth.`,
+    coachLine: "Each column is ten times the one to its right.",
+    steps: [
+      {
+        label: "Start",
+        expression: `value of ${l.digit} in ${l.number}`,
+        note: `What is the digit ${l.digit} worth inside ${l.number}?`,
+        focus: `${l.digit}`,
+      },
+      {
+        label: "Columns",
+        expression: `${l.number} in place-value columns`,
+        note: `Line ${l.number} up so every digit has its own column.`,
+        focus: `${l.digit}`,
+      },
+      {
+        label: "Its column",
+        expression: `${l.digit} is in the ${l.columnName}`,
+        note: `The ${l.digit} sits in the ${l.columnName} column.`,
+        focus: `${l.digit}`,
+      },
+      {
+        label: "Answer",
+        expression: `${l.digit} × ${l.multiplier} = ${l.placeValue}`,
+        note: `So the ${l.digit} is worth ${l.placeValue}.`,
+        focus: `${l.placeValue}`,
+      },
+    ],
+  };
+}
+
+/**
+ * The "See it" walkthrough for Ivy's active band: rounding on a number line and
+ * digit place value in columns. Deterministic + human-derived (child-safety rule
+ * 5 — the model never authors the maths). Rounding wins first; null when the
+ * prompt is neither shape, so the chain falls through to the generic strategy.
+ */
+export function derivePlaceValueLesson(prompt: string): TeachingAnimation | null {
+  const rounding = parseRoundingLesson(prompt);
+  if (rounding) return roundingAnimation(rounding);
+  const columns = parsePlaceValueLesson(prompt);
+  if (columns) return placeValueColumnsAnimation(columns);
+  return null;
+}
+
 function deriveChoiceStrategy(prompt: string, explanation: string): TeachingAnimation {
   return {
     type: "choice_strategy",
@@ -604,6 +802,7 @@ export function normalizeTeachingAnimation(input: {
     deriveSquareEquation(input.prompt) ??
     deriveFactorisedDifference(input.prompt) ??
     deriveFractionSum(input.prompt, input.explanation) ??
+    derivePlaceValueLesson(input.prompt) ??
     deriveGrammar(input.prompt, input.explanation) ??
     deriveScience(input.prompt, input.explanation) ??
     deriveChoiceStrategy(input.prompt, input.explanation)

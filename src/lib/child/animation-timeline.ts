@@ -12,6 +12,10 @@
  * that way (no React, no "server-only").
  */
 
+import {
+  parsePlaceValueLesson,
+  parseRoundingLesson,
+} from "@/lib/child/teaching-animations";
 import type { TeachingAnimationStep } from "@/lib/child/teaching-animations";
 
 // ── Equation beats ───────────────────────────────────────────
@@ -439,14 +443,15 @@ export function buildYourTurn(input: {
     | "fraction_bars"
     | "choice_strategy"
     | "grammar_highlight"
-    | "science_sequence";
+    | "science_sequence"
+    | "place_value";
   steps: { label: string; expression: string; focus?: string }[];
   options?: string[];
   correctIndex?: number;
 }): YourTurnTask | null {
   const { type, steps, options, correctIndex } = input;
 
-  if (type === "fraction_bars") {
+  if (type === "fraction_bars" || type === "place_value") {
     // Recall against the question's REAL options — "which answer would you
     // keep?" — turning the watched reveal into an active choice. No options
     // (rare) → no task, the beat simply doesn't appear.
@@ -455,7 +460,10 @@ export function buildYourTurn(input: {
     }
     return {
       kind: "tap_choice",
-      prompt: "Your turn — which fraction is the answer?",
+      prompt:
+        type === "fraction_bars"
+          ? "Your turn — which fraction is the answer?"
+          : "Your turn — which is the answer?",
       choices: [...options],
       correct: correctIndex,
     };
@@ -572,6 +580,60 @@ export function checkYourTurnOrder(
   return tapped.every(
     (displayIndex, i) => task.correctOrder[displayIndex] === i,
   );
+}
+
+// ── Number & place-value stage geometry (F6) ─────────────────
+
+export interface RoundingStageSpec {
+  kind: "rounding";
+  value: number;
+  place: number;
+  lower: number;
+  upper: number;
+  mid: number;
+  rounded: number;
+}
+
+export interface ColumnsStageSpec {
+  kind: "columns";
+  number: string;
+  digits: number[];
+  labels: string[];
+  highlightIndex: number;
+  digit: number;
+  multiplier: number;
+  placeValue: number;
+}
+
+export type PlaceValueStageSpec = RoundingStageSpec | ColumnsStageSpec;
+
+/**
+ * Build the place-value stage geometry from the animation's canonical FIRST
+ * step — `roundingAnimation` / `placeValueColumnsAnimation` always emit a
+ * machine-parseable `steps[0].expression` ("round 486 to the nearest 100" /
+ * "value of 6 in 3652"), so this re-parse is exact. Returns null when neither
+ * shape parses (the renderer then falls back to the plain expression text).
+ */
+export function placeValueStageSpec(
+  steps: { expression: string }[],
+): PlaceValueStageSpec | null {
+  const src = steps[0]?.expression ?? "";
+  const r = parseRoundingLesson(src);
+  if (r) return { kind: "rounding", ...r };
+  const c = parsePlaceValueLesson(src);
+  if (c) {
+    return {
+      kind: "columns",
+      number: c.number,
+      digits: c.digits,
+      labels: c.labels,
+      highlightIndex: c.highlightIndex,
+      digit: c.digit,
+      multiplier: c.multiplier,
+      placeValue: c.placeValue,
+    };
+  }
+  return null;
 }
 
 // ── Grammar / science beats ──────────────────────────────────
