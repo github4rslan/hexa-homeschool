@@ -563,3 +563,15 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   form) and that work-evidence is text-only in the dossier, so both features are real not filler.
   Teardown: fetch('/logout',{method:'POST'})→200 between each role switch + browser_close. Emailed owner
   the scenario summary via scripts/email-findings.ts.
+
+- 2026-08-07 (Mechanic, resume): finished the last 3 of the 2026-08-06 batch (F6-F8) after two
+  prior session-limit cutoffs left 6/9 shipped. F6 place_value "See it" animation (rounding
+  number-line + place-value columns) — new deterministic type wired into the normalize chain, own
+  stage renderer + Your-turn recall, no AI-authored maths. F7 low-floor "getting started" learning
+  insight so the panel isn't a blank "still learning" wall for engaged families (descriptive only,
+  no child profiling; replaced by statistical lines once they unlock). F8 React 19.0.0→19.2.8 (latest
+  19.x); a newly-published high-sev js-yaml advisory (dev-only, transitive via eslint) surfaced and
+  was cleared with `npm audit fix` → 0 vulns. Pattern learned: "React patch bump" findings can hide a
+  MINOR jump — check `npm view react@^19 version` and lean on the full build + a live homepage
+  console-smoke (did: 0 hydration errors on 19.2.8). Health check clean: deploy READY, /api/health 200,
+  runtime errors clean. All 9 items of 2026-08-06 now shipped.
