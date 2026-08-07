@@ -42,7 +42,76 @@ export type ScienceVisualSpec =
   | {
       kind: "cell";
       alt: string;
+    }
+  | {
+      kind: "material_property";
+      /** The property being tested, e.g. "waterproof". */
+      property: string;
+      /** The simple test a child can picture, e.g. "Does water soak through?". */
+      test: string;
+      /** What passing the test means (has the property). */
+      passLabel: string;
+      /** What failing the test means (doesn't have the property). */
+      failLabel: string;
+      alt: string;
     };
+
+/**
+ * Material-property tests we can illustrate. Each entry is the *concept of the
+ * test* — never the candidate materials from the question — so the figure
+ * teaches "what does waterproof mean / how would you check it?" without ever
+ * pre-answering which option is correct.
+ */
+const MATERIAL_PROPERTIES: {
+  property: string;
+  needles: string[];
+  test: string;
+  passLabel: string;
+  failLabel: string;
+}[] = [
+  {
+    property: "waterproof",
+    needles: ["waterproof", "keeps water out", "keep water out"],
+    test: "Does water soak through it?",
+    passLabel: "Keeps water out",
+    failLabel: "Water soaks through",
+  },
+  {
+    property: "transparent",
+    needles: [
+      "transparent",
+      "lets light through",
+      "let light through",
+      "light pass",
+      "see through",
+      "see-through",
+    ],
+    test: "Can light pass through it?",
+    passLabel: "You can see through it",
+    failLabel: "Light is blocked",
+  },
+  {
+    property: "magnetic",
+    needles: ["magnetic", "magnet"],
+    test: "Does a magnet pull it?",
+    passLabel: "Sticks to a magnet",
+    failLabel: "A magnet ignores it",
+  },
+  {
+    property: "flexible",
+    needles: ["flexible", "bendy", "bends without", "bend without", "can bend"],
+    test: "Does it bend without breaking?",
+    passLabel: "Bends easily",
+    failLabel: "Stays stiff",
+  },
+  {
+    property: "absorbent",
+    needles: ["absorbent", "soaks up", "soak up", "soaks water", "absorb water"],
+    test: "Does it soak up water?",
+    passLabel: "Soaks water up",
+    failLabel: "Water runs off",
+  },
+];
 
 function has(text: string, ...needles: string[]): boolean {
   return needles.some((n) => text.includes(n));
@@ -147,6 +216,23 @@ export function deriveScienceVisual(
       kind: "plant_parts",
       alt: "A plant diagram with labelled parts: roots below the soil, a stem, leaves and a flower at the top.",
     };
+  }
+
+  // ── material property test: what does "waterproof/transparent/magnetic/…"
+  //    mean, and how would you check it? Runs at the tail so states-of-matter
+  //    (freeze/melt/ice) wins first; only fires on a named property keyword and
+  //    never names the candidate materials, so it can't give the answer away. ──
+  for (const p of MATERIAL_PROPERTIES) {
+    if (has(text, ...p.needles)) {
+      return {
+        kind: "material_property",
+        property: p.property,
+        test: p.test,
+        passLabel: p.passLabel,
+        failLabel: p.failLabel,
+        alt: `A property test for "${p.property}": ${p.test} If yes, the material ${p.passLabel.toLowerCase()}; if no, ${p.failLabel.toLowerCase()}.`,
+      };
+    }
   }
 
   return null;

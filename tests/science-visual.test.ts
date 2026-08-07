@@ -50,8 +50,31 @@ describe("deriveScienceVisual", () => {
     expect(living?.kind).not.toBe("cell");
   });
 
+  it("draws a material-property test for a 'which material is waterproof' prompt", () => {
+    const spec = deriveScienceVisual("sci_ks2_materials", "Which material is waterproof?");
+    expect(spec?.kind).toBe("material_property");
+    if (spec?.kind !== "material_property") throw new Error("expected material_property");
+    expect(spec.property).toBe("waterproof");
+    // Must NOT pre-answer: the figure never names a candidate material.
+    expect(spec.alt.toLowerCase()).not.toMatch(/plastic|paper|cotton|cardboard/);
+  });
+
+  it("draws a transparent test for 'lets light through'", () => {
+    const spec = deriveScienceVisual("sci_ks2_materials", "Which material lets light through?");
+    expect(spec?.kind).toBe("material_property");
+    if (spec?.kind !== "material_property") throw new Error("expected material_property");
+    expect(spec.property).toBe("transparent");
+  });
+
+  it("prefers states-of-matter over material-property when both could match", () => {
+    // "When water freezes it becomes: ice" is a state change, not a property test.
+    const spec = deriveScienceVisual("sci_ks2_materials", "When water freezes it becomes:");
+    expect(spec?.kind).toBe("states_of_matter");
+  });
+
   it("returns null for a science prompt with no confident shape", () => {
-    expect(deriveScienceVisual("sci_ks2_materials", "Which material is waterproof?")).toBeNull();
+    // "Which of these is a metal?" is a category, not an illustrable property test.
+    expect(deriveScienceVisual("sci_ks2_materials", "Which of these is a metal?")).toBeNull();
     expect(deriveScienceVisual("sci_ks2_living", "Which animal is a mammal?")).toBeNull();
   });
 
