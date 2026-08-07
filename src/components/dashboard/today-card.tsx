@@ -115,13 +115,20 @@ export function TodayCard({ card, index }: { card: TodayCardData; index: number 
           ))}
         </ul>
       ) : (
-        <p className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-4 text-sm text-fog-400">
-          No quests planned for today.{" "}
-          <Link href="/schedule" className="text-violet-300 hover:text-violet-200">
-            Open the weekly plan
-          </Link>{" "}
-          to set the week.
-        </p>
+        <div className="rounded-xl border border-violet-400/20 bg-violet-500/[0.06] px-4 py-4">
+          <p className="text-sm text-fog-200">
+            {card.childName.split(" ")[0]} doesn&apos;t have a plan yet — set up
+            this week in one tap.
+          </p>
+          <Link
+            href={`/schedule?child=${encodeURIComponent(card.childId)}`}
+            className="group mt-3 inline-flex items-center gap-2 rounded-xl border border-violet-400/40 bg-violet-500/15 px-4 py-2 text-sm font-semibold text-violet-200 transition-colors hover:border-violet-300/60 hover:bg-violet-500/25"
+          >
+            <Sparkles className="h-4 w-4" />
+            Generate {card.childName.split(" ")[0]}&apos;s week
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
       )}
     </motion.div>
   );
