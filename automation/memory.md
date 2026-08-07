@@ -606,3 +606,51 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   for a ref then click by ref, and avoid names with apostrophes (dispatch via evaluate DOM query instead).
   Teardown: fetch('/logout',{method:'POST'})→200 between each role switch + browser_close. Emailed owner the
   scenario summary via scripts/email-findings.ts.
+- 2026-08-07 — Mechanic build run, DECISION `all` (B1 + F1–F7, 8 items, no cap; findings 2026-08-07). ALL
+  green-gated (type-check + tests + lint + build, one commit each, pushed to main) AND live-verified on
+  edway.uk with Playwright; zero browser console errors + zero Vercel runtime errors across the whole
+  session. **B1** recalibrated the "Avg lesson time" band from a hardcoded 45–60 MIN/lesson to Edway's
+  actual 8–20 MIN interactive-quest reality (dashboard-stats.ts constants + caption strings + test). Live:
+  card reads "2m · below the 8–20 min target" (honest — Ivy's quests genuinely average ~2m, but the band is
+  now the right shape). **F1** "Continue where you left off" resume card on the child hub: pure
+  `buildResumeCards` (lib/child/resume.ts, filters genuinely-mid-lesson rows via the resolveResumeStep
+  guards, most-recent first) + ownership-checked `getInProgressLessons(parentId,childId)` repo read +
+  ResumeCards component above the quest grid. Live: after leaving a lesson mid-flow, hub showed "Pick up
+  where you left off · Science · Materials & Their Properties · step 2 of 3". **F2** material-property
+  science visual: new `material_property` kind in deriveScienceVisual (tail of the chain, keyword-gated on
+  waterproof/transparent/magnetic/flexible/absorbent, runs AFTER states_of_matter so freeze/melt/ice wins)
+  + MaterialProperty renderer (✔/✘ property-test tiles). KEY: shows the property TEST concept, NEVER the
+  candidate materials, so it can't pre-answer the MCQ. Live on "Which material is waterproof?": rendered
+  "Waterproof? · Does water soak through it? · ✔ Keeps water out / ✘ Water soaks through" (never names
+  plastic). "Which of these is a metal?" correctly got NO visual (category, not an illustrable property).
+  **F3** STALE finding — spoken-answer STT for fill_blank was ALREADY fully built on main (interaction.tsx
+  applySpokenAnswer + practice-player mic gated `isMcq || fill_blank` + /api/stt transient+distress-checked
+  + guardFreeText runs /api/safety-check BEFORE scoring; local check, no AI grading). No rebuild; "Speak"
+  control confirmed live on the lesson surface; committed a Chore note. **F4** parent per-child curriculum
+  roadmap: pure `buildRoadmapTopics` (certified/current/upcoming, exactly one "current") + ownership-checked
+  `childSubjectRoadmap` repo read (reuses bandFromData) + RoadmapCard on the child profile. Live: showed
+  Maths GCSE (Number & Place Value ✓ → Fractions NOW → upcoming), English/Science PRIMARY with their NOW.
+  **F5** cleared the moderate dompurify XSS via non-force `npm audit fix` (nested 3.4.12→3.4.13, lockfile
+  only, audit→0); deferred the OPTIONAL posthog-js major bump to avoid analytics-client-shift risk (CVE
+  cleared without it). **F6** optional post-mastery "brain stretch": new `stretch` QuestionDoc kind (+
+  SeedQuestion + BTuple), 3 human-authored stretch questions seeded (sci_ks2_materials, eng_ks3_reading,
+  maths_ks2_arithmetic), self-contained BrainStretch component (offer→one harder Q→celebratory, NON-scoring,
+  never gates mastery) threaded lesson-page→DailyFlow→PracticePlayer, rendered only when `mastered &&
+  stretch`. RAN `npm run seed` (idempotent, curriculum-only, 9 written) to push the bonus Qs live. Live:
+  certified sci_ks2_materials → "Fancy a brain stretch?" → "Which material is BOTH transparent AND
+  waterproof?" → correct → "🌟 Wow, Ivy — you nailed the stretch!" with certificate intact. **F7** warmer
+  per-child "Generate the week" nudge on the dashboard today-card empty state + made /schedule honor
+  `?child=<id>` (ownership-safe via getChildById inside getActiveChild). Live: Sam Smoke + Sam Test both
+  showed "Sam doesn't have a plan yet — set up this week in one tap"; clicking Sam Test's link loaded
+  /schedule?child=… with "Approving confirms the week for Sam" (targeted the RIGHT child, not the Ivy
+  active-child cookie). KEY LEARNINGS: (1) GREP/READ before building — F3 was 100% already shipped (scout
+  false-negative); the honest move is a Chore verification note, not a rebuild. Two prior runs learned the
+  same; keep checking the code first. (2) Adding a new deriveScienceVisual KIND at the TAIL is safe (earlier
+  kinds win); for a "which material is X" figure, show the PROPERTY TEST (✔/✘ meaning), never the option
+  materials, or you pre-answer the MCQ. (3) A new question `kind` union member fanned out to 3 type sites
+  (QuestionDoc, SeedQuestion, admin curriculum's KIND_VARIANT/kindOrder Records) — type-check caught them;
+  add the new key everywhere a `Record<kind,…>` exists. (4) For a data-driven child feature (F6 stretch),
+  author + `npm run seed` (new unique prompt = clean INSERT, no orphan risk) THEN live-drive a full
+  lesson to certification to see it — the offer only exists on the certified screen. (5) MCP getByRole
+  clicks still flake on apostrophes/minus; click by DOM index/text via evaluate. Teardown: /logout POST →
+  200 + browser_close.
