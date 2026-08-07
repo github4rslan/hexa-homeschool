@@ -432,7 +432,13 @@ export interface QuestionDoc {
    * diagnostic pool query. Drives age-appropriate diagnostic selection.
    */
   key_stage?: number;
-  kind: "diagnostic" | "practice" | "mastery";
+  /**
+   * `stretch` (F6): an optional, human-authored harder bonus question offered
+   * ONLY after a topic is certified. Purely celebratory — never scored, never
+   * part of the mastery set, and never AI-authored. Absent ⇒ no brain-stretch
+   * offer for that topic.
+   */
+  kind: "diagnostic" | "practice" | "mastery" | "stretch";
   prompt: string;
   options: string[];
   correct_index: number;

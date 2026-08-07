@@ -47,6 +47,25 @@ describe("age-banded curriculum integrity", () => {
     }
   });
 
+  it("keeps any authored post-mastery 'stretch' bonus questions well-formed and ≤1 per topic (F6)", () => {
+    const stretch = SEED_QUESTIONS_BANDS.filter((q) => q.kind === "stretch");
+    // We authored some stretch questions this run.
+    expect(stretch.length).toBeGreaterThan(0);
+    // The child flow serves the FIRST stretch question, so a topic must not
+    // carry more than one (avoids an ambiguous bonus).
+    const byTopic = new Map<string, number>();
+    for (const q of stretch) {
+      byTopic.set(q.topic_tag, (byTopic.get(q.topic_tag) ?? 0) + 1);
+      // Same validity bar as every other question (also covered above).
+      expect(q.correct_index).toBeGreaterThanOrEqual(0);
+      expect(q.correct_index).toBeLessThan(q.options.length);
+      expect(q.explanation.trim().length).toBeGreaterThan(0);
+    }
+    for (const [tag, n] of byTopic) {
+      expect(n, `${tag} stretch count`).toBeLessThanOrEqual(1);
+    }
+  });
+
   it("has no orphan question tags (every question maps to a topic)", () => {
     const tags = new Set(ALL_TOPICS.map((t) => t.topic_tag));
     for (const q of [...SEED_QUESTIONS, ...SEED_QUESTIONS_FOUNDATION, ...SEED_QUESTIONS_BANDS]) {

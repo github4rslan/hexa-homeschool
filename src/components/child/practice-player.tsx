@@ -19,6 +19,7 @@ import { CalmPause } from "@/components/child/calm-pause";
 import { HandoffPause } from "@/components/child/handoff-pause";
 import { Celebration } from "@/components/fx/celebration";
 import { Interaction, type InteractionHandle } from "@/components/child/interaction";
+import { BrainStretch } from "@/components/child/brain-stretch";
 import {
   logLessonCompletion,
   saveLessonProgressAction,
@@ -191,6 +192,7 @@ function matchSpokenOption(transcript: string, options: string[]): number | null
 export function PracticePlayer({
   questions,
   masteryQuestions,
+  stretch = null,
   curriculumTopic,
   topicTitle,
   voiceId,
@@ -208,6 +210,8 @@ export function PracticePlayer({
   questions: Question[];
   /** Human-authored mastery bank for deterministic certification attempts. */
   masteryQuestions?: Question[];
+  /** F6 — optional human-authored post-mastery bonus question (null = none). */
+  stretch?: Question | null;
   curriculumTopic: string;
   /** Human-readable topic title, for the warm handoff pause copy. */
   topicTitle?: string;
@@ -1432,6 +1436,18 @@ export function PracticePlayer({
             </Button>
           </div>
         </div>
+
+        {/* F6 — optional post-mastery brain stretch. Only appears when the topic
+            is certified AND carries a human-authored stretch question; purely
+            celebratory + non-scoring, so it can never gate mastery or dent
+            confidence. */}
+        {mastered && stretch && (
+          <BrainStretch
+            question={stretch}
+            accent={accent}
+            firstName={childName ?? undefined}
+          />
+        )}
       </div>
     );
   }

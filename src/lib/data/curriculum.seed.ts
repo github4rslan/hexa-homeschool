@@ -37,7 +37,7 @@ export interface SeedQuestion {
   tier: number;
   /** UK key stage band: 2 (KS2), 3 (KS3), 4 (GCSE). This bank is all GCSE. */
   key_stage: number;
-  kind: "diagnostic" | "practice" | "mastery";
+  kind: "diagnostic" | "practice" | "mastery" | "stretch";
   prompt: string;
   options: string[];
   correct_index: number;

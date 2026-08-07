@@ -122,6 +122,11 @@ export default async function ChildLessonPage({
   const masteryQuestions: Question[] = docs
     .filter((q) => q.kind === "mastery")
     .map(toQuestion);
+  // F6 — an optional human-authored post-mastery "brain stretch" (harder bonus
+  // question, offered only after certification, never scored). Absent for most
+  // topics ⇒ the offer simply never appears.
+  const stretch: Question | null =
+    docs.filter((q) => q.kind === "stretch").map(toQuestion)[0] ?? null;
 
   // Build the explainer "points" from real practice-question explanations —
   // these are human-authored, so they're genuine teaching content, not mock.
@@ -163,6 +168,7 @@ export default async function ChildLessonPage({
         workedExample={normalizeWorkedExample(topicDoc.worked_example)}
         questions={questions}
         masteryQuestions={masteryQuestions}
+        stretch={stretch}
         curriculumTopic={topicDoc.topic_tag}
         voiceId={voiceId}
         keyStage={topicDoc.key_stage ?? 4}

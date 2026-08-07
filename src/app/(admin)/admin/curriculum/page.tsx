@@ -23,10 +23,11 @@ const SPEC_REFERENCE: Record<Subject, string> = {
   science: "AQA Combined Science Trilogy 8464",
 };
 
-const KIND_VARIANT: Record<QuestionDoc["kind"], "violet" | "cyan" | "neon"> = {
+const KIND_VARIANT: Record<QuestionDoc["kind"], "violet" | "cyan" | "neon" | "amber"> = {
   diagnostic: "violet",
   practice: "cyan",
   mastery: "neon",
+  stretch: "amber",
 };
 
 export default async function CurriculumPage({
@@ -56,7 +57,7 @@ export default async function CurriculumPage({
   }
   for (const bucket of questionsByTopic.values()) {
     bucket.sort((a, b) => {
-      const kindOrder = { diagnostic: 0, practice: 1, mastery: 2 };
+      const kindOrder = { diagnostic: 0, practice: 1, mastery: 2, stretch: 3 };
       return (
         kindOrder[a.kind] - kindOrder[b.kind] ||
         a.tier - b.tier ||

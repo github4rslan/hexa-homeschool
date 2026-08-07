@@ -26,6 +26,7 @@ export function DailyFlow({
   workedExample,
   questions,
   masteryQuestions,
+  stretch = null,
   curriculumTopic,
   voiceId,
   keyStage,
@@ -47,6 +48,8 @@ export function DailyFlow({
   workedExample?: WorkedExample;
   questions: Question[];
   masteryQuestions?: Question[];
+  /** F6 — optional human-authored post-mastery bonus question (null = none). */
+  stretch?: Question | null;
   curriculumTopic: string;
   /**
    * A human tutor's note from a logged handoff session (Wave 7, Phase 4). When
@@ -152,6 +155,7 @@ export function DailyFlow({
             <PracticePlayer
               questions={questions}
               masteryQuestions={masteryQuestions}
+              stretch={stretch}
               curriculumTopic={curriculumTopic}
               topicTitle={title}
               voiceId={voiceId}
