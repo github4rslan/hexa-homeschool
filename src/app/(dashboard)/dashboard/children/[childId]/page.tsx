@@ -18,6 +18,7 @@ import {
   evaluationHistory,
   childInsights,
   childCurrentBands,
+  childSubjectRoadmap,
   listChildTutorNotes,
   listTopicCertificates,
   CHILD_NOTE_MAX,
@@ -28,6 +29,7 @@ import { WorkEvidenceUploader } from "@/components/media/work-evidence-uploader"
 import { ExamDecisionCard } from "@/components/dashboard/exam-decision-card";
 import { TrajectoryChart } from "@/components/dashboard/trajectory-chart";
 import { InsightsPanel } from "@/components/dashboard/insights-panel";
+import { RoadmapCard } from "@/components/dashboard/roadmap-card";
 import { computeExamDecision } from "@/lib/engine/exam-decision";
 import { cloudinaryThumb } from "@/lib/media/cloudinary";
 import { saveChildProfile, saveChildNote } from "./actions";
@@ -64,6 +66,9 @@ export default async function ChildProfilePage({
   // Per-subject working band, so a subject with no diagnostic/mock evaluation
   // but real lesson-based progress still shows an honest standing (B1).
   const bandBySubject = new Map(bands.map((b) => [b.subject, b.keyStage]));
+  // F4: parent-facing forward view — ordered band topics with certified/current/
+  // upcoming state, so a homeschooling parent sees what's coming next.
+  const roadmap = await childSubjectRoadmap(parentId, child._id);
   const insights = await childInsights(parentId, child._id);
   const work = await listMedia({ useCase: "child_work", childId, limit: 12 });
   const tutorNotes = await listChildTutorNotes(parentId, childId);
@@ -197,6 +202,10 @@ export default async function ChildProfilePage({
             {certified} topic{certified === 1 ? "" : "s"} certified so far.
           </p>
         </Card>
+
+        {/* Curriculum roadmap (F4) — forward view of the current band's topics,
+            certified / current / upcoming, per subject. Parent-only planning. */}
+        <RoadmapCard subjects={roadmap} childFirstName={firstName} />
 
         {/* Note to child (F1) — a short human encouragement that appears gently
             at the top of {firstName}'s hub. No AI, private to your family. */}
