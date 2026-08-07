@@ -234,9 +234,11 @@ export const SEED_TOPICS_BANDS: SeedTopic[] = BASE_SEED_TOPICS_BANDS.map((topic)
 
 // ── Questions ────────────────────────────────────────────────
 // [tier, kind, prompt, options, correctIndex, explanation]
+// `stretch` (F6): an optional harder bonus question offered ONLY after the topic
+// is certified — purely celebratory, never scored, never in the mastery set.
 type BTuple = [
   number,
-  "practice" | "mastery",
+  "practice" | "mastery" | "stretch",
   string,
   string[],
   number,
@@ -252,6 +254,7 @@ const QUESTIONS_BY_TOPIC: Record<string, BTuple[]> = {
     [1, "mastery", "What is 6 × 9?", ["54", "56", "63", "48"], 0, "Six groups of 9 make 54."],
     [2, "mastery", "What is 124 + 59?", ["183", "173", "184", "193"], 0, "Add 60 to 124 to get 184. Then take away 1, so the answer is 183."],
     [2, "mastery", "What is 100 − 64?", ["36", "46", "34", "44"], 0, "Let's take away 64 from 100, step by step. Take away 60 to get 40, then take away 4 more to get 36."],
+    [3, "stretch", "What is 6 × 8 − 15?", ["33", "48", "23", "43"], 0, "Do the multiply first: 6 × 8 = 48. Then take away 15 to get 33."],
   ],
   maths_ks2_fractions: [
     [1, "practice", "What is ½ of 16?", ["8", "6", "4", "12"], 0, "Half of 16 is 8."],
@@ -314,6 +317,7 @@ const QUESTIONS_BY_TOPIC: Record<string, BTuple[]> = {
     [3, "mastery", "'The room was an oven.' This is a:", ["simile", "metaphor", "question", "fact"], 1, "It says the room IS an oven, so it is a metaphor."],
     [3, "mastery", "Reading quickly to find one specific fact is called:", ["skimming", "scanning", "editing", "drafting"], 1, "Searching for a specific fact is scanning."],
     [3, "mastery", "'Silently, slowly, secretly she crept.' The repeated 's' sound is:", ["alliteration", "rhyme", "simile", "metaphor"], 0, "Repeating the same starting sound is alliteration."],
+    [3, "stretch", "The plural of 'leaf' is:", ["leafs", "leaves", "leafes", "leave"], 1, "Some words ending in 'f' change to 'ves' — one leaf, many leaves."],
   ],
 
   // ════════════ SCIENCE · KS2 ════════════
@@ -332,6 +336,7 @@ const QUESTIONS_BY_TOPIC: Record<string, BTuple[]> = {
     [2, "mastery", "Heating ice makes it:", ["melt", "freeze", "vanish", "harden"], 0, "Heating ice melts it into water."],
     [2, "mastery", "Which material lets light through?", ["Wood", "Glass", "Metal", "Brick"], 1, "Glass is transparent — light passes through it."],
     [2, "mastery", "A force that slows a moving object down is:", ["friction", "gravity", "light", "sound"], 0, "Friction slows moving objects down."],
+    [3, "stretch", "Which material is BOTH transparent AND waterproof?", ["Glass", "Cardboard", "Cotton", "Wood"], 0, "Glass lets light through (transparent) and keeps water out (waterproof) — it has both properties."],
   ],
 
   // ════════════ SCIENCE · KS3 ════════════
