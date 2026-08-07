@@ -342,6 +342,61 @@ function CellDiagram({
   );
 }
 
+function MaterialProperty({
+  property,
+  test,
+  passLabel,
+  failLabel,
+  accent,
+  reduced,
+}: {
+  property: string;
+  test: string;
+  passLabel: string;
+  failLabel: string;
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  const tiles: { symbol: string; label: string; pass: boolean; delay: number }[] = [
+    { symbol: "✔", label: passLabel, pass: true, delay: 0.1 },
+    { symbol: "✘", label: failLabel, pass: false, delay: 0.25 },
+  ];
+  return (
+    <div className="flex w-full flex-col items-center gap-2">
+      <span className={cn("text-sm font-bold capitalize", accent.text)}>
+        {property}?
+      </span>
+      <span className="text-center text-xs text-fog-300">{test}</span>
+      <div className="flex w-full items-stretch justify-center gap-3">
+        {tiles.map((t) => (
+          <motion.div
+            key={t.label}
+            initial={reduced ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={reduced ? { duration: 0 } : { duration: 0.3, delay: t.delay }}
+            className={cn(
+              "flex flex-1 flex-col items-center gap-1 rounded-xl border p-3 text-center",
+              t.pass ? accent.border : "border-white/10",
+            )}
+            style={{ backgroundColor: "rgba(255,255,255,0.04)", maxWidth: 140 }}
+          >
+            <span
+              className={cn(
+                "text-2xl font-bold",
+                t.pass ? accent.text : "text-fog-400",
+              )}
+              aria-hidden
+            >
+              {t.symbol}
+            </span>
+            <span className="text-xs font-semibold text-fog-100">{t.label}</span>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function ScienceVisual({
   spec,
   accent,
@@ -368,6 +423,15 @@ export function ScienceVisual({
         <LifeCycle stages={spec.stages} accent={accent} reduced={reduced} />
       ) : spec.kind === "food_chain" ? (
         <FoodChain links={spec.links} accent={accent} reduced={reduced} />
+      ) : spec.kind === "material_property" ? (
+        <MaterialProperty
+          property={spec.property}
+          test={spec.test}
+          passLabel={spec.passLabel}
+          failLabel={spec.failLabel}
+          accent={accent}
+          reduced={reduced}
+        />
       ) : (
         <CellDiagram accent={accent} reduced={reduced} />
       )}
