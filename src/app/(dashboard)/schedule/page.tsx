@@ -25,10 +25,22 @@ import { formatUkDate } from "@/lib/utils";
 export const metadata: Metadata = { title: "Weekly schedule" };
 export const dynamic = "force-dynamic";
 
-export default async function SchedulePage() {
+export default async function SchedulePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ child?: string }>;
+}) {
   const parentId = await currentParentId();
   if (!parentId) redirect("/login?redirect=/schedule");
-  const child = await getActiveChild(parentId, await readActiveChildId());
+  // F7: a `?child=<id>` deep-link (from the dashboard "Generate the week" nudge)
+  // targets that specific child rather than whichever child the active-child
+  // cookie points at. Ownership is enforced by getChildById inside getActiveChild
+  // — an unowned/invalid id simply falls back to the parent's latest child.
+  const { child: childParam } = await searchParams;
+  const child = await getActiveChild(
+    parentId,
+    childParam ?? (await readActiveChildId()) ?? undefined,
+  );
 
   if (!child?._id) {
     return (
