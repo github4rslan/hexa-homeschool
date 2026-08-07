@@ -575,3 +575,34 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   MINOR jump — check `npm view react@^19 version` and lean on the full build + a live homepage
   console-smoke (did: 0 hydration errors on 19.2.8). Health check clean: deploy READY, /api/health 200,
   runtime errors clean. All 9 items of 2026-08-06 now shipped.
+- 2026-08-07 — Discovery pass, FULL coverage (parent/child/admin/tutor; desktop 1280 + mobile 390 both
+  confirmed innerWidth; whole-page scroll). Took the **English KS2 "Reading & Spelling" (eng_ks2_reading)**
+  lesson end-to-end as Ivy (Explainer → "Show me another way" → Practise 2/2 → Mastery 3/3 → certified):
+  wrong#1 = calm name-nudge with a VIOLET (not red) tint on the chosen option, "Why isn't that right?",
+  "2 tries left"; correct = star burst; phase bar lit per stage; English tile visuals (box→"b o x + es",
+  church→"ch + es", begin letter-tiles) + glossary popover ("spelling") all live. F4 mood ack verified
+  ("Tough day" → "Let's take it gentle today — one quest is plenty. 💛"). Whole 2026-08-06 batch re-verified
+  live-shipped (child-profile dedupe, rounding/place-value visuals, certified-over-time trajectory, low-floor
+  insight, "Show me another way"). Admin (overview/finance/escalations) + tutor READ-ONLY clean, tutor empty
+  queue (silo holds). ZERO console errors on EVERY surface; NO overflow either viewport; /api/health 200.
+  Static: type-check + lint GREEN; **npm audit = 1 MODERATE** (dompurify 3.4.12 XSS via posthog-js — `npm
+  audit fix` bumps to 3.4.13, dry-run confirmed no --force; posthog-js also behind 1.386.6→1.414.0). Findings
+  HONEST-SHORT (exceptionally mature): only bug = B1 (Low) the "Avg lesson time" dashboard card uses a
+  hardcoded 45–60 MIN per-lesson band (dashboard-stats.ts) — but quests are ~2–15 min by design, so
+  avgLessonTimeHint() perpetually says "below the 45–60 min target" (live showed "2m · below…"); recalibrate
+  the band or reframe as daily-total. Features: F1 "Continue where you left off" resume card on the child hub
+  (lesson_progress autosaves + resumes IN-lesson but the HUB/quest-cards never surfaces in-progress state —
+  confirmed learn/page.tsx doesn't import lesson_progress), F2 material-properties science visual for
+  sci_ks2_materials (Ivy's active Science topic; science-visual.ts has plant_parts/life_cycle/food_chain/
+  states_of_matter/cell but NO material-properties kind, so "waterproof material" Qs hit the generic AI
+  figure), F3 spoken answers (STT) for fill_blank via existing /api/stt + distress-gate (accessibility for
+  dyslexic Ivy), F4 parent per-child curriculum roadmap (parent only sees certified-over-time, no forward
+  topic view), F5 dompurify CVE + posthog bump, F6 post-mastery optional "brain stretch" for first-try
+  masters, F7 warmer per-child "set up the week" nudge (Sam Smoke/Sam Test show cold "No quests planned").
+  Pattern: GREP BEFORE REPORTING paid off twice — the visible "Loading…" during route transitions is an
+  sr-only label inside a proper skeleton (NOT a bare-text regression), and science-visual.ts already exists
+  (science figures shipped) so I proposed only the uncovered material-properties kind. MCP tool flaked
+  intermittently on getByRole clicks ("Unexpected token while parsing css selector") — workaround: snapshot
+  for a ref then click by ref, and avoid names with apostrophes (dispatch via evaluate DOM query instead).
+  Teardown: fetch('/logout',{method:'POST'})→200 between each role switch + browser_close. Emailed owner the
+  scenario summary via scripts/email-findings.ts.
