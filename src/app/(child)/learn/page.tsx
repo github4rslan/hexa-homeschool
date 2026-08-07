@@ -6,10 +6,13 @@ import { EmojiCheckin } from "@/components/child/emoji-checkin";
 import { ParentNoteCard } from "@/components/child/parent-note-card";
 import { StreakFlame } from "@/components/child/streak-flame";
 import { QuestCards, type Quest } from "@/components/child/quest-cards";
+import { ResumeCards } from "@/components/child/resume-card";
 import { TodayReflection } from "@/components/child/today-reflection";
+import { buildResumeCards } from "@/lib/child/resume";
 import {
   currentParentId,
   getActiveChild,
+  getInProgressLessons,
   resolveDailyQuestTopic,
   childFloorBand,
   certifiedBySubject,
@@ -71,6 +74,14 @@ export default async function LearnHubPage() {
     const subj = subjectOfTag.get(tag);
     if (subj) doneSubjects.add(subj);
   }
+
+  // F1: "Continue where you left off" — surface any genuinely in-progress lesson
+  // (a lesson_progress row exists only while unfinished) as a warm resume card.
+  const inProgress = await getInProgressLessons(parentId, child._id);
+  const topicMeta = new Map(
+    allTopics.map((t) => [t.topic_tag, { title: t.title, subject: t.subject }]),
+  );
+  const resumeCards = buildResumeCards(inProgress, topicMeta);
 
   const floor = childFloorBand(child.date_of_birth);
 
@@ -222,6 +233,8 @@ export default async function LearnHubPage() {
           </div>
         </Link>
       )}
+
+      <ResumeCards cards={resumeCards} accentText={accent.text} />
 
       <QuestCards quests={quests} />
 

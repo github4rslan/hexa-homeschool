@@ -1419,6 +1419,30 @@ export async function clearLessonProgress(
   await col.deleteOne({ child_id: childId, topic_tag: topicTag });
 }
 
+/**
+ * All open mid-lesson autosaves for a child (one row per in-progress topic).
+ * A `lesson_progress` row exists only while a lesson is genuinely unfinished
+ * (it's deleted on completion), so this surfaces exactly the "continue where you
+ * left off" set. Ownership enforced; pedagogical state only, never analytics.
+ */
+export async function getInProgressLessons(
+  parentId: string,
+  childId: ObjectId,
+): Promise<{ topic_tag: string; step: number; total: number; updated_at: Date }[]> {
+  if (!(await assertOwnsChild(parentId, childId))) return [];
+  const col = await getCollection<LessonProgressDoc>(Collections.lessonProgress);
+  const rows = await col
+    .find({ child_id: childId })
+    .sort({ updated_at: -1 })
+    .toArray();
+  return rows.map((r) => ({
+    topic_tag: r.topic_tag,
+    step: r.step,
+    total: r.total,
+    updated_at: r.updated_at,
+  }));
+}
+
 export async function upsertCompetence(
   parentId: string,
   childId: ObjectId,
