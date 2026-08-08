@@ -51,6 +51,11 @@ off.
 - **Never push a red tree.** The full gate below must be green before any push.
 - **One commit per item.** Never bundle. Message: `Fix:`/`Feat:`/`Chore:` +
   the item ID and title. Commit straight to `main` (no branches/PRs).
+- **No dashes as punctuation in anything you write.** This covers em dashes (`—`),
+  en dashes (`–`), and double hyphens (`--`) used as a separator, in commit
+  messages, child/parent facing copy, code comments, and the findings/memory log.
+  Use commas, colons, parentheses, or separate sentences instead. (Ordinary
+  hyphens inside words and CLI flags like `--noEmit` are fine.)
 - **Never weaken a documented invariant** (list below). If an item can't be built
   without weakening one, skip it and record why. This is an experiment with no
   real users, so ambition is welcome — but these invariants are how the product
