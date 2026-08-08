@@ -19,6 +19,17 @@ steer your taste: don't re-propose rejected ideas; lean into accepted patterns.
 Note: this is an **experiment with no real users yet**, so bias toward ambition —
 propose bold features and modern upgrades, not just safe hygiene fixes.
 
+**North star: GCSE readiness.** Everything Edway does exists to get a child to
+complete comfort, confidence, and success in their GCSE exams. Judge every
+finding against that goal. A slicker button matters less than a child who walks
+into the real exam having practised the exact kind of question, in the exact
+exam style, and knowing they can do it. So weight your run toward: closing gaps
+in the curriculum against the real exam specs (Pearson Edexcel Maths 1MA1, AQA
+English 8700, AQA Combined Science Trilogy 8464), deepening exam-style practice,
+and anything that measurably raises real exam preparedness. Polish and delight
+still matter (a calm, confident learner performs better), but they serve the
+exam goal, they are not the goal.
+
 ## Priority brief (optional — owner-supplied feature idea)
 
 If this run was started with a specific feature idea from the owner (passed in
@@ -226,6 +237,39 @@ findings. Do NOT run the dev server, `npm run build`, or `npm run seed`.
 Propose concrete, buildable upgrades across these lanes. Be specific — name the
 files, the exact change, and why it's worth it:
 
+- **Curriculum & GCSE exam readiness (the headline lane, tied to the north star).**
+  This is where you have the biggest impact on the real goal, so give it real
+  weight every run. Two things to do:
+  1. **Audit coverage against the real specs.** The question bank lives as
+     human-authored seed data in `src/lib/data/curriculum.seed*.ts`
+     (`curriculum.seed.ts`, `.bands.ts`, `.extra.ts`, `.foundation.ts`,
+     `.interactive.ts`), mapped to Pearson Edexcel 1MA1, AQA 8700, and AQA 8464.
+     Read it and find the gaps that hurt exam readiness: a spec topic with no
+     topic_tag, a topic with too few questions, missing tiers (1 easiest to 5
+     hardest), a `kind` that is thin (few `mastery` or `stretch` items), or
+     missing exam-style formats (command words like "calculate / explain /
+     evaluate", multi-step problems, real exam phrasing). File each gap as an
+     `F#` naming the exact spec point and what is missing.
+  2. **You MAY author the actual questions, inside the findings, for owner review.**
+     Write each new question out IN FULL in the report, in the `SeedQuestion`
+     shape so Mechanic can transcribe it verbatim: `topic_tag`, `subject`, `tier`,
+     `key_stage`, `kind`, `prompt`, four `options`, `correct_index`, a plain
+     `explanation`, two progressive `hints`, and index-aligned `misconceptions`
+     for the wrong options. Prefer exam-style framing so it truly prepares a child
+     for the real paper.
+  - **Hard authoring rules (child-safety, non-negotiable):**
+    - Author a question ONLY when the correct answer is unambiguous and you are
+      confident it is right: exactly one defensible correct option. For maths and
+      any quantitative item the answer must be computable and you must show it
+      checks out. If there is ANY doubt, do NOT author it: file the gap for a
+      human to fill instead. A wrong canonical answer taught to a child is the
+      worst outcome here, worse than a missing question.
+    - Cite the exact spec reference for every authored question so it is checkable.
+    - This does NOT change the runtime rule: OpenAI still only explains against
+      these human-reviewed canonical answers, it never invents curriculum live.
+      The owner's `DECISION:` line is the human approval gate: nothing is seeded
+      until the owner selects it. You are proposing reviewable content, not
+      shipping unreviewed AI curriculum to a child.
 - **Security hardening** — headers/CSP, rate-limit gaps, validation, secret
   handling, dependency CVEs (`npm audit` via Bash).
 - **Modern UI / UX** — polish, motion, empty/loading states, dark-mode gaps,

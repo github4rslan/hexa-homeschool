@@ -94,6 +94,34 @@ finding's spec is thin:
    `dotlottie-react`, `react-aria`, or `@axe-core/playwright`, add it green-gated,
    then live-verify both the reduced-motion path and the no-network behaviour.
 
+### Building curriculum / question findings (GCSE content)
+
+Some findings add new questions or topics to the human-authored bank in
+`src/lib/data/curriculum.seed*.ts`. This is allowed and it does NOT weaken
+child-safety rule 5, because you are TRANSCRIBING owner-approved, fully-authored
+content from the findings report (the `DECISION:` line is the human gate), not
+having a model invent curriculum. Follow this exactly:
+1. **Transcribe verbatim.** Copy the question's `prompt`, `options`,
+   `correct_index`, `explanation`, `hints`, and `misconceptions` from the findings
+   into the seed file EXACTLY as written. Do NOT invent, reword, "improve", or
+   re-answer any question yourself, and never generate a missing answer with a
+   model. If a finding's question data is incomplete, ambiguous, or looks wrong,
+   build the rest of the finding and mark the question part **blocked** for a
+   human, with the reason. A wrong canonical answer reaching a child is the worst
+   outcome, so when unsure, stop.
+2. **Verify the truth.** Add or extend a Vitest test proving each new question is
+   well-formed (exactly one `correct_index` in range, options non-empty,
+   misconceptions index-aligned) and, for any quantitative item, that the stated
+   correct answer actually computes. A question whose answer you cannot verify does
+   not ship.
+3. **The runtime rule is unchanged.** These are static, reviewed canonical
+   answers; the Teaching Agent still only explains against them (invariant 2) and
+   never invents them live. Do not add any code path that has a model author or
+   grade questions.
+4. **Seeding is permitted for these items** (the `npm run seed` note above): after
+   the gate is green, run it to upsert the new content, and record that you did.
+   Seed is idempotent and touches the live DB, so run it once, deliberately.
+
 ## 3. Per-item loop
 
 1. Restate the item and the intended change.
