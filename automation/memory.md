@@ -737,3 +737,29 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   ref-based + `has-text` name selectors ("Unexpected token while parsing css selector"); a plain CSS
   selector target (`#cert-hash`, `button:has-text("Verify")`) worked. Teardown: fetch('/logout',POST)->200
   + browser_close. Health: newest prod deploy READY, /api/health reachable, runtime errors clean.
+- 2026-08-08 (Scout, second pass, GCSE curriculum focus) — Re-run on the same UTC day AFTER Mechanic
+  shipped batch-1 (B1,B2,F1-F6). Extended findings/2026-08-08.md with a clearly separated "Second batch"
+  (fresh IDs B3, F7-F11) so nothing collides; DECISION: all governs both. FULL Playwright re-verify:
+  /api/health 200; marketing desktop+mobile, parent dashboard+child hub, admin (overview/finance) + tutor
+  (read-only, empty queue, silo holds) all ZERO console errors both viewports. Drove maths_fractions as Ivy:
+  **B1 overflow fix LIVE** (scrollW 380 @ iw 390, was 411); calm-wrong held (violet oklab not red, "2 tries
+  left", "Why isn't that right?"), correct="Brilliant!" settle + See-it. Batch-1 F6 week-strip, F3 parent-note
+  audio, F5 /verify-certificate all live-clean. Logged out of all 3 accounts + browser_close. HEADLINE:
+  audited the WHOLE seed bank for correctness — re-derived every quantitative answer + checked every factual
+  canonical across all 5 files (curriculum.seed.ts/.bands/.extra/.foundation/.interactive, ~130 Qs). Bank is
+  remarkably CLEAN: only ONE ambiguous item = B3 (sci_body extra "where is most water absorbed → large
+  intestine"; at GCSE the small intestine absorbs most water, so keyed answer contradicts "most" — flagged
+  Medium, read-and-flag only, recommend retire+reword since prompt is the natural key). Features are
+  curriculum-weighted: F7 authored 6 exam-style command-word Qs IN FULL (SeedQuestion shape, spec-cited,
+  each re-checked for exactly one defensible answer: reverse %, recipe proportion, standard-form arithmetic,
+  speed calc, neutralisation products, personification effect); F8 add missing GCSE Maths MENSURATION strand
+  (area/perimeter/volume/circles — biggest spec hole, maths_geometry is angles-only) + 3 checked starters,
+  GOTCHA: adding a topic breaks the hardcoded TOPICS_PER_SUBJECT=10 mock gate (learn/mock/[subject]/page.tsx:25)
+  so that must become count-driven; F9 mock calc/non-calc framing + tier-targeted paper (exam-decision already
+  computes tier; mock is flat 15-min 10-MCQ); F10 interleave topics/subjects in the spaced-rep warm-up
+  (dueReviewTopics currently blocks most-overdue-first); F11 correct-settle flourish for tap_reveal+drag_drop
+  (mcq got it via F3 07-23, these two only get a static border). Created automation/backlog.md (6 north-star
+  epics). Static: type-check + lint GREEN, npm audit 0 vulns. Pattern: the seed bank is mature and accurate,
+  so the curriculum value is now COVERAGE + exam-condition fidelity + command-word framing, not correctness
+  fixes — audit for gaps and author exam-style items, don't expect to find wrong answers. Emailing owner the
+  new-findings summary via scripts/email-findings.ts.
