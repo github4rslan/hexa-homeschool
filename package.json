@@ -16,7 +16,8 @@
     "smoke:setup": "tsx scripts/smoke-setup.ts",
     "smoke": "playwright test",
     "test:admin-mobile": "playwright test --config playwright.admin.config.ts",
-    "test:e2e": "playwright test --config playwright.e2e.config.ts"
+    "test:e2e": "playwright test --config playwright.e2e.config.ts",
+    "a11y": "playwright test --config playwright.a11y.config.ts"
   },
   "dependencies": {
     "@sentry/nextjs": "^10.57.0",
@@ -40,6 +41,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
     "@playwright/test": "^1.50.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/canvas-confetti": "^1.9.0",
