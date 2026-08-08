@@ -4,7 +4,7 @@ import { ObjectId } from "mongodb";
 import { getCollection, Collections } from "@/lib/mongodb";
 import { getSession } from "@/lib/auth/session";
 import { hashPassword } from "@/lib/auth/password";
-import { computeStreak } from "@/lib/engine/streak";
+import { computeStreak, weekStrip, type WeekStripDay } from "@/lib/engine/streak";
 import { sha256Hex } from "@/lib/compliance/portfolio";
 import {
   buildInsights,
@@ -1679,6 +1679,28 @@ export async function childStreak(
     .project<{ timestamp_end: Date }>({ timestamp_end: 1 })
     .toArray();
   return computeStreak(logs.map((l) => new Date(l.timestamp_end).getTime()));
+}
+
+/**
+ * This week's 7-day activity strip for a child (F6) — Monday..Sunday dots,
+ * filled for days with a completed lesson, today highlighted. Reads the same
+ * completed-lesson logs as `childStreak` over a short 14-day window (covers the
+ * current week with buffer). Pedagogical/presentation only — never analytics.
+ */
+export async function childWeekStrip(
+  childId: ObjectId,
+): Promise<WeekStripDay[]> {
+  const col = await getCollection<LessonLogDoc>(Collections.lessonLogs);
+  const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const logs = await col
+    .find({
+      child_id: childId,
+      status: "completed",
+      timestamp_end: { $gte: since },
+    })
+    .project<{ timestamp_end: Date }>({ timestamp_end: 1 })
+    .toArray();
+  return weekStrip(logs.map((l) => new Date(l.timestamp_end).getTime()));
 }
 
 export interface TodayQuest {

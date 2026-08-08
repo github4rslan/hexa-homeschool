@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeStreak } from "@/lib/engine/streak";
+import { computeStreak, weekStrip } from "@/lib/engine/streak";
 
 const DAY = 24 * 60 * 60 * 1000;
 // A fixed "now": 2026-06-13T12:00:00Z (mid-day so day bucketing is stable).
@@ -87,5 +87,40 @@ describe("computeStreak", () => {
     const lateToday = Date.UTC(2026, 5, 13, 23, 30, 0);
     const r = computeStreak([earlyToday, lateToday], NOW);
     expect(r.current).toBe(1);
+  });
+});
+
+describe("weekStrip — child hub 7-day dots (F6)", () => {
+  it("returns 7 days with exactly one 'today'", () => {
+    const s = weekStrip([daysAgo(0)], NOW);
+    expect(s).toHaveLength(7);
+    expect(s.filter((d) => d.isToday)).toHaveLength(1);
+  });
+
+  it("fills today when a lesson was completed today", () => {
+    const today = weekStrip([daysAgo(0)], NOW).find((d) => d.isToday)!;
+    expect(today.active).toBe(true);
+  });
+
+  it("leaves today unfilled with no completion today", () => {
+    const today = weekStrip([daysAgo(30)], NOW).find((d) => d.isToday)!;
+    expect(today.active).toBe(false);
+  });
+
+  it("flags days after today this week as future and never active", () => {
+    const s = weekStrip([daysAgo(0)], NOW);
+    const todayIdx = s.findIndex((d) => d.isToday);
+    for (let i = 0; i <= todayIdx; i++) expect(s[i].future).toBe(false);
+    for (let i = todayIdx + 1; i < 7; i++) {
+      expect(s[i].future).toBe(true);
+      expect(s[i].active).toBe(false);
+    }
+  });
+
+  it("fills an earlier active weekday within the same week", () => {
+    const s = weekStrip([daysAgo(0), daysAgo(1)], NOW);
+    const todayIdx = s.findIndex((d) => d.isToday);
+    // A completion yesterday is in this week unless today is Monday (idx 0).
+    if (todayIdx > 0) expect(s[todayIdx - 1].active).toBe(true);
   });
 });
