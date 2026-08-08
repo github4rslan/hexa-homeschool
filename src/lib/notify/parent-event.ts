@@ -66,6 +66,50 @@ export async function emitMasteryEvent(params: {
   }
 }
 
+/**
+ * Notify the parent that a child advanced a whole key-stage band in a subject
+ * (F2 — the biggest, previously-silent progression event). Deduped once per
+ * child+subject+band. The key-stage register is PARENT-only (Children's Code:
+ * banding is never shown to the child), so the warm band label lives only in
+ * the feed row + email/SMS here, never in any child-facing surface.
+ */
+export async function emitBandPromotionEvent(params: {
+  parentId: string;
+  child: ChildDoc;
+  subject: Subject;
+  /** New (higher) key stage the child just advanced into: 3 or 4. */
+  newBand: 2 | 3 | 4;
+  /** Warm parent-facing subject label, e.g. "Science". */
+  subjectLabel: string;
+  /** Warm parent-facing stage label, e.g. "lower-secondary level". */
+  bandLabel: string;
+}): Promise<void> {
+  try {
+    if (!params.child._id) return;
+    const feedPhrase = `${params.subjectLabel}, now at ${params.bandLabel}`;
+    const { created } = await recordParentEvent(params.parentId, params.child, {
+      type: "band_promotion",
+      topicTitle: feedPhrase,
+      subject: params.subject,
+      dedupeKey: `band_promotion:${params.child._id.toHexString()}:${params.subject}:${params.newBand}`,
+    });
+    if (!created) return; // already celebrated — feed + push both fire once
+
+    await pushEventNotification({
+      parentId: params.parentId,
+      childName: params.child.full_name,
+      kind: "band_promotion",
+      topicTitle: null,
+      attempts: null,
+      subjectLabel: params.subjectLabel,
+      bandLabel: params.bandLabel,
+      ctaPath: `/dashboard/children/${params.child._id.toHexString()}`,
+    });
+  } catch (err) {
+    console.error("[parent-event band promotion] failed (non-fatal):", err);
+  }
+}
+
 /** Gentle, parent-facing "hasn't logged in today" reminder (once per day). */
 export async function emitInactivityEvent(params: {
   parentId: string;
@@ -119,13 +163,18 @@ export async function recordHandoffEvent(params: {
   }
 }
 
-/** Shared push path for mastery + inactivity: email (+ SMS), opt-out aware. */
+/**
+ * Shared push path for mastery + inactivity + band promotion: email (+ SMS),
+ * opt-out aware.
+ */
 async function pushEventNotification(params: {
   parentId: string;
   childName: string;
-  kind: "mastery" | "inactivity";
+  kind: "mastery" | "inactivity" | "band_promotion";
   topicTitle: string | null;
   attempts: number | null;
+  subjectLabel?: string | null;
+  bandLabel?: string | null;
   ctaPath: string;
 }): Promise<void> {
   const parent = await findParentById(params.parentId);
@@ -139,6 +188,8 @@ async function pushEventNotification(params: {
     childFirstName: params.childName.split(" ")[0],
     topicTitle: params.topicTitle,
     attempts: params.attempts,
+    subjectLabel: params.subjectLabel,
+    bandLabel: params.bandLabel,
   });
 
   if (emailConfigured()) {

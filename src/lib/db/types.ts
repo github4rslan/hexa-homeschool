@@ -599,11 +599,17 @@ export interface ParentEventDoc {
   child_id: ObjectId;
   /** Snapshot of the child's full name at event time (feed rendering). */
   child_name: string;
-  type: "mastery" | "handoff" | "inactivity" | "reflection";
+  type:
+    | "mastery"
+    | "handoff"
+    | "inactivity"
+    | "reflection"
+    | "band_promotion";
   /**
    * Human topic title for mastery/handoff events; absent for inactivity. For a
    * "reflection" (F5) this carries the warm parent-feed line, e.g. "Ada felt
-   * faster today".
+   * faster today". For a "band_promotion" it carries the warm parent-facing
+   * subject+stage phrase, e.g. "Science, now at lower-secondary level".
    */
   topic_title?: string | null;
   subject?: Subject | null;

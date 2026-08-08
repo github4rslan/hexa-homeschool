@@ -521,7 +521,7 @@ export function escalationAlertTemplate(opts: {
  */
 export function parentEventTemplate(opts: {
   parentName: string | null;
-  kind: "mastery" | "inactivity";
+  kind: "mastery" | "inactivity" | "band_promotion";
   subject: string;
   headline: string;
   body: string;
@@ -532,7 +532,7 @@ export function parentEventTemplate(opts: {
   const greeting = opts.parentName
     ? `Hi ${opts.parentName.split(" ")[0]},`
     : "Hello,";
-  const celebrate = opts.kind === "mastery";
+  const celebrate = opts.kind === "mastery" || opts.kind === "band_promotion";
   const accentBlock = celebrate
     ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 26px;background:rgba(35,66,49,0.05);border-left:3px solid ${COLORS.forest};border-radius:8px;">
         <tr><td style="padding:14px 18px;font-family:${SERIF};font-style:italic;color:${COLORS.forest};font-size:15px;line-height:1.55;">${opts.body}</td></tr>

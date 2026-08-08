@@ -349,6 +349,12 @@ export function PracticePlayer({
   const startedAtRef = useRef<number>(Date.now());
   const loggedRef = useRef(false);
   const [saved, setSaved] = useState(false);
+  // F2 — set when this certification advanced the child's whole band; drives a
+  // warm "new adventures unlocked" line on the certified screen (subject label
+  // only, never the parent-side key-stage band).
+  const [bandPromotion, setBandPromotion] = useState<{
+    subjectLabel: string;
+  } | null>(null);
 
   // ── Resume (Feature 3) ──
   const [resumed, setResumed] = useState(false);
@@ -688,7 +694,10 @@ export function PracticePlayer({
       timeSpentSeconds,
       hintsUsed: hintsTotalRef.current,
     })
-      .then((r) => setSaved(r.persisted))
+      .then((r) => {
+        setSaved(r.persisted);
+        setBandPromotion(r.bandPromotion ?? null);
+      })
       .catch(() => setSaved(false));
   }, [complete, curriculumTopic, score, masterySet.length]);
 
@@ -1403,6 +1412,20 @@ export function PracticePlayer({
               ? "You answered everything correctly — this topic is certified! 🎉"
               : "Keep going — you can master this topic next time."}
           </p>
+          {mastered && bandPromotion && (
+            <div className="mb-8 rounded-3xl border border-neon-400/40 bg-neon-500/10 p-5 text-center">
+              <div className="text-3xl" aria-hidden>
+                🚀
+              </div>
+              <p className="mt-1 text-lg font-semibold text-neon-200">
+                You unlocked a whole new set of {bandPromotion.subjectLabel}{" "}
+                adventures!
+              </p>
+              <p className="mt-1 text-sm text-fog-300">
+                You finished everything here — brand new quests are ready for you.
+              </p>
+            </div>
+          )}
           {saved && (
             <p className="mb-6 text-sm text-fog-500 inline-flex items-center gap-1.5">
               <Sparkles className="h-4 w-4" /> Progress saved.

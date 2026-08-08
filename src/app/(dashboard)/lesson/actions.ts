@@ -14,6 +14,9 @@ import {
   getTopic,
   createRemediationTutorHandoff,
   pauseTopicForTutor,
+  currentBandForSubject,
+  childFloorBand,
+  KEY_STAGE_LABEL,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { captureServer } from "@/lib/analytics/server";
@@ -21,8 +24,20 @@ import { sendDailySummaryEmail } from "@/lib/email/daily-summary";
 import { notifyRemediationHandoff } from "@/lib/email/remediation-handoff";
 import {
   emitMasteryEvent,
+  emitBandPromotionEvent,
   recordHandoffEvent,
 } from "@/lib/notify/parent-event";
+import type { Subject } from "@/lib/db/types";
+
+/**
+ * Warm, child-SAFE subject labels. The key-stage band is parent-only (never
+ * shown to a child), but the subject name itself is fine in child copy.
+ */
+const CHILD_SUBJECT_LABEL: Record<Subject, string> = {
+  mathematics: "Maths",
+  english: "English",
+  science: "Science",
+};
 
 export interface LessonLogInput {
   topicTag: string;
@@ -36,6 +51,13 @@ export interface LessonLogResult {
   persisted: boolean;
   competenceState?: "locked" | "training" | "certified";
   reason?: string;
+  /**
+   * Set only when this certification advanced the child's whole key-stage band
+   * for the subject (F2). Child-SAFE: carries the warm subject label only, never
+   * the key-stage band (banding is parent-only). Drives the child-mode
+   * "new adventures unlocked" celebration on the certified screen.
+   */
+  bandPromotion?: { subjectLabel: string } | null;
 }
 
 /**
@@ -82,6 +104,20 @@ export async function logLessonCompletion(
   const state: "locked" | "training" | "certified" =
     masteryPct >= 100 ? "certified" : masteryPct >= 50 ? "training" : "locked";
 
+  // F2: capture the child's band for this subject BEFORE the certifying write,
+  // so we can detect a whole-band promotion (KS2 -> KS3 -> KS4) that this exact
+  // certification triggers. Deterministic (reads certified rows), no AI.
+  const floor = childFloorBand(child.date_of_birth);
+  let promoSubject: Subject | null = null;
+  let bandBefore: number | null = null;
+  if (state === "certified") {
+    const topic = await getTopic(topicTag);
+    if (topic?.subject) {
+      promoSubject = topic.subject;
+      bandBefore = await currentBandForSubject(child._id, topic.subject, floor);
+    }
+  }
+
   await upsertCompetence(parentId, child._id, topicTag, state);
 
   // Event-driven parent notification: a topic reaching certification is a warm,
@@ -99,6 +135,34 @@ export async function logLessonCompletion(
       });
     } catch (err) {
       console.error("[mastery event] trigger failed (non-fatal):", err);
+    }
+  }
+
+  // F2: band-promotion milestone — the single biggest, previously-silent
+  // progression event. If this certification advanced the child's whole band
+  // for the subject, record a deduped parent event (feed + email/SMS/push) and
+  // flag the child screen for a warm, band-label-free celebration.
+  let bandPromotion: { subjectLabel: string } | null = null;
+  if (state === "certified" && promoSubject && bandBefore != null) {
+    try {
+      const bandAfter = await currentBandForSubject(
+        child._id,
+        promoSubject,
+        floor,
+      );
+      if (bandAfter > bandBefore) {
+        await emitBandPromotionEvent({
+          parentId,
+          child,
+          subject: promoSubject,
+          newBand: bandAfter,
+          subjectLabel: CHILD_SUBJECT_LABEL[promoSubject],
+          bandLabel: KEY_STAGE_LABEL[bandAfter],
+        });
+        bandPromotion = { subjectLabel: CHILD_SUBJECT_LABEL[promoSubject] };
+      }
+    } catch (err) {
+      console.error("[band promotion] trigger failed (non-fatal):", err);
     }
   }
 
@@ -125,7 +189,7 @@ export async function logLessonCompletion(
   revalidatePath("/learn/map");
   revalidatePath("/dashboard");
 
-  return { persisted: true, competenceState: state };
+  return { persisted: true, competenceState: state, bandPromotion };
 }
 
 /**
