@@ -654,3 +654,29 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   lesson to certification to see it — the offer only exists on the certified screen. (5) MCP getByRole
   clicks still flake on apostrophes/minus; click by DOM index/text via evaluate. Teardown: /logout POST →
   200 + browser_close.
+- 2026-08-08 — Discovery pass, FULL coverage (parent/child/admin/tutor; desktop 1280 + mobile 390 both
+  confirmed innerWidth). Friday = polish focus, and it paid off: found the run's headline defect on the
+  polish pass. Took **Science KS3 "Cell Biology" (sci_ks3_cells)** end-to-end as Ivy (Learn→Practise 3/3
+  incl. 1 deliberate wrong→Mastery 3/3→certified): calm-wrong held (gentle "Ivy, not quite yet…", "Why
+  isn't that right?", "2 tries left", no red/buzzer), star burst, phase bar per stage, real derived
+  cell-diagram figures w/ honest alt, cert+journey links. Ivy has cross-band progressed (Science now KS3,
+  Maths GCSE). Admin (overview/finance/escalations) + tutor READ-ONLY clean, tutor empty queue (silo
+  holds). ZERO console errors on EVERY surface. Static: type-check+lint GREEN; **npm audit 1 HIGH** =
+  nanoid<3.3.17 (GHSA-2v37-7h3g-55p8) via postcss@8.5.23→nanoid@3.3.18, non-force `npm audit fix` clears
+  it (F1). KEY FIND: **B1 real mobile overflow** — `maths_fractions` lesson horizontally scrolls ~21-31px
+  at 390 (scrollWidth 411 vs iw 390). Root cause pinned: the SUMMARY explainer header
+  (`components/child/explainer.tsx:195-196`) has `flex justify-between` with a long h1 in a
+  `flex items-center gap-3` child that LACKS `min-w-0`, so the title can't wrap and the row overflows past
+  the fixed 64px narration button. Sibling `step-reveal.tsx:93-94` HAS `min-w-0` — which is exactly why
+  StepReveal topics (sci_ks3_cells, negatives) don't overflow but the summary-explainer fractions topic
+  does. Fix = add min-w-0 to explainer.tsx line 196 + inner title div (line 206). B2 (Low a11y): child-hub
+  "Hide note" btn 40px wide + header logo 32px tall (<44 Children's Code tap target). Features: F1 nanoid
+  CVE, F2 band-promotion milestone (KS2→KS3→KS4 currently SILENT — biggest progression event, reuse
+  parent_events + pushEventNotification), F3 canvas-confetti on certification+certificate (approved lib,
+  reduced-motion+mute gated), F4 @axe-core/playwright in the a11y pass (approved, dev-only), F5 public
+  /verify/<hash> certificate verification (cert hash exists but no public verify), F6 visual 7-dot streak
+  strip on child hub. PATTERN: the "no overflow anywhere" claim from prior runs was viewport-thorough but
+  DIDN'T open a summary-explainer lesson at 390 — the fractions topic uses the rarer summary explainer
+  (most bands topics use StepReveal). Lesson: on the mobile pass, open a lesson whose title is LONG and
+  check both explainer variants, not just the worked-example one. Teardown: fetch('/logout',POST)→200
+  between each role switch + browser_close. Emailing owner the scenario summary via scripts/email-findings.ts.
