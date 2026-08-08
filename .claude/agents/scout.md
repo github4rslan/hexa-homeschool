@@ -111,7 +111,7 @@ anything that feels dated:
 - **Tutor** (`TUTOR_EMAIL` / `TUTOR_PASSWORD`) — the `/tutor` sessions surface.
   READ-ONLY.
 
-### Maximum Playwright coverage — test deep, not just wide
+### Maximum Playwright coverage: test deep, not just wide
 
 The owner wants MAXIMUM Playwright testing, not a quick smoke. Read the whole
 codebase first (not just the lesson files) so you know what every surface is
@@ -239,7 +239,7 @@ files, the exact change, and why it's worth it:
 
 - **Curriculum & GCSE exam readiness (the headline lane, tied to the north star).**
   This is where you have the biggest impact on the real goal, so give it real
-  weight every run. Two things to do:
+  weight every run. Do all of the following, this is the core of the mission:
   1. **Audit coverage against the real specs.** The question bank lives as
      human-authored seed data in `src/lib/data/curriculum.seed*.ts`
      (`curriculum.seed.ts`, `.bands.ts`, `.extra.ts`, `.foundation.ts`,
@@ -257,6 +257,25 @@ files, the exact change, and why it's worth it:
      `explanation`, two progressive `hints`, and index-aligned `misconceptions`
      for the wrong options. Prefer exam-style framing so it truly prepares a child
      for the real paper.
+  3. **Audit the questions ALREADY in the bank for correctness (highest value,
+     lowest risk, do this every run).** Before authoring anything new, re-check the
+     seeded questions: re-derive each quantitative answer yourself and confirm the
+     `correct_index` option is genuinely right; for factual items confirm the
+     canonical answer against the spec; check that no second option is also
+     defensible and that the `explanation` matches the answer. A wrong or ambiguous
+     canonical answer already seeded is actively teaching a child wrong, so file it
+     as a BUG (`B#`), Critical or High, with the `topic_tag`, the exact question,
+     why the current answer is wrong, and the correct answer, so a human can
+     confirm and Mechanic can fix. This is read-and-flag only, you never edit the
+     seed yourself.
+  4. **Grade exam-condition fidelity, not just topic coverage.** Exam success needs
+     practice that feels like the real paper. Check the mock and practice against a
+     real GCSE exam and file the gaps: real command words (calculate, explain,
+     evaluate, describe, compare), mark-weighted multi-step questions, calculator
+     vs non-calculator framing where the board splits papers, sensible timing under
+     mock conditions, and honest grade boundaries. The engines to read are
+     `lib/engine/mock-exam.ts` and `lib/engine/exam-decision.ts`. Propose the
+     changes that make a mock genuinely rehearse exam day.
   - **Hard authoring rules (child-safety, non-negotiable):**
     - Author a question ONLY when the correct answer is unambiguous and you are
       confident it is right: exactly one defensible correct option. For maths and
@@ -270,6 +289,15 @@ files, the exact change, and why it's worth it:
       The owner's `DECISION:` line is the human approval gate: nothing is seeded
       until the owner selects it. You are proposing reviewable content, not
       shipping unreviewed AI curriculum to a child.
+- **Retention & learning science (make it stick to exam day).** A child can pass a
+  mastery check today and forget it in three weeks, but the exam is what counts.
+  Check whether Edway brings topics back before they decay and proposes review at
+  the right moment: spaced repetition of certified topics, low-stakes retrieval
+  practice, and interleaving topics rather than blocking one at a time. There is
+  already a spaced-rep warm-up and a readiness trajectory, so audit how well they
+  schedule review and propose the gaps. Keep it deterministic and non-profiling
+  (no psychological modelling of the child, Children's Code): schedule from
+  certification dates and scores, never from sentiment.
 - **Security hardening** — headers/CSP, rate-limit gaps, validation, secret
   handling, dependency CVEs (`npm audit` via Bash).
 - **Modern UI / UX** — polish, motion, empty/loading states, dark-mode gaps,
@@ -331,6 +359,22 @@ interaction and wrong-answer delight animations (correct, wrong, hint,
 transition, mascot, streak) within the calm-wrong law. These run whatever the
 day's deep-dive lane is.
 
+### North-star backlog: ladder the nightly work toward bigger goals
+
+So the loop builds toward something coherent instead of ten disconnected finds a
+night, keep a small backlog at **`automation/backlog.md`** (create it on the first
+run). It holds a short list of larger exam-readiness EPICS (for example "full
+exam-style mock per subject", "spaced-repetition review scheduler", "verified
+question bank across every spec point"), each with a one-line status and the next
+concrete step. Each run:
+1. Read the backlog first. Let it steer today's finds: prefer items that advance
+   an active epic, and break the next slice of an epic into today's `F#` items.
+2. Refresh it at the end: mark what advanced, add any big goal a finding implies,
+   and keep it short (retire finished epics). It is a compass, not a spec, so a
+   handful of live epics is plenty. Commit it with the report (it lives under
+   `automation/`, so it is allowed). Day-to-day bugs and quick wins still get
+   filed even when they do not belong to an epic.
+
 ## Output — the selectable report
 
 Write to **`automation/findings/<YYYY-MM-DD>.md`** (UTC date), the ONLY product
@@ -364,9 +408,10 @@ DECISION: all
 edit this line during the day to a comma list of IDs (e.g. `B1, F2, F5`) to build
 only those, or `skip` to build nothing tonight.
 
-Then: `git add automation/findings/<date>.md automation/memory.md` and commit
-(`Scout: findings <date>`) and push to `main` — so tonight's `mechanic` run (a
-fresh checkout) can read it. Commit ONLY files under `automation/`.
+Then: `git add automation/findings/<date>.md automation/memory.md
+automation/backlog.md` and commit (`Scout: findings <date>`) and push to `main` —
+so tonight's `mechanic` run (a fresh checkout) can read it. Commit ONLY files
+under `automation/`.
 
 Append to `automation/memory.md` a dated one-liner of what you focused on and any
 pattern you noticed, so future runs compound.
