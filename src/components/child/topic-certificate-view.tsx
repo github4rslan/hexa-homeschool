@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft, Printer } from "lucide-react";
 import type { TopicCertificate } from "@/lib/db/repo";
+import { ConfettiBurst } from "@/components/fx/confetti-burst";
 
 /**
  * F5 — a print-beautiful, child-facing certificate for a single mastered topic,
@@ -24,6 +25,9 @@ export function TopicCertificateView({
 
   return (
     <div className="cert-root mx-auto max-w-3xl px-2 py-4 print:px-0 print:py-0">
+      {/* F3 — a short confetti pop on the certificate (reduced-motion-safe,
+          pointer-events-none, never printed). */}
+      <ConfettiBurst />
       <style>{`
         @media print {
           .cert-noprint { display: none !important; }

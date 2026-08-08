@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { CalmPause } from "@/components/child/calm-pause";
 import { HandoffPause } from "@/components/child/handoff-pause";
 import { Celebration } from "@/components/fx/celebration";
+import { ConfettiBurst } from "@/components/fx/confetti-burst";
 import { Interaction, type InteractionHandle } from "@/components/child/interaction";
 import { BrainStretch } from "@/components/child/brain-stretch";
 import {
@@ -1397,6 +1398,7 @@ export function PracticePlayer({
             )}
           >
             {mastered && <Celebration variant={1} big />}
+            {mastered && <ConfettiBurst />}
             <span className="text-6xl" aria-hidden>
               {mastered ? "🏆" : "🌟"}
             </span>
