@@ -32,6 +32,40 @@ export interface StreakResult {
   completedToday: boolean;
 }
 
+export interface WeekStripDay {
+  /** The child completed at least one lesson on this day (UTC). */
+  active: boolean;
+  /** This dot is today. */
+  isToday: boolean;
+  /** A day later this week that hasn't arrived yet (shown faint). */
+  future: boolean;
+}
+
+/**
+ * The current Monday..Sunday week as 7 dots for the child hub (F6) — filled for
+ * days with a completed lesson, today highlighted, later days faint. Pure +
+ * UTC-bucketed to match the streak. Encouraging, never guilt-y: a missed day is
+ * simply an unfilled dot, never a "broken chain" — it shows presence, not a
+ * penalty, and records nothing about the child.
+ */
+export function weekStrip(
+  completionMs: number[],
+  nowMs: number = Date.now(),
+): WeekStripDay[] {
+  const today = utcDayIndex(nowMs);
+  const dow = (new Date(nowMs).getUTCDay() + 6) % 7; // 0 = Monday
+  const monday = today - dow;
+  const active = new Set(completionMs.map(utcDayIndex));
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = monday + i;
+    return {
+      active: active.has(day),
+      isToday: day === today,
+      future: day > today,
+    };
+  });
+}
+
 /**
  * @param completionMs  timestamps (ms) of completed lessons, any order
  * @param nowMs         current time (ms); defaults to Date.now()

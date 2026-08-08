@@ -5,6 +5,7 @@ import { Map as MapIcon, Sparkles, GraduationCap, Settings2 } from "lucide-react
 import { EmojiCheckin } from "@/components/child/emoji-checkin";
 import { ParentNoteCard } from "@/components/child/parent-note-card";
 import { StreakFlame } from "@/components/child/streak-flame";
+import { WeekStrip } from "@/components/child/week-strip";
 import { QuestCards, type Quest } from "@/components/child/quest-cards";
 import { ResumeCards } from "@/components/child/resume-card";
 import { TodayReflection } from "@/components/child/today-reflection";
@@ -18,6 +19,7 @@ import {
   certifiedBySubject,
   todaysCheckin,
   childStreak,
+  childWeekStrip,
   todaysCompletedTopicTags,
   listTopics,
   dueReviewWarmup,
@@ -60,6 +62,7 @@ export default async function LearnHubPage() {
   // warmly so the calm ethos is visible. Encouraging framing, never diagnostic.
   const lowMood = !!checkin && checkin.mood <= 2;
   const streak = await childStreak(child._id);
+  const weekDays = await childWeekStrip(child._id);
   const doneTags = await todaysCompletedTopicTags(child._id);
   const warmupCount = (await dueReviewWarmup(child._id, 3)).length;
   const review = await weekInReview(parentId, child);
@@ -183,6 +186,9 @@ export default async function LearnHubPage() {
       <div className="text-center mb-8">
         <div className="mb-3 flex justify-center">
           <StreakFlame count={streak.current} completedToday={streak.completedToday} />
+        </div>
+        <div className="mb-4">
+          <WeekStrip days={weekDays} accentText={accent.text} />
         </div>
         <h1 className="text-4xl sm:text-5xl font-semibold text-fog-50">
           {isBirthday ? `Happy birthday, ${firstName}! 🎂` : `Hi ${firstName}! 👋`}
