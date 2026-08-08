@@ -193,7 +193,7 @@ function LegacyExplainer({
       <TutorNote note={tutorNote} accent={accentId} />
       <div className="child-panel p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <div
               className={cn(
                 "flex h-14 w-14 items-center justify-center rounded-3xl border",
@@ -203,11 +203,11 @@ function LegacyExplainer({
             >
               <Lightbulb className={cn("h-7 w-7", accent.text)} />
             </div>
-            <div>
+            <div className="min-w-0">
               <span className="text-sm font-mono uppercase tracking-widest text-fog-500">
                 Today&apos;s lesson
               </span>
-              <h1 className="text-3xl font-semibold text-fog-50">{title}</h1>
+              <h1 className="text-3xl font-semibold text-fog-50 break-words">{title}</h1>
             </div>
           </div>
           <button
