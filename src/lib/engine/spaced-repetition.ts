@@ -91,3 +91,61 @@ export function dueReviewTopics<T extends ReviewCandidate>(
     .map((x) => x.c);
   return max != null ? due.slice(0, max) : due;
 }
+
+export interface InterleaveCandidate extends ReviewCandidate {
+  /** Grouping key for interleaving (subject, or a topic tag). */
+  subject?: string;
+}
+
+/**
+ * Order due reviews for INTERLEAVED practice (F10). Learning-science evidence
+ * favours mixing subjects/topics in one short session over blocking a single
+ * topic. This takes the most-overdue-first list from `dueReviewTopics` and
+ * round-robins across distinct subject buckets, so consecutive warm-up items
+ * vary. The global most-overdue item is always FIRST (spacing is never lost to
+ * variety). Pure + deterministic: same inputs, same order — a refresh never
+ * reshuffles mid-session. Candidates without a `subject` fall into one bucket
+ * and keep the plain most-overdue order.
+ */
+export function interleaveDueReviews<T extends InterleaveCandidate>(
+  candidates: T[],
+  nowMs: number = Date.now(),
+  max?: number,
+): T[] {
+  const ordered = dueReviewTopics(candidates, nowMs); // most-overdue first, all due
+  if (ordered.length <= 1) {
+    return max != null ? ordered.slice(0, max) : ordered;
+  }
+
+  // Bucket by subject, preserving most-overdue-first WITHIN each bucket. The
+  // bucket insertion order follows `ordered`, so the first bucket holds the
+  // global most-overdue item and therefore leads the round-robin.
+  const buckets: T[][] = [];
+  const byKey = new Map<string, T[]>();
+  for (const c of ordered) {
+    const key = c.subject ?? "__nosub__";
+    let bucket = byKey.get(key);
+    if (!bucket) {
+      bucket = [];
+      byKey.set(key, bucket);
+      buckets.push(bucket);
+    }
+    bucket.push(c);
+  }
+
+  const result: T[] = [];
+  const cursors = buckets.map(() => 0);
+  let remaining = ordered.length;
+  let b = 0;
+  while (remaining > 0) {
+    const idx = b % buckets.length;
+    const cur = cursors[idx];
+    if (cur < buckets[idx].length) {
+      result.push(buckets[idx][cur]);
+      cursors[idx] = cur + 1;
+      remaining--;
+    }
+    b++;
+  }
+  return max != null ? result.slice(0, max) : result;
+}

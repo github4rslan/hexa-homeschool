@@ -17,7 +17,7 @@ import {
   scheduleFirstReview,
   nextReview,
   isReviewDue,
-  dueReviewTopics,
+  interleaveDueReviews,
 } from "@/lib/engine/spaced-repetition";
 import { shouldQueueHandoff } from "@/lib/engine/remediation";
 import { selectMockPaper } from "@/lib/engine/mock-paper";
@@ -2049,30 +2049,44 @@ export async function dueReviewWarmup(
   const certified = await compCol
     .find({ child_id: childId, state: "certified" })
     .toArray();
-
-  // Order most-overdue first so the shakiest memory refreshes soonest; a
-  // topic without a question is skipped in the loop below, so order all due
-  // topics rather than pre-capping.
-  const dueTags = dueReviewTopics(
-    certified.map((c) => ({ topicTag: c.topic_tag, nextReviewAt: c.next_review_at })),
-  ).map((c) => c.topicTag);
-  if (dueTags.length === 0) return [];
+  if (certified.length === 0) return [];
 
   const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
   const qCol = await getCollection<QuestionDoc>(Collections.questions);
 
+  // Look up each certified topic's subject + title so the warm-up can interleave
+  // across subjects (F10) and label each item.
+  const certTags = certified.map((c) => c.topic_tag);
+  const topicDocs = await topicsCol
+    .find({ topic_tag: { $in: certTags } })
+    .toArray();
+  const subjectByTag = new Map(topicDocs.map((t) => [t.topic_tag, t.subject]));
+  const titleByTag = new Map(topicDocs.map((t) => [t.topic_tag, t.title]));
+
+  // Interleave due topics across subjects (most-overdue still leads) so a short
+  // warm-up mixes problem types instead of blocking one topic. A topic without a
+  // question is skipped in the loop below, so order all due topics before capping.
+  const dueTags = interleaveDueReviews(
+    certified.map((c) => ({
+      topicTag: c.topic_tag,
+      subject: subjectByTag.get(c.topic_tag),
+      nextReviewAt: c.next_review_at,
+    })),
+  ).map((c) => c.topicTag);
+  if (dueTags.length === 0) return [];
+
   const out: WarmupQuestion[] = [];
   for (const tag of dueTags) {
     if (out.length >= max) break;
-    const topic = await topicsCol.findOne({ topic_tag: tag });
+    const title = titleByTag.get(tag);
     const q = await qCol.findOne(
       { topic_tag: tag, kind: { $in: ["practice", "mastery"] } },
       { sort: { tier: 1 } },
     );
-    if (!topic || !q || !q._id) continue;
+    if (!title || !q || !q._id) continue;
     out.push({
       topicTag: tag,
-      topicTitle: topic.title,
+      topicTitle: title,
       questionId: q._id.toHexString(),
       prompt: q.prompt,
       options: q.options,
