@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { SEED_TOPICS, SEED_QUESTIONS } from "@/lib/data/curriculum.seed";
 import { SEED_QUESTIONS_EXTRA } from "@/lib/data/curriculum.seed.extra";
+import {
+  gcseTopicCount,
+  mockUnlockCount,
+  MOCK_UNLOCK_FLOOR,
+} from "@/lib/engine/mock-gate";
 
 const ALL = [...SEED_QUESTIONS, ...SEED_QUESTIONS_EXTRA];
 
@@ -93,5 +98,67 @@ describe("F7 — exam-style command-word question pack", () => {
     // Speed: 150 / 10 = 15 m/s.
     expect(150 / 10).toBe(15);
     expect(answerOf(prompts[3])).toBe("15 m/s");
+  });
+});
+
+describe("F8 — GCSE Maths mensuration strand", () => {
+  it("adds the maths_mensuration topic in the maths GCSE band", () => {
+    const topic = SEED_TOPICS.find((t) => t.topic_tag === "maths_mensuration");
+    expect(topic, "mensuration topic present").toBeDefined();
+    if (!topic) return;
+    expect(topic.subject).toBe("mathematics");
+    expect(topic.key_stage).toBe(4);
+    expect(topic.title).toBe("Area, Perimeter & Volume");
+    expect(topic.prerequisite_tags).toContain("maths_geometry");
+  });
+
+  it("ships the three authored starters, well-formed and computing correctly", () => {
+    const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_mensuration");
+    expect(qs.length).toBe(3);
+    for (const q of qs) {
+      expect(q.subject).toBe("mathematics");
+      expect(q.key_stage).toBe(4);
+      expect(q.correct_index).toBeGreaterThanOrEqual(0);
+      expect(q.correct_index).toBeLessThan(q.options.length);
+      expect(q.explanation.trim().length).toBeGreaterThan(0);
+    }
+    const answerOf = (needle: string) => {
+      const q = qs.find((item) => item.prompt.includes(needle))!;
+      return q.options[q.correct_index];
+    };
+    // Rectangle area 8 * 5 = 40.
+    expect(8 * 5).toBe(40);
+    expect(answerOf("area of a rectangle")).toBe("40 cm²");
+    // Circumference 2 * 3.14 * 5 = 31.4.
+    expect(2 * 3.14 * 5).toBeCloseTo(31.4, 5);
+    expect(answerOf("circumference")).toBe("31.4 cm");
+    // Cube volume 3^3 = 27.
+    expect(3 * 3 * 3).toBe(27);
+    expect(answerOf("volume of a cube")).toBe("27 cm³");
+  });
+
+  it("stays certifiable: at least one practice and two mastery items", () => {
+    const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_mensuration");
+    expect(qs.filter((q) => q.kind === "practice").length).toBeGreaterThanOrEqual(1);
+    expect(qs.filter((q) => q.kind === "mastery").length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
+  it("maths now has 11 GCSE topics (mensuration lifted it past 10)", () => {
+    expect(gcseTopicCount("mathematics")).toBe(11);
+    expect(gcseTopicCount("english")).toBe(10);
+    expect(gcseTopicCount("science")).toBe(10);
+  });
+
+  it("keeps the unlock at the reachable floor, never above the topic count", () => {
+    for (const subject of ["mathematics", "english", "science"] as const) {
+      const needed = mockUnlockCount(subject);
+      // Never asks for more topics than exist (would be unreachable).
+      expect(needed).toBeLessThanOrEqual(gcseTopicCount(subject));
+      // Never exceeds the floor (adding topics does not raise the bar).
+      expect(needed).toBeLessThanOrEqual(MOCK_UNLOCK_FLOOR);
+      expect(needed).toBe(10);
+    }
   });
 });

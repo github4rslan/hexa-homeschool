@@ -75,6 +75,9 @@ const BASE_SEED_TOPICS: SeedTopic[] = [
   { subject: "mathematics", topic_tag: "maths_geometry", title: "Geometry & Angles", summary: "Angle rules, polygons and properties of shapes.", key_stage: 4, working_grade_band: "Grade 3–5", order: 8, prerequisite_tags: ["maths_number"] },
   { subject: "mathematics", topic_tag: "maths_pythagoras", title: "Pythagoras & Trigonometry", summary: "Right-angled triangles, Pythagoras and basic trig ratios.", key_stage: 4, working_grade_band: "Grade 5–7", order: 9, prerequisite_tags: ["maths_geometry"] },
   { subject: "mathematics", topic_tag: "maths_statistics", title: "Statistics & Probability", summary: "Averages, data handling and probability fundamentals.", key_stage: 4, working_grade_band: "Grade 3–6", order: 10, prerequisite_tags: ["maths_fractions"] },
+  // F8 — mensuration strand (area / perimeter / volume / circles), a high-frequency
+  // Edexcel 1MA1 Geometry & Measures area that the bank was missing entirely.
+  { subject: "mathematics", topic_tag: "maths_mensuration", title: "Area, Perimeter & Volume", summary: "Area and perimeter of rectangles, circumference of circles, and volume of solids.", key_stage: 4, working_grade_band: "Grade 2–5", order: 11, prerequisite_tags: ["maths_geometry"] },
 
   // ── English (AQA 8700) ──
   { subject: "english", topic_tag: "eng_spelling", title: "Spelling & Vocabulary", summary: "Common spelling patterns and precise word choice.", key_stage: 4, working_grade_band: "Grade 1–3", order: 1, prerequisite_tags: [] },
@@ -224,6 +227,17 @@ const QUESTIONS_BY_TOPIC: Record<string, QTuple[]> = {
     [3, "practice", "Find the median of 3, 7, 4, 1, 9.", ["3", "4", "7", "1"], 1, "Ordered: 1,3,4,7,9 — the middle value is 4."],
     [3, "mastery", "The probability of an impossible event is:", ["0", "0.5", "1", "−1"], 0, "Impossible events have probability 0."],
     [4, "mastery", "A fair die is rolled. P(even number) = ?", ["1/6", "1/3", "1/2", "2/3"], 2, "Even outcomes 2,4,6 out of 6 = 3/6 = 1/2."],
+  ],
+  // F8 — mensuration starter set (authored by Scout 2026-08-08, owner-approved).
+  // Three checked starters (the owner extends this bank over time). Each has a
+  // classic exam trap as a distractor. All re-derived below.
+  maths_mensuration: [
+    // 1MA1 G16 — 26 cm² is the perimeter trap, 13 cm² is half the perimeter.
+    [2, "practice", "Work out the area of a rectangle 8 cm long and 5 cm wide.", ["13 cm²", "40 cm²", "26 cm²", "20 cm²"], 1, "Area of a rectangle is length times width: 8 times 5 is 40 cm²."],
+    // 1MA1 G17 — 78.5 cm² is the area πr² trap (the classic circumference/area mix-up).
+    [3, "mastery", "A circle has radius 5 cm. Work out its circumference. Use π = 3.14.", ["15.7 cm", "31.4 cm", "78.5 cm", "10 cm"], 1, "Circumference is 2 times π times radius: 2 times 3.14 times 5 is 31.4 cm."],
+    // 1MA1 G17 — 9 cm³ is the 3² area-not-volume trap.
+    [3, "mastery", "Work out the volume of a cube with sides of 3 cm.", ["9 cm³", "27 cm³", "18 cm³", "12 cm³"], 1, "Volume of a cube is side cubed: 3 times 3 times 3 is 27 cm³."],
   ],
 
   // ── English ──
