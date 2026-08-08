@@ -1264,6 +1264,82 @@ export async function listTopicCertificates(
   return out;
 }
 
+export interface VerifiedCertificate {
+  childFirstName: string;
+  topicTitle: string;
+  subjectLabel: string;
+  achievedAt: Date;
+  verificationHash: string;
+}
+
+/**
+ * PUBLIC certificate verification (F5). Given a certificate's SHA-256
+ * verification hash, recompute the hash over every certified topic's canonical
+ * facts (the SAME primitive as `topicCertificate`) and return the matching
+ * certificate's PRINTED facts when found, else null.
+ *
+ * Deliberately un-scoped, like the public `newsletter` route: there is no
+ * parent here (an LA reviewer or a parent holding a printed certificate is
+ * verifying authenticity). It exposes ONLY the fields already printed on the
+ * certificate — child FIRST name, topic, subject, date — and only when the
+ * caller already holds the exact 64-hex hash (not enumerable). No other child
+ * data is ever read or returned, and nothing is written. The route rate-limits
+ * per IP to further deter probing.
+ */
+export async function verifyTopicCertificate(
+  hash: string,
+): Promise<VerifiedCertificate | null> {
+  const clean = (hash ?? "").trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(clean)) return null;
+
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const comps = await compCol.find({ state: "certified" }).toArray();
+  if (comps.length === 0) return null;
+
+  const childIds = [
+    ...new Map(comps.map((c) => [c.child_id.toHexString(), c.child_id])).values(),
+  ];
+  const tags = [...new Set(comps.map((c) => c.topic_tag))];
+
+  const childrenCol = await getCollection<ChildDoc>(Collections.children);
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const [children, topics] = await Promise.all([
+    childrenCol.find({ _id: { $in: childIds } }).toArray(),
+    topicsCol.find({ topic_tag: { $in: tags } }).toArray(),
+  ]);
+  const firstNameById = new Map(
+    children.map((c) => [c._id!.toHexString(), c.full_name.split(" ")[0]]),
+  );
+  const topicByTag = new Map(topics.map((t) => [t.topic_tag, t]));
+
+  for (const comp of comps) {
+    const firstName = firstNameById.get(comp.child_id.toHexString());
+    const topic = topicByTag.get(comp.topic_tag);
+    if (!firstName || !topic) continue;
+    const achievedAt = comp.certified_at
+      ? new Date(comp.certified_at)
+      : new Date();
+    const candidate = await sha256Hex(
+      JSON.stringify({
+        kind: "topic-certificate",
+        childFirstName: firstName,
+        topic: comp.topic_tag,
+        achievedAt: achievedAt.toISOString().slice(0, 10),
+      }),
+    );
+    if (candidate === clean) {
+      return {
+        childFirstName: firstName,
+        topicTitle: topic.title,
+        subjectLabel: SUBJECT_DISPLAY[topic.subject],
+        achievedAt,
+        verificationHash: clean,
+      };
+    }
+  }
+  return null;
+}
+
 /**
  * Deterministic learning insights for a child's detail page. Pulls completed
  * lessons + check-ins, hands them to the pure `buildInsights` engine, and
