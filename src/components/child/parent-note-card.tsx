@@ -162,7 +162,7 @@ export function ParentNoteCard({
             type="button"
             onClick={dismiss}
             aria-label="Hide note"
-            className="child-touch -mr-1 -mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-fog-500 transition-colors hover:bg-white/5 hover:text-fog-200"
+            className="child-touch -mr-1 -mt-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-fog-500 transition-colors hover:bg-white/5 hover:text-fog-200"
           >
             <X className="h-5 w-5" />
           </button>
