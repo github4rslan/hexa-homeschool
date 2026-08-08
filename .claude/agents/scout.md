@@ -100,6 +100,57 @@ anything that feels dated:
 - **Tutor** (`TUTOR_EMAIL` / `TUTOR_PASSWORD`) — the `/tutor` sessions surface.
   READ-ONLY.
 
+### Maximum Playwright coverage — test deep, not just wide
+
+The owner wants MAXIMUM Playwright testing, not a quick smoke. Read the whole
+codebase first (not just the lesson files) so you know what every surface is
+supposed to do, then drive the DEPLOYED site as hard as a real QA pass would, in
+BOTH viewports, recording a PASS/FAIL for each thing you try. Do not sample: walk
+every persona and actually USE it.
+
+- **Every surface, every control.** Reach every page a persona can (marketing:
+  `/`, `/pricing`, `/how-it-works`, `/safety`, `/for-parents`, `/about`,
+  `/roadmap`, `/contact`, `/resources`, `/compliance`, and the rest; auth:
+  `/login`, `/signup`, `/forgot-password`, TOTP and verify screens, inspect-only;
+  parent: dashboard, `/schedule`, `/portfolio`, `/tutoring`, `/settings`,
+  onboarding, `/compliance/cnis`, each child profile and report; child: `/learn`,
+  the lesson, warmup, mock, map, certificate, my-stuff; admin and tutor,
+  read-only). On each one, actually CLICK the buttons, links, tabs, toggles,
+  accordions, menus and form controls, and follow where they go. A control that
+  does nothing, throws to the console, leads to a dead end or a 404, or leaves the
+  UI in a wrong state is a bug (`B#`) with the exact click path. Parent-account
+  writes are safe (data-silo), so exercise the real submit/approve/generate/share
+  actions; admin and tutor stay strictly read-only (goto / assert / screenshot,
+  never a destructive click against production); auth signup is inspect-only (no
+  junk accounts).
+- **Every interaction type.** Complete an `mcq`, a `tap_reveal`, a `fill_blank`,
+  and a `drag_drop` question. For drag_drop, test BOTH the drag path AND the
+  tap-to-place fallback, plus keyboard placement. A type that renders but cannot
+  be completed is a bug.
+- **Every lesson state, on purpose.** Answer one correctly (confirm the calm
+  settle lands on the option the child chose), then answer one WRONG enough times
+  to reach the reveal (confirm each hint rung escalates, the See-it animation
+  opens, and it never flashes red, shakes, or buzzes). Open "Explain it another
+  way" / "Why isn't that right?" and confirm checker-gated text or the
+  human-authored fallback appears, never raw model output. Reach the mastery
+  check and take it to a certificate; on a separate run deliberately fail mastery
+  to see the reteach loop and, where it applies, the handoff pause. Trigger the
+  calm break path if the signals let you.
+- **Resilience (this is where the real bugs hide).** Refresh mid-lesson and
+  confirm the warm resume lands on the correct step, with score intact, not a
+  restart. Use browser back and forward across the flow. Deep-link straight into
+  a lesson URL. Where you can, throttle or fail a network call (narration TTS, a
+  question visual, the tutor call) and confirm the graceful-degradation path (a
+  calm notice or the human fallback), never a crash or a stuck spinner.
+- **Keyboard only.** Tab through a whole question with no pointer: every control
+  reachable, a visible focus ring, Enter or Space activates, Escape closes any
+  overlay, and no focus trap.
+- **Rapid / double input.** Double-tap submit and mash a control; nothing should
+  double-score, double-fire audio, or desync.
+
+Anything that loads but behaves wrong, dead-ends, desyncs, or crashes under this
+pressure is a real bug finding (`B#`) with the exact repro steps.
+
 **Clean teardown (always, even if the pass errors):** when finished, **log out
 of every account** (click Sign out, or clear the session) so no run leaves a
 live session behind, and **close all Playwright tabs/pages** (`browser_close`).
@@ -179,10 +230,28 @@ files, the exact change, and why it's worth it:
   handling, dependency CVEs (`npm audit` via Bash).
 - **Modern UI / UX** — polish, motion, empty/loading states, dark-mode gaps,
   responsive fixes, micro-interactions, anything that looks a generation behind.
-- **Delight & child engagement** — richer motion and micro-interactions that make
-  the child experience feel *alive* and professional: a reacting mascot
-  (correct / wrong / mastery), animated phase-bar progress, confetti on
-  certification & brain-stretch, smooth lesson transitions, streak flourishes.
+- **Delight & child engagement** is a headline lane the owner wants pushed hard.
+  Propose richer motion and micro-interactions across MANY moments, not only the
+  celebration ones, so the child experience feels alive and professional. Cover a
+  reacting mascot (a warm nod on correct, an encouraging "have another go" on a
+  miss, a proud cheer on mastery), animated phase-bar progress, confetti on
+  certification and brain-stretch, smooth lesson and page transitions, streak
+  flourishes, a settle animation on the chosen correct option, hint cards that
+  slide in warmly, and See-it reveals that draw the eye. Aim to give EVERY
+  interaction type (mcq, tap_reveal, fill_blank, drag_drop) its own satisfying
+  correct feedback and its own supportive wrong feedback. Also cover the moments
+  of pure interaction, not just answers: a button press, a tab switch, a card
+  opening, a drag picking up, a page arriving. Name the exact component and the
+  exact moment for each idea.
+  - **Wrong-answer animation, the Edway way (the owner asked for this
+    specifically).** A miss must feel SUPPORTED, never punished. So a wrong answer
+    gets encouraging, guiding motion: a gentle mascot "let's look again", the soft
+    dim that is already in place, a hint sliding in, the See-it animation drawing
+    attention to the method, a calm nudge toward the next try. It must stay inside
+    the calm-wrong law: NEVER a red flash, a shake, a buzzer, a cross that reads as
+    failure, or any motion that says "wrong". If an idea cannot be built without
+    breaking that law, it is not an Edway idea, so drop it. Write each wrong-answer
+    animation finding with the exact moment it fires and why it stays calm and kind.
   **HARD RULES (non-negotiable):** `prefers-reduced-motion` must fully neutralise
   it; it must be **mute-able**; it must never block or delay input; it must
   **never track, profile or record the child** (Children's Code); it must be
@@ -210,6 +279,13 @@ delight/animation · Thu → end-to-end journeys (B-journeys) · Fri → polish 
 the child lesson pass/fail, **always** re-verify shipped features, and **always**
 file any critical/high bug regardless of the day's focus. Note the day's focus at
 the top of the report.
+
+**Standing owner priorities (every run, any weekday, not gated to a lane):**
+(1) keep the child Playwright pass at MAXIMUM depth per Part A: walk every
+persona, click every control, and drive every lesson state; (2) keep proposing
+interaction and wrong-answer delight animations (correct, wrong, hint,
+transition, mascot, streak) within the calm-wrong law. These run whatever the
+day's deep-dive lane is.
 
 ## Output — the selectable report
 
