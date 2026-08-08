@@ -9,6 +9,7 @@ import {
   LifeBuoy,
   Moon,
   PlayCircle,
+  Rocket,
   type LucideProps,
 } from "lucide-react";
 import { attemptsPhrase } from "@/lib/engine/parent-events";
@@ -21,6 +22,7 @@ export interface ActivityFeedRow {
     | "handoff"
     | "inactivity"
     | "reflection"
+    | "band_promotion"
     | "lesson_completed"
     | "lesson_started";
   childName: string;
@@ -56,6 +58,11 @@ const STYLES: Record<ActivityFeedRow["kind"], Style> = {
     Icon: Heart,
     ring: "bg-rose-500/10 border-rose-400/25",
     icon: "text-rose-300",
+  },
+  band_promotion: {
+    Icon: Rocket,
+    ring: "bg-neon-500/10 border-neon-400/30",
+    icon: "text-neon-300",
   },
   lesson_completed: {
     Icon: CheckCircle2,
@@ -96,6 +103,13 @@ function present(row: ActivityFeedRow): { title: string; detail: string } {
       return {
         title: "How today felt",
         detail: row.topicTitle?.trim() || `${first} · shared a reflection`,
+      };
+    case "band_promotion":
+      // topicTitle carries the warm parent-facing subject+stage phrase, e.g.
+      // "Science, now at lower-secondary level".
+      return {
+        title: "Moved up a stage 🚀",
+        detail: `${first} · ${row.topicTitle?.trim() || "a new stage unlocked"}`,
       };
     case "lesson_completed":
       return { title: "Completed a lesson", detail: `${first} · ${topic}` };

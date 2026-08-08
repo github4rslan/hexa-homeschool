@@ -4797,6 +4797,7 @@ export interface ActivityFeedItem {
     | "handoff"
     | "inactivity"
     | "reflection"
+    | "band_promotion"
     | "lesson_completed"
     | "lesson_started";
   childName: string;

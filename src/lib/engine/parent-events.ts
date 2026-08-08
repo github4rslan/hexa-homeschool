@@ -13,7 +13,11 @@
  *    a child-facing engagement hook.
  */
 
-export type ParentEventType = "mastery" | "handoff" | "inactivity";
+export type ParentEventType =
+  | "mastery"
+  | "handoff"
+  | "inactivity"
+  | "band_promotion";
 
 export interface ParentEventCopyInput {
   type: ParentEventType;
@@ -23,6 +27,15 @@ export interface ParentEventCopyInput {
   topicTitle?: string | null;
   /** Mastery only: attempts it took to certify (≥ 1). */
   attempts?: number | null;
+  /** Band promotion only: warm parent-facing subject label, e.g. "Science". */
+  subjectLabel?: string | null;
+  /**
+   * Band promotion only: warm parent-facing stage label, e.g. "lower-secondary
+   * level". Parent-facing by design — the key-stage register is NEVER shown to
+   * the child (banding is a parent concept), so this only ever reaches the
+   * dashboard feed / email / SMS.
+   */
+  bandLabel?: string | null;
 }
 
 export interface ParentEventCopy {
@@ -126,6 +139,19 @@ export function buildParentEventCopy(
         emailBody: `Just a gentle nudge — ${name} hasn't started a lesson today yet. No pressure at all; some days are quieter than others. Whenever it suits, today's quests are ready and waiting.`,
         emailCta: "Open the dashboard",
         smsBody: `Edway: a gentle reminder — ${name} hasn't started a lesson today. Their quests are ready whenever it suits.`,
+      };
+    }
+    case "band_promotion": {
+      const subjectLabel = (input.subjectLabel ?? "").trim() || "their studies";
+      const bandLabel = (input.bandLabel ?? "").trim() || "a new stage";
+      return {
+        feedTitle: `Moved up a stage in ${subjectLabel}`,
+        feedDetail: `${name} · now working at ${bandLabel} 🚀`,
+        emailSubject: `${name} moved up a stage in ${subjectLabel}! 🚀`,
+        emailHeadline: `${name} moved up a stage!`,
+        emailBody: `${name} has certified every topic in their ${subjectLabel} stage and moved up to ${bandLabel}. That is the biggest kind of progress on Edway: a whole new stage of the curriculum unlocked. A brilliant milestone worth celebrating together.`,
+        emailCta: "See the progress",
+        smsBody: `Edway: ${name} moved up a stage in ${subjectLabel} — now working at ${bandLabel} 🚀`,
       };
     }
   }

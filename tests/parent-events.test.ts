@@ -118,6 +118,37 @@ describe("buildParentEventCopy — inactivity", () => {
   });
 });
 
+describe("buildParentEventCopy — band promotion (F2)", () => {
+  const copy = buildParentEventCopy({
+    type: "band_promotion",
+    childFirstName: "Ivy",
+    subjectLabel: "Science",
+    bandLabel: "lower-secondary level",
+  });
+
+  it("celebrates the whole-stage move with the subject + parent band label", () => {
+    expect(copy.feedTitle).toContain("Science");
+    expect(copy.feedDetail).toContain("Ivy");
+    expect(copy.feedDetail).toContain("lower-secondary level");
+    expect(copy.emailSubject).toContain("Ivy");
+    expect(copy.emailSubject).toContain("Science");
+    expect(copy.emailHeadline).toContain("moved up a stage");
+    expect(copy.emailBody).toContain("lower-secondary level");
+    expect(copy.smsBody).toContain("Science");
+  });
+
+  it("falls back safely when labels are missing (never renders undefined)", () => {
+    const bare = buildParentEventCopy({
+      type: "band_promotion",
+      childFirstName: "Mia",
+    });
+    expect(bare.feedTitle).not.toContain("undefined");
+    expect(bare.emailSubject).not.toContain("undefined");
+    expect(bare.smsBody).not.toContain("undefined");
+    expect(bare.emailBody).toContain("a new stage");
+  });
+});
+
 describe("buildParentEventCopy — legacy safety", () => {
   it("falls back to a safe topic word when the title is missing", () => {
     for (const type of ["mastery", "handoff"] as ParentEventType[]) {
