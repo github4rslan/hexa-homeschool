@@ -680,3 +680,60 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   (most bands topics use StepReveal). Lesson: on the mobile pass, open a lesson whose title is LONG and
   check both explainer variants, not just the worked-example one. Teardown: fetch('/logout',POST)→200
   between each role switch + browser_close. Emailing owner the scenario summary via scripts/email-findings.ts.
+- 2026-08-08 — Mechanic build run, DECISION `all` (B1, B2 + F1-F6, 8 items, no cap; findings 2026-08-08).
+  ALL 8 SHIPPED, each green-gated (type-check + 713 tests + lint + build, one commit, pushed to main) AND
+  live-verified on edway.uk (deploy 7e8fa80 waited to READY via Vercel MCP; zero browser console errors +
+  zero Vercel runtime errors all session). **B1** child summary-explainer header overflow at 390: added
+  `min-w-0` to the flex child + inner title div + `break-words` on the h1 in explainer.tsx (mirrors the
+  StepReveal sibling). Live on maths_fractions at 390: scrollW 380 = clientW 380, overflow 0 (was 411 vs
+  390). **B2** two child chrome tap targets <44px: hide-note btn h-10 w-10 -> h-11 w-11, child-header logo
+  link min-h-11 py-1. Live measured: logo 96x44 (was 96x32), hide-note 44x64 (was 40x64), both >=44.
+  **F1** nanoid CVE: `npm audit fix` bumped nested nanoid 3.3.16->3.3.18 (lockfile only, audit->0). NOTE:
+  the scout report + `npm audit` said "nanoid <3.3.17" but the INSTALLED version was already 3.3.18 in one
+  branch and 3.3.16 in postcss's tree; audit fix cleared it to 0. No live surface, gate-verified only.
+  **F2** band-promotion milestone (KS2->KS3->KS4): detect a whole-band advance in logLessonCompletion by
+  comparing `currentBandForSubject` before/after the certifying upsertCompetence; emit a deduped
+  `band_promotion` parent_events row (new type across types.ts/parent-events.ts/activity-feed/email
+  template + repo ActivityFeedItem) via the existing pushEventNotification (email/SMS/web-push, opt-out
+  aware) AND a warm child-mode celebration on the certified screen. KEY invariant: the key-stage BAND label
+  is PARENT-only — the child result returns `{ subjectLabel }` (child-safe subject name, no KS), so the
+  celebration reads "You unlocked a whole new set of {Maths|English|Science} adventures!" never "KS3". Pure
+  copy unit-tested. LIVE: gate + unit only — driving a real band crossing needs certifying an entire
+  remaining band (fragile 30+ interactions), deferred per the resilience note; certified-screen + activity
+  feed render clean. **F3** canvas-confetti (added zero-dep 1.9.4 + @types, audit 0): tiny
+  `components/fx/confetti-burst.tsx` fires a ~1s pop on the certified screen + child certificate, DOUBLE
+  reduced-motion gated (useReducedMotion early-return + lib disableForReducedMotion), pointer-events-none
+  (lib default) so it never blocks a tap, dynamic import so it's a bundled chunk (NO CDN). Live on the
+  child certificate: page renders clean, ZERO console errors, ZERO external/CDN network fetch (self-hosted);
+  canvas is transient so it was gone by eval time (expected). **F4** @axe-core/playwright (dev-only devDep
+  4.12.1, only pulls axe-core, audit 0): `e2e/a11y-audit.ts` helper + a11y.public/a11y.authed specs +
+  playwright.a11y.config.ts + `npm run a11y`. Groups violations by impact, FAILS on any critical (highest
+  bar so pre-existing lesser issues don't red it). LIVE-RAN `npm run a11y --project=public` against edway.uk:
+  2 passed, 0 critical, and it surfaced 1 pre-existing SERIOUS color-contrast on marketing / (the tool's
+  whole value). **F5** public /verify-certificate page + /verify-certificate/<hash> deep link + rate-limited
+  `/api/verify-certificate` (per-IP, 20/min like newsletter). New repo `verifyTopicCertificate(hash)`
+  recomputes the SHA-256 over every certified topic's canonical facts (same primitive as topicCertificate)
+  and returns ONLY the printed facts (first name/topic/subject/date). GOTCHA: `(auth)/verify` already owns
+  `/verify`, so an optional catch-all at `/verify/[[...hash]]` is SHADOWED at the base path — relocated to
+  `/verify-certificate/[[...hash]]` (clean, no collision). Live-verified all 3 paths: invalid-format ->
+  guidance, valid-but-unknown -> "No matching certificate", real Ivy sci_ks3_cells hash deep-link ->
+  "Verified authentic · Ivy mastered Cells & Organisms (Science), awarded 2026-08-08". **F6** 7-dot week
+  streak strip on the child hub: pure `weekStrip(completionMs, now)` engine fn (Mon..Sun, active/isToday/
+  future, +5 tests) + `childWeekStrip` repo reader + static `WeekStrip` component (accent-driven, no motion
+  so inherently reduced-motion-safe, no tracking). Live on Ivy's hub at 390: "This week: 4 days with a
+  completed lesson", no overflow. KEY LEARNINGS: (1) when a new PUBLIC route's URL segment overlaps an
+  existing route group (here `/verify`), an optional catch-all silently loses the base path to the existing
+  static page — grep `find src/app -type d -name <seg>` BEFORE choosing the path; a distinct name
+  (`/verify-certificate`) is cleaner than fighting the collision. (2) A new `parent_events` `type` fans out
+  to ~5 sites (ParentEventDoc union, ParentEventType, buildParentEventCopy switch, activity-feed STYLES +
+  present() switch, repo ActivityFeedItem union, email template `kind` union) — type-check + the exhaustive
+  switch catch them all; add the key everywhere a union/Record exists. (3) To detect a band crossing
+  deterministically, snapshot `currentBandForSubject` BEFORE the certifying write and compare AFTER — it
+  reads certified rows from the DB so the before/after bracket around upsertCompetence gives the exact
+  delta; keep the band label out of the child-facing return type entirely (return only a child-safe subject
+  label) so the parent-only-banding invariant is enforced at the boundary. (4) canvas-confetti + axe-core/
+  playwright both have LEAN dep trees (canvas-confetti zero deps; @axe-core/playwright only axe-core) — no
+  minimatch/brace-expansion drag, audit stayed 0. (5) MCP `browser_type`/`browser_click` flaked on
+  ref-based + `has-text` name selectors ("Unexpected token while parsing css selector"); a plain CSS
+  selector target (`#cert-hash`, `button:has-text("Verify")`) worked. Teardown: fetch('/logout',POST)->200
+  + browser_close. Health: newest prod deploy READY, /api/health reachable, runtime errors clean.
