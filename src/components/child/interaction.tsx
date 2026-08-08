@@ -322,6 +322,10 @@ const TapReveal = forwardRef<
           const chosen = selected === i;
           const showCorrect = reveal && i === it.correctCard;
           const showWrong = reveal && chosen && i !== it.correctCard;
+          // Calm-law reward: the settle flourish fires ONLY on the card the child
+          // actually chose right (chosen ∧ correct) — never on a shown answer they
+          // missed, and never any red/shake on a wrong pick (that stays a soft dim).
+          const celebrate = showCorrect && chosen;
           return (
             <button
               key={i}
@@ -330,7 +334,7 @@ const TapReveal = forwardRef<
               onClick={() => tap(i)}
               disabled={reveal}
               className={cn(
-                "child-touch relative flex flex-col items-start justify-center gap-1 rounded-3xl border-2 px-5 py-4 text-left transition-all",
+                "child-touch relative flex flex-col items-start justify-center gap-1 overflow-hidden rounded-3xl border-2 px-5 py-4 text-left transition-all",
                 "focus-visible:outline-none focus-visible:ring-4",
                 accent.ring,
                 !reveal && chosen && cn(accent.border, accent.bg),
@@ -341,7 +345,20 @@ const TapReveal = forwardRef<
                 showWrong && "border-white/10 bg-white/[0.02] opacity-60 saturate-50",
               )}
             >
-              <span className="text-sm font-mono uppercase tracking-widest text-fog-500">
+              {celebrate && !reduced && (
+                <motion.span
+                  aria-hidden
+                  initial={{ scaleX: 0, opacity: 0.35 }}
+                  animate={{ scaleX: 1, opacity: 0.18 }}
+                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  style={{ originX: 0 }}
+                  className={cn(
+                    "pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-r",
+                    accent.bar,
+                  )}
+                />
+              )}
+              <span className="relative z-10 text-sm font-mono uppercase tracking-widest text-fog-500">
                 {card.label}
               </span>
               {isFlipped ? (
@@ -351,7 +368,7 @@ const TapReveal = forwardRef<
                   animate={{ opacity: 1, rotateX: 0 }}
                   transition={{ duration: 0.25, ease: [0.34, 1.56, 0.64, 1] }}
                   className={cn(
-                    "text-xl font-semibold",
+                    "relative z-10 text-xl font-semibold",
                     chosen && !reveal ? accent.text : "text-fog-50",
                     showCorrect && "text-neon-300",
                   )}
@@ -359,10 +376,16 @@ const TapReveal = forwardRef<
                   {card.reveal}
                 </motion.span>
               ) : (
-                <span className="text-lg text-fog-400">Tap to reveal</span>
+                <span className="relative z-10 text-lg text-fog-400">Tap to reveal</span>
               )}
               {showCorrect && (
-                <Check className="absolute right-4 top-4 h-6 w-6 text-neon-400" />
+                <span className="absolute right-4 top-4 z-10">
+                  {celebrate ? (
+                    <DrawnCheck reduced={!!reduced} />
+                  ) : (
+                    <Check className="h-6 w-6 text-neon-400" />
+                  )}
+                </span>
               )}
             </button>
           );
@@ -608,7 +631,7 @@ const DragDrop = forwardRef<
                     : `${slot.label}: empty. Activate to place the selected piece.`
                 }
                 className={cn(
-                  "child-touch flex flex-1 items-center justify-center rounded-2xl border-2 border-dashed px-5 text-lg transition-all",
+                  "child-touch relative flex flex-1 items-center justify-center gap-2 overflow-hidden rounded-2xl border-2 border-dashed px-5 text-lg transition-all",
                   "focus-visible:outline-none focus-visible:ring-4",
                   accent.ring,
                   chip === null && "border-white/15 text-fog-500",
@@ -617,8 +640,25 @@ const DragDrop = forwardRef<
                   wrong && "border-solid border-white/10 bg-white/[0.02] text-fog-300 opacity-60 saturate-50",
                 )}
               >
+                {/* Calm-law reward: the settle sweep + drawn check fire only on a
+                    slot the child placed CORRECTLY. Wrong placements stay a soft
+                    dim (handled above), never red. */}
+                {correct && !reduced && (
+                  <motion.span
+                    aria-hidden
+                    initial={{ scaleX: 0, opacity: 0.35 }}
+                    animate={{ scaleX: 1, opacity: 0.18 }}
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ originX: 0 }}
+                    className={cn(
+                      "pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r",
+                      accent.bar,
+                    )}
+                  />
+                )}
                 {chip !== null ? (
                   <motion.span
+                    className="relative z-10"
                     initial={reduced ? false : { scale: 0.8, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.2, ease: [0.34, 1.56, 0.64, 1] }}
@@ -627,6 +667,11 @@ const DragDrop = forwardRef<
                   </motion.span>
                 ) : (
                   <span className="text-fog-600">Drop or tap here</span>
+                )}
+                {correct && (
+                  <span className="relative z-10">
+                    <DrawnCheck reduced={!!reduced} />
+                  </span>
                 )}
               </button>
             </div>
