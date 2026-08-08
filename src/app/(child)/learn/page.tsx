@@ -31,12 +31,11 @@ import { readActiveChildId } from "@/lib/active-child";
 import { accentPreset } from "@/lib/child/accents";
 import { isBirthdayToday } from "@/lib/child/birthday";
 import { WeekInReview } from "@/components/dashboard/week-in-review";
+import { mockUnlockCount } from "@/lib/engine/mock-gate";
 import type { Subject } from "@/lib/db/types";
 
 export const metadata: Metadata = { title: "Learn" };
 export const dynamic = "force-dynamic";
-
-const TOPICS_PER_SUBJECT = 10;
 
 const SUBJECTS: {
   id: Subject;
@@ -124,8 +123,9 @@ export default async function LearnHubPage() {
 
   const quests: Quest[] = SUBJECTS.map((s) => {
     const done = certified[s.id] ?? 0;
-    const courseDone = Math.min(done, TOPICS_PER_SUBJECT);
-    const courseCertified = done >= TOPICS_PER_SUBJECT;
+    const needed = mockUnlockCount(s.id);
+    const courseDone = Math.min(done, needed);
+    const courseCertified = done >= needed;
     const topicTag = resolvedBySubject.get(s.id)?.topicTag;
     // A topic resting for a tutor handoff shows as a calm "resting" card rather
     // than a normal quest — the child isn't pushed back into it (no advancement
@@ -160,8 +160,8 @@ export default async function LearnHubPage() {
       comingSoon,
       certified: courseCertified,
       todaysPlan,
-      progressLabel: `${courseDone}/${TOPICS_PER_SUBJECT}`,
-      progressPct: Math.round((courseDone / TOPICS_PER_SUBJECT) * 100),
+      progressLabel: `${courseDone}/${needed}`,
+      progressPct: Math.round((courseDone / needed) * 100),
     };
   });
 

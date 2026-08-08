@@ -13,6 +13,7 @@ import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
 import { MockExamPlayer } from "@/components/child/mock-exam-player";
 import { MockResultView } from "@/components/child/mock-result-view";
+import { mockUnlockCount } from "@/lib/engine/mock-gate";
 
 export const metadata: Metadata = { title: "Mock exam" };
 export const dynamic = "force-dynamic";
@@ -22,7 +23,6 @@ const SUBJECT_LABEL: Record<Subject, string> = {
   english: "English",
   science: "Science",
 };
-const TOPICS_PER_SUBJECT = 10;
 
 function isSubject(s: string): s is Subject {
   return s === "mathematics" || s === "english" || s === "science";
@@ -42,7 +42,7 @@ export default async function MockSubjectPage({
   if (!child?._id) redirect("/dashboard");
 
   const certified = await certifiedBySubject(child._id);
-  if ((certified[subject] ?? 0) < TOPICS_PER_SUBJECT) {
+  if ((certified[subject] ?? 0) < mockUnlockCount(subject)) {
     redirect("/learn/mock");
   }
 

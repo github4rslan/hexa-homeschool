@@ -10,6 +10,7 @@ import {
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
+import { mockUnlockCount } from "@/lib/engine/mock-gate";
 
 export const metadata: Metadata = { title: "Mock exam" };
 export const dynamic = "force-dynamic";
@@ -19,7 +20,6 @@ const SUBJECTS = [
   { id: "english", label: "English", icon: BookText, accent: "from-cyan-500 to-cyan-700" },
   { id: "science", label: "Science", icon: FlaskConical, accent: "from-neon-500 to-neon-600" },
 ] as const;
-const TOPICS_PER_SUBJECT = 10;
 
 export default async function MockHubPage() {
   const parentId = await currentParentId();
@@ -58,18 +58,16 @@ export default async function MockHubPage() {
         {SUBJECTS.map((s) => {
           const Icon = s.icon;
           const state = stateBySubject.get(s.id as Subject);
-          const certifiedCount = Math.min(
-            certified[s.id as Subject] ?? 0,
-            TOPICS_PER_SUBJECT,
-          );
-          const unlocked = certifiedCount >= TOPICS_PER_SUBJECT;
+          const needed = mockUnlockCount(s.id as Subject);
+          const certifiedCount = Math.min(certified[s.id as Subject] ?? 0, needed);
+          const unlocked = certifiedCount >= needed;
 
           if (!unlocked) {
             return (
               <div
                 key={s.id}
                 className="child-panel flex items-center gap-5 p-6 opacity-80"
-                aria-label={`${s.label} mock locked until 10 topics are certified`}
+                aria-label={`${s.label} mock locked until ${needed} topics are certified`}
               >
                 <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl border-2 border-white/10 bg-white/[0.04]">
                   <Lock className="h-9 w-9 text-fog-400" />
@@ -79,7 +77,7 @@ export default async function MockHubPage() {
                     {s.label} mock locked
                   </div>
                   <p className="mt-1 text-base text-fog-400">
-                    Certify {TOPICS_PER_SUBJECT}/10 topics to unlock it. You have {certifiedCount}/10.
+                    Certify {needed} topics to unlock it. You have {certifiedCount}/{needed}.
                   </p>
                 </div>
               </div>
