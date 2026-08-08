@@ -34,6 +34,9 @@ export function MockExamPlayer({
   questions,
   durationSeconds,
   keyStage,
+  paperLabel,
+  conditionLine,
+  tierLabel,
 }: {
   subject: Subject;
   subjectLabel: string;
@@ -41,6 +44,10 @@ export function MockExamPlayer({
   durationSeconds: number;
   /** Child's current band — tone guidance for post-exam AI explanations only. */
   keyStage?: number;
+  /** Exam-day framing (F9): calc/non-calc badge + calm condition line + tier. */
+  paperLabel?: string;
+  conditionLine?: string;
+  tierLabel?: "Foundation" | "Higher";
 }) {
   const router = useRouter();
   const reduce = useReducedMotion();
@@ -119,6 +126,26 @@ export function MockExamPlayer({
   // ── Exam screen ──────────────────────────────────────────
   return (
     <div>
+      {(paperLabel || conditionLine) && (
+        <div className="mb-5 rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            {paperLabel && (
+              <span className="inline-flex items-center rounded-full border border-violet-400/30 bg-violet-500/10 px-3 py-1 text-sm font-semibold text-violet-200">
+                {paperLabel}
+              </span>
+            )}
+            {tierLabel && (
+              <span className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-sm font-medium text-fog-300">
+                {tierLabel} tier
+              </span>
+            )}
+          </div>
+          {conditionLine && (
+            <p className="text-base text-fog-300">{conditionLine}</p>
+          )}
+        </div>
+      )}
+
       <div className="mb-6 flex items-center justify-between">
         <span className="text-base font-medium text-fog-300">
           {subjectLabel} mock · {index + 1} of {questions.length}
