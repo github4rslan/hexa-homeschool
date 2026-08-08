@@ -4,6 +4,7 @@ import {
   nextReview,
   isReviewDue,
   dueReviewTopics,
+  interleaveDueReviews,
   FIRST_REVIEW_DAYS,
   MIN_INTERVAL_DAYS,
   MAX_INTERVAL_DAYS,
@@ -89,5 +90,70 @@ describe("dueReviewTopics (spaced-repetition daily review selection)", () => {
 
   it("returns nothing when no topic is due", () => {
     expect(dueReviewTopics([cand("a", 3), cand("b", 10)], NOW)).toEqual([]);
+  });
+});
+
+describe("interleaveDueReviews (F10 interleaved warm-up)", () => {
+  const cand = (
+    tag: string,
+    subject: string,
+    offsetDays: number | null,
+  ) => ({
+    tag,
+    subject,
+    nextReviewAt: offsetDays === null ? null : new Date(NOW + offsetDays * DAY),
+  });
+
+  it("round-robins across subjects instead of blocking one subject", () => {
+    // Maths is most-overdue overall, but three maths topics shouldn't all run
+    // back-to-back — science and english should be interleaved between them.
+    const items = [
+      cand("m1", "mathematics", -20),
+      cand("m2", "mathematics", -18),
+      cand("m3", "mathematics", -16),
+      cand("s1", "science", -10),
+      cand("e1", "english", -8),
+    ];
+    const out = interleaveDueReviews(items, NOW).map((x) => x.tag);
+    // Most-overdue (m1) still leads (spacing preserved).
+    expect(out[0]).toBe("m1");
+    // The next two are NOT both maths — variety kicks in.
+    expect(out.slice(1, 3).sort()).toEqual(["e1", "s1"]);
+    // Every due topic still appears exactly once.
+    expect(out.sort()).toEqual(["e1", "m1", "m2", "m3", "s1"]);
+  });
+
+  it("keeps the most-overdue item first even after interleaving", () => {
+    const items = [
+      cand("s1", "science", -3),
+      cand("m1", "mathematics", -30), // clearly most overdue
+      cand("m2", "mathematics", -25),
+    ];
+    expect(interleaveDueReviews(items, NOW)[0].tag).toBe("m1");
+  });
+
+  it("is deterministic and respects max", () => {
+    const items = [
+      cand("m1", "mathematics", -20),
+      cand("s1", "science", -18),
+      cand("m2", "mathematics", -16),
+      cand("e1", "english", -14),
+    ];
+    const first = interleaveDueReviews(items, NOW, 3).map((x) => x.tag);
+    const second = interleaveDueReviews(items, NOW, 3).map((x) => x.tag);
+    expect(first).toEqual(second);
+    expect(first.length).toBe(3);
+    expect(first[0]).toBe("m1");
+  });
+
+  it("falls back to most-overdue order when only one subject is due", () => {
+    const items = [
+      cand("m2", "mathematics", -5),
+      cand("m1", "mathematics", -12),
+    ];
+    expect(interleaveDueReviews(items, NOW).map((x) => x.tag)).toEqual([
+      "m1",
+      "m2",
+    ]);
   });
 });
