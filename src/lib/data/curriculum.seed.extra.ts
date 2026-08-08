@@ -136,7 +136,13 @@ const EXTRA_BY_TOPIC: Record<string, QTuple[]> = {
   ],
   sci_body: [
     [3, "practice", "Which carries oxygen in the blood?", ["plasma", "red blood cells", "platelets", "white blood cells"], 1, "Red blood cells carry oxygen using haemoglobin."],
-    [3, "diagnostic", "Where is most water absorbed in digestion?", ["stomach", "large intestine", "mouth", "oesophagus"], 1, "The large intestine absorbs most remaining water."],
+    // B3: retired the earlier "Where is most water absorbed in digestion?" item.
+    // At GCSE the SMALL intestine absorbs most water, so the old keyed answer
+    // ("large intestine") contradicted the word "most". Reworded to test the
+    // large intestine's actual role unambiguously. The seed upserts on
+    // topic_tag + prompt, so this new prompt is a clean insert; the retired row
+    // is deleted from the live bank in the same change (see the run log).
+    [3, "diagnostic", "Which organ's main job is to reabsorb water from the material left after digestion?", ["stomach", "large intestine", "mouth", "liver"], 1, "The large intestine (colon) reabsorbs water from the material left after the small intestine has absorbed the digested food."],
     [4, "mastery", "Which vessel returns blood to the heart?", ["artery", "vein", "capillary", "aorta"], 1, "Veins return blood to the heart."],
   ],
   sci_states: [
