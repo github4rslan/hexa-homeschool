@@ -76,6 +76,24 @@ off.
 6. Missing env vars degrade gracefully (typed error → 503/no-op), never crash.
 7. MongoDB only — never add Supabase/Postgres.
 
+### Child-facing motion (delight) default
+
+When you build any animation, celebration, mascot, or micro-interaction finding
+that renders in a `(child)` route, apply this pattern by default, even if the
+finding's spec is thin:
+1. Fully neutralise it under `prefers-reduced-motion` (instant, no motion),
+   matching the app's existing reduced-motion handling.
+2. Make it mute-able / honour an off setting, and never block, gate, or delay the
+   child's input behind an animation. Delight is additive, never a checkpoint.
+3. Never track, profile, time, or record the child (no analytics in `(child)`,
+   Children's Code). A celebration is visual only, with no event or timing sent.
+4. Keep it self-contained: no external CDN or network fetch in a child route;
+   inline or self-host every asset (Lottie JSON, any sound).
+5. Mind the bundle: prefer the already-installed `framer-motion` before reaching
+   for a new library. If a finding calls for `canvas-confetti`, `lottie` /
+   `dotlottie-react`, `react-aria`, or `@axe-core/playwright`, add it green-gated,
+   then live-verify both the reduced-motion path and the no-network behaviour.
+
 ## 3. Per-item loop
 
 1. Restate the item and the intended change.
