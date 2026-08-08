@@ -20,6 +20,7 @@ import {
   dueReviewTopics,
 } from "@/lib/engine/spaced-repetition";
 import { shouldQueueHandoff } from "@/lib/engine/remediation";
+import { selectMockPaper } from "@/lib/engine/mock-paper";
 import type {
   ParentDoc,
   ChildDoc,
@@ -1833,6 +1834,7 @@ export async function buildMockPaper(
   childId: ObjectId,
   subject: Subject,
   count = 10,
+  targetTier?: { min: number; max: number },
 ): Promise<MockQuestion[]> {
   const compCol = await getCollection<CompetenceDoc>(Collections.competence);
   const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
@@ -1861,15 +1863,9 @@ export async function buildMockPaper(
     })
     .toArray();
 
-  // Spread by tier for a fair paper: sort by tier then take an even sample.
-  pool.sort((a, b) => a.tier - b.tier);
-  const picked: QuestionDoc[] = [];
-  if (pool.length <= count) {
-    picked.push(...pool);
-  } else {
-    const step = pool.length / count;
-    for (let i = 0; i < count; i++) picked.push(pool[Math.floor(i * step)]);
-  }
+  // Spread by tier for a fair paper; when a readiness-derived tier window is
+  // given, cluster the paper around it (F9) while always filling `count`.
+  const picked = selectMockPaper(pool, count, targetTier);
 
   return picked
     .filter((q) => q._id)

@@ -8,12 +8,14 @@ import {
   childFloorBand,
   hasMockThisPeriod,
   certifiedBySubject,
+  latestEvaluationsBySubject,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
 import { MockExamPlayer } from "@/components/child/mock-exam-player";
 import { MockResultView } from "@/components/child/mock-result-view";
 import { mockUnlockCount } from "@/lib/engine/mock-gate";
+import { mockPaperFraming, mockTierWindow } from "@/lib/engine/mock-paper";
 
 export const metadata: Metadata = { title: "Mock exam" };
 export const dynamic = "force-dynamic";
@@ -67,7 +69,18 @@ export default async function MockSubjectPage({
     );
   }
 
-  const paper = await buildMockPaper(child._id, subject, 10);
+  // Tier-target the paper to the child's readiness so it rehearses the right
+  // level (Foundation vs Higher). Deterministic; falls back to the full band
+  // when a tier is thin so the paper always fills.
+  const standings = await latestEvaluationsBySubject(child._id);
+  const readiness = standings.find((s) => s.subject === subject)?.readiness ?? null;
+  const tierWindow = mockTierWindow(readiness);
+  const framing = mockPaperFraming(subject);
+
+  const paper = await buildMockPaper(child._id, subject, 10, {
+    min: tierWindow.min,
+    max: tierWindow.max,
+  });
   // No questions available for this subject yet — send back to the hub.
   if (paper.length === 0) redirect("/learn/mock");
 
@@ -87,6 +100,9 @@ export default async function MockSubjectPage({
         questions={paper}
         durationSeconds={15 * 60}
         keyStage={keyStage}
+        paperLabel={framing.paperLabel}
+        conditionLine={framing.conditionLine}
+        tierLabel={tierWindow.label}
       />
     </div>
   );
