@@ -23,7 +23,7 @@ export default function LearnLayout({
         <Link
           href="/learn"
           data-focus-logo
-          className="inline-flex items-center gap-2.5 rounded-lg focus-visible:opacity-100"
+          className="inline-flex min-h-11 items-center gap-2.5 rounded-lg py-1 focus-visible:opacity-100"
         >
           <HexaLogo size={32} withText />
         </Link>
