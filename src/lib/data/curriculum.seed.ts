@@ -430,8 +430,7 @@ const MISCONCEPTIONS_BY_PROMPT: Record<string, string[]> = {
   ],
 };
 
-/** Flattened question list ready to seed. */
-export const SEED_QUESTIONS: SeedQuestion[] = Object.entries(
+const GENERATED_QUESTIONS: SeedQuestion[] = Object.entries(
   QUESTIONS_BY_TOPIC,
 ).flatMap(([topicTag, tuples]) => {
   const topic = SEED_TOPICS.find((t) => t.topic_tag === topicTag);
@@ -454,3 +453,173 @@ export const SEED_QUESTIONS: SeedQuestion[] = Object.entries(
     },
   );
 });
+
+// ════════════════════════════════════════════════════════════
+//  F7 — Exam-style, command-word question pack
+//  Human-authored (Scout 2026-08-08, owner-approved via the DECISION line),
+//  spec-mapped and transcribed verbatim. Real GCSE papers use command words
+//  ("work out", "calculate", "name") and multi-step reasoning; the recall-MCQ
+//  bank never rehearses that phrasing. Each item has exactly one defensible
+//  answer, is fully computable, and renders through the existing mcq +
+//  misconception path (no engine change). Natural key = topic_tag + prompt, all
+//  prompts new, so seeding is a clean insert.
+// ════════════════════════════════════════════════════════════
+
+const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
+  // Edexcel 1MA1 R9/N12 — reverse percentage.
+  {
+    topic_tag: "maths_fractions",
+    subject: "mathematics",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "In a sale, a coat is reduced by 20% to £60. Work out the original price before the sale.",
+    options: ["£72", "£75", "£48", "£80"],
+    correct_index: 1,
+    explanation:
+      "£60 is 80% of the original price (100% minus 20%), so 1% is £60 divided by 80, which is £0.75, and 100% is £75.",
+    hints: [
+      "The £60 sale price is not 100% of the original: it is 100% minus 20%, so 80%.",
+      "Find 1% by dividing £60 by 80, then multiply by 100.",
+    ],
+    misconceptions: [
+      "Looks like you added 20% back onto £60. A reverse percentage divides, it does not add the same percent back.",
+      "",
+      "That takes 20% off £60, but £60 is already the reduced price, so work backwards instead.",
+      "Close, but £60 divided by 0.8 is £75, not £80.",
+    ],
+  },
+  // Edexcel 1MA1 R1/N — proportion (recipe scaling).
+  {
+    topic_tag: "maths_ratio",
+    subject: "mathematics",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "A recipe for 4 people needs 240 g of rice. Work out how much rice is needed for 10 people.",
+    options: ["500 g", "600 g", "540 g", "960 g"],
+    correct_index: 1,
+    explanation:
+      "240 g divided by 4 is 60 g per person. For 10 people: 60 times 10 is 600 g.",
+    hints: [
+      "First find the amount for one person by dividing 240 by 4.",
+      "Then multiply the one-person amount by 10.",
+    ],
+    misconceptions: [
+      "Looks like an estimate. Find the exact per-person amount (60 g) first.",
+      "",
+      "Looks like you added 300 g for 5 extra people. Scale by multiplying, not adding.",
+      "That is the amount for 16 people (240 times 4). We need 10 people, so 60 times 10.",
+    ],
+  },
+  // Edexcel 1MA1 N9 — standard form arithmetic.
+  {
+    topic_tag: "maths_number",
+    subject: "mathematics",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "Work out (3 × 10⁴) × (2 × 10³). Give your answer in standard form.",
+    options: ["6 × 10⁷", "6 × 10¹²", "5 × 10⁷", "6 × 10⁵"],
+    correct_index: 0,
+    explanation:
+      "Multiply the front numbers: 3 times 2 is 6. Add the powers of 10: 4 plus 3 is 7. So the answer is 6 × 10⁷.",
+    hints: [
+      "Multiply the front numbers, then handle the powers of 10 separately.",
+      "When multiplying powers of 10, add the indices: 10⁴ times 10³ is 10⁷.",
+    ],
+    misconceptions: [
+      "",
+      "Looks like you multiplied the powers (4 times 3). When multiplying, add the indices instead.",
+      "Looks like you added 3 plus 2 for the front number. Multiply them: 3 times 2 is 6.",
+      "The front number is right, but 4 plus 3 is 7, not 5.",
+    ],
+  },
+  // AQA 8464 Physics 4.5 — speed = distance / time.
+  {
+    topic_tag: "sci_forces",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "A car travels 150 m in 10 s at a steady speed. Calculate its speed.",
+    options: ["1500 m/s", "15 m/s", "160 m/s", "0.07 m/s"],
+    correct_index: 1,
+    explanation:
+      "Speed equals distance divided by time: 150 divided by 10 is 15 m/s.",
+    hints: ["Use speed = distance divided by time.", "Divide 150 by 10."],
+    misconceptions: [
+      "Looks like you multiplied distance by time. Speed divides distance by time.",
+      "",
+      "Looks like you added distance and time. Use division: 150 divided by 10.",
+      "Looks like you divided time by distance. It is distance divided by time, so 150 divided by 10.",
+    ],
+  },
+  // AQA 8464 Chemistry 5.4 — neutralisation products.
+  {
+    topic_tag: "sci_reactions",
+    subject: "science",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "Hydrochloric acid reacts with sodium hydroxide solution. Name the TWO products of this neutralisation.",
+    options: [
+      "Sodium chloride and water",
+      "Hydrogen and water",
+      "Sodium chloride and hydrogen",
+      "Carbon dioxide and water",
+    ],
+    correct_index: 0,
+    explanation:
+      "Neutralisation follows acid plus alkali makes salt plus water. Hydrochloric acid plus sodium hydroxide makes sodium chloride plus water.",
+    hints: [
+      "Acid plus alkali always makes a salt plus water.",
+      "The salt made from hydrochloric acid is a chloride.",
+    ],
+    misconceptions: [
+      "",
+      "Hydrogen forms when an acid reacts with a metal, not with an alkali. An alkali gives a salt plus water.",
+      "The salt is right, but neutralisation makes water, not hydrogen.",
+      "Carbon dioxide forms with an acid plus a carbonate. This is acid plus alkali, so salt plus water.",
+    ],
+  },
+  // AQA 8700 Paper 1 Q2 — identify language technique and effect.
+  {
+    topic_tag: "eng_devices",
+    subject: "english",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "'The waves clawed hungrily at the shore.' Which technique does the writer use, and what is its main effect?",
+    options: [
+      "Personification, making the sea feel threatening",
+      "Simile, comparing the waves to claws using 'like'",
+      "Alliteration, creating a soft, calm sound",
+      "A rhetorical question that engages the reader",
+    ],
+    correct_index: 0,
+    explanation:
+      "Giving the waves the living action 'clawed hungrily' is personification, and it makes the sea feel alive and threatening.",
+    hints: [
+      "There is no 'like' or 'as', so it is not a simile.",
+      "A non-living thing is given an aggressive, living action: what is that technique called?",
+    ],
+    misconceptions: [
+      "",
+      "A simile needs 'like' or 'as', and this sentence has neither.",
+      "There is no repeated initial sound, and the effect is menacing, not calm.",
+      "No question is being asked: look at how the waves are described.",
+    ],
+  },
+];
+
+/** Flattened question list ready to seed. */
+export const SEED_QUESTIONS: SeedQuestion[] = [
+  ...GENERATED_QUESTIONS,
+  ...EXAM_STYLE_QUESTIONS,
+];
