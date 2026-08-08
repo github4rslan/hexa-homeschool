@@ -737,6 +737,67 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   ref-based + `has-text` name selectors ("Unexpected token while parsing css selector"); a plain CSS
   selector target (`#cert-hash`, `button:has-text("Verify")`) worked. Teardown: fetch('/logout',POST)->200
   + browser_close. Health: newest prod deploy READY, /api/health reachable, runtime errors clean.
+- 2026-08-09 (Mechanic, resume of the 2026-08-08 SECOND batch) — DECISION `all`; batch-1 (B1,B2,F1-F6)
+  was already shipped, so I built ONLY the unchecked batch-2 items B3, F7, F8, F9, F10, F11 (6 of 6). ALL
+  SHIPPED, each green-gated (type-check + tests + lint + build, one commit, pushed to main) AND
+  live-verified on edway.uk (deploy 7893cc1 waited to READY via Vercel MCP; zero browser console errors +
+  zero Vercel runtime errors all session). Test count 715 -> 736. **B3** retired the ambiguous sci_body
+  diagnostic "Where is most water absorbed in digestion? -> large intestine" (at GCSE the SMALL intestine
+  absorbs most water, so the keyed answer contradicted "most"). Followed the findings' RETIRE-AND-REWORD
+  exactly (owner-approved wording, did not invent my own answer): new prompt "Which organ's main job is to
+  reabsorb water from the material left after digestion?" -> large intestine, options with NO "small
+  intestine" so it's unambiguous. GOTCHA the memory kept warning about: the seed upserts on topic_tag+prompt
+  and NEVER deletes, so a reworded prompt INSERTS a new row and ORPHANS the old wrong one, which would keep
+  reaching children. So retire-and-reword is only safe if you ALSO delete the orphan. I ran `npm run seed`
+  (idempotent) then a ONE-OFF targeted `deleteOne({topic_tag:"sci_body", prompt:"<old>"})` via a throwaway
+  scripts/_retire-b3.mts (modeled on seed's loadEnv, deleted after use). Verified live DB: orphan count 0,
+  replacement answer "large intestine". LESSON: "retire" a seed question = reword in the file + seed + delete
+  the exact old doc; a reword alone is NOT a retire. **F7** transcribed the 6 authored exam-style command-word
+  questions VERBATIM into curriculum.seed.ts. The tuple format (QTuple) can't carry hints/misconceptions, so I
+  added them as full SeedQuestion objects in a new `EXAM_STYLE_QUESTIONS` array spread into `SEED_QUESTIONS`
+  (mirrors the existing SEED_QUESTIONS_INTERACTIVE pattern) rather than shoehorning the tuple system. Vitest
+  proves each is well-formed + the quantitative ones compute (60/0.8=75, 240/4*10=600, 3*2 & 4+3, 150/10=15).
+  Live DB read confirmed all 6 present with correct keyed answers. **F8** added `maths_mensuration` topic
+  (order 11, prereq maths_geometry) + the 3 authored starters (1 practice, 2 mastery). KEY coupling finding,
+  contra the scout note: the mock gate is NOT "certify all topics", it's a FIXED floor `certifiedBySubject >= 10`
+  with a Math.min(.,10) cap, and certifiedBySubject counts across ALL bands — so adding an 11th GCSE maths
+  topic does NOT make the mock unreachable (it stays 10, reachable). Making it "count-driven = all 11" would
+  have been the ACTUAL trap (mensuration has only 2 mastery Qs; requiring all 11 risks a thin topic blocking
+  the mock). So the correct fix is a REACHABLE FLOOR: new `lib/engine/mock-gate.ts` `mockUnlockCount(subject)`
+  = min(gcseTopicCount, 10), wired into both mock pages + learn hub course-completion; a test asserts maths=11
+  GCSE topics but unlock stays 10 and never exceeds the topic count. Confirmed the topic is certifiable with 2
+  mastery Qs: `selectMasteryAttempt` returns min(bank,3) and certification is score===total, so a 2/2 perfect
+  certifies (no dead-end). Live: mensuration lesson renders + authored area question + "Brilliant!" on correct;
+  mock hub shows "Certify 10 topics... You have 5/10" (gate intact). **F9** new pure `lib/engine/mock-paper.ts`:
+  `mockPaperFraming(subject)` (maths=Non-calculator, science=Calculator allowed, english=Reading and writing),
+  `mockTierWindow(readiness)` (Higher >=85 else Foundation), `selectMockPaper(pool,count,targetTier?)` that
+  clusters the paper in the tier window and TOPS UP with nearest tiers so it always fills. buildMockPaper takes
+  an optional targetTier; the mock page derives readiness from latestEvaluationsBySubject and passes framing +
+  tier props to MockExamPlayer (calm badge + condition line). Gate-verified + unit-tested; the exam framing
+  SCREEN needs an unlocked mock (Ivy all locked <10 certified) so the live drive was deferred per the
+  resilience note (mock hub itself verified clean). **F10** new pure `interleaveDueReviews` in
+  spaced-repetition.ts: takes the most-overdue-first list and round-robins across SUBJECT buckets (bucket
+  insertion order = ordered, so the global most-overdue still LEADS), then wired into dueReviewWarmup by
+  joining certified topics -> subject. Live proof was the clearest of the run: Ivy's warm-up ran Negatives
+  (maths) -> Living Things (science) -> Algebraic Expressions (maths), i.e. it interleaved instead of blocking
+  the two maths topics. **F11** mirrored the shipped mcq `celebrate` settle (accent fill-sweep + self-drawing
+  check, gated `showCorrect && chosen` and `!reduced`) onto the tap_reveal card and the drag_drop correct slot;
+  wrong path untouched (soft dim, never red). Needed `overflow-hidden` + `relative z-10` on the content so the
+  absolute sweep clips behind. Presentational, no new pure logic -> no Vitest. Live screenshot on the geometry
+  drag_drop: all three correct slots showed the neon border + teal->green sweep + drawn check, calm-wrong law
+  held. tap_reveal shares the identical verified code path. SEEDING: ran `npm run seed` ONCE for B3+F7+F8
+  together (1 topic, 16 questions written) after all three were committed, rather than three live-DB touches.
+  KEY LEARNINGS: (1) a seed "retire" MUST delete the orphaned old doc (seed never deletes) or the wrong item
+  keeps being served; reword-in-file + seed + targeted deleteOne. (2) Don't trust a scout "this will break the
+  gate" note at face value: READ the gate. Here the mock gate was a fixed reachable floor, so the SAFE change
+  was to keep it a floor (min with topic count), NOT to raise it to the topic count as the note implied, which
+  would have been the real breakage. (3) For questions needing hints/misconceptions, add full SeedQuestion
+  objects (like SEED_QUESTIONS_INTERACTIVE) instead of extending the compact tuple. (4) F11-class settle motion
+  needs the container `overflow-hidden` + content `relative z-10` or the sweep paints over the text. (5) The MCP
+  browser persisted the SMOKE parent autofill again (one-click sign-in, no password typed); child mode needed no
+  PIN with the active-child cookie set to Ivy. Teardown: fetch('/logout',POST)->200 + browser_close. Health:
+  newest prod deploy READY, /api/health 200 {ok,db:up}, runtime errors clean. (The two ERROR deployments in the
+  list are Dependabot PR preview builds on a dependabot/* branch, not production, ignored per the runbook.)
 - 2026-08-08 (Scout, second pass, GCSE curriculum focus) — Re-run on the same UTC day AFTER Mechanic
   shipped batch-1 (B1,B2,F1-F6). Extended findings/2026-08-08.md with a clearly separated "Second batch"
   (fresh IDs B3, F7-F11) so nothing collides; DECISION: all governs both. FULL Playwright re-verify:
