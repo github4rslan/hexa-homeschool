@@ -105,14 +105,72 @@ of every account** (click Sign out, or clear the session) so no run leaves a
 live session behind, and **close all Playwright tabs/pages** (`browser_close`).
 Leave the browser as you found it.
 
-## Part B — Read the codebase (bugs)
+## Part B — Quality bars (journeys · accessibility · performance · polish)
+
+The site must feel **end-to-end professional** for every persona — children,
+parents, tutors, admins — not merely load without errors. Grade the bars below
+explicitly. A failure here is a real **bug finding (`B#`)**, not a nice-to-have;
+frame it with the exact broken/confusing step and what you expected vs. saw.
+
+### B-journeys — run each whole journey start-to-finish, PASS/FAIL
+
+Don't judge from isolated pages — complete each journey and record ONE PASS/FAIL
+plus the step that broke or felt clunky. A dead-end, a confusing hop, a missing
+confirmation, or a state that doesn't carry across steps is a FAIL:
+
+- **New-parent onboarding (inspect-only — never submit a junk signup):** walk
+  `/signup` → email-verify screen → onboarding steps, judging validation, copy,
+  empty states and clarity **without creating an account**. For anything that
+  needs real data, use the existing test parent instead.
+- **Child learning loop (full, as Ivy):** hub → resume/start a quest → explainer
+  → practice (answer some right AND some wrong) → hints → worked solution →
+  mastery check → certificate → what's-next. This is the heart of the product —
+  it must feel encouraging and seamless top to bottom.
+- **Parent oversight (full — test-family writes are safe):** dashboard → child
+  profile → roadmap → generate portfolio → share → compliance dossier.
+- **Plan / schedule:** dashboard "set up the week" nudge → generate/approve the
+  week → `/schedule` reflects it for the right child.
+- **Tutor (read-only):** sessions list → open a handoff. **Admin (read-only):**
+  overview → finance → escalations.
+
+### B-a11y — accessibility (WCAG · Children's Code · SEND) → file as BUGS
+
+You serve children and SEND learners (Ivy has a dyslexia flag), so a11y gaps are
+compliance issues, not polish. On each surface check via `browser_evaluate`:
+honest `alt` on images; labels/accessible names on every control; logical tab
+order with a **visible focus ring** and no traps (Escape closes overlays); one
+`h1` + sensible heading order + landmarks; text contrast ≥ 4.5:1 (never colour
+alone — verify the calm-wrong law still passes this); tap targets ≥ 44×44px on
+mobile; `prefers-reduced-motion` fully honoured on every animation.
+**Prefer real axe:** if `@axe-core/playwright` (or `axe-core`) is installed, run
+it (inject the `axe-core` source via `browser_evaluate` and call `axe.run()`, or
+a tiny Bash Playwright script) and report violations by impact. If it isn't
+installed yet, do the heuristic checks above **and** file a finding to add
+`@axe-core/playwright` to the dev QA pass.
+
+### B-perf — performance budget (throttled mobile)
+
+Measure real Web Vitals via `browser_evaluate` (PerformanceObserver for LCP/CLS;
+navigation timing for TTFB/FCP; sum resource `transferSize`). Flag LCP > 2.5s,
+CLS > 0.1, oversized JS/images, or render-blocking resources. If a Lighthouse
+tool is available in the runtime, run a mobile audit on `/` + a lesson for a
+fuller score; otherwise the Web-Vitals readings are enough to file a finding.
+
+### B-polish — the "generation-behind" rubric
+
+On every surface confirm: skeletons (never a bare "Loading…"); a real **empty**
+state; a real **error** state; consistent spacing/typography; no layout shift;
+a micro-interaction on primary actions; warm, correct copy. Each miss is a small
+`B#` (polish) or an `F#` (upgrade), whichever fits.
+
+## Part C — Read the codebase (bugs)
 
 Run the bug-hunter's spirit quickly (data-silo, auth, money paths, correctness,
 races, degradation) — see `.claude/agents/bug-hunter.md` for the full checklist.
 Run `npm run type-check` and `npm run lint` via Bash and fold any errors in as
 findings. Do NOT run the dev server, `npm run build`, or `npm run seed`.
 
-## Part C — Invent improvements (this is half the job)
+## Part D — Invent improvements (this is half the job)
 
 Propose concrete, buildable upgrades across these lanes. Be specific — name the
 files, the exact change, and why it's worth it:
@@ -121,11 +179,37 @@ files, the exact change, and why it's worth it:
   handling, dependency CVEs (`npm audit` via Bash).
 - **Modern UI / UX** — polish, motion, empty/loading states, dark-mode gaps,
   responsive fixes, micro-interactions, anything that looks a generation behind.
+- **Delight & child engagement** — richer motion and micro-interactions that make
+  the child experience feel *alive* and professional: a reacting mascot
+  (correct / wrong / mastery), animated phase-bar progress, confetti on
+  certification & brain-stretch, smooth lesson transitions, streak flourishes.
+  **HARD RULES (non-negotiable):** `prefers-reduced-motion` must fully neutralise
+  it; it must be **mute-able**; it must never block or delay input; it must
+  **never track, profile or record the child** (Children's Code); it must be
+  self-contained (no external CDN/network in `(child)` — inline/self-host assets);
+  and it must stay within a sane bundle budget. You already have `framer-motion`
+  installed — use it richly. You MAY propose adding, *within* those rules and as
+  normal findings (size/win/risk so Mechanic installs them green-gated):
+  `canvas-confetti` (~2KB celebrations), `lottie` / `dotlottie-react` (self-hosted
+  mascot/celebration JSON — vet each asset + note bundle cost), `react-aria`
+  (accessible interaction primitives for SEND-grade custom controls), and
+  `@axe-core/playwright` (dev-only, for the B-a11y pass above).
 - **Latest-stack** — Next.js / React / Tailwind / library upgrades and the newer
   APIs they unlock; dead deps to drop.
 - **Great features** — genuinely new capability that fits Edway's mission. Ambitious is good.
 
 For each idea: rough size (S/M/L), the win, and the risk.
+
+### Daily focus rotation — go deep without ballooning the run
+
+To keep runs ~10 focused items while still going deep, pick ONE lane to
+**deep-dive** based on the UTC weekday, and cover the rest at surface level:
+Mon → accessibility (B-a11y) · Tue → performance (B-perf) · Wed →
+delight/animation · Thu → end-to-end journeys (B-journeys) · Fri → polish rubric
+(B-polish) · Sat → security hardening · Sun → latest-stack. **Always** still run
+the child lesson pass/fail, **always** re-verify shipped features, and **always**
+file any critical/high bug regardless of the day's focus. Note the day's focus at
+the top of the report.
 
 ## Output — the selectable report
 
@@ -135,7 +219,9 @@ Every item gets a stable ID: `B#` for bugs, `F#` for features/upgrades. Rank
 within each section (Critical→Low for bugs; High→Low value for features).
 **Aim for ~10 items total per run** (bugs + features combined) — a focused menu,
 not an exhaustive catalogue. Rank them so the strongest, most build-ready items
-are first, because **Mechanic builds only ~4 per run**. Always include any
+are first: **Mechanic builds EVERY selected item (no per-run cap), but a long
+list may be split across nights by its budget**, so rank order decides what ships
+first if a run is cut off. Always include any
 **critical/high-severity bug** even if it pushes past 10 — never hide a real
 high-impact bug just to hit the number.
 
