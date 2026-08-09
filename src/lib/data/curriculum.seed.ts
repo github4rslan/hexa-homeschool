@@ -630,6 +630,122 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "No question is being asked: look at how the waves are described.",
     ],
   },
+  // ── F1 (2026-08-09): 5 authored command-word items for topics that had none ──
+  // Edexcel 1MA1 A17 — solve a linear equation ("Solve").
+  {
+    topic_tag: "maths_algebra_linear",
+    subject: "mathematics",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Solve 4x + 5 = 29.",
+    options: ["x = 6", "x = 8.5", "x = 24", "x = 34"],
+    correct_index: 0,
+    explanation: "Subtract 5 from both sides: 4x = 24. Divide both sides by 4: x = 6.",
+    hints: [
+      "Subtract 5 from both sides first.",
+      "Then divide both sides by 4: 24 divided by 4.",
+    ],
+    misconceptions: [
+      "",
+      "Looks like you added 5 instead of subtracting: (29 + 5) ÷ 4. Subtract 5 first, then divide.",
+      "Looks like you subtracted 5 but did not divide by 4. 24 ÷ 4 is 6.",
+      "Looks like you added 5 and did not divide. Subtract 5, then divide by 4.",
+    ],
+  },
+  // Edexcel 1MA1 G20 — Pythagoras ("Calculate").
+  {
+    topic_tag: "maths_pythagoras",
+    subject: "mathematics",
+    tier: 5,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "A right-angled triangle has its two shorter sides 6 cm and 8 cm. Calculate the length of the hypotenuse.",
+    options: ["10 cm", "14 cm", "48 cm", "100 cm"],
+    correct_index: 0,
+    explanation: "By Pythagoras, the hypotenuse squared is 6² + 8² = 36 + 64 = 100. The square root of 100 is 10 cm.",
+    hints: [
+      "Square both shorter sides and add them: 6² + 8².",
+      "Then take the square root of the total.",
+    ],
+    misconceptions: [
+      "",
+      "Looks like you added the two sides (6 + 8). Pythagoras squares them first: 6² + 8².",
+      "Looks like you multiplied 6 × 8. Square each side and add, then square root.",
+      "That is 6² + 8² before the square root. Take the square root of 100.",
+    ],
+  },
+  // Edexcel 1MA1 P7 — single-event probability ("Work out").
+  {
+    topic_tag: "maths_statistics",
+    subject: "mathematics",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "A bag has 3 red, 5 blue and 2 green counters. One counter is taken at random. Work out the probability that it is blue.",
+    options: ["1/2", "1/5", "3/10", "5/3"],
+    correct_index: 0,
+    explanation: "There are 3 + 5 + 2 = 10 counters. 5 of them are blue, so the probability is 5/10, which simplifies to 1/2.",
+    hints: [
+      "Count the total number of counters first: 3 + 5 + 2.",
+      "Probability is the number of blue over the total, then simplify.",
+    ],
+    misconceptions: [
+      "",
+      "Looks like the green count over the total (2/10). Blue is 5 out of 10.",
+      "That is the probability of red (3 out of 10). Blue is 5 out of 10.",
+      "That compares blue to green, not blue to the whole bag. Use blue over the total of 10.",
+    ],
+  },
+  // AQA 8464 Physics 4.2.1 — V = I × R ("Calculate").
+  {
+    topic_tag: "sci_electricity",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "A current of 2 A flows through a resistor of 5 Ω. Calculate the potential difference across the resistor.",
+    options: ["10 V", "2.5 V", "7 V", "0.4 V"],
+    correct_index: 0,
+    explanation: "Using V = I × R: potential difference = 2 A × 5 Ω = 10 V.",
+    hints: [
+      "Use the equation potential difference = current × resistance (V = I × R).",
+      "Multiply 2 A by 5 Ω.",
+    ],
+    misconceptions: [
+      "",
+      "Looks like you divided 5 by 2. Potential difference is current times resistance: 2 × 5.",
+      "Looks like you added 2 and 5. Use V = I × R, so multiply.",
+      "Looks like you divided current by resistance. V = I × R, so 2 × 5.",
+    ],
+  },
+  // AQA 8700 Paper 1 Q3-style — effect of a simile ("Explain").
+  {
+    topic_tag: "eng_analysis",
+    subject: "english",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "'The old house sagged, its windows like tired eyes.' Explain the main effect of the simile 'like tired eyes'.",
+    options: [
+      "It makes the house feel weary and neglected",
+      "It shows the house is brand new",
+      "It creates a fast, exciting pace",
+      "It just lists factual details about the windows",
+    ],
+    correct_index: 0,
+    explanation: "The simile compares the windows to 'tired eyes', which — with 'old' and 'sagged' — makes the house feel worn out, weary and neglected.",
+    hints: [
+      "'Tired eyes' compares the windows to something weary — what mood does that create?",
+      "Link the words 'old', 'sagged' and 'tired' to how the house feels.",
+    ],
+    misconceptions: [
+      "",
+      "A sagging house with 'tired' eyes suggests age and neglect, not newness.",
+      "A simile about tiredness slows the mood; it does not speed the pace.",
+      "'Like tired eyes' is a comparison for effect, not a factual list.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
