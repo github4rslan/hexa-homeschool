@@ -60,7 +60,7 @@ export function MarketingFooter() {
               </span>
             ))}
           </div>
-          <p className="text-xs text-forest-200/60">
+          <p className="text-xs text-forest-200/70">
             Aligned with the Children&apos;s Wellbeing and Schools Act 2026.
           </p>
         </div>
