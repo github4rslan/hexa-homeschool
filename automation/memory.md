@@ -859,3 +859,57 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   wrong) so I dropped that and pivoted to the parent-visibility gap. MCP browser persisted the SMOKE
   parent autofill (one-click); admin/tutor needed JS-set of both fields (React native-setter + input
   event) since autofill was parent's. Emailing owner the scenario summary via scripts/email-findings.ts.
+- 2026-08-09 (Mechanic build run, DECISION `all`; B1,B2 + F1-F8, 10 items). SHIPPED 7 green-gated +
+  live-verified (B1, B2, F1, F2, F3, F6, F8); EVALUATED-AND-DEFERRED 3 majors/risky (F4, F5, F7). Each
+  shipped item: type-check + tests (748) + lint + build green, one commit, pushed to main; live-checked
+  on edway.uk after the Vercel deploy went READY (via Vercel MCP). **B1** wrapped the parent
+  /dashboard page content in <main> (both empty-state and populated branches) and added <main
+  id=main-content> + <SkipLink> to the (admin) layout; verified live: /dashboard has exactly one <main>
+  (no double-main under the layout #main-content DIV), /admin has one <main id=main-content> + skip link
+  (checked as ADMIN_* AND SMOKE_ADMIN_*). **B2** marketing homepage color-contrast: darkened warm-theme
+  tokens clay-500 #C57F2A->#A25C17, clay-600 #A6651F->#8E5316, ink-500 #8C846E->#787056 (fixes the
+  subscribe button white-on-clay 3.12, eyebrow-pill clay-600-remapped text 4.2, and mono trust labels
+  3.5). GOTCHA: my first pass missed 2 nodes because I `head -40`'d the axe output; a SECOND commit
+  raised the footer/newsletter `text-forest-200/60` captions to /70 (was 4.34 on the dark forest panel).
+  Re-ran @axe-core/playwright against prod -> 0 serious color-contrast. LESSON: never truncate the axe
+  node list; count `nodes.length` across ALL color-contrast violations and fix every pair (there were
+  ~4 distinct token pairs, not one). **F1** transcribed 5 exam-style command-word Qs VERBATIM into
+  EXAM_STYLE_QUESTIONS (Solve/Calculate/Work out/Explain across maths_algebra_linear, maths_pythagoras,
+  maths_statistics, sci_electricity, eng_analysis); Vitest proves well-formed + computes; DB read on
+  prod confirmed all 5 present with correct keyed answers. **F2** added maths_inequalities GCSE topic
+  (Edexcel A22) + number-line worked example + inequality/number-line glossary (inline on the topic,
+  since curriculum.seed.ts SEED_TOPICS only spreads worked_example, NOT glossary like the bands file) +
+  3 verbatim starters; mock unlock stays min(gcseCount,10)=10 (updated the batch2 test 11->12 GCSE maths
+  topics). Seeded once for F1+F2 together (1 topic, 14 questions written). **F3** in-range refresh via
+  `npm update <named>` (excluded posthog-js per memory, react pinned, majors left): next 15.5.23, sentry
+  10.69, mongodb 7.5, stripe 22.4, jose 6.2.8, playwright 1.62, vitest 4.1.10; audit stayed 0. GOTCHA:
+  stripe 22.4 added an `OtherString` forward-compat catch-all to Subscription.Status, making the
+  billingStatusForStripe switch non-exhaustive (TS2366) -> added a cautious `default: return "past_due"`.
+  **F6** wrong-answer delight: See-it button became a motion.button with a one-time entrance + single
+  slow scale breathe (delay 0.28s, once), hint card + rungs gated on useReducedMotion; live-drove
+  maths_fractions 2 wrong -> See-it unlocked, clickable immediately (beckon never gates the tap), wrong
+  option oklab b=-0.20 (violet, not red), 0 console errors. **F8** parent digest review line: pure
+  reviewDueCounts (overdue vs coming-due-this-week from next_review_at) + buildReviewDueLine (warm, no
+  dashes, warm-up CTA) + weeklyDigestForParent returns per-child reviewDue + template renders it; unit
+  tested; no live surface (cron email) so gate-verified. **F4 (Next 16) DEFERRED**: installed
+  16.3.0 locally -> type-check + build GREEN (Turbopack default; async request APIs already adopted), but
+  `npm run lint` BREAKS under eslint-config-next 16 (eslintrc ConfigValidator schema error) and build
+  warns middleware->proxy + Edge-Runtime deprecations; also a Next MAJOR must not hit main (=prod) without
+  the required preview gate this trunk/read-only-Vercel run can't produce. Reverted to 15.5.23. **F5
+  (motion/lucide/tailwind-merge/eslint10) DEFERRED**: motion rename touches every child animation
+  surface -> needs a live lesson + reduced-motion pass on a preview; eslint 10 couples to F4's lint
+  break; hold as a set for the Next 16 preview branch. **F7 (nonce CSP) DEFERRED**: the canonical Next 15
+  nonce recipe forces every page dynamic (next.config.ts documents this as a DELIBERATE choice), it's
+  medium-risk silent-CSP-break on a children's platform with no preview gate, and the finding says pair
+  with F4 (Next 16 first-class nonce). Small known inline surface (2 THEME_NOFLASH_SCRIPT tags; JSON-LD is
+  data not script-src). KEY LEARNINGS: (1) axe groups color-contrast as ONE violation with N nodes; sum
+  nodes across all violations and fix every distinct token pair, don't stop at the first screenful. (2)
+  For the verify script after the playwright 1.62 bump, `npx playwright install chromium` then launch
+  playwright-core with the headless-shell executablePath; read creds from .env.local and never print
+  them. (3) Admin login in a script needs `domcontentloaded` + a fixed waitForTimeout, NOT
+  `waitForLoadState('networkidle')` (analytics keeps the network busy so networkidle races and lands you
+  back on /login). (4) The MCP eval right after a client nav can read a stale DOM (dashboard <main> read
+  0 then 1 on re-eval) — re-eval once before calling a landmark missing. (5) A new curriculum glossary on
+  a curriculum.seed.ts GCSE topic must be inline on the topic object (that file's SEED_TOPICS builder only
+  spreads worked_example); the bands file has its own GLOSSARY_BY_TOPIC. Teardown: /logout POST +
+  browser_close. Health: newest prod deploy READY, /api/health 200, runtime errors clean.
