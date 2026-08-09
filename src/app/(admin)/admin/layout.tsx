@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { AdminSidebar } from "@/components/admin/sidebar";
 import { AdminIdentityProvider } from "@/components/admin/admin-identity";
+import { SkipLink } from "@/components/ui/skip-link";
 import { getSession } from "@/lib/auth/session";
 import { findParentById } from "@/lib/db/repo";
 import { can, resolveRole } from "@/lib/auth/rbac";
@@ -33,13 +34,16 @@ export default async function AdminLayout({
       <div className="fixed inset-0 noise -z-10" />
 
       <AdminIdentityProvider value={{ name: displayName, role: adminRole }}>
+        <SkipLink />
         <AdminSidebar
           identity={{
             name: displayName,
             role: adminRole,
           }}
         />
-        <div className="flex-1 flex flex-col min-w-0">{children}</div>
+        <main id="main-content" tabIndex={-1} className="flex-1 flex flex-col min-w-0">
+          {children}
+        </main>
       </AdminIdentityProvider>
     </div>
   );
