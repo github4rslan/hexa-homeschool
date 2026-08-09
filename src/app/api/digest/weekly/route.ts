@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { listDigestRecipients, weeklyDigestForParent } from "@/lib/db/repo";
 import { sendEmail, emailConfigured } from "@/lib/email/send";
 import { weeklyDigestTemplate, type DigestChild } from "@/lib/email/templates";
-import { buildWeeklySummary } from "@/lib/engine/weekly-summary";
+import { buildWeeklySummary, buildReviewDueLine } from "@/lib/engine/weekly-summary";
 import { appUrl } from "@/lib/email/verification";
 import { cronAuthorized } from "@/lib/auth/cron-auth";
 
@@ -84,6 +84,10 @@ export async function GET(request: Request) {
           observation: summary.observation,
           focusLine: summary.focusLine,
           standingLine: summary.standingLine,
+          reviewLine: buildReviewDueLine(
+            c.childName.split(" ")[0],
+            c.reviewDue,
+          ),
         };
       });
       const tmpl = weeklyDigestTemplate({
@@ -92,6 +96,7 @@ export async function GET(request: Request) {
         children: digestChildren,
         dashboardUrl: `${appUrl()}/dashboard`,
         escalationsUrl: `${appUrl()}/tutoring#escalations`,
+        warmUpUrl: `${appUrl()}/learn/warmup`,
         settingsUrl: `${appUrl()}/settings`,
       });
       const res = await sendEmail({
