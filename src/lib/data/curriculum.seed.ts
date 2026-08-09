@@ -78,6 +78,9 @@ const BASE_SEED_TOPICS: SeedTopic[] = [
   // F8 — mensuration strand (area / perimeter / volume / circles), a high-frequency
   // Edexcel 1MA1 Geometry & Measures area that the bank was missing entirely.
   { subject: "mathematics", topic_tag: "maths_mensuration", title: "Area, Perimeter & Volume", summary: "Area and perimeter of rectangles, circumference of circles, and volume of solids.", key_stage: 4, working_grade_band: "Grade 2–5", order: 11, prerequisite_tags: ["maths_geometry"] },
+  // F2 (2026-08-09) — inequalities strand (Edexcel 1MA1 A22), a high-frequency
+  // Foundation + Higher topic the bank was missing entirely.
+  { subject: "mathematics", topic_tag: "maths_inequalities", title: "Inequalities", summary: "Solving linear inequalities and representing solutions on a number line.", key_stage: 4, working_grade_band: "Grade 3–5", order: 12, prerequisite_tags: ["maths_algebra_linear"], glossary: [{ term: "inequality", definition: "A statement that one amount is less than or greater than another, using signs like <, >, ≤ or ≥ instead of an equals sign." }, { term: "number line", definition: "A straight line with numbers marked in order, used to show where a solution lies." }] },
 
   // ── English (AQA 8700) ──
   { subject: "english", topic_tag: "eng_spelling", title: "Spelling & Vocabulary", summary: "Common spelling patterns and precise word choice.", key_stage: 4, working_grade_band: "Grade 1–3", order: 1, prerequisite_tags: [] },
@@ -105,6 +108,16 @@ const BASE_SEED_TOPICS: SeedTopic[] = [
 ];
 
 const WORKED_EXAMPLES_BY_TOPIC: Record<string, SeedTopic["worked_example"]> = {
+  maths_inequalities: {
+    title: "Solve the inequality x + 3 < 7",
+    scenario: "We want every value of x that makes x + 3 less than 7.",
+    steps: [
+      { line: "An inequality is kept balanced just like an equation, so subtract 3 from both sides.", visual: { label: "Both sides", value: "x + 3 − 3 < 7 − 3" } },
+      { line: "That leaves x < 4, so any number below 4 works.", visual: { label: "Solution", value: "x < 4" } },
+      { line: "On a number line, put an open circle at 4 and shade to the left, because 4 itself is not included.", visual: { label: "Number line", value: "◦—— 4" } },
+    ],
+    yourTurn: "Try solving x + 2 < 9. Subtract 2 from both sides first.",
+  },
   maths_number: {
     title: "Round 3,748 to the nearest hundred",
     scenario: "A shop counted 3,748 items and wants a quick estimate.",
@@ -238,6 +251,12 @@ const QUESTIONS_BY_TOPIC: Record<string, QTuple[]> = {
     [3, "mastery", "A circle has radius 5 cm. Work out its circumference. Use π = 3.14.", ["15.7 cm", "31.4 cm", "78.5 cm", "10 cm"], 1, "Circumference is 2 times π times radius: 2 times 3.14 times 5 is 31.4 cm."],
     // 1MA1 G17 — 9 cm³ is the 3² area-not-volume trap.
     [3, "mastery", "Work out the volume of a cube with sides of 3 cm.", ["9 cm³", "27 cm³", "18 cm³", "12 cm³"], 1, "Volume of a cube is side cubed: 3 times 3 times 3 is 27 cm³."],
+  ],
+  // F2 (2026-08-09) — maths_inequalities (Edexcel 1MA1 A22)
+  maths_inequalities: [
+    [3, "practice", "Solve the inequality x + 3 < 7.", ["x < 4", "x < 10", "x > 4", "x < 21"], 0, "Subtract 3 from both sides: x < 4."],
+    [4, "mastery", "Solve 2x ≥ 10.", ["x ≥ 5", "x ≥ 20", "x ≥ 8", "x ≤ 5"], 0, "Divide both sides by 2: x ≥ 5. The sign does not flip when dividing by a positive number."],
+    [4, "mastery", "Which integers satisfy −2 < x ≤ 1?", ["−1, 0, 1", "−2, −1, 0, 1", "0, 1", "−2, −1, 0"], 0, "−2 is excluded (strict <) and 1 is included (≤), so the integers are −1, 0 and 1."],
   ],
 
   // ── English ──

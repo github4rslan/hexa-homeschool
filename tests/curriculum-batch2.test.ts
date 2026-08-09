@@ -210,9 +210,60 @@ describe("F8 — GCSE Maths mensuration strand", () => {
   });
 });
 
+describe("F2 (2026-08-09) — GCSE Maths inequalities strand", () => {
+  it("adds the maths_inequalities topic in the maths GCSE band with a worked example and glossary", () => {
+    const topic = SEED_TOPICS.find((t) => t.topic_tag === "maths_inequalities");
+    expect(topic, "inequalities topic present").toBeDefined();
+    if (!topic) return;
+    expect(topic.subject).toBe("mathematics");
+    expect(topic.key_stage).toBe(4);
+    expect(topic.title).toBe("Inequalities");
+    expect(topic.prerequisite_tags).toContain("maths_algebra_linear");
+    expect(topic.worked_example).toBeDefined();
+    // Glossary terms must appear in the shown worked-example prose to render as chips.
+    const prose = JSON.stringify(topic.worked_example);
+    for (const g of topic.glossary ?? []) {
+      expect(prose.toLowerCase()).toContain(g.term.toLowerCase());
+    }
+    expect((topic.glossary ?? []).map((g) => g.term)).toEqual([
+      "inequality",
+      "number line",
+    ]);
+  });
+
+  it("ships the three authored starters, well-formed and correctly keyed", () => {
+    const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_inequalities");
+    expect(qs.length).toBe(3);
+    for (const q of qs) {
+      expect(q.subject).toBe("mathematics");
+      expect(q.key_stage).toBe(4);
+      expect(q.correct_index).toBeGreaterThanOrEqual(0);
+      expect(q.correct_index).toBeLessThan(q.options.length);
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(q.explanation.trim().length).toBeGreaterThan(0);
+    }
+    const answerOf = (needle: string) => {
+      const q = qs.find((item) => item.prompt.includes(needle))!;
+      return q.options[q.correct_index];
+    };
+    // x + 3 < 7 → x < 4.
+    expect(answerOf("x + 3 < 7")).toBe("x < 4");
+    // 2x ≥ 10 → x ≥ 5 (dividing by a positive does not flip the sign).
+    expect(answerOf("2x ≥ 10")).toBe("x ≥ 5");
+    // Integers with −2 < x ≤ 1 are −1, 0, 1.
+    expect(answerOf("satisfy")).toBe("−1, 0, 1");
+  });
+
+  it("stays certifiable: at least one practice and two mastery items", () => {
+    const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_inequalities");
+    expect(qs.filter((q) => q.kind === "practice").length).toBeGreaterThanOrEqual(1);
+    expect(qs.filter((q) => q.kind === "mastery").length).toBeGreaterThanOrEqual(2);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
-  it("maths now has 11 GCSE topics (mensuration lifted it past 10)", () => {
-    expect(gcseTopicCount("mathematics")).toBe(11);
+  it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
+    expect(gcseTopicCount("mathematics")).toBe(12);
     expect(gcseTopicCount("english")).toBe(10);
     expect(gcseTopicCount("science")).toBe(10);
   });
