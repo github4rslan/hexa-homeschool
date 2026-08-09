@@ -101,6 +101,72 @@ describe("F7 — exam-style command-word question pack", () => {
   });
 });
 
+describe("F1 (2026-08-09) — 5 command-word items for previously-uncovered topics", () => {
+  const items = [
+    { tag: "maths_algebra_linear", prompt: "Solve 4x + 5 = 29.", answer: "x = 6" },
+    {
+      tag: "maths_pythagoras",
+      prompt:
+        "A right-angled triangle has its two shorter sides 6 cm and 8 cm. Calculate the length of the hypotenuse.",
+      answer: "10 cm",
+    },
+    {
+      tag: "maths_statistics",
+      prompt:
+        "A bag has 3 red, 5 blue and 2 green counters. One counter is taken at random. Work out the probability that it is blue.",
+      answer: "1/2",
+    },
+    {
+      tag: "sci_electricity",
+      prompt:
+        "A current of 2 A flows through a resistor of 5 Ω. Calculate the potential difference across the resistor.",
+      answer: "10 V",
+    },
+    {
+      tag: "eng_analysis",
+      prompt:
+        "'The old house sagged, its windows like tired eyes.' Explain the main effect of the simile 'like tired eyes'.",
+      answer: "It makes the house feel weary and neglected",
+    },
+  ];
+
+  it("adds exactly one well-formed item per topic, keyed to the intended answer", () => {
+    for (const { tag, prompt, answer } of items) {
+      const found = ALL.filter((q) => q.prompt === prompt);
+      expect(found.length, `exactly one item for: ${prompt}`).toBe(1);
+      const q = found[0];
+      expect(q.topic_tag).toBe(tag);
+      expect(q.key_stage).toBe(4);
+      expect(q.options.length).toBe(4);
+      // Exactly one correct index, in range, matching the keyed answer.
+      expect(q.correct_index).toBeGreaterThanOrEqual(0);
+      expect(q.correct_index).toBeLessThan(q.options.length);
+      expect(q.options[q.correct_index]).toBe(answer);
+      // Distractors are all distinct (no equal-value trap).
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(q.explanation.trim().length).toBeGreaterThan(0);
+      // Misconceptions index-aligned; the correct slot is blank.
+      expect(q.misconceptions).toBeDefined();
+      expect(q.misconceptions!.length).toBeLessThanOrEqual(q.options.length);
+      expect((q.misconceptions![q.correct_index] ?? "").trim()).toBe("");
+      expect(q.hints && q.hints.length).toBeGreaterThan(0);
+      const topic = SEED_TOPICS.find((t) => t.topic_tag === tag);
+      expect(topic, `topic exists for ${tag}`).toBeDefined();
+    }
+  });
+
+  it("computes to the keyed answer for each quantitative item", () => {
+    // Solve 4x + 5 = 29 → 4x = 24 → x = 6.
+    expect((29 - 5) / 4).toBe(6);
+    // Pythagoras: hypotenuse = sqrt(6² + 8²) = sqrt(100) = 10.
+    expect(Math.sqrt(6 ** 2 + 8 ** 2)).toBe(10);
+    // Probability blue = 5 / (3 + 5 + 2) = 5/10 = 1/2.
+    expect(5 / (3 + 5 + 2)).toBe(0.5);
+    // Ohm's law: V = I × R = 2 × 5 = 10.
+    expect(2 * 5).toBe(10);
+  });
+});
+
 describe("F8 — GCSE Maths mensuration strand", () => {
   it("adds the maths_mensuration topic in the maths GCSE band", () => {
     const topic = SEED_TOPICS.find((t) => t.topic_tag === "maths_mensuration");
