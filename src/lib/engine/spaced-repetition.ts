@@ -66,6 +66,35 @@ export interface ReviewCandidate {
   nextReviewAt: Date | null | undefined;
 }
 
+/** How far ahead the parent digest looks when counting "due this week". */
+export const REVIEW_WINDOW_DAYS = 7;
+
+export interface ReviewDueCounts {
+  /** Certified topics already due (past next_review_at, or legacy unscheduled). */
+  overdue: number;
+  /** Certified topics coming due within the next REVIEW_WINDOW_DAYS (not yet due). */
+  upcoming: number;
+}
+
+/**
+ * Count how many certified topics are due / coming due for review, from their
+ * `next_review_at` dates. Pure + deterministic; feeds the parent weekly digest's
+ * "topics due for review" line (F8) — counts only, never a per-child profile.
+ */
+export function reviewDueCounts(
+  nextReviewDates: (Date | null | undefined)[],
+  nowMs: number = Date.now(),
+): ReviewDueCounts {
+  const windowEnd = nowMs + REVIEW_WINDOW_DAYS * DAY_MS;
+  let overdue = 0;
+  let upcoming = 0;
+  for (const d of nextReviewDates) {
+    if (isReviewDue(d, nowMs)) overdue += 1;
+    else if (d && d.getTime() <= windowEnd) upcoming += 1;
+  }
+  return { overdue, upcoming };
+}
+
 /**
  * From a set of certified topics, select those due for review, ordered
  * **most-overdue first** so the child refreshes the shakiest memory soonest.

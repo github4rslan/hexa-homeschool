@@ -114,6 +114,28 @@ export function buildWeeklySummary(
   return { headline, observation, focusLine, standingLine, quiet: false };
 }
 
+/**
+ * F8 — parent-facing "topics due for review" line for the weekly digest.
+ * Purely a count of certified topics whose spaced-repetition review is due or
+ * coming due this week, framed warmly with a warm-up nudge. Deterministic, no
+ * child profiling. Returns null when nothing is due (no line rendered).
+ */
+export function buildReviewDueLine(
+  childFirstName: string,
+  counts: { overdue: number; upcoming: number },
+): string | null {
+  const total = counts.overdue + counts.upcoming;
+  if (total <= 0) return null;
+  const name = childFirstName;
+  const topicWord = plural(total, "topic", "topics");
+  const verb = total === 1 ? "is" : "are";
+  const overduePart =
+    counts.overdue > 0
+      ? ` (${counts.overdue} already overdue)`
+      : "";
+  return `Review radar: ${total} certified ${topicWord} ${verb} due for a quick refresh this week${overduePart}. A short warm-up keeps ${name}'s memory locked in.`;
+}
+
 /** Input for the spoken parent recap — a plain shape (no DB types) so the
  *  narration builder stays pure + unit-testable. Maps 1:1 from `weekInReview`. */
 export interface WeeklyRecapInput {

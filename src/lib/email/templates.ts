@@ -248,6 +248,8 @@ export interface DigestChild {
   focusLine: string | null;
   /** Per-concept "strong / growing / starting" read, or null. */
   standingLine: string | null;
+  /** F8 — "topics due for review this week" line, or null when nothing is due. */
+  reviewLine: string | null;
 }
 
 export function weeklyDigestTemplate(opts: {
@@ -258,6 +260,8 @@ export function weeklyDigestTemplate(opts: {
   dashboardUrl: string;
   /** Deep-link to the paused-lessons detail + messaging thread. */
   escalationsUrl: string;
+  /** F8 — deep-link to the child spaced-rep warm-up. */
+  warmUpUrl: string;
   settingsUrl: string;
 }): { subject: string; html: string } {
   const greeting = opts.parentName
@@ -298,6 +302,11 @@ export function weeklyDigestTemplate(opts: {
           ${
             child.focusLine
               ? `<p style="margin:12px 0 0;padding:10px 12px;background:rgba(35,66,49,0.06);border-left:3px solid ${COLORS.forest};border-radius:8px;color:${COLORS.forest};font-size:13.5px;line-height:1.5;">${child.focusLine}</p>`
+              : ""
+          }
+          ${
+            child.reviewLine
+              ? `<p style="margin:12px 0 0;padding:10px 12px;background:rgba(35,66,49,0.05);border-radius:8px;color:${COLORS.inkSoft};font-size:13px;line-height:1.5;">${child.reviewLine} <a href="${opts.warmUpUrl}" style="color:${COLORS.forest};font-weight:600;">Start a warm-up</a>.</p>`
               : ""
           }
           ${

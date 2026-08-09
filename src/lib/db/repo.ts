@@ -18,6 +18,7 @@ import {
   nextReview,
   isReviewDue,
   interleaveDueReviews,
+  reviewDueCounts,
 } from "@/lib/engine/spaced-repetition";
 import { shouldQueueHandoff } from "@/lib/engine/remediation";
 import { selectMockPaper } from "@/lib/engine/mock-paper";
@@ -4567,6 +4568,8 @@ export interface ChildWeekSummary {
   standings: { strong: number; growing: number; starting: number };
   /** The single topic worth revisiting next, or null. */
   recommendedFocus: string | null;
+  /** F8 — certified topics due / coming due for spaced-rep review this week. */
+  reviewDue: { overdue: number; upcoming: number };
 }
 
 /**
@@ -4719,6 +4722,14 @@ export async function weeklyDigestForParent(
     ];
     const struggledTopics = struggledTags.map(title);
 
+    // F8 — spaced-rep review debt: count certified topics due / coming due this
+    // week from their next_review_at dates. Counts only, no child profiling.
+    const reviewDue = reviewDueCounts(
+      comps
+        .filter((c) => c.state === "certified")
+        .map((c) => c.next_review_at ?? null),
+    );
+
     return {
       childName: child.full_name,
       lessonsCompleted: lessonsByChild.get(id) ?? 0,
@@ -4729,6 +4740,7 @@ export async function weeklyDigestForParent(
       struggledTopics,
       standings,
       recommendedFocus: struggledTopics[0] ?? null,
+      reviewDue,
     };
   });
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildWeeklySummary,
   buildWeeklyRecapNarration,
+  buildReviewDueLine,
 } from "@/lib/engine/weekly-summary";
 import { classifyTopicStanding } from "@/lib/engine/insights";
 
@@ -167,5 +168,32 @@ describe("buildWeeklyRecapNarration — spoken ~60s parent recap (F6)", () => {
       topicsCertified: ["Fractions", "Cells", "Algebra", "Photosynthesis", "Poetry"],
     });
     expect(script.length).toBeLessThan(1200);
+  });
+});
+
+describe("buildReviewDueLine (F8) — parent digest review line", () => {
+  it("returns null when nothing is due (no line rendered)", () => {
+    expect(buildReviewDueLine("Ada", { overdue: 0, upcoming: 0 })).toBeNull();
+  });
+
+  it("names the count and singular/plural correctly", () => {
+    const one = buildReviewDueLine("Ada", { overdue: 0, upcoming: 1 });
+    expect(one).toContain("1 certified topic is due");
+    expect(one).not.toContain("overdue");
+    expect(one).toContain("Ada");
+
+    const many = buildReviewDueLine("Ada", { overdue: 0, upcoming: 3 });
+    expect(many).toContain("3 certified topics are due");
+  });
+
+  it("appends the overdue count when some are already overdue", () => {
+    const line = buildReviewDueLine("Ben", { overdue: 2, upcoming: 1 });
+    expect(line).toContain("3 certified topics are due");
+    expect(line).toContain("(2 already overdue)");
+  });
+
+  it("uses no dash punctuation in the copy", () => {
+    const line = buildReviewDueLine("Ada", { overdue: 1, upcoming: 4 })!;
+    expect(line).not.toMatch(/[—–]| -- /);
   });
 });

@@ -5,6 +5,7 @@ import {
   isReviewDue,
   dueReviewTopics,
   interleaveDueReviews,
+  reviewDueCounts,
   FIRST_REVIEW_DAYS,
   MIN_INTERVAL_DAYS,
   MAX_INTERVAL_DAYS,
@@ -155,5 +156,33 @@ describe("interleaveDueReviews (F10 interleaved warm-up)", () => {
       "m1",
       "m2",
     ]);
+  });
+});
+
+describe("reviewDueCounts (F8) — parent digest review debt", () => {
+  it("splits certified topics into overdue vs coming-due-this-week", () => {
+    const dates = [
+      new Date(NOW - 3 * DAY), // overdue (past)
+      new Date(NOW - 1 * DAY), // overdue (past)
+      null, // legacy unscheduled -> due now (overdue)
+      new Date(NOW + 2 * DAY), // upcoming within the 7-day window
+      new Date(NOW + 6 * DAY), // upcoming within the window
+      new Date(NOW + 30 * DAY), // outside the window -> neither
+    ];
+    expect(reviewDueCounts(dates, NOW)).toEqual({ overdue: 3, upcoming: 2 });
+  });
+
+  it("returns zeros when nothing is due", () => {
+    expect(reviewDueCounts([], NOW)).toEqual({ overdue: 0, upcoming: 0 });
+    expect(
+      reviewDueCounts([new Date(NOW + 45 * DAY)], NOW),
+    ).toEqual({ overdue: 0, upcoming: 0 });
+  });
+
+  it("treats a topic due exactly now as overdue, not upcoming", () => {
+    expect(reviewDueCounts([new Date(NOW)], NOW)).toEqual({
+      overdue: 1,
+      upcoming: 0,
+    });
   });
 });
