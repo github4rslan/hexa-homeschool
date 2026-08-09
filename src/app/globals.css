@@ -80,8 +80,10 @@
   --color-clay-200: #EFD0A0;
   --color-clay-300: #E6B56F;
   --color-clay-400: #D99A45;
-  --color-clay-500: #C57F2A;
-  --color-clay-600: #A6651F;
+  /* clay-500/600 darkened for WCAG AA contrast (B2): white text on clay-500 and
+     clay-600 accent text on light panels now clear 4.5:1. */
+  --color-clay-500: #A25C17;
+  --color-clay-600: #8E5316;
   --color-clay-700: #834E1C;
 
   /* Linen / paper backdrops + warm ink text */
@@ -93,7 +95,9 @@
   --color-ink-800: #343027;
   --color-ink-700: #4A4334;
   --color-ink-600: #6B6451;
-  --color-ink-500: #8C846E;
+  /* ink-500 darkened for WCAG AA contrast (B2): muted labels on warm paper
+     backgrounds now clear 4.5:1 (was #8C846E, 3.5:1). */
+  --color-ink-500: #787056;
 
   /* Typography */
   --font-sans: var(--font-geist-sans), "Inter", system-ui, -apple-system, sans-serif;
