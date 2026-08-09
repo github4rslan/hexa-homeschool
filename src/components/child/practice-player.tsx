@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   Volume2,
   VolumeX,
@@ -277,6 +277,12 @@ export function PracticePlayer({
   const reteachCacheRef = useRef<Map<string, string>>(new Map());
   const [reteachText, setReteachText] = useState<string | null>(null);
   const [reteachLoading, setReteachLoading] = useState(false);
+
+  // F6 — warm wrong-answer motion. When set, the help card and the newly
+  // unlocked "See it" button ease in and the button gives one calm beckon.
+  // Fully neutralised under prefers-reduced-motion (no motion, instant), and it
+  // never blocks or delays the child's tap.
+  const reduced = useReducedMotion();
 
   // Graduated help spine (Wave 8): misconception → method hint → the See-it
   // reveal. `hintRung` is the highest text rung shown (exclusive end);
@@ -1637,9 +1643,34 @@ export function PracticePlayer({
             not a shortcut past thinking. */}
         {teachingAnimation && (attempts >= 2 || revealed) && (
           <div className="mb-6">
-            <button
+            {/* F6 — one calm "here's a hand" beckon the first time See it
+                unlocks: a soft ease-in plus a single slow breathe, then rest.
+                The button is clickable immediately; motion never gates the tap,
+                and it collapses to an instant static button under reduced
+                motion. */}
+            <motion.button
               type="button"
               onClick={toggleTeachingVisual}
+              initial={reduced ? false : { opacity: 0, y: 6, scale: 1 }}
+              animate={
+                reduced
+                  ? undefined
+                  : { opacity: 1, y: 0, scale: [1, 1.05, 1] }
+              }
+              transition={
+                reduced
+                  ? undefined
+                  : {
+                      opacity: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+                      y: { duration: 0.3, ease: [0.16, 1, 0.3, 1] },
+                      scale: {
+                        duration: 1.1,
+                        times: [0, 0.5, 1],
+                        ease: "easeInOut",
+                        delay: 0.28,
+                      },
+                    }
+              }
               className={cn(
                 "child-touch inline-flex items-center gap-2 rounded-2xl border px-4 text-base font-semibold transition-all",
                 visualOpen
@@ -1649,7 +1680,7 @@ export function PracticePlayer({
             >
               <Eye className="h-5 w-5" />
               {visualOpen ? "Hide animation" : "See it"}
-            </button>
+            </motion.button>
             <AnimatePresence>
               {visualOpen && activeAnimation && (
                 <TeachingAnimation
@@ -1822,10 +1853,10 @@ export function PracticePlayer({
           {hintRung > hintFloor && !isCorrect && (
             <motion.div
               key="hints"
-              initial={{ opacity: 0, y: 8 }}
+              initial={reduced ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              exit={reduced ? undefined : { opacity: 0 }}
+              transition={reduced ? { duration: 0 } : { duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
               className={cn(
                 "mt-6 flex flex-col gap-3 rounded-3xl border p-5",
                 accent.softBg,
@@ -1835,9 +1866,9 @@ export function PracticePlayer({
               {hintLadder.slice(hintFloor, hintRung).map((rung, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 6 }}
+                  initial={reduced ? false : { opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                  transition={reduced ? { duration: 0 } : { duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                   className="flex items-start gap-3 text-lg text-fog-100"
                 >
                   <Lightbulb className={cn("mt-1 h-5 w-5 shrink-0", accent.text)} />
