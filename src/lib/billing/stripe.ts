@@ -145,5 +145,10 @@ export function billingStatusForStripe(
     case "canceled":
     case "incomplete_expired":
       return "canceled";
+    default:
+      // Stripe's Status union now carries a forward-compat catch-all string, so
+      // an unrecognised future status maps to a cautious needs-attention state
+      // rather than silently granting access.
+      return "past_due";
   }
 }
