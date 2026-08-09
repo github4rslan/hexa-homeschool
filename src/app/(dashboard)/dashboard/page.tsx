@@ -133,7 +133,7 @@ export default async function DashboardPage() {
     return (
       <>
         <DashboardTopbar greeting={greeting} />
-        <div className="flex-1 p-6 lg:p-10 max-w-3xl">
+        <main className="flex-1 p-6 lg:p-10 max-w-3xl">
           <Card variant="glass-strong" padding="xl" className="text-center">
             <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl bg-violet-500/10 border border-violet-400/30 mb-6">
               <UserPlus className="h-7 w-7 text-violet-300" />
@@ -151,7 +151,7 @@ export default async function DashboardPage() {
               Add your first child
             </Button>
           </Card>
-        </div>
+        </main>
       </>
     );
   }
@@ -301,7 +301,7 @@ export default async function DashboardPage() {
     <>
       <DashboardTopbar greeting={greeting} />
 
-      <div className="flex-1 p-6 lg:p-10 max-w-7xl">
+      <main className="flex-1 p-6 lg:p-10 max-w-7xl">
         {birthdayChild && (
           <div className="mb-6 flex items-center gap-3 rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3">
             <Cake className="h-5 w-5 shrink-0 text-amber-300" />
@@ -518,7 +518,7 @@ export default async function DashboardPage() {
             </div>
           </Card>
         </section>
-      </div>
+      </main>
 
       {feedbackDecision.show && feedbackDecision.trigger && (
         <FeedbackPrompt trigger={feedbackDecision.trigger} />
