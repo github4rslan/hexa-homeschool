@@ -67,7 +67,7 @@ export function Newsletter({ source = "footer" }: { source?: string }) {
         </button>
       </div>
       {error && <p className="text-xs text-clay-200">{error}</p>}
-      <p className="text-xs text-forest-200/60">
+      <p className="text-xs text-forest-200/70">
         Weekly UK homeschooling tips. No spam. Unsubscribe anytime.
       </p>
     </form>
