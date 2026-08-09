@@ -824,3 +824,38 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   so the curriculum value is now COVERAGE + exam-condition fidelity + command-word framing, not correctness
   fixes — audit for gaps and author exam-style items, don't expect to find wrong answers. Emailing owner the
   new-findings summary via scripts/email-findings.ts.
+- 2026-08-09 (Scout) — Discovery pass, FULL coverage (parent/child/admin/tutor; desktop iw 1280 +
+  mobile iw 390 both confirmed, whole-page). Day-focus = latest-stack (UTC Sunday). Took Science
+  "Forces & Motion" (sci_ks3_forces) end-to-end as Ivy: explainer (StepReveal + "Friction" glossary
+  chip + narration) -> practice 3/3 (one deliberate WRONG) -> mastery 3/3 -> certified + band-promotion
+  celebration ("You unlocked a whole new set of Science adventures!", child-safe, no key-stage).
+  Calm-wrong law PASS: measured the wrong option colour = oklab(0.606 0.085 -0.202), a VIOLET tint
+  (negative b), NOT red; "Why isn't that right?" + escalating hint + "2 tries left". ZERO console
+  errors on EVERY surface (marketing x5 both viewports, /login, dashboard, full lesson, admin
+  overview+finance, tutor). /api/health 200 {db:up}. Tutor empty queue -> silo holds. Teardown:
+  /logout POST x3 -> 200 + browser_close. Static: type-check + lint GREEN, npm audit 0. Security
+  headers strong AND Permissions-Policy correctly route-scoped (mic=(self) only /learn; camera+mic
+  self+meet.jit.si only /tutor) -> NOT a bug. NEW BUG this run (the value of desktop-first + landmark
+  checks): B1 the parent /dashboard root page AND the whole /admin group have NO <main> landmark
+  (document.querySelector('main')===null; only NAV+HEADER) while every sibling dashboard page +
+  tutor + marketing DO — root cause: dashboard layout wraps children in <div id="main-content">
+  (not <main>) and /dashboard/page.tsx renders top-level <div>s; admin layout has no <main> and no
+  SkipLink. Fix = wrap dashboard/page.tsx content in <main> (do NOT flip the layout div or child
+  pages double-main) + add <main>+SkipLink to admin layout. B2 (Low a11y) marketing / has a SERIOUS
+  color-contrast axe violation the shipped `npm run a11y --project=public` already surfaced (08-08)
+  but never fixed (pass only fails on critical). CURRICULUM: re-audited curriculum.seed.extra.ts +
+  the F7 exam-style + F8 mensuration items by re-deriving every quantitative answer -> CLEAN, no
+  correctness bug (bank now ~140 items, remarkably accurate; value is coverage + command-word fidelity).
+  F1 (headline) authored 5 exam-style command-word Qs IN FULL (SeedQuestion shape, spec-cited, one
+  defensible computable answer each, distinct distractors): maths_algebra_linear "Solve 4x+5=29"->x=6,
+  maths_pythagoras "Calculate hypotenuse of 6,8"->10, maths_statistics "Work out P(blue)" 5/10=1/2,
+  sci_electricity "Calculate V=IR" 2x5=10, eng_analysis "Explain simile 'like tired eyes'". F2 add
+  maths_inequalities strand (Edexcel A22) + 3 starters. Latest-stack deep-dive: F3 in-range refresh
+  batch, F4 Next 15.5.22->16.3.0 major (evaluate+stage, gate on preview), F5 framer-motion->motion +
+  lucide/tailwind-merge/eslint-10 majors. F6 warm hint entrance + calm See-it beckon (calm-wrong law).
+  F7 nonce-based CSP to drop script-src 'unsafe-inline' (pair with F4). F8 parent "topics due for
+  review" digest line. GREP-BEFORE-PROPOSING again paid off: EPIC 5's "confirm spacing widens" is
+  ALREADY done (spaced-repetition.ts doubles interval on correct recall, cap 90d, resets to 7 on
+  wrong) so I dropped that and pivoted to the parent-visibility gap. MCP browser persisted the SMOKE
+  parent autofill (one-click); admin/tutor needed JS-set of both fields (React native-setter + input
+  event) since autofill was parent's. Emailing owner the scenario summary via scripts/email-findings.ts.
