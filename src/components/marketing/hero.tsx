@@ -7,6 +7,19 @@ import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Magnetic } from "@/components/fx/magnetic";
 
+// The FIRST headline line is the page's LCP element, so it must paint on the
+// first frame: it starts fully opaque (never opacity 0 / blur, which would defer
+// contentful paint) and only eases a gentle y rise, which does not gate paint.
+const leadVariants: Variants = {
+  hidden: { opacity: 1, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] },
+  },
+};
+
+// The second line can keep the fuller reveal (it is below the LCP element).
 const wordVariants: Variants = {
   hidden: { opacity: 0, y: 40, filter: "blur(8px)" },
   visible: {
@@ -69,7 +82,7 @@ export function Hero() {
             transition={{ staggerChildren: 0.12, delayChildren: 0.15 }}
             className="font-editorial text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-forest-900 leading-[1.04] text-balance"
           >
-            <motion.span variants={wordVariants} className="block">
+            <motion.span variants={leadVariants} className="block">
               The AI assistant built for UK homeschooling
             </motion.span>
             <motion.span variants={wordVariants} className="block">
