@@ -835,6 +835,81 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "6 is the change in y only. Divide it by the change in x (2) to get the gradient.",
     ],
   },
+  // ── F4 (2026-08-11): 3 command-word Science + English items ──
+  // AQA 8464 Physics 6.5.4 — acceleration from change in velocity ("Calculate").
+  {
+    topic_tag: "sci_forces",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "A car speeds up from 0 to 20 m/s in 4 seconds. Calculate its acceleration.",
+    options: ["5 m/s²", "80 m/s²", "16 m/s²", "0.2 m/s²"],
+    correct_index: 0,
+    explanation:
+      "Acceleration = change in velocity ÷ time = (20 − 0) ÷ 4 = 5 m/s².",
+    hints: [
+      "Acceleration = change in velocity ÷ time taken.",
+      "The velocity changes by 20 m/s over 4 seconds.",
+    ],
+    misconceptions: [
+      "",
+      "You multiplied velocity by time (20 × 4). Acceleration divides the change in velocity by the time.",
+      "You subtracted 4 from 20. Divide the change in velocity by the time instead.",
+      "You divided time by velocity (4 ÷ 20). Divide the change in velocity by the time: 20 ÷ 4.",
+    ],
+  },
+  // AQA 8464 Chemistry 5.3.1 — relative formula mass ("Calculate the Mr").
+  {
+    topic_tag: "sci_reactions",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Calculate the relative formula mass (Mr) of water, H₂O. (Relative atomic masses: H = 1, O = 16.)",
+    options: ["18", "17", "34", "9"],
+    correct_index: 0,
+    explanation:
+      "Water has two hydrogen atoms and one oxygen atom: (2 × 1) + 16 = 2 + 16 = 18.",
+    hints: [
+      "Add the relative atomic mass of every atom in the formula.",
+      "There are TWO hydrogen atoms (H₂) and one oxygen atom.",
+    ],
+    misconceptions: [
+      "",
+      "You counted only one hydrogen. H₂ means two hydrogen atoms: (2 × 1) + 16 = 18.",
+      "You doubled the whole thing. Only the hydrogen is doubled: (2 × 1) + 16 = 18.",
+      "You added 1 + 16 then halved, or used only part of the formula. Use (2 × 1) + 16 = 18.",
+    ],
+  },
+  // AQA 8700 Paper 1 — analysing the effect of a metaphor ("Explain what it suggests").
+  {
+    topic_tag: "eng_analysis",
+    subject: "english",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "A writer describes a schoolroom with the metaphor: 'The classroom was a prison.' What does this most strongly suggest about how the narrator feels?",
+    options: [
+      "Trapped and unhappy in the room",
+      "Safe and comforted by the room",
+      "Excited and eager to learn",
+      "Proud of how tidy the room is",
+    ],
+    correct_index: 0,
+    explanation:
+      "A prison is a place where people are locked in against their will, so comparing the classroom to a prison suggests the narrator feels trapped and unhappy there.",
+    hints: [
+      "Think about what a prison is like and how someone inside one would feel.",
+      "A metaphor carries the feelings of the thing it compares to — what feelings come with 'prison'?",
+    ],
+    misconceptions: [
+      "",
+      "A prison is not safe or comforting; it suggests being trapped, so the feeling is negative.",
+      "'Prison' is a negative image — it points to reluctance, not excitement.",
+      "The metaphor is about how the narrator feels, not about how tidy the room is.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
