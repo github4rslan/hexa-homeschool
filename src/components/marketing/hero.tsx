@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useScroll, useTransform, type Variants } from "framer-motion";
+import { m, useScroll, useTransform, type Variants } from "framer-motion";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -62,11 +62,11 @@ export function Hero() {
       />
 
       <Container>
-        <motion.div
+        <m.div
           style={{ opacity, y }}
           className="mx-auto max-w-4xl flex flex-col items-center text-center gap-8 relative z-10"
         >
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -74,25 +74,25 @@ export function Hero() {
           >
             <ShieldCheck className="h-3.5 w-3.5" />
             <span>The AI assistant built for UK homeschooling families</span>
-          </motion.div>
+          </m.div>
 
-          <motion.h1
+          <m.h1
             initial="hidden"
             animate="visible"
             transition={{ staggerChildren: 0.12, delayChildren: 0.15 }}
             className="font-editorial text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tight text-forest-900 leading-[1.04] text-balance"
           >
-            <motion.span variants={leadVariants} className="block">
+            <m.span variants={leadVariants} className="block">
               The AI assistant built for UK homeschooling
-            </motion.span>
-            <motion.span variants={wordVariants} className="block">
+            </m.span>
+            <m.span variants={wordVariants} className="block">
               families who want{" "}
               <span className="text-gradient-forest italic">freedom</span>{" "}
               without fear.
-            </motion.span>
-          </motion.h1>
+            </m.span>
+          </m.h1>
 
-          <motion.p
+          <m.p
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.6 }}
@@ -101,9 +101,9 @@ export function Hero() {
             Edway plans your child&apos;s learning, teaches daily lessons, tracks
             every step, and generates the evidence Local Authorities need. All in
             one place.
-          </motion.p>
+          </m.p>
 
-          <motion.p
+          <m.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.7, delay: 0.75 }}
@@ -111,9 +111,9 @@ export function Hero() {
           >
             No more Sunday-night planning. No more guessing if you are doing
             enough. No more dread when the council writes.
-          </motion.p>
+          </m.p>
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.9 }}
@@ -128,18 +128,18 @@ export function Hero() {
             <Button href="/how-it-works" variant="warm-outline" size="lg">
               See how it works
             </Button>
-          </motion.div>
+          </m.div>
 
-          <motion.p
+          <m.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 1 }}
             className="text-sm text-ink-500"
           >
             14-day trial. No card required. Cancel anytime.
-          </motion.p>
+          </m.p>
 
-          <motion.div
+          <m.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8, delay: 1.15 }}
@@ -151,8 +151,8 @@ export function Hero() {
                 <span>{badge}</span>
               </div>
             ))}
-          </motion.div>
-        </motion.div>
+          </m.div>
+        </m.div>
       </Container>
     </section>
   );

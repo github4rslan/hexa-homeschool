@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ export function CTA() {
       <div className="absolute inset-0 bg-warm-hero pointer-events-none" />
 
       <Container size="md">
-        <motion.div
+        <m.div
           initial={{ opacity: 0, y: 36 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -43,7 +43,7 @@ export function CTA() {
           <p className="text-xs text-ink-500 mt-1">
             14-day trial. No card required. Cancel anytime.
           </p>
-        </motion.div>
+        </m.div>
       </Container>
     </section>
   );

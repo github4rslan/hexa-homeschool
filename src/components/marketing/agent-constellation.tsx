@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { AGENTS } from "@/lib/data/agents";
 import { cn } from "@/lib/utils";
 
@@ -109,7 +109,7 @@ export function AgentConstellation({ size = 560, className }: ConstellationProps
           const x = r2(center + radius * Math.cos(rad));
           const y = r2(center + radius * Math.sin(rad));
           return (
-            <motion.line
+            <m.line
               key={`spoke-${agent.id}`}
               x1={center}
               y1={center}
@@ -133,7 +133,7 @@ export function AgentConstellation({ size = 560, className }: ConstellationProps
           const rad = (agent.angle * Math.PI) / 180;
           const color = colorMap[agent.color].bg;
           return (
-            <motion.circle
+            <m.circle
               key={`pulse-${agent.id}`}
               r="2"
               fill={color}
@@ -156,7 +156,7 @@ export function AgentConstellation({ size = 560, className }: ConstellationProps
       </svg>
 
       {/* Centre node (Edway core) */}
-      <motion.div
+      <m.div
         className="absolute flex items-center justify-center"
         style={{
           left: center - 48,
@@ -186,7 +186,7 @@ export function AgentConstellation({ size = 560, className }: ConstellationProps
             <circle cx="24" cy="24" r="3" fill="#06FFA5" />
           </svg>
         </div>
-      </motion.div>
+      </m.div>
 
       {/* Agent nodes */}
       {AGENTS.map((agent, i) => {
@@ -196,7 +196,7 @@ export function AgentConstellation({ size = 560, className }: ConstellationProps
         const color = colorMap[agent.color];
 
         return (
-          <motion.div
+          <m.div
             key={agent.id}
             className="absolute"
             style={{
@@ -213,7 +213,7 @@ export function AgentConstellation({ size = 560, className }: ConstellationProps
               ease: [0.16, 1, 0.3, 1],
             }}
           >
-            <motion.div
+            <m.div
               className="relative h-full w-full rounded-2xl glass-strong border flex flex-col items-center justify-center"
               style={{
                 borderColor: color.bg,
@@ -238,8 +238,8 @@ export function AgentConstellation({ size = 560, className }: ConstellationProps
               <span className="text-xs font-semibold text-fog-100 leading-tight text-center px-1">
                 {agent.shortName}
               </span>
-            </motion.div>
-          </motion.div>
+            </m.div>
+          </m.div>
         );
       })}
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { Building2, Users } from "lucide-react";
 import { Section, SectionHeader } from "@/components/ui/section";
 
@@ -48,7 +48,7 @@ export function Solution() {
 
       <div className="mt-16 grid md:grid-cols-2 gap-5 max-w-5xl mx-auto">
         {AUDIENCES.map((a, i) => (
-          <motion.div
+          <m.div
             key={a.label}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -66,7 +66,7 @@ export function Solution() {
               {a.title}
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-ink-600">{a.body}</p>
-          </motion.div>
+          </m.div>
         ))}
       </div>
     </Section>

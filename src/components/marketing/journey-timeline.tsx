@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import * as Icons from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +23,7 @@ export function JourneyTimeline() {
                 .filter(Boolean);
 
               return (
-                <motion.div
+                <m.div
                   key={step.step}
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -78,7 +78,7 @@ export function JourneyTimeline() {
 
                   {/* Spacer for the other side */}
                   <div className="hidden md:block" />
-                </motion.div>
+                </m.div>
               );
             })}
           </div>
