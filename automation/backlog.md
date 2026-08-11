@@ -12,7 +12,7 @@ exams (Edexcel Maths 1MA1, AQA English 8700, AQA Combined Science Trilogy 8464).
 ---
 
 ## EPIC 1 — Verified, correct question bank across every spec point
-Status: ACTIVE. The existing bank (~140 human-authored items across 5 seed files)
+Status: ACTIVE. The existing bank (~150 human-authored items across 5 seed files)
 is arithmetically/factually clean (re-audited 2026-08-08 and again 2026-08-09).
 - Next step: continue a rolling per-subject correctness re-audit each run; note
   that a "retire" of a seed question must delete the orphaned old doc (seed never
@@ -28,13 +28,18 @@ papers use command words (calculate, work out, show that, explain, describe,
 compare) and multi-step reasoning.
 - Next step: keep adding command-word items per topic each run until every KS4
   topic has >= 2 (Scout authors, Mechanic transcribes verbatim + seeds). Still
-  uncovered after this run: maths_sequences/graphs/quadratics/geometry, most
-  science topics, most English topics.
+  uncovered after this run: maths_quadratics, most science topics (sci_cells,
+  sci_body, sci_atoms, sci_energy), most English topics (comprehension, creative,
+  persuasive, poetry).
 - Done so far: 6 spec-mapped exam-style questions (F7, 2026-08-09) across
   maths_fractions/ratio/number, sci_forces/reactions, eng_devices; 5 MORE authored
   2026-08-09 (Scout F1) for maths_algebra_linear (Solve), maths_pythagoras
-  (Calculate), maths_statistics (Work out — probability), sci_electricity
-  (Calculate V=IR), eng_analysis (Explain — simile effect) — pending seed.
+  (Calculate), maths_statistics (Work out, probability), sci_electricity
+  (Calculate V=IR), eng_analysis (Explain, simile effect). 6 MORE authored
+  2026-08-11 (Scout F3+F4): maths_sequences (nth term), maths_geometry (regular
+  hexagon interior angle), maths_graphs (gradient from two points), sci_forces
+  (acceleration a=Dv/t), sci_reactions (Mr of water), eng_analysis (metaphor
+  effect) — pending seed.
 
 ## EPIC 3 — Full spec coverage: close missing GCSE topics
 Status: ACTIVE. Thin areas still to scope: simultaneous equations, transformations,
@@ -73,14 +78,21 @@ trajectory schedule deterministically from certification dates/scores (non-profi
 Status: ONGOING background lane, not gated to a night. Rich motion already exists
 (mcq settle, star burst, confetti, phase bar, week strip, mascot mood).
 - Next step: keep proposing supportive wrong-answer motion that never flashes
-  red / shakes / buzzes; look for the next un-celebrated moment. 2026-08-09 Scout
-  F6: warm hint-card entrance + a calm one-time "See it" beckon on a miss.
+  red / shakes / buzzes; look for the next un-celebrated moment. 2026-08-11 Scout
+  F5+F6: a calm "here it is" guiding glow when the worked answer is REVEALED after
+  a miss (the biggest un-celebrated teaching moment), and a supportive settle on a
+  wrong `fill_blank` (the last interaction type without its own miss feedback).
 - Done so far: every interaction type now has its own correct-answer settle —
-  tap_reveal + drag_drop got the accent sweep + drawn check (F11, 2026-08-09).
+  tap_reveal + drag_drop got the accent sweep + drawn check (F11, 2026-08-09);
+  warm hint-card entrance + calm See-it beckon on a miss (F6, 2026-08-09).
 
-## EPIC 7 (new, background) — Stay on the current stack
+## EPIC 7 (background) — Stay on the current stack + performance budget
 Status: ACTIVE. Next 16 + framer-motion→motion + several majors are now GA.
+Performance of the marketing landing needs attention (see 2026-08-11 perf pass).
 - Next step: evaluate + stage Next.js 16 (2026-08-09 Scout F4), then the motion/
   lucide/tailwind-merge/eslint-10 majors (F5), and keep the in-range drift fresh (F3).
-  Pair the nonce-based CSP hardening (F7) with the Next 16 move.
+  Pair the nonce-based CSP hardening (F7) with the Next 16 move. SEPARATELY (does not
+  need Next 16): 2026-08-11 perf pass found homepage LCP ~2.27s (animated hero h1 is
+  the LCP element, B1) and ~1.78MB JS on `/` (F2, LazyMotion + deferred below-fold
+  sections), plus a global reduced-motion gap (F1, one `MotionConfig` wrapper).
 - Done so far: nothing landed yet; audit stays at 0 vulnerabilities.
