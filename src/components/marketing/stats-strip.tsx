@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { m, useReducedMotion } from "framer-motion";
 import { Container } from "@/components/ui/container";
 import { CountUp } from "@/components/fx/count-up";
 
@@ -29,7 +29,7 @@ export function StatsStrip() {
       <Container>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           {STATS.map((stat, i) => (
-            <motion.div
+            <m.div
               key={stat.label}
               // Reduced-motion: no translate/fade-in, render in place (WCAG 2.3.3).
               initial={reduceMotion ? false : { opacity: 0, y: 20 }}
@@ -49,7 +49,7 @@ export function StatsStrip() {
               <span className="text-sm text-fog-400 leading-snug">
                 {stat.label}
               </span>
-            </motion.div>
+            </m.div>
           ))}
         </div>
       </Container>

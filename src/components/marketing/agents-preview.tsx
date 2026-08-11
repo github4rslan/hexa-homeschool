@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { AGENTS } from "@/lib/data/agents";
@@ -20,7 +20,7 @@ export function AgentsPreview() {
         description="Each agent handles a specific task. Diagnosis. Teaching. Assessment. Planning. Compliance. Quality control. Every output is checked before it reaches your child. Humans step in only when needed."
       />
 
-      <motion.div
+      <m.div
         initial="hidden"
         whileInView="visible"
         viewport={{ once: true, margin: "-50px" }}
@@ -28,7 +28,7 @@ export function AgentsPreview() {
         className="mt-16 grid md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto"
       >
         {AGENTS.map((agent) => (
-          <motion.div
+          <m.div
             key={agent.id}
             variants={{
               hidden: { opacity: 0, y: 24 },
@@ -52,9 +52,9 @@ export function AgentsPreview() {
             <p className="mt-1.5 text-sm leading-relaxed text-ink-600">
               {agent.plainSummary}
             </p>
-          </motion.div>
+          </m.div>
         ))}
-      </motion.div>
+      </m.div>
 
       <div className="mt-12 text-center">
         <Link

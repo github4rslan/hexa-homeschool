@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowRight, MessageSquareWarning, RefreshCw, Scale } from "lucide-react";
 import { Section, SectionHeader } from "@/components/ui/section";
 
@@ -43,7 +43,7 @@ export function SafetyPreview() {
       <div className="mt-14 max-w-4xl mx-auto rounded-3xl border-2 border-forest-600/20 bg-linen-50 p-6 md:p-10 ring-forest">
         <div className="grid md:grid-cols-3 gap-5">
           {SCENARIOS.map((s, i) => (
-            <motion.div
+            <m.div
               key={s.n}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -61,7 +61,7 @@ export function SafetyPreview() {
                 {s.quote}
               </p>
               <p className="text-sm leading-relaxed text-ink-600">{s.action}</p>
-            </motion.div>
+            </m.div>
           ))}
         </div>
 

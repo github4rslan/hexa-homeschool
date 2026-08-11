@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { useState } from "react";
 import { ChevronRight, ShieldCheck, Cpu, Inbox, Workflow, Package } from "lucide-react";
 import { Card } from "@/components/ui/card";
@@ -62,7 +62,7 @@ export function AgentDetails() {
       </div>
 
       {/* Active agent detail */}
-      <motion.div
+      <m.div
         key={active.id}
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
@@ -144,7 +144,7 @@ export function AgentDetails() {
             ))}
           </div>
         </Card>
-      </motion.div>
+      </m.div>
     </div>
   );
 }

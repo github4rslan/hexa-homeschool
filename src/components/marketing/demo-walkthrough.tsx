@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { m, AnimatePresence } from "framer-motion";
 import {
   Activity,
   ChevronLeft,
@@ -167,7 +167,7 @@ export function DemoWalkthrough() {
       </div>
 
       <AnimatePresence mode="wait">
-        <motion.div
+        <m.div
           key={current.id}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -225,7 +225,7 @@ export function DemoWalkthrough() {
                 </div>
                 <div className="p-4 font-mono text-xs leading-loose text-fog-300 space-y-1">
                   {current.log?.map((line, i) => (
-                    <motion.div
+                    <m.div
                       key={`${current.id}-${i}`}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -234,7 +234,7 @@ export function DemoWalkthrough() {
                     >
                       <span className="text-violet-400 shrink-0">$</span>
                       <span className="text-fog-300">{line}</span>
-                    </motion.div>
+                    </m.div>
                   ))}
                 </div>
               </div>
@@ -265,7 +265,7 @@ export function DemoWalkthrough() {
               </Button>
             </div>
           </Card>
-        </motion.div>
+        </m.div>
       </AnimatePresence>
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { useEffect, useState } from "react";
 
 /**
@@ -72,7 +72,7 @@ export function AgentNetwork() {
           {/* Workers + checkers grid */}
           <div className="grid grid-cols-3 gap-6">
             {WORKERS.map((w, i) => (
-              <motion.div
+              <m.div
                 key={w.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -114,7 +114,7 @@ export function AgentNetwork() {
                     {CHECKERS[i].label}
                   </div>
                 </div>
-              </motion.div>
+              </m.div>
             ))}
           </div>
 
@@ -124,7 +124,7 @@ export function AgentNetwork() {
           </div>
 
           {/* Meta Checker */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
@@ -151,7 +151,7 @@ export function AgentNetwork() {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </m.div>
 
           {/* Connector to data */}
           <div className="flex justify-center">
@@ -159,7 +159,7 @@ export function AgentNetwork() {
           </div>
 
           {/* Data layer */}
-          <motion.div
+          <m.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -186,7 +186,7 @@ export function AgentNetwork() {
                 </div>
               </div>
             ))}
-          </motion.div>
+          </m.div>
         </div>
 
         {/* Live event ticker overlay */}
@@ -203,7 +203,7 @@ export function AgentNetwork() {
 
 function LayerRow({ layer, index }: { layer: Layer; index: number }) {
   return (
-    <motion.div
+    <m.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
@@ -232,7 +232,7 @@ function LayerRow({ layer, index }: { layer: Layer; index: number }) {
         L{String(index + 1).padStart(2, "0")}
       </div>
       {/* Packet animation */}
-      <motion.div
+      <m.div
         className="absolute left-1/2 -bottom-3 h-2 w-2 rounded-full"
         style={{ background: layer.color, boxShadow: `0 0 10px ${layer.color}` }}
         animate={{
@@ -246,6 +246,6 @@ function LayerRow({ layer, index }: { layer: Layer; index: number }) {
           ease: "easeInOut",
         }}
       />
-    </motion.div>
+    </m.div>
   );
 }

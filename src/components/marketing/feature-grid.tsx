@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import {
   Activity,
   BookOpen,
@@ -107,7 +107,7 @@ export function FeatureGrid() {
         {FEATURES.map((f, i) => {
           const c = accentClasses[f.accent as keyof typeof accentClasses];
           return (
-            <motion.div
+            <m.div
               key={f.title}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -129,7 +129,7 @@ export function FeatureGrid() {
                   </p>
                 </Card>
               </Spotlight>
-            </motion.div>
+            </m.div>
           );
         })}
       </div>

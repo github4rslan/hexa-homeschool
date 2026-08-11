@@ -8,6 +8,7 @@ import { NextStepFunnel } from "@/components/marketing/next-step-funnel";
 import { StructuredData } from "@/components/seo/structured-data";
 import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 import { ReducedMotionProvider } from "@/components/fx/reduced-motion-provider";
+import { LazyMotionProvider } from "@/components/fx/lazy-motion-provider";
 
 export default function MarketingLayout({
   children,
@@ -16,6 +17,7 @@ export default function MarketingLayout({
 }) {
   return (
     <ReducedMotionProvider>
+    <LazyMotionProvider>
     <div className="theme-warm relative min-h-screen overflow-x-clip bg-linen-100 text-ink-800">
       {/* Organization/WebSite/Product JSON-LD on every marketing page. */}
       <StructuredData />
@@ -35,6 +37,7 @@ export default function MarketingLayout({
       {/* Parents-only analytics; never mounted in (child) routes. */}
       <AnalyticsProvider />
     </div>
+    </LazyMotionProvider>
     </ReducedMotionProvider>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import { ArrowRight, FileCheck, FilePlus2, ShieldCheck, Landmark } from "lucide-react";
 import { Section } from "@/components/ui/section";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ const FEATURES = [
 export function CompliancePreview() {
   return (
     <Section containerSize="lg">
-      <motion.div
+      <m.div
         initial={{ opacity: 0, y: 30 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-60px" }}
@@ -60,7 +60,7 @@ export function CompliancePreview() {
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
-      </motion.div>
+      </m.div>
     </Section>
   );
 }

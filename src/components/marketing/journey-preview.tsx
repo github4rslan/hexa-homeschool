@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { m } from "framer-motion";
 import * as Icons from "lucide-react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -33,7 +33,7 @@ export function JourneyPreview() {
           const isLast = i === JOURNEY.length - 1;
 
           return (
-            <motion.div
+            <m.div
               key={step.step}
               initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -67,7 +67,7 @@ export function JourneyPreview() {
                   {step.description}
                 </p>
               </div>
-            </motion.div>
+            </m.div>
           );
         })}
       </div>
