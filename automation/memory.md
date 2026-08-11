@@ -913,3 +913,36 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   a curriculum.seed.ts GCSE topic must be inline on the topic object (that file's SEED_TOPICS builder only
   spreads worked_example); the bands file has its own GLOSSARY_BY_TOPIC. Teardown: /logout POST +
   browser_close. Health: newest prod deploy READY, /api/health 200, runtime errors clean.
+- 2026-08-11 (Scout) — Discovery pass, day-focus = PERFORMANCE (UTC Tuesday). Parent (SMOKE) + child
+  (Ivy) + marketing coverage full (desktop iw 1280 + mobile iw 390, whole-page); admin/tutor NOT
+  re-authenticated this pass (chose to keep their creds off the wire; both read-only + clean every
+  recent run — noted honestly in the report). Took **English "Sentence Structure" (eng_ks2_writing)**
+  end-to-end as Ivy: explainer (StepReveal + "capital letter"/"full stop" glossary chips + narration
+  + "Show me another way") → practice 3/3 (one deliberate WRONG: violet oklab b=-0.20 NOT red, "Ivy,
+  not quite yet — have another go", "Why isn't that right?", "2 tries left", escalating hint) →
+  mastery 3/3 → certified + band-promotion celebration ("You unlocked a whole new set of English
+  adventures!", child-safe, no key-stage). ZERO console errors on EVERY surface; /api/health 200;
+  type-check + lint GREEN; npm audit 0. HEADLINE PERF FIND: homepage cold-load LCP **2272ms** while
+  FCP 608ms — the LCP element is the hero <h1> which animates from opacity:0 + blur(8px) + y:40
+  (hero.tsx wordVariants + delayChildren 0.15 + duration 0.9), so contentful paint of in-HTML text is
+  deferred ~1.6s; on throttled mobile this crosses the 2.5s budget (B1). Also `/` ships ~1.78MB JS /
+  32 chunks (two big: 498KB + 411KB) + 128KB CSS (F2 = LazyMotion + dynamic below-fold sections, on
+  the CURRENT framer-motion, NOT the deferred `motion` rename). And 16 marketing components use
+  framer-motion with only stats-strip/count-up guarding reduced-motion + NO global MotionConfig, so
+  prefers-reduced-motion users still get every entrance (globals.css 0.01ms rule only affects CSS
+  anims, not framer JS) → F1 one `<MotionConfig reducedMotion="user">` wrapper fixes all of it.
+  NEW BUG (a11y, the value of the parent sweep): **B2 /portfolio has NO <main> landmark** (only NAV;
+  #main-content absent) — the 2026-08-09 landmark fix covered dashboard root + admin but MISSED
+  portfolio, which owns its own <div className="relative min-h-screen"> shell (page.tsx:45,48);
+  every other dashboard page has exactly one <main>. Fix = change the content div (line 48) to <main
+  id="main-content">. Curriculum (headline lane): authored 6 exam-style command-word Qs IN FULL
+  (F3 maths_sequences/geometry/graphs, F4 sci_forces accel + sci_reactions Mr + eng_analysis metaphor
+  effect), each one defensible + re-derived. Delight (owner standing priority): F5 calm answer-REVEAL
+  guiding glow (the biggest un-celebrated moment — reveal after a miss), F6 fill_blank supportive
+  wrong-settle (last type without its own miss feedback). PATTERN: (1) an animated LCP element is a
+  silent perf killer — measure LCP vs FCP on a COLD load (a big FCP→LCP gap on a text element = the
+  hero is fading in); framer-motion's JS transitions are NOT covered by the reduced-motion CSS
+  override. (2) SPA soft-nav does NOT repopulate performance paint/LCP entries, so only the FIRST
+  hard page load gives a real LCP number — measure the target page as the first navigation. (3) GREP
+  the <main> across (dashboard) to find the odd-one-out landmark miss rather than eyeballing. Teardown:
+  fetch('/logout',POST)→200 + browser_close. Emailing owner the scenario summary via email-findings.ts.
