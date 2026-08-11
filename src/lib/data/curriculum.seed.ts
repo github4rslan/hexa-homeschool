@@ -765,6 +765,76 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "'Like tired eyes' is a comparison for effect, not a factual list.",
     ],
   },
+  // ── F3 (2026-08-11): 3 command-word Maths items for uncovered topics ──
+  // Edexcel 1MA1 A23 — nth term of a linear sequence ("Work out an expression").
+  {
+    topic_tag: "maths_sequences",
+    subject: "mathematics",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Work out an expression for the nth term of the sequence 5, 8, 11, 14, …",
+    options: ["3n + 2", "3n + 5", "5n + 3", "n + 3"],
+    correct_index: 0,
+    explanation:
+      "The terms go up by 3 each time, so the expression starts with 3n. When n = 1, 3n = 3, but the first term is 5, so add 2: the nth term is 3n + 2.",
+    hints: [
+      "Find the common difference between the terms — that becomes the number in front of n.",
+      "The sequence goes up by 3, so it starts 3n; then choose the constant so that n = 1 gives 5.",
+    ],
+    misconceptions: [
+      "",
+      "You used the first term (5) as the constant. The constant is first term minus the common difference: 5 − 3 = 2.",
+      "You put the first term in front of n. The number in front of n is the common difference (3), not the first term.",
+      "Going up by 3 each time means the coefficient of n is 3, giving 3n, not n.",
+    ],
+  },
+  // Edexcel 1MA1 G3 — interior angle of a regular polygon ("Calculate").
+  {
+    topic_tag: "maths_geometry",
+    subject: "mathematics",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Calculate the size of each interior angle of a regular hexagon.",
+    options: ["120°", "108°", "135°", "720°"],
+    correct_index: 0,
+    explanation:
+      "The interior angles of a hexagon add to (6 − 2) × 180 = 720°. A regular hexagon has 6 equal angles, so each is 720 ÷ 6 = 120°.",
+    hints: [
+      "Sum of interior angles = (number of sides − 2) × 180.",
+      "For a regular polygon, divide the total by the number of sides.",
+    ],
+    misconceptions: [
+      "",
+      "108° is each interior angle of a regular pentagon (5 sides), not a hexagon.",
+      "135° is each interior angle of a regular octagon (8 sides).",
+      "720° is the total of all the interior angles. Divide by 6 to get one angle.",
+    ],
+  },
+  // Edexcel 1MA1 A10 — gradient of a line through two points ("Work out").
+  {
+    topic_tag: "maths_graphs",
+    subject: "mathematics",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "A straight line passes through the points (0, 1) and (2, 7). Work out the gradient of the line.",
+    options: ["3", "1/3", "4", "6"],
+    correct_index: 0,
+    explanation:
+      "Gradient = change in y ÷ change in x = (7 − 1) ÷ (2 − 0) = 6 ÷ 2 = 3.",
+    hints: [
+      "Gradient = (difference in y) ÷ (difference in x).",
+      "The y values change by 6 while the x values change by 2.",
+    ],
+    misconceptions: [
+      "",
+      "You divided the x-change by the y-change. Gradient is y-change over x-change: 6 ÷ 2.",
+      "You found the change in x plus something. Use rise ÷ run = 6 ÷ 2 = 3.",
+      "6 is the change in y only. Divide it by the change in x (2) to get the gradient.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */

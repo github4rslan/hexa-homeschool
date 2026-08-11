@@ -261,6 +261,65 @@ describe("F2 (2026-08-09) — GCSE Maths inequalities strand", () => {
   });
 });
 
+describe("F3 (2026-08-11) — 3 command-word Maths items for uncovered topics", () => {
+  const items = [
+    {
+      tag: "maths_sequences",
+      prompt:
+        "Work out an expression for the nth term of the sequence 5, 8, 11, 14, …",
+      answer: "3n + 2",
+    },
+    {
+      tag: "maths_geometry",
+      prompt: "Calculate the size of each interior angle of a regular hexagon.",
+      answer: "120°",
+    },
+    {
+      tag: "maths_graphs",
+      prompt:
+        "A straight line passes through the points (0, 1) and (2, 7). Work out the gradient of the line.",
+      answer: "3",
+    },
+  ];
+
+  it("adds exactly one well-formed item per topic, keyed to the intended answer", () => {
+    for (const { tag, prompt, answer } of items) {
+      const found = ALL.filter((q) => q.prompt === prompt);
+      expect(found.length, `exactly one item for: ${prompt}`).toBe(1);
+      const q = found[0];
+      expect(q.topic_tag).toBe(tag);
+      expect(q.subject).toBe("mathematics");
+      expect(q.key_stage).toBe(4);
+      expect(q.options.length).toBe(4);
+      expect(q.correct_index).toBeGreaterThanOrEqual(0);
+      expect(q.correct_index).toBeLessThan(q.options.length);
+      expect(q.options[q.correct_index]).toBe(answer);
+      // Distractors all distinct (no equal-value trap).
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(q.explanation.trim().length).toBeGreaterThan(0);
+      // Misconceptions index-aligned; the correct slot is blank.
+      expect(q.misconceptions).toBeDefined();
+      expect(q.misconceptions!.length).toBeLessThanOrEqual(q.options.length);
+      expect((q.misconceptions![q.correct_index] ?? "").trim()).toBe("");
+      expect(q.hints && q.hints.length).toBeGreaterThan(0);
+      const topic = SEED_TOPICS.find((t) => t.topic_tag === tag);
+      expect(topic, `topic exists for ${tag}`).toBeDefined();
+    }
+  });
+
+  it("computes to the keyed answer for each quantitative item", () => {
+    // Sequence 5, 8, 11, 14 → common difference 3, constant 5 − 3 = 2 → 3n + 2.
+    const first = 5;
+    const diff = 8 - 5;
+    expect(diff).toBe(3);
+    expect(first - diff).toBe(2); // constant term
+    // Regular hexagon interior angle = (6 − 2) × 180 / 6 = 120°.
+    expect(((6 - 2) * 180) / 6).toBe(120);
+    // Gradient through (0, 1) and (2, 7) = (7 − 1) / (2 − 0) = 3.
+    expect((7 - 1) / (2 - 0)).toBe(3);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
