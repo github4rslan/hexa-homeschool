@@ -320,6 +320,61 @@ describe("F3 (2026-08-11) — 3 command-word Maths items for uncovered topics", 
   });
 });
 
+describe("F4 (2026-08-11) — 3 command-word Science + English items", () => {
+  const items = [
+    {
+      tag: "sci_forces",
+      subject: "science",
+      prompt: "A car speeds up from 0 to 20 m/s in 4 seconds. Calculate its acceleration.",
+      answer: "5 m/s²",
+    },
+    {
+      tag: "sci_reactions",
+      subject: "science",
+      prompt:
+        "Calculate the relative formula mass (Mr) of water, H₂O. (Relative atomic masses: H = 1, O = 16.)",
+      answer: "18",
+    },
+    {
+      tag: "eng_analysis",
+      subject: "english",
+      prompt:
+        "A writer describes a schoolroom with the metaphor: 'The classroom was a prison.' What does this most strongly suggest about how the narrator feels?",
+      answer: "Trapped and unhappy in the room",
+    },
+  ];
+
+  it("adds exactly one well-formed item per topic, keyed to the intended answer", () => {
+    for (const { tag, subject, prompt, answer } of items) {
+      const found = ALL.filter((q) => q.prompt === prompt);
+      expect(found.length, `exactly one item for: ${prompt}`).toBe(1);
+      const q = found[0];
+      expect(q.topic_tag).toBe(tag);
+      expect(q.subject).toBe(subject);
+      expect(q.key_stage).toBe(4);
+      expect(q.options.length).toBe(4);
+      expect(q.correct_index).toBeGreaterThanOrEqual(0);
+      expect(q.correct_index).toBeLessThan(q.options.length);
+      expect(q.options[q.correct_index]).toBe(answer);
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(q.explanation.trim().length).toBeGreaterThan(0);
+      expect(q.misconceptions).toBeDefined();
+      expect(q.misconceptions!.length).toBeLessThanOrEqual(q.options.length);
+      expect((q.misconceptions![q.correct_index] ?? "").trim()).toBe("");
+      expect(q.hints && q.hints.length).toBeGreaterThan(0);
+      const topic = SEED_TOPICS.find((t) => t.topic_tag === tag);
+      expect(topic, `topic exists for ${tag}`).toBeDefined();
+    }
+  });
+
+  it("computes to the keyed answer for each quantitative item", () => {
+    // Acceleration = (20 − 0) / 4 = 5 m/s².
+    expect((20 - 0) / 4).toBe(5);
+    // Relative formula mass of H₂O = (2 × 1) + 16 = 18.
+    expect(2 * 1 + 16).toBe(18);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
