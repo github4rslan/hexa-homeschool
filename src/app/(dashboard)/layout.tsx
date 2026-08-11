@@ -5,6 +5,7 @@ import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { THEME_NOFLASH_SCRIPT } from "@/components/theme/theme";
 import { InstallPrompt } from "@/components/pwa/install-prompt";
+import { ReducedMotionProvider } from "@/components/fx/reduced-motion-provider";
 
 /**
  * Dashboard group layout. Mounts parents-only analytics (parent identified by
@@ -38,7 +39,7 @@ export default async function DashboardLayout({
         // Runs before hydration; sets theme-light on #hexa-workspace if needed.
         dangerouslySetInnerHTML={{ __html: THEME_NOFLASH_SCRIPT }}
       />
-      {children}
+      <ReducedMotionProvider>{children}</ReducedMotionProvider>
       <InstallPrompt />
       {!isSmoke && <AnalyticsProvider identifyAs={parentId} />}
     </ThemeProvider>
