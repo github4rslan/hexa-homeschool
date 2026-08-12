@@ -1717,6 +1717,7 @@ export function PracticePlayer({
             wasCorrect={isCorrect}
             onReadyChange={setReady}
             forceMcqSelect={spokenSelect}
+            wrongAttemptCount={isCorrect ? 0 : attempts}
           />
         </div>
 
