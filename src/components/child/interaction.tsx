@@ -5,9 +5,10 @@ import {
   useEffect,
   useImperativeHandle,
   useMemo,
+  useRef,
   useState,
 } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useAnimationControls, useReducedMotion } from "framer-motion";
 import { Check, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AccentPreset } from "@/lib/child/accents";
@@ -73,6 +74,12 @@ interface InteractionProps {
   onReadyChange?: (ready: boolean) => void;
   /** STT bridge for mcq: selecting this option from a spoken answer. */
   forceMcqSelect?: number | null;
+  /**
+   * Count of wrong (non-revealing) checks on this step. `fill_blank` uses an
+   * increase here to play a single calm supportive settle (breathe + refocus)
+   * so a miss invites a retype instead of just clearing. Other types ignore it.
+   */
+  wrongAttemptCount?: number;
 }
 
 export const Interaction = forwardRef<InteractionHandle, InteractionProps>(
@@ -86,6 +93,7 @@ export const Interaction = forwardRef<InteractionHandle, InteractionProps>(
       wasCorrect,
       onReadyChange,
       forceMcqSelect,
+      wrongAttemptCount,
     },
     ref,
   ) {
@@ -109,6 +117,7 @@ export const Interaction = forwardRef<InteractionHandle, InteractionProps>(
             reveal={reveal}
             wasCorrect={wasCorrect}
             onReadyChange={onReadyChange}
+            wrongAttemptCount={wrongAttemptCount}
           />
         );
       case "drag_drop":
@@ -427,8 +436,19 @@ const FillBlank = forwardRef<
     reveal: boolean;
     wasCorrect?: boolean;
     onReadyChange?: (ready: boolean) => void;
+    wrongAttemptCount?: number;
   }
->(function FillBlank({ it, accent, reveal, wasCorrect, onReadyChange }, ref) {
+>(function FillBlank(
+  { it, accent, reveal, wasCorrect, onReadyChange, wrongAttemptCount },
+  ref,
+) {
+  const reduced = useReducedMotion();
+  const controls = useAnimationControls();
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const prevWrong = useRef(wrongAttemptCount ?? 0);
+  // After a wrong (non-revealing) check, the field carries a calm accent tint
+  // (never red) until the child edits again — a supportive "have another go".
+  const [settled, setSettled] = useState(false);
   const [values, setValues] = useState<string[]>(() =>
     it.blanks.map(() => ""),
   );
@@ -436,6 +456,30 @@ const FillBlank = forwardRef<
   useEffect(() => {
     onReadyChange?.(values.every((v) => v.trim().length > 0));
   }, [values, onReadyChange]);
+
+  // Supportive settle on a wrong answer: a single soft breathe + refocus so the
+  // child is invited to retype. Reduced motion → instant refocus only, no
+  // motion. Never red, never a shake or buzzer (calm-wrong law).
+  useEffect(() => {
+    const next = wrongAttemptCount ?? 0;
+    if (next > prevWrong.current && !reveal) {
+      setSettled(true);
+      const target = Math.max(
+        0,
+        values.findIndex((v) => !v.trim()),
+      );
+      inputRefs.current[target]?.focus();
+      if (!reduced) {
+        controls.start({
+          scale: [1, 0.99, 1],
+          transition: { duration: 0.3, ease: "easeOut" },
+        });
+      }
+    }
+    prevWrong.current = next;
+    // Intentionally excludes `values`: only react to a new wrong attempt.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wrongAttemptCount, reveal, reduced, controls]);
 
   useImperativeHandle(ref, () => ({
     isCorrect: () => checkFillBlank(it, values),
@@ -458,6 +502,7 @@ const FillBlank = forwardRef<
   }));
 
   function setBlank(i: number, v: string) {
+    setSettled(false);
     setValues((prev) => {
       const next = [...prev];
       next[i] = v;
@@ -475,7 +520,11 @@ const FillBlank = forwardRef<
           {part && <span className="whitespace-pre-wrap">{part}</span>}
           {i < it.blanks.length && (
             <span className="mx-1 inline-flex flex-col items-center">
-              <input
+              <motion.input
+                ref={(el) => {
+                  inputRefs.current[i] = el;
+                }}
+                animate={controls}
                 type="text"
                 inputMode={it.blanks[i].numeric ? "numeric" : "text"}
                 value={values[i]}
@@ -494,7 +543,9 @@ const FillBlank = forwardRef<
                     ? wasCorrect
                       ? "border-neon-400/60"
                       : "border-white/10 opacity-60 saturate-50"
-                    : "border-white/15 focus:border-white/40",
+                    : settled
+                      ? cn(accent.border, "focus:border-white/40")
+                      : "border-white/15 focus:border-white/40",
                 )}
                 style={{ width: `${Math.max(5, values[i].length + 2)}ch` }}
               />
