@@ -1,7 +1,13 @@
 "use client";
 
 import { useRef } from "react";
-import { m, useScroll, useTransform, type Variants } from "framer-motion";
+import {
+  m,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+  type Variants,
+} from "framer-motion";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -37,6 +43,7 @@ const TRUST = [
 ];
 
 export function Hero() {
+  const reduced = useReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -62,8 +69,13 @@ export function Hero() {
       />
 
       <Container>
+        {/* Scroll parallax is skipped entirely for reduced-motion users (static
+            hero, no per-frame scroll work); when active, hint the compositor
+            with will-change so the transform stays off the main thread. */}
         <m.div
-          style={{ opacity, y }}
+          style={
+            reduced ? undefined : { opacity, y, willChange: "transform" }
+          }
           className="mx-auto max-w-4xl flex flex-col items-center text-center gap-8 relative z-10"
         >
           <m.div
