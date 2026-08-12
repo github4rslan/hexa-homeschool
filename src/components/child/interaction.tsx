@@ -186,6 +186,14 @@ const Mcq = forwardRef<
         // action. A shown-but-not-chosen correct option (child got it wrong)
         // keeps the quiet static tint.
         const celebrate = showCorrect && wasCorrect && chosen;
+        // Reveal-after-a-miss (or a "See it" reveal): the correct option was NOT
+        // the child's own right pick. This is the key teaching moment — a slow,
+        // one-time guiding glow gently draws the eye to the correct method so
+        // "you got it wrong" becomes "look, here is how it works". Strictly calm:
+        // accent glow only, never red, never a shake; it is pointer-events-none
+        // so it can never delay or block the "Keep going" tap. Reduced motion
+        // collapses it to the existing static tint.
+        const guide = showCorrect && !celebrate;
         return (
           <motion.button
             key={i}
@@ -226,6 +234,20 @@ const Mcq = forwardRef<
                 )}
               />
             )}
+            {/* Guiding glow for the reveal-after-a-miss: a slow one-time accent
+                halo that breathes once to draw the eye to the correct method.
+                Calm accent only, never red; pointer-events-none so it can never
+                block the "Keep going" tap. Reduced motion shows only the static
+                tint above. */}
+            {guide && !reduced && (
+              <motion.span
+                aria-hidden
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 0.55] }}
+                transition={{ duration: 0.7, ease: "easeOut", times: [0, 0.6, 1] }}
+                className="pointer-events-none absolute inset-0 rounded-3xl ring-2 ring-neon-400/60 shadow-[0_0_26px_rgba(132,204,22,0.35)]"
+              />
+            )}
             <span className="relative z-10 flex flex-1 items-center gap-4">
               <span
                 className={cn(
@@ -241,7 +263,7 @@ const Mcq = forwardRef<
               </span>
               <span className="flex-1 text-fog-50">{option}</span>
               {showCorrect &&
-                (celebrate ? (
+                (celebrate || (guide && !reduced) ? (
                   <DrawnCheck reduced={!!reduced} />
                 ) : (
                   <Check className="h-7 w-7 shrink-0 text-neon-400" />
