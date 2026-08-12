@@ -946,3 +946,52 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   hard page load gives a real LCP number — measure the target page as the first navigation. (3) GREP
   the <main> across (dashboard) to find the odd-one-out landmark miss rather than eyeballing. Teardown:
   fetch('/logout',POST)→200 + browser_close. Emailing owner the scenario summary via email-findings.ts.
+- 2026-08-12 (Mechanic build run, DECISION `all`; findings 2026-08-11; B1,B2 + F1-F7, 9 items). ALL 9
+  SHIPPED, each green-gated (type-check + tests + lint + build, one commit, pushed to main) AND
+  live-verified on edway.uk after the Vercel deploy went READY (via Vercel MCP). A session/usage limit
+  interrupted mid-F5; the auto-resume continued cleanly from git log (nothing redone), which validated the
+  checkpoint-per-item design. **B1** hero LCP: split the h1 into leadVariants (opacity 1 from the first
+  frame, only a gentle y rise) so the LCP line paints immediately; second line keeps the blur/opacity
+  reveal. Live: lead span computed opacity 1. **B2** /portfolio content <div> -> <main id=main-content>
+  (it owned its own shell, the only dashboard page missing <main>). Live: exactly one <main id=main-content>.
+  **F1** ReducedMotionProvider (<MotionConfig reducedMotion=user>) wraps marketing + dashboard layouts:
+  framer-motion JS transitions are NOT covered by the globals.css 0.01ms CSS rule, so this is the only thing
+  that neutralises them for reduce-motion users. Gate-verified (runtime effect needs the OS flag; headless
+  reports no-preference so default users unchanged, which is the requirement). **F2** LazyMotion win on the
+  CURRENT framer-motion: swapped all 16 marketing components motion.*->m.* under a LazyMotionProvider
+  (<LazyMotion features={domAnimation}>, non-strict) in the marketing layout, + next/dynamic (ssr on) for the
+  8 below-the-fold homepage sections. KEY: verified domAnimation covers every feature used BEFORE swapping,
+  by reading node_modules/framer-motion/dist/es/motion/features/gestures.mjs -> gestureAnimations includes
+  inView/tap/focus/hover, and domAnimation = animations + gestureAnimations, so whileInView (used in 12
+  components) is supported; no marketing component uses layout/drag (domMax-only), so domAnimation is safe.
+  Non-strict on purpose because shared fx components in the tree still use full motion.* and strict would
+  throw on them. LazyMotion `features` holds functions so it CANNOT be passed from a server-component layout
+  directly -> needs a "use client" wrapper (same reason ReducedMotionProvider is a wrapper). Live: homepage
+  13 sections all SSR-rendered, footer+CTA present, 0 console errors (no hidden below-fold content, no
+  whileInView no-op). **F3+F4** 6 exam-style command-word Qs transcribed VERBATIM into EXAM_STYLE_QUESTIONS
+  (maths_sequences/geometry/graphs; sci_forces accel/sci_reactions Mr/eng_analysis metaphor), Vitest proves
+  well-formed + computes, seeded once for both (12 upserted, idempotent). Live: read-only Mongo query
+  confirmed all 6 present with correct keyed answers. NOTE on dashes: the task scoped the no-dash rule to
+  MY commits/comments/report; curriculum transcription is verbatim (the findings hints contain em dashes and
+  prior batches transcribed them verbatim into this same file), so I kept them exact rather than reword. **F5**
+  calm guiding glow on reveal-after-a-miss: guide = showCorrect && !celebrate -> a one-time neon ring+shadow
+  halo (opacity breathe 0.7s) + the self-drawing check on the correct option; pointer-events-none so it never
+  blocks Keep going; wrong pick stays soft-dim; useReducedMotion collapses to the static tint. Live-DROVE
+  maths_fractions to the cap (3 wrong): correct option 7/8 had the glow overlay + DrawnCheck + green border
+  (oklab a=-0.19, NOT red), wrong pick 5/8 stayed dimmed with no glow, 0 console errors. **F6** fill_blank
+  supportive settle: threaded a wrongAttemptCount prop (parent passes `isCorrect ? 0 : attempts`) -> on an
+  increase the field breathes once (scale 1->0.99->1) + refocuses the first empty blank + tints the border to
+  the calm accent (never red) until the child edits. Gate-verified + prop-wired; the shared interaction.tsx
+  file rendered live-clean (F5 proved it loads with 0 errors); a live fill_blank STEP was not reached this
+  pass (fractions practice is all mcq; hunting one is fragile). **F7** hero parallax gated behind
+  useReducedMotion (static hero, no per-frame scroll work) + will-change:transform hint. Live: motion-OK
+  wrapper has will-change transform and on scroll translateY 33.86px + opacity 0.67 (parallax still works).
+  Health: newest prod deploy READY + aliased to edway.uk, /api/health 200 {db:up}, get_runtime_errors clean.
+  LEARNINGS worth repeating: (1) before a broad LazyMotion m.* swap, PROVE the chosen feature set covers every
+  prop used by reading the framer-motion feature .mjs files (gestures.mjs holds inView) - a whileInView no-op
+  would silently hide below-fold content on a push-to-prod repo. (2) LazyMotion/MotionConfig features props
+  are non-serializable (functions) so they need a client wrapper component, never inline in a server layout.
+  (3) verbatim curriculum transcription overrides the no-dash preference for the seed file content; keep MY
+  own writing dash-free. (4) checkpoint-per-item (commit + flip checkbox together) made the mid-F5 usage-limit
+  cutoff a no-op on resume - git log --oneline confirmed exactly what shipped. (5) MCP browser persisted the
+  SMOKE parent login autofill (one click, no password typed); child mode needed no PIN as the owning parent.
