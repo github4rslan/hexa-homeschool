@@ -910,6 +910,30 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "The metaphor is about how the narrator feels, not about how tidy the room is.",
     ],
   },
+  // AQA 8464 Biology 4.1.1.5 — microscopy magnification ("Calculate the magnification").
+  {
+    topic_tag: "sci_cells",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "A cell has a real width of 0.05 mm. Under a microscope its image measures 10 mm across. Calculate the magnification.",
+    options: ["×200", "×20", "×0.005", "×10"],
+    correct_index: 0,
+    explanation:
+      "Magnification = size of image ÷ size of real object = 10 mm ÷ 0.05 mm = 200. Both lengths are in the same unit, so the magnification has no units and is written ×200.",
+    hints: [
+      "Use the equation magnification = size of image ÷ size of real object.",
+      "Divide 10 mm by 0.05 mm, keeping both lengths in the same unit.",
+    ],
+    misconceptions: [
+      "",
+      "Looks like you divided 10 by 0.5. The real width is 0.05 mm, so divide 10 by 0.05.",
+      "That is the real size ÷ the image size (0.05 ÷ 10). Magnification is image ÷ real, so 10 ÷ 0.05.",
+      "That is only the image size in mm. Divide the image size by the real size to get the magnification.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */

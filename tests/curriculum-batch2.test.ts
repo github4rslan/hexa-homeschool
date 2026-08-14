@@ -375,6 +375,48 @@ describe("F4 (2026-08-11) — 3 command-word Science + English items", () => {
   });
 });
 
+// Shared well-formedness assertion for a single authored exam-style item.
+function expectWellFormedItem(
+  tag: string,
+  subject: string,
+  prompt: string,
+  answer: string,
+) {
+  const found = ALL.filter((q) => q.prompt === prompt);
+  expect(found.length, `exactly one item for: ${prompt}`).toBe(1);
+  const q = found[0];
+  expect(q.topic_tag).toBe(tag);
+  expect(q.subject).toBe(subject);
+  expect(q.key_stage).toBe(4);
+  expect(q.options.length).toBe(4);
+  expect(q.correct_index).toBeGreaterThanOrEqual(0);
+  expect(q.correct_index).toBeLessThan(q.options.length);
+  expect(q.options[q.correct_index]).toBe(answer);
+  // Distractors all distinct (no equal-value trap).
+  expect(new Set(q.options).size).toBe(q.options.length);
+  expect(q.explanation.trim().length).toBeGreaterThan(0);
+  // Misconceptions index-aligned; the correct slot is blank.
+  expect(q.misconceptions).toBeDefined();
+  expect(q.misconceptions!.length).toBeLessThanOrEqual(q.options.length);
+  expect((q.misconceptions![q.correct_index] ?? "").trim()).toBe("");
+  expect(q.hints && q.hints.length).toBeGreaterThan(0);
+  const topic = SEED_TOPICS.find((t) => t.topic_tag === tag);
+  expect(topic, `topic exists for ${tag}`).toBeDefined();
+}
+
+describe("F1 (2026-08-14) — sci_cells magnification calculation item", () => {
+  const prompt =
+    "A cell has a real width of 0.05 mm. Under a microscope its image measures 10 mm across. Calculate the magnification.";
+
+  it("adds exactly one well-formed item keyed to ×200", () => {
+    expectWellFormedItem("sci_cells", "science", prompt, "×200");
+  });
+
+  it("computes: magnification = image / real = 10 mm / 0.05 mm = 200", () => {
+    expect(10 / 0.05).toBe(200);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
