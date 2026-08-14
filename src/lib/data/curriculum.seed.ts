@@ -963,6 +963,34 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "Valves that prevent backflow are found in veins, where the pressure is low.",
     ],
   },
+  // Edexcel 1MA1 A18 — factorising quadratic with a mixed-sign trap ("Solve").
+  {
+    topic_tag: "maths_quadratics",
+    subject: "mathematics",
+    tier: 5,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Solve x² + 2x − 15 = 0.",
+    options: [
+      "x = −5 or x = 3",
+      "x = 5 or x = −3",
+      "x = 3 or x = 5",
+      "x = −5 or x = −3",
+    ],
+    correct_index: 0,
+    explanation:
+      "Find two numbers that multiply to −15 and add to +2: those are +5 and −3. So x² + 2x − 15 = (x + 5)(x − 3) = 0, giving x = −5 or x = 3.",
+    hints: [
+      "Find two numbers that multiply to −15 and add to +2.",
+      "Set each bracket equal to 0: x + 5 = 0 and x − 3 = 0.",
+    ],
+    misconceptions: [
+      "",
+      "Check the signs: the brackets are (x + 5)(x − 3), so the roots are −5 and 3, not 5 and −3.",
+      "Each root has the opposite sign to the number in its bracket: (x + 5) gives −5, (x − 3) gives +3.",
+      "The +2x means the two numbers add to +2, so one must be positive: +5 and −3.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
