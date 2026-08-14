@@ -1029,3 +1029,59 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   proper skeleton (innerText includes sr-only) -> NOT a bare-loading bug; don't file it. Teardown: parent /logout
   POST (MCP) + browser_close; admin/tutor logged out inside the script's own contexts. Emailed owner the scenario
   summary via scripts/email-findings.ts.
+- 2026-08-14/15 (Mechanic build run, DECISION `all`; findings 2026-08-14; B1 + F1-F7, 8 items). ALL 8 SHIPPED,
+  each green-gated (type-check + tests + lint + build, one commit, pushed to main) AND live-verified on edway.uk
+  after the Vercel deploy went READY (Vercel MCP). A session/usage limit interrupted mid-F7; the coordinator
+  confirmed B1+F1-F6 were already committed (through a005175) with a clean tree, and the auto-resume continued from
+  F7 only, nothing redone (checkpoint-per-item design validated again). **B1** wrapped the (child)/learn layout in
+  ReducedMotionProvider (the MotionConfig reducedMotion=user wrapper), matching marketing+dashboard: the child
+  surface is the most animation-heavy AND SEND-critical, and framer-motion JS transitions are not covered by the
+  globals.css 0.01ms rule, so this is the belt-and-braces reduced-motion net. Live: /learn + a full lesson render
+  with 0 console errors. **F1/F2/F3** three command-word exam items transcribed VERBATIM into EXAM_STYLE_QUESTIONS
+  (sci_cells magnification image/real=10/0.05=x200; sci_body "Explain arteries" = high pressure from heart;
+  maths_quadratics x^2+2x-15 => (x+5)(x-3) => x=-5 or 3). Committed as THREE separate commits (one per finding, per
+  the one-commit-per-item rule) by keeping each committed tree internally consistent: split the Vitest block into a
+  shared expectWellFormedItem helper + one describe per item, then added the seed question + its describe block
+  incrementally so every intermediate commit is green (the alternative, same-file patch staging, is error-prone).
+  Ran `npm run seed` once after all three landed: 9 written on the first run (3 new + 6 that the seed ALWAYS
+  rewrites), 6 on the immediate re-run => confirms exactly the 3 new inserts (the 6 are a pre-existing
+  non-idempotent quirk, not mine). Verified live via a read-only Mongo query: all 3 present, one each, correct
+  keyed answers (x200 / high-pressure / x=-5 or 3). GOTCHA carried forward: the verbatim curriculum content
+  overrides the no-dash preference (the findings hints contain em dashes), keep MY own writing dash-free. **F4**
+  supportive wrong-answer on the warm-up: threaded firstName into WarmupPlayer (page reads child.full_name),
+  personalised the miss copy ("Good try, Ivy, here's the idea again", replacing the old em-dash "Good try -- here's
+  the idea again"), and added a one-time calm settle (scale 1->0.99->1) on the child's wrong pick via a
+  motion.button (kept the amber tint, gated on useReducedMotion). Live-drove a wrong warm-up pick: personalised
+  copy rendered, wrong pick amber (oklch hue ~95), redFound=false. **F5** whileTap on the active quest cards: a
+  module-level `const MotionLink = motion(Link)` with `whileTap={reduce ? undefined : { scale: 0.98 }}`; resting/
+  coming-soon/certified non-link cards untouched. Live: /learn hub renders the active cards as links, 0 console
+  errors (whileTap is touch-only, gate-verified). **F6** inline Eddie reaction on a lesson miss: a small
+  self-contained EddieMiss glyph (the same WandSparkles Eddie mark the See-it coach uses) in an accent box that
+  slides in + gives one warm nod, replacing the static Sparkles icon in the calm feedback (role=status) region;
+  aria-hidden (the calm line carries meaning), reduced prop typed boolean|null because useReducedMotion() returns
+  that. Live-drove a sci_cells practice miss: the glyph SVG rendered in the accent box beside "You picked
+  Cytoplasm, Ivy...", styled violet (oklab negative-b), redFound=false, calm-law intact. **F7** (size L) mock
+  mark-weighting + honest approximate boundary grade to the PARENT: pure `marksForTier` (tier 1,2->1 mark, 3->2,
+  4->3, 5->4), marks-aware scoreMock (new marksTotal/marksEarned/marksPct, backward compatible: uniform 1-mark =>
+  marksPct==scorePct), and `gradeForMarks(subject, "Foundation"|"Higher", marksPct)` approximate boundary table
+  (1MA1/8700/8464, Foundation caps at 5, Higher 4-9, English single-tier, returns {grade, approximate:true}).
+  Wired marks through buildMockPaper->MockQuestion.marks->player answer key->submitMock (now takes the paper's
+  tierLabel)->recordMockResult, storing NEW optional EvaluationDoc fields mock_marks_pct + mock_boundary_grade
+  (additive, legacy-safe). Surfaced parent-only on the child-detail "Current standing" card ("Exam-style grade X
+  (approximate boundaries)", amber) via a new SubjectStanding.mockBoundaryGrade; child MockGradeReveal deliberately
+  UNCHANGED (no pass/fail leaks to the child, invariant held). 14 new unit tests. Live: parent child-detail +
+  /learn + lesson all render 0 console errors; the boundary-grade line needs a fresh mock (>=10 certified unlocks
+  it + one-per-period lock) so the live grade render is DEFERRED (gate-verified + unit-tested), consistent with the
+  finding's own note. Health: newest prod deploy (99ac09a) READY + aliased to edway.uk, /api/health 200 {db:up},
+  get_runtime_errors clean before AND after driving the flows. LEARNINGS worth repeating: (1) to ship N curriculum
+  items from one findings section as N separate green commits, extract a shared test helper and give each item its
+  own describe block, then add seed-question + describe together per commit so every intermediate tree passes its
+  own test (never same-file patch staging). (2) `npm run seed` reports 6 questions as "written" on EVERY run
+  (pre-existing non-idempotent rows); subtract that baseline to read the true new-insert count, and re-run once to
+  confirm. (3) an env-safe way to live-verify seeded curriculum: a throwaway tsx script that hand-parses .env.local
+  (no dotenv CLI dependency) and does a read-only find on the questions collection, then delete the script. (4)
+  for a new parent-only grade derived from a mock, store it as NEW optional EvaluationDoc fields and expose via a
+  new SubjectStanding field rather than overloading model_predicted_grade, so the child reveal + trajectory
+  semantics stay untouched and no pass/fail reaches the child. (5) MCP browser still persists the SMOKE parent
+  login autofill (one click, no password typed); child mode needs no PIN as the owning parent with the active-child
+  cookie set; teardown fetch('/logout',POST)->200 + browser_close.
