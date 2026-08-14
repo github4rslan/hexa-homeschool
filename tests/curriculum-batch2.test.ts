@@ -430,6 +430,24 @@ describe("F2 (2026-08-14) — sci_body 'Explain arteries' command-word item", ()
   });
 });
 
+describe("F3 (2026-08-14) — maths_quadratics mixed-sign 'Solve' item", () => {
+  const prompt = "Solve x² + 2x − 15 = 0.";
+
+  it("adds exactly one well-formed item keyed to x = −5 or x = 3", () => {
+    expectWellFormedItem("maths_quadratics", "mathematics", prompt, "x = −5 or x = 3");
+  });
+
+  it("computes: (x + 5)(x − 3) factorisation gives roots that satisfy the equation", () => {
+    // Factor pair multiplies to −15 and adds to +2.
+    expect(5 * -3).toBe(-15);
+    expect(5 + -3).toBe(2);
+    // Each keyed root satisfies x² + 2x − 15 = 0.
+    const f = (x: number) => x ** 2 + 2 * x - 15;
+    expect(f(-5)).toBe(0);
+    expect(f(3)).toBe(0);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
