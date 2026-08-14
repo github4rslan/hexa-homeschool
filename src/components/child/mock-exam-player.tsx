@@ -70,11 +70,12 @@ export function MockExamPlayer({
     setSubmitted(true);
     const key = questions.map((qq, i) => ({
       tier: qq.tier,
+      marks: qq.marks,
       correct: answers[i] === qq.correctIndex,
     }));
-    const res = await submitMock(subject, key);
+    const res = await submitMock(subject, key, tierLabel);
     setResult(res);
-  }, [answers, questions, subject]);
+  }, [answers, questions, subject, tierLabel]);
 
   // Gentle countdown; auto-submits at zero.
   useEffect(() => {
