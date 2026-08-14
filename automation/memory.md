@@ -995,3 +995,37 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   own writing dash-free. (4) checkpoint-per-item (commit + flip checkbox together) made the mid-F5 usage-limit
   cutoff a no-op on resume - git log --oneline confirmed exactly what shipped. (5) MCP browser persisted the
   SMOKE parent login autofill (one click, no password typed); child mode needed no PIN as the owning parent.
+- 2026-08-14 (Scout) — Discovery pass, day-focus = POLISH (UTC Friday) + owner priority: restore a
+  LIVE admin/tutor auth check. Coverage: marketing / (desktop iw 1280 + mobile iw 390, whole page,
+  0 console errors), /signup + /login inspect-only (labels + autocomplete correct, one h1 each),
+  parent dashboard (SMOKE), FULL child lesson end-to-end as Ivy, admin + tutor live auth verified.
+  Child pass (all PASS): warm-up (spaced-rep, 2 Qs) correct=star burst/wrong=calm amber hue 95 NOT
+  red; English eng_ks3_grammar Learn (worked-example + glossary chips + narration) -> Practise (wrong#1
+  violet oklab b=-0.20 NOT red + "Ivy, not quite yet" + "Why isn't that right?" + 2-left; wrong#2 See-it
+  unlocks + 2 hint rungs + 1-left; See-it = Eddie clue-word walkthrough; correct=star burst green a=-0.19)
+  -> Mastery 3/3 -> certified (trophy+confetti) -> certificate renders (Ivy / Grammar & Clauses / hash).
+  Keyboard: radio reachable, Space selects (aria-checked true). 0 console errors whole flow. AUTH CHECK
+  (owner ask): used a standalone Playwright script (reads .env.local directly so admin/tutor creds never
+  touch the MCP transcript) — TUTOR auth WORKS (reaches /tutor "Assigned sessions", 0 errors, logout
+  clears). ADMIN: first script attempt STALLED on /login (looked like a fail) but a re-probe with BOTH
+  admin cred sets (ADMIN_* and SMOKE_ADMIN_*) landed straight on /admin — so the stall was a TIMING FLAKE
+  (2500ms wait too short for the login POST->redirect chain on a cold context), NOT an auth bug. Admin has
+  no TOTP (one-step login). Both roles: session gates BEFORE login, /logout->200 clears it. LESSON: give a
+  login POST >=2800ms and re-test a "login failed" before filing it — a single cold-context stall is a flake.
+  Static: type-check + lint GREEN, npm audit 0 vulns (re-confirmed). Findings HONEST-SHORT (very mature site):
+  1 bug = B1 (Low a11y) the (child)/learn layout is MISSING the ReducedMotionProvider that marketing+dashboard
+  layouts got on 08-12 — the most motion-heavy + SEND-critical surface has no global reduced-motion safety net
+  (child components self-guard individually, but the wrapper is the belt-and-braces the build added elsewhere).
+  Curriculum (headline): re-derived all 17 EXAM_STYLE_QUESTIONS -> CLEAN (no correctness bug); authored 3 NEW
+  command-word items IN FULL (F1 sci_cells "Calculate magnification" =image/real=10/0.05=x200; F2 sci_body
+  "Explain artery thick walls" =high pressure from heart; F3 maths_quadratics "Solve x^2+2x-15=0" =(x+5)(x-3)=
+  x=-5 or 3, mixed-sign trap). Delight (owner standing priority, 3 distinct moments): F4 supportive wrong-answer
+  settle+name on the WARM-UP (warmup-player.tsx wrong branch is still static amber "Good try" — no motion, no
+  name, unlike the lesson); F5 whileTap press on the touch-first quest cards (quest-cards.tsx active Link has
+  hover:scale but NO tap feedback -> dead tap on touch); F6 inline Eddie mascot reaction on a lesson miss. North
+  star: F7 mock mark-weighting + honest (approximate) grade boundaries surfaced to the PARENT (EPIC 4 next step).
+  PATTERN: GREP-BEFORE-PROPOSING again — the "N reviews due" IS already on the parent dashboard header, and the
+  route loading.tsx skeletons render a VISIBLE-looking "Loading..." that is actually the sr-only label inside a
+  proper skeleton (innerText includes sr-only) -> NOT a bare-loading bug; don't file it. Teardown: parent /logout
+  POST (MCP) + browser_close; admin/tutor logged out inside the script's own contexts. Emailed owner the scenario
+  summary via scripts/email-findings.ts.
