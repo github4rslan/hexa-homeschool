@@ -13,14 +13,16 @@ exams (Edexcel Maths 1MA1, AQA English 8700, AQA Combined Science Trilogy 8464).
 
 ## EPIC 1 — Verified, correct question bank across every spec point
 Status: ACTIVE. The existing bank (~150 human-authored items across 5 seed files)
-is arithmetically/factually clean (re-audited 2026-08-08 and again 2026-08-09).
+is arithmetically/factually clean (re-audited 2026-08-08, 08-09, and again the 17
+EXAM_STYLE_QUESTIONS on 2026-08-14).
 - Next step: continue a rolling per-subject correctness re-audit each run; note
   that a "retire" of a seed question must delete the orphaned old doc (seed never
   deletes), not just reword the prompt.
 - Done so far: full re-derivation of all quantitative + factual answers
   (2026-08-08); B3 sci_body water-absorption item retired + reworded + orphan
   deleted (2026-08-09); curriculum.seed.extra.ts + the F7 exam-style items + F8
-  mensuration re-derived clean again (2026-08-09 Scout) — no correctness bugs.
+  mensuration re-derived clean (2026-08-09); all 17 EXAM_STYLE_QUESTIONS
+  re-derived clean again (2026-08-14 Scout) — no correctness bugs.
 
 ## EPIC 2 — Exam-style, command-word practice (make questions feel like the paper)
 Status: ACTIVE (headline). The bank is almost all single-step recall MCQs; real
@@ -28,18 +30,18 @@ papers use command words (calculate, work out, show that, explain, describe,
 compare) and multi-step reasoning.
 - Next step: keep adding command-word items per topic each run until every KS4
   topic has >= 2 (Scout authors, Mechanic transcribes verbatim + seeds). Still
-  uncovered after this run: maths_quadratics, most science topics (sci_cells,
-  sci_body, sci_atoms, sci_energy), most English topics (comprehension, creative,
-  persuasive, poetry).
+  uncovered after this run: sci_atoms, sci_energy, most English topics
+  (comprehension, creative, persuasive, poetry). sci_cells/sci_body/maths_quadratics
+  each now have one command-word item authored (2026-08-14 Scout F1/F2/F3, pending seed).
 - Done so far: 6 spec-mapped exam-style questions (F7, 2026-08-09) across
   maths_fractions/ratio/number, sci_forces/reactions, eng_devices; 5 MORE authored
   2026-08-09 (Scout F1) for maths_algebra_linear (Solve), maths_pythagoras
   (Calculate), maths_statistics (Work out, probability), sci_electricity
-  (Calculate V=IR), eng_analysis (Explain, simile effect). 6 MORE authored
-  2026-08-11 (Scout F3+F4): maths_sequences (nth term), maths_geometry (regular
-  hexagon interior angle), maths_graphs (gradient from two points), sci_forces
-  (acceleration a=Dv/t), sci_reactions (Mr of water), eng_analysis (metaphor
-  effect) — pending seed.
+  (Calculate V=IR), eng_analysis (Explain, simile effect). 6 MORE 2026-08-11
+  (Scout F3+F4): maths_sequences, maths_geometry, maths_graphs, sci_forces
+  (acceleration), sci_reactions (Mr), eng_analysis (metaphor). 3 MORE authored
+  2026-08-14 (Scout F1/F2/F3): sci_cells (Calculate magnification), sci_body
+  (Explain artery walls), maths_quadratics (Solve mixed-sign quadratic) — pending seed.
 
 ## EPIC 3 — Full spec coverage: close missing GCSE topics
 Status: ACTIVE. Thin areas still to scope: simultaneous equations, transformations,
@@ -56,8 +58,11 @@ extract-based language analysis (English).
 ## EPIC 4 — Exam-condition fidelity in the mock (rehearse exam day)
 Status: ACTIVE. Later: mark-weighted multi-step items, honest grade boundaries
 surfaced to the parent.
-- Next step: mark-weighting + surfacing grade boundaries; live-drive the F9 exam
-  framing screen once a test child has an unlocked mock (>=10 certified).
+- Next step: mark-weighting + surfacing grade boundaries (re-proposed 2026-08-14
+  Scout F7 with a concrete plan: optional per-question `marks`, deterministic
+  `gradeForMarks` boundary table clearly labelled approximate, child result stays
+  calm/unlabelled); live-drive the F9 exam framing screen once a test child has an
+  unlocked mock (>=10 certified).
 - Done so far: calculator vs non-calculator framing + readiness-tiered paper
   (Foundation/Higher window, always-fills fallback) via `lib/engine/mock-paper.ts`
   (F9, 2026-08-09). Gate-verified + unit-tested; framing screen needs an unlocked
@@ -68,31 +73,36 @@ Status: ACTIVE (largely complete on the child side). Spaced-rep warm-up + readin
 trajectory schedule deterministically from certification dates/scores (non-profiling).
 - Next step: give the PARENT visibility of review debt (2026-08-09 Scout F8: a
   "topics due for review" line in the weekly digest), so skipped reviews get a
-  gentle parent nudge before topics decay.
+  gentle parent nudge before topics decay. NOTE: the parent dashboard header ALSO
+  already reads "N reviews due" per child (confirmed live 2026-08-14), and the child
+  hub shows a warm-up card — the child-side loop is solid.
 - Done so far: warm-up interleaves across subjects (`interleaveDueReviews`, F10
-  2026-08-09); CONFIRMED the spacing curve widens — a correct recall doubles the
-  interval (capped 90 days), an incorrect one resets to 7 (`spaced-repetition.ts`,
-  verified 2026-08-09). The child-side loop is solid; remaining gap is parent-facing.
+  2026-08-09); the spacing curve widens — a correct recall doubles the interval
+  (capped 90 days), an incorrect one resets to 7 (`spaced-repetition.ts`, verified
+  2026-08-09). Warm-up re-verified live end-to-end 2026-08-14 (2 due for Ivy).
 
 ## EPIC 6 (background) — Calm, confident child experience (delight within the calm-wrong law)
 Status: ONGOING background lane, not gated to a night. Rich motion already exists
 (mcq settle, star burst, confetti, phase bar, week strip, mascot mood).
-- Next step: keep proposing supportive wrong-answer motion that never flashes
-  red / shakes / buzzes; look for the next un-celebrated moment. 2026-08-11 Scout
-  F5+F6: a calm "here it is" guiding glow when the worked answer is REVEALED after
-  a miss (the biggest un-celebrated teaching moment), and a supportive settle on a
-  wrong `fill_blank` (the last interaction type without its own miss feedback).
-- Done so far: every interaction type now has its own correct-answer settle —
-  tap_reveal + drag_drop got the accent sweep + drawn check (F11, 2026-08-09);
-  warm hint-card entrance + calm See-it beckon on a miss (F6, 2026-08-09).
+- Next step: keep proposing supportive wrong-answer motion + interaction delight
+  that never flashes red / shakes / buzzes; look for the next un-celebrated moment.
+  2026-08-14 Scout F4/F5/F6: a supportive settle + named copy on a WRONG WARM-UP
+  answer (the warm-up miss is still static amber, unlike the lesson), a whileTap
+  press on the touch-first quest cards (a "pure interaction" moment), and an inline
+  Eddie mascot reaction on a lesson miss (the owner's reacting-mascot ask).
+- Done so far: every interaction type has its own correct-answer settle (tap_reveal
+  + drag_drop accent sweep + drawn check, F11 2026-08-09); warm hint-card entrance +
+  calm See-it beckon on a miss (F6 2026-08-09); calm guiding glow on reveal-after-a-miss
+  + supportive fill_blank wrong-settle (F5+F6 2026-08-11, shipped 2026-08-12).
 
 ## EPIC 7 (background) — Stay on the current stack + performance budget
-Status: ACTIVE. Next 16 + framer-motion→motion + several majors are now GA.
-Performance of the marketing landing needs attention (see 2026-08-11 perf pass).
-- Next step: evaluate + stage Next.js 16 (2026-08-09 Scout F4), then the motion/
-  lucide/tailwind-merge/eslint-10 majors (F5), and keep the in-range drift fresh (F3).
-  Pair the nonce-based CSP hardening (F7) with the Next 16 move. SEPARATELY (does not
-  need Next 16): 2026-08-11 perf pass found homepage LCP ~2.27s (animated hero h1 is
-  the LCP element, B1) and ~1.78MB JS on `/` (F2, LazyMotion + deferred below-fold
-  sections), plus a global reduced-motion gap (F1, one `MotionConfig` wrapper).
-- Done so far: nothing landed yet; audit stays at 0 vulnerabilities.
+Status: ACTIVE. Next 16 + framer-motion→motion + several majors are GA.
+- Next step: evaluate + stage Next.js 16, then the motion/lucide/tailwind-merge/
+  eslint-10 majors, and keep the in-range drift fresh. Pair the nonce-based CSP
+  hardening with the Next 16 move. NEW (2026-08-14): the global reduced-motion
+  provider (`ReducedMotionProvider`) is in marketing + dashboard layouts but MISSING
+  from the `(child)/learn` layout — the most motion-heavy + SEND-critical surface
+  (Scout B1). Add it there next.
+- Done so far: hero LCP fix + LazyMotion below-fold split + ReducedMotionProvider on
+  marketing/dashboard + hero parallax reduced-motion gate (shipped 2026-08-12); audit
+  stays at 0 vulnerabilities (re-confirmed 2026-08-14).
