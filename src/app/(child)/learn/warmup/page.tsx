@@ -17,9 +17,11 @@ export default async function WarmupPage() {
   // Nothing due — go straight to today's quests.
   if (questions.length === 0) redirect("/learn");
 
+  const firstName = child.full_name.split(" ")[0] ?? "";
+
   return (
     <div className="mx-auto max-w-2xl">
-      <WarmupPlayer questions={questions} />
+      <WarmupPlayer questions={questions} firstName={firstName} />
     </div>
   );
 }

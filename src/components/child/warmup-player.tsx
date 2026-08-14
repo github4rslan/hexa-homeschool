@@ -6,6 +6,7 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Check, Sparkles, ArrowRight } from "lucide-react";
 import { Celebration } from "@/components/fx/celebration";
 import { submitReviewResult } from "@/app/(child)/learn/warmup/actions";
+import { safeFirstName } from "@/lib/child/eddie-copy";
 import type { WarmupQuestion } from "@/lib/db/repo";
 
 /**
@@ -16,7 +17,13 @@ import type { WarmupQuestion } from "@/lib/db/repo";
  * the review schedule (correct → longer interval, wrong → refresh sooner) but
  * never removes certification. Calm: no timers, no red flashes.
  */
-export function WarmupPlayer({ questions }: { questions: WarmupQuestion[] }) {
+export function WarmupPlayer({
+  questions,
+  firstName,
+}: {
+  questions: WarmupQuestion[];
+  firstName?: string;
+}) {
   const router = useRouter();
   const reduce = useReducedMotion();
   const [index, setIndex] = useState(0);
@@ -26,6 +33,7 @@ export function WarmupPlayer({ questions }: { questions: WarmupQuestion[] }) {
   const q = questions[index];
   const isLast = index === questions.length - 1;
   const correct = picked === q.correctIndex;
+  const childName = safeFirstName(firstName);
 
   function choose(i: number) {
     if (picked !== null) return; // lock after first pick
@@ -111,11 +119,20 @@ export function WarmupPlayer({ questions }: { questions: WarmupQuestion[] }) {
                     : isPicked
                       ? "wrong"
                       : "muted";
+              // Calm-law settle: the child's own wrong pick breathes once
+              // (scale 1 -> 0.99 -> 1), never a red flash, shake or buzzer.
+              // Fully neutralised under prefers-reduced-motion.
+              const settle =
+                state === "wrong" && !reduce
+                  ? { scale: [1, 0.99, 1] as number[] }
+                  : undefined;
               return (
-                <button
+                <motion.button
                   key={i}
                   onClick={() => choose(i)}
                   disabled={picked !== null}
+                  animate={settle}
+                  transition={{ duration: 0.45, ease: "easeInOut" }}
                   className={[
                     "child-touch flex items-center justify-between gap-3 rounded-2xl border p-5 text-left text-lg transition-colors",
                     state === "idle" &&
@@ -131,7 +148,7 @@ export function WarmupPlayer({ questions }: { questions: WarmupQuestion[] }) {
                 >
                   {opt}
                   {state === "answer" && <Check className="h-5 w-5 shrink-0" />}
-                </button>
+                </motion.button>
               );
             })}
           </div>
@@ -145,7 +162,7 @@ export function WarmupPlayer({ questions }: { questions: WarmupQuestion[] }) {
               <p className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-base text-fog-200">
                 {correct
                   ? "Spot on! "
-                  : "Good try — here's the idea again: "}
+                  : `Good try${childName ? `, ${childName}` : ""}, here's the idea again: `}
                 {q.explanation}
               </p>
               <button
