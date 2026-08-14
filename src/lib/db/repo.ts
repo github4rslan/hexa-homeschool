@@ -21,7 +21,7 @@ import {
   reviewDueCounts,
 } from "@/lib/engine/spaced-repetition";
 import { shouldQueueHandoff } from "@/lib/engine/remediation";
-import { selectMockPaper } from "@/lib/engine/mock-paper";
+import { selectMockPaper, marksForTier } from "@/lib/engine/mock-paper";
 import type {
   ParentDoc,
   ChildDoc,
@@ -630,6 +630,12 @@ export interface SubjectStanding {
   grade: string | null;
   /** True when the latest result for this subject came from a mock exam. */
   fromMock: boolean;
+  /**
+   * F7 (mock only): the mark-weighted, approximate boundary grade for the latest
+   * mock, e.g. "5". Parent-facing readiness context; always shown as
+   * approximate. Null for diagnostics and legacy mocks without it.
+   */
+  mockBoundaryGrade: string | null;
   /** When the latest result was recorded (for parent context), or null. */
   assessedAt: Date | null;
 }
@@ -655,6 +661,8 @@ export async function latestEvaluationsBySubject(
         readiness: typeof doc?.raw_score === "number" ? doc.raw_score : null,
         grade: doc?.model_predicted_grade ?? null,
         fromMock: doc?.mock_exam === true,
+        mockBoundaryGrade:
+          doc?.mock_exam === true ? doc?.mock_boundary_grade ?? null : null,
         assessedAt: doc?.created_at ?? null,
       };
     }),
@@ -1818,6 +1826,8 @@ export interface MockQuestion {
   questionId: string;
   topicTag: string;
   tier: number;
+  /** Deterministic mark weight for this item (harder tiers carry more marks). */
+  marks: number;
   prompt: string;
   options: string[];
   correctIndex: number;
@@ -1874,6 +1884,7 @@ export async function buildMockPaper(
       questionId: q._id!.toHexString(),
       topicTag: q.topic_tag,
       tier: q.tier,
+      marks: marksForTier(q.tier),
       prompt: q.prompt,
       options: q.options,
       correctIndex: q.correct_index,
@@ -1894,6 +1905,9 @@ export async function recordMockResult(
     scorePct: number;
     estimatedTier: number;
     indicativeGrade: string;
+    /** F7: mark-weighted score (0–100) and the approximate boundary grade. */
+    marksPct?: number;
+    boundaryGrade?: string;
   },
 ): Promise<boolean> {
   if (!(await assertOwnsChild(parentId, childId))) return false;
@@ -1914,6 +1928,10 @@ export async function recordMockResult(
       confidence_interval: Math.min(0.99, Math.max(0.5, input.scorePct / 100)),
       mock_exam: true,
       mock_period: mockPeriodKey(currentWeekStart()),
+      ...(typeof input.marksPct === "number"
+        ? { mock_marks_pct: input.marksPct }
+        : {}),
+      ...(input.boundaryGrade ? { mock_boundary_grade: input.boundaryGrade } : {}),
       created_at: new Date(),
     } as EvaluationDoc);
     return true;

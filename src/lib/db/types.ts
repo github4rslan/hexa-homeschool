@@ -255,6 +255,15 @@ export interface EvaluationDoc {
    * mocks and on all non-mock evaluations.
    */
   mock_period?: string;
+  /**
+   * For mock_exam docs only (F7): the mark-weighted score (0–100) and the
+   * approximate, tier-derived GCSE grade computed from published-boundary
+   * approximations. Parent-facing readiness context only, always labelled
+   * "approximate"; never shown to the child as a pass/fail. Absent on legacy
+   * mocks and all non-mock evaluations.
+   */
+  mock_marks_pct?: number;
+  mock_boundary_grade?: string;
   created_at: Date;
 }
 

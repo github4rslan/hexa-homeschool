@@ -67,6 +67,133 @@ export function mockTierWindow(readiness: number | null): TierWindow {
   return { min: 1, max: 3, label: "Foundation" };
 }
 
+/**
+ * Deterministic mark weight for a question of a given difficulty tier. Real
+ * papers weight harder, multi-step items more heavily than single-mark recall,
+ * so a tier-5 "solve / show that" item is worth more than a tier-1 recall item.
+ * Kept small and whole so a 10-question paper lands around 20 marks. Guidance
+ * only: nothing here changes which questions are human-authored or their answers.
+ */
+export function marksForTier(tier: number): number {
+  const t = Math.max(1, Math.min(5, Math.round(tier)));
+  // tier 1,2 → 1 mark · tier 3 → 2 · tier 4 → 3 · tier 5 → 4.
+  if (t <= 2) return 1;
+  if (t === 3) return 2;
+  if (t === 4) return 3;
+  return 4;
+}
+
+export type PaperTier = "Foundation" | "Higher";
+
+export interface BoundaryGrade {
+  /** The indicative numeric grade, e.g. "5", or "U" below grade 1. */
+  grade: string;
+  /** Always true: these boundaries are approximate and shift every year. */
+  approximate: true;
+}
+
+interface Boundary {
+  /** Minimum mark percentage (inclusive) to reach `grade`. */
+  minPct: number;
+  grade: string;
+}
+
+/**
+ * Approximate, clearly-indicative GCSE grade boundaries as a percentage of the
+ * total marks. These are NOT the exact published boundaries (which shift every
+ * series); they are a defensible, honest approximation for the parent's
+ * readiness read, always surfaced with an "approximate" label and never shown to
+ * the child as a pass/fail. Sources approximated: Edexcel 1MA1 (maths), AQA 8700
+ * (English Language, single tier), AQA 8464 (combined science).
+ *
+ * Each list is ordered high → low; the first threshold the mark percentage meets
+ * wins. English is single-tier, so both windows share one table.
+ */
+const BOUNDARIES: Record<Subject, Record<PaperTier, Boundary[]>> = {
+  mathematics: {
+    // Edexcel 1MA1 Foundation caps at grade 5.
+    Foundation: [
+      { minPct: 70, grade: "5" },
+      { minPct: 55, grade: "4" },
+      { minPct: 40, grade: "3" },
+      { minPct: 25, grade: "2" },
+      { minPct: 12, grade: "1" },
+    ],
+    // Edexcel 1MA1 Higher spans grades 4 to 9.
+    Higher: [
+      { minPct: 80, grade: "9" },
+      { minPct: 70, grade: "8" },
+      { minPct: 58, grade: "7" },
+      { minPct: 46, grade: "6" },
+      { minPct: 34, grade: "5" },
+      { minPct: 22, grade: "4" },
+    ],
+  },
+  english: {
+    // AQA 8700 is single tier (grades 1 to 9); both windows use the same table.
+    Foundation: [
+      { minPct: 82, grade: "9" },
+      { minPct: 72, grade: "8" },
+      { minPct: 62, grade: "7" },
+      { minPct: 52, grade: "6" },
+      { minPct: 42, grade: "5" },
+      { minPct: 32, grade: "4" },
+      { minPct: 24, grade: "3" },
+      { minPct: 16, grade: "2" },
+      { minPct: 8, grade: "1" },
+    ],
+    Higher: [
+      { minPct: 82, grade: "9" },
+      { minPct: 72, grade: "8" },
+      { minPct: 62, grade: "7" },
+      { minPct: 52, grade: "6" },
+      { minPct: 42, grade: "5" },
+      { minPct: 32, grade: "4" },
+      { minPct: 24, grade: "3" },
+      { minPct: 16, grade: "2" },
+      { minPct: 8, grade: "1" },
+    ],
+  },
+  science: {
+    // AQA 8464 Foundation caps at grade 5.
+    Foundation: [
+      { minPct: 68, grade: "5" },
+      { minPct: 54, grade: "4" },
+      { minPct: 40, grade: "3" },
+      { minPct: 26, grade: "2" },
+      { minPct: 14, grade: "1" },
+    ],
+    // AQA 8464 Higher spans grades 4 to 9.
+    Higher: [
+      { minPct: 78, grade: "9" },
+      { minPct: 68, grade: "8" },
+      { minPct: 57, grade: "7" },
+      { minPct: 45, grade: "6" },
+      { minPct: 33, grade: "5" },
+      { minPct: 20, grade: "4" },
+    ],
+  },
+};
+
+/**
+ * Map a mark percentage to an approximate GCSE grade for a subject + paper tier.
+ * Deterministic and pure. Parent-facing only: the return is always flagged
+ * approximate, and callers must never render it to a child as a pass/fail.
+ */
+export function gradeForMarks(
+  subject: Subject,
+  tier: PaperTier,
+  marksPct: number,
+): BoundaryGrade {
+  const table = BOUNDARIES[subject][tier];
+  const pct = Math.max(0, Math.min(100, marksPct));
+  for (const b of table) {
+    if (pct >= b.minPct) return { grade: b.grade, approximate: true };
+  }
+  // Below the lowest published boundary: honestly "U" (below grade 1).
+  return { grade: "U", approximate: true };
+}
+
 function tierDistance(tier: number, min: number, max: number): number {
   if (tier < min) return min - tier;
   if (tier > max) return tier - max;

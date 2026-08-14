@@ -173,6 +173,12 @@ export default async function ChildProfilePage({
                       {s.fromMock ? "Mock score" : "Readiness"}
                       {s.grade ? ` · Grade ${s.grade}` : ""}
                     </div>
+                    {s.fromMock && s.mockBoundaryGrade && (
+                      <div className="mt-1 text-xs text-amber-200/90">
+                        Exam-style grade {s.mockBoundaryGrade} (approximate
+                        boundaries)
+                      </div>
+                    )}
                     {bandBySubject.has(s.subject) && (
                       <div className="mt-1 text-xs text-cyan-200">
                         Working at {KEY_STAGE_LABEL[bandBySubject.get(s.subject) ?? 4]}
