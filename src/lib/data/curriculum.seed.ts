@@ -934,6 +934,35 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "That is only the image size in mm. Divide the image size by the real size to get the magnification.",
     ],
   },
+  // AQA 8464 Biology 4.2.2.2 — artery structure ("Explain why arteries have thick walls").
+  {
+    topic_tag: "sci_body",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "Explain why arteries have thick, muscular and elastic walls.",
+    options: [
+      "To withstand the high pressure of blood pumped from the heart",
+      "To store the body's supply of oxygen",
+      "To slow the blood down for gas exchange with cells",
+      "To stop blood flowing backwards using valves",
+    ],
+    correct_index: 0,
+    explanation:
+      "Arteries carry blood away from the heart at high pressure, so their walls are thick, muscular and elastic to withstand and keep up that pressure without bursting.",
+    hints: [
+      "Think about how hard the heart pushes blood into the arteries.",
+      "Arteries carry blood away from the heart, so what does that mean for the pressure inside them?",
+    ],
+    misconceptions: [
+      "",
+      "Arteries carry oxygen-rich blood but do not store oxygen; the thick walls are about coping with pressure.",
+      "Blood is slowed for gas exchange in the capillaries, not the arteries.",
+      "Valves that prevent backflow are found in veins, where the pressure is low.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
