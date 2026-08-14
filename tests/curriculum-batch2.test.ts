@@ -417,6 +417,19 @@ describe("F1 (2026-08-14) — sci_cells magnification calculation item", () => {
   });
 });
 
+describe("F2 (2026-08-14) — sci_body 'Explain arteries' command-word item", () => {
+  const prompt = "Explain why arteries have thick, muscular and elastic walls.";
+
+  it("adds exactly one well-formed item keyed to the high-pressure answer", () => {
+    expectWellFormedItem(
+      "sci_body",
+      "science",
+      prompt,
+      "To withstand the high pressure of blood pumped from the heart",
+    );
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
