@@ -30,9 +30,12 @@ papers use command words (calculate, work out, show that, explain, describe,
 compare) and multi-step reasoning.
 - Next step: keep adding command-word items per topic each run until every KS4
   topic has >= 2 (Scout authors, Mechanic transcribes verbatim + seeds). Still
-  uncovered after this run: sci_atoms, sci_energy, most English topics
-  (comprehension, creative, persuasive, poetry). sci_cells/sci_body/maths_quadratics
-  each now have one command-word item authored (2026-08-14 Scout F1/F2/F3, pending seed).
+  uncovered after this run: sci_states, and most remaining English topics
+  (creative, poetry, shakespeare, grammar, punctuation, spelling).
+  sci_atoms/sci_energy/eng_comprehension/eng_persuasive each now have one
+  command-word item authored (2026-08-18 Scout F1-F4, pending seed);
+  sci_cells/sci_body/maths_quadratics each now have one command-word item
+  authored (2026-08-14 Scout F1/F2/F3, pending seed).
 - Done so far: 6 spec-mapped exam-style questions (F7, 2026-08-09) across
   maths_fractions/ratio/number, sci_forces/reactions, eng_devices; 5 MORE authored
   2026-08-09 (Scout F1) for maths_algebra_linear (Solve), maths_pythagoras

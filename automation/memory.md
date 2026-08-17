@@ -1085,3 +1085,28 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   semantics stay untouched and no pass/fail reaches the child. (5) MCP browser still persists the SMOKE parent
   login autofill (one click, no password typed); child mode needs no PIN as the owning parent with the active-child
   cookie set; teardown fetch('/logout',POST)->200 + browser_close.
+- 2026-08-18 — Discovery pass, FULL coverage (parent/child/admin/tutor; desktop 1280 + mobile 390 both
+  confirmed, innerWidth 1280/390, scrollWidth 380 no overflow). Focus lane Tue = performance. Took the
+  Maths KS3 "Fractions, Decimals & Percentages" lesson end-to-end as Ivy: explainer + phase bar, wrong#1
+  calm no-red/"Why isn't that right?"/2-left, wrong#2 "See it" unlocks (Eddie fraction-bars narrated
+  walkthrough), correct "Brilliant!" star burst, and a clean RESUME resilience check (advanced to Q2,
+  hard refresh -> "Welcome back, Ivy" at 2 of 4, score intact, NOT a restart). Admin (overview/finance/
+  escalations/users/curriculum) + tutor READ-ONLY clean via a standalone playwright script that reads
+  .env.local itself (keeps creds out of the transcript, satisfies goto/assert/screenshot-only); tutor
+  saw empty "Assigned sessions" (silo holds). ZERO console errors on EVERY surface. Static: type-check +
+  lint GREEN, npm audit 0 vulns. Perf: warm TTFB 160ms, CLS 0.000 on / and lesson; LCP UNMEASURABLE this
+  runtime (buffered largest-contentful-paint observer returned 0 on every page — note for future perf
+  runs); the clear signal is JS weight on / ~1.79MB / 59 reqs with two eager vendor chunks ~499KB+411KB
+  (below-fold already next/dynamic-split, framer-motion already on LazyMotion domAnimation, so remaining
+  weight is vendor — needs @next/bundle-analyzer to attribute; suspects Sentry client SDK + lucide import
+  style) -> F6. Findings (mature codebase, honest-short): only bug B1 (Low) `/admin/curriculum` metadata
+  title "Admin - Curriculum CMS" uses a hyphen separator vs every other admin title's " · " (also breaks
+  no-dash house style; one-line fix). Headline lane = 4 fully-authored command-word exam items closing
+  EPIC 2 gaps (F1 sci_atoms Calculate-neutrons AQA 4.1.1.2, F2 sci_energy Calculate-KE Ek=1/2mv^2, F3
+  eng_comprehension retrieval AQA P1 Q1-style, F4 eng_persuasive identify-technique AQA P2). Plus F5
+  review-debt line in the weekly digest (EPIC 5 named next step, still undone), F6 perf bundle-analyzer,
+  F7 phase-bar settle pulse (delight, calm-law), F8 stage Next 16. GOTCHA I hit: the Write tool OVERWRITES
+  a whole file — I clobbered backlog.md to a 7-line fragment, restored with `git checkout -- ` and re-did
+  the edit via a python str.replace anchor. Use Edit (or read-modify-write the FULL content) for backlog/
+  memory, never a partial Write. Teardown: MCP browser fetch('/logout',POST)->200 + browser_close; the
+  standalone admin/tutor script logs out inside each context. Emailed owner the scenario summary.
