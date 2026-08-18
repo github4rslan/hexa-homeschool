@@ -1510,6 +1510,19 @@ function YourTurnPanel({
     setTapped([]);
   }, [task]);
 
+  // Fires the completion check once `tapped` actually reaches full length,
+  // driven by state rather than a value computed inside the (batch-unsafe)
+  // tap handler below. Held in a ref so the effect only depends on `tapped`
+  // itself, not on `finish`'s identity (which is a new closure every render).
+  const finishRef = useRef<(correct: boolean) => void>(() => {});
+  useEffect(() => {
+    if (task.kind !== "order_steps") return;
+    if (tapped.length !== task.items.length) return;
+    const correct = checkYourTurnOrder(task, tapped);
+    if (correct) successCue();
+    finishRef.current(correct);
+  }, [tapped, task]);
+
   if (dismissed) return null;
 
   const confirmLine = "That's exactly it — you saw it for yourself.";
@@ -1520,6 +1533,7 @@ function YourTurnPanel({
     onSpeak?.(correct ? confirmLine : nudgeLine);
     if (correct) onSuccess?.();
   }
+  finishRef.current = finish;
 
   function tapChoice(index: number) {
     if (result === "correct") return;
@@ -1534,15 +1548,11 @@ function YourTurnPanel({
     if (result === "correct" || task.kind !== "order_steps") return;
     if (tapped.includes(index)) return;
     tapCue();
-    const next = [...tapped, index];
-    setTapped(next);
-    if (next.length === task.items.length) {
-      const correct = checkYourTurnOrder(task, next);
-      if (correct) successCue();
-      finish(correct);
-    } else {
-      setResult(null);
-    }
+    // Functional updater: near-simultaneous taps (a realistic fast touchscreen
+    // gesture) can fire within the same React batch, where each call's closure
+    // would otherwise see the SAME pre-batch `tapped` and silently drop all but
+    // the last tap. Reading off `prev` guarantees every tap accumulates.
+    setTapped((prev) => (prev.includes(index) ? prev : [...prev, index]));
   }
 
   return (
