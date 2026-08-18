@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import withBundleAnalyzer from "@next/bundle-analyzer";
 
 /**
  * Content-Security-Policy.
@@ -79,11 +80,19 @@ const nextConfig: NextConfig = {
   },
 };
 
+// Bundle analyzer, dev-only: `ANALYZE=true npm run build` opens an interactive
+// treemap of every client/server/edge chunk. No effect on a normal build (the
+// wrapper is a no-op unless ANALYZE=true), so this has zero runtime/CSP impact
+// in production.
+const analyzedConfig = withBundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+})(nextConfig);
+
 // Sentry build wrapper. Source-map upload is disabled (no SENTRY_AUTH_TOKEN
 // needed; builds stay fast) — runtime error capture works regardless. To get
 // unminified client stacks later, add SENTRY_AUTH_TOKEN/org/project and
 // re-enable sourcemaps.
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(analyzedConfig, {
   silent: true,
   sourcemaps: { disable: true },
   // Tree-shake the client SDK: drop the debug logger (and other debug-only code

@@ -1,11 +1,11 @@
 "use client";
 
 import { m } from "framer-motion";
-import * as Icons from "lucide-react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { JOURNEY } from "@/lib/data/journey";
+import { journeyIcon } from "./journey-icon";
 
 const STEP_WORDS = ["One", "Two", "Three", "Four", "Five", "Six"];
 
@@ -25,11 +25,7 @@ export function JourneyPreview() {
 
       <div className="mt-16 max-w-3xl mx-auto flex flex-col">
         {JOURNEY.map((step, i) => {
-          const Icon =
-            (Icons as unknown as Record<
-              string,
-              React.ComponentType<{ className?: string }>
-            >)[step.icon] ?? Icons.Circle;
+          const Icon = journeyIcon(step.icon);
           const isLast = i === JOURNEY.length - 1;
 
           return (
