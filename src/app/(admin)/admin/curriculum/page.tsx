@@ -8,7 +8,7 @@ import { getQuestions, listTopics } from "@/lib/db/repo";
 import type { QuestionDoc, Subject } from "@/lib/db/types";
 import { QuestionForm } from "./question-form";
 
-export const metadata: Metadata = { title: "Admin - Curriculum CMS" };
+export const metadata: Metadata = { title: "Admin · Curriculum CMS" };
 export const dynamic = "force-dynamic";
 
 const SUBJECT_LABEL: Record<Subject, string> = {
