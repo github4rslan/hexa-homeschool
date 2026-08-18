@@ -448,6 +448,19 @@ describe("F3 (2026-08-14) — maths_quadratics mixed-sign 'Solve' item", () => {
   });
 });
 
+describe("F1 (2026-08-18) — sci_atoms neutrons calculation item", () => {
+  const prompt =
+    "A fluorine atom has an atomic number of 9 and a mass number of 19. Calculate the number of neutrons in this atom.";
+
+  it("adds exactly one well-formed item keyed to 10", () => {
+    expectWellFormedItem("sci_atoms", "science", prompt, "10");
+  });
+
+  it("computes: neutrons = mass number − atomic number = 19 − 9 = 10", () => {
+    expect(19 - 9).toBe(10);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
