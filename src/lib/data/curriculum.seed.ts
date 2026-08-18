@@ -1098,6 +1098,35 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "0.37 flips the calculation round: that is volume divided by mass. Density is mass divided by volume, 54 divided by 20.",
     ],
   },
+  // ── F10 (2026-08-18): eng_grammar subject-verb agreement item ──
+  // AQA 8700 AO6 technical accuracy, "neither" as a singular subject.
+  {
+    topic_tag: "eng_grammar",
+    subject: "english",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Identify the sentence that uses correct subject-verb agreement.",
+    options: [
+      "Neither of the students have finished their essay.",
+      "Neither of the students has finished their essay.",
+      "Neither of the students finish their essay.",
+      "Neither of the students finishing their essay.",
+    ],
+    correct_index: 1,
+    explanation:
+      "'Neither' is a singular subject, so it needs the singular verb 'has', not the plural 'have'. 'Neither of the students has finished' is grammatically correct.",
+    hints: [
+      "Look at the subject 'neither': is it singular or plural on its own?",
+      "A singular subject like 'neither' pairs with 'has', not 'have'.",
+    ],
+    misconceptions: [
+      "The plural word 'students' after 'of' can trick you, but 'neither' itself is singular, so it needs 'has' not 'have'.",
+      "",
+      "'Finish' alone is not a complete verb form here; the sentence needs 'has finished' to show the action is complete.",
+      "'Finishing' alone, with no helping verb like 'is' or 'has been', leaves the sentence without a proper main verb.",
+    ],
+  },
   // Edexcel 1MA1 A18 — factorising quadratic with a mixed-sign trap ("Solve").
   {
     topic_tag: "maths_quadratics",
