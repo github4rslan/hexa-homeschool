@@ -28,7 +28,7 @@ export function ResumeCards({
         <Link
           key={c.topicTag}
           href={`/learn/lesson?topic=${c.topicTag}`}
-          className="child-touch child-panel group flex items-center gap-4 p-5 transition-all hover:scale-[1.01]"
+          className="child-touch child-panel group flex min-w-0 items-center gap-4 p-5 transition-all hover:scale-[1.01]"
         >
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/[0.06]">
             <PlayCircle className={`h-8 w-8 ${accentText}`} />
