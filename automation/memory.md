@@ -1110,3 +1110,67 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   the edit via a python str.replace anchor. Use Edit (or read-modify-write the FULL content) for backlog/
   memory, never a partial Write. Teardown: MCP browser fetch('/logout',POST)->200 + browser_close; the
   standalone admin/tutor script logs out inside each context. Emailed owner the scenario summary.
+- 2026-08-18 — Mechanic build run, DECISION `all` (owner named B1 + F1-F8, no cap). ALL 8 SHIPPED, each
+  green-gated (type-check + tests + lint + build, one commit, pushed to main) AND live-verified on
+  edway.uk with Playwright + the read-only Vercel MCP. **B1** admin curriculum title "Admin - Curriculum
+  CMS" -> "Admin · Curriculum CMS" (one-line metadata fix); live title bar confirmed "Admin · Curriculum
+  CMS · Edway". **F1-F4** transcribed all four fully-authored exam-style questions verbatim into
+  `EXAM_STYLE_QUESTIONS` (sci_atoms neutrons calc, sci_energy Ek=1/2mv² calc, eng_comprehension retrieval,
+  eng_persuasive technique-ID), added a Vitest well-formedness + answer-computes test per item, ran
+  `npm run seed` once after all four landed ("10 written" — includes prior unseeded rows, seed is
+  idempotent upsert by topic_tag+prompt). Live-verified all four via the ADMIN CURRICULUM CMS page (a
+  read-only per-topic question table sourced from the same live DB the child sees) rather than trying to
+  hit a specific GCSE mastery item through a real lesson flow, which would be non-deterministic (mastery
+  pools pick randomly and these are KS4 topics none of the smoke children are banded into) — same
+  authoritative-DB-read pattern as prior runs, just via the admin UI instead of a raw Mongo query. **F5**
+  turned out to be a STALE finding: `buildReviewDueLine` + full digest wiring was already shipped in
+  commit `99fde9e` (2026-08-09, ironically also mislabeled "F8" in that day's report). Verified the exact
+  acceptance criteria still holds in the current code, marked done with NO new code — a "Chore" commit
+  documenting why, not a Feat. Always grep for the described function/wiring before assuming a "new"
+  feature finding is actually unbuilt. **F6** added `@next/bundle-analyzer` (dev-only, `ANALYZE=true`,
+  needed `cross-env` too since the shell here is Windows/PowerShell-primary with a bash tool — a bare
+  `ANALYZE=true next build` env-var prefix is POSIX-only) and used it to find chunk `5529` (510 KB parsed
+  / 133 KB gzip) was the ENTIRE lucide-react icon set, pulled in by exactly two
+  `import * as Icons from "lucide-react"` barrel imports (`journey-preview.tsx`, `journey-timeline.tsx`)
+  doing a dynamic `Icons[step.icon]` lookup that defeats `optimizePackageImports` tree-shaking (webpack
+  can't statically know which icons are used through a computed property access). Fixed with a shared
+  `journeyIcon()` helper using six named imports for the closed icon set + a `Circle` fallback. RESULT WAS
+  MEASURABLE AND VERIFIED LIVE: chunk 5529 no longer exists in the build at all; `/how-it-works` First
+  Load JS dropped from 379 kB to 211 kB (44%); Playwright network capture on the live page confirmed no
+  `5529-*.js` request and zero console errors; screenshot confirmed the Map/Sparkles/etc. icons still
+  render correctly on the timeline. **F7** one-shot "settle pulse" on the Learn/Practise/Mastery phase-bar
+  segments: extracted the crossing decision into a PURE `pulseTargetOnCrossing(prev, next)` helper
+  (unit-tested: forward-only, no re-fire when unchanged, never backward) called from a `useEffect` keyed
+  on `phaseIndex`, storing the result in local state consumed by a `motion.span` that animates
+  `scale:[1,1.04,1]` + a keyframed `boxShadow` glow using the existing `accent.swatch` token, gated fully
+  off under `useReducedMotion()` (matches the established `warmup-player.tsx` calm-settle pattern from the
+  2026-08-14 run — check sibling components for the house reduced-motion idiom before inventing a new
+  one). Live: drove a fresh Science lesson as Ivy through explainer -> practice -> a correct answer;
+  confirmed the phase-bar DOM state updated correctly (Learn+Practise both `font-medium text-fog-200`,
+  Mastery still dim) and the box-shadow had settled back to fully transparent after the one-shot animation
+  completed (proves it doesn't get stuck glowing), zero console errors on the lesson page. Catching the
+  MID-animation frame over an MCP round-trip is inherently timing-fragile (network latency vs. a 0.7s
+  CSS transition) — the before/after DOM-state delta plus the pure-logic unit test is the practical live
+  proof for this class of decorative, ephemeral animation; don't burn turns chasing an exact video frame.
+  **F8** RESEARCHED ONLY, no live version bump — this was explicitly the right call per the owner's
+  guidance and the finding's own risk sizing (L). Verified via live npm registry data (not guessed): `next`
+  16.3.1 is GA (released 2026-08-13, five days before this run), peer-compatible with our installed React
+  19.2.8 and Node 24.16; `@sentry/nextjs` 10.70.0 already declares a `^16.0.0-0` peer range so Sentry is
+  NOT a blocker; `framer-motion`@latest and `motion`@latest both resolve to the identical 13.1.0 (the
+  rename is a real, installable package, not just an announcement); `lucide-react` 1.31.0, `tailwind-merge`
+  3.6.0, `eslint` 10.8.1 are all published and installable today. THE ONE CONCRETE OPEN RISK I could not
+  verify offline: whether Next 16's bundler defaults affect our two existing WEBPACK-ONLY config hooks —
+  `withSentryConfig`'s `webpack.treeshake` option and the `@next/bundle-analyzer` wrapper just added in
+  F6 this same run — if Turbopack becomes the build default, these may need explicit opt-back-in or a
+  Turbopack-native equivalent; this must be checked against the official upgrade guide + a preview
+  deployment, not guessed, before the bump lands. Also found `@playwright/test` is pinned `^1.50.0` but
+  Next 16 itself peer-wants `^1.51.1`, so Playwright needs bumping BEFORE Next, not after or alongside.
+  Full staged order recorded in the findings file for whoever picks this up. PATTERN WORTH REPEATING: for
+  an "evaluate and stage a major version" finding sized L/risky, spend the budget on VERIFIED npm-registry
+  research (`npm view <pkg> versions/dependencies/peerDependencies --json`, cross-checked against
+  `npm view <pkg> time --json` for actual GA dates) rather than either (a) guessing unreviewable specifics
+  from training-data memory that may be stale, or (b) forcing the bump through just to close the checkbox
+  — a wrong "researched" claim is nearly as bad as a wrong shipped change on a push-to-prod repo with no
+  staging. HEALTH CHECK: deployment READY + aliased to edway.uk + `/api/health` 200 +
+  `get_runtime_errors` clean (0 errors, 2h window) after the final push. Teardown: admin session
+  `fetch('/logout',{method:'POST'})`->200, smoke-parent session same, `browser_close`.
