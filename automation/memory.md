@@ -1174,3 +1174,37 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   staging. HEALTH CHECK: deployment READY + aliased to edway.uk + `/api/health` 200 +
   `get_runtime_errors` clean (0 errors, 2h window) after the final push. Teardown: admin session
   `fetch('/logout',{method:'POST'})`->200, smoke-parent session same, `browser_close`.
+- 2026-08-18 (Scout) — SECOND discovery pass same UTC day (B1+F1-F8 from the first
+  pass already shipped to prod by Mechanic before this pass started). Went deeper
+  rather than wider: rapid/simultaneous-input stress-tested the See-it "Your turn"
+  order-tap recall widget (found + reproduced B3, a stale-closure setState bug —
+  three near-simultaneous taps only register the LAST one) and did a full DOM
+  min-content audit on mobile instead of just checking scrollWidth on the hub's
+  resting state (found B2, a genuine FIRST mobile-overflow regression in ~15 prior
+  runs: a bare `grid` wrapper with no `grid-cols-N` lets a `truncate`d long-title
+  resume card blow past 390px — root-caused AND fix verified live in-session via
+  `el.style.minWidth='0'` before writing the finding, not just theorised). Also
+  drove a full Science `sci_cells` lesson end-to-end including the `tap_reveal`
+  interaction type (not covered in the first pass) and the live F1 magnification
+  exam item (answered x200, confirmed correct live) through to certificate. TWO
+  IMPORTANT NON-FINDINGS this pass: nearly filed an EPIC-4 "add a mock timer"
+  feature based on the mock HUB page's static "About 15 minutes" blurb, but
+  reading the actual `mock-exam-player.tsx` component first showed a real, calm
+  countdown timer already exists (amber under 60s, auto-submits at zero) — GREP/
+  READ THE COMPONENT, not just the page copy, before proposing a feature that
+  "seems missing". Pivoted that budget into F11 (tap_reveal/drag_drop wrong-settle
+  motion, closing the actual last EPIC-6 gap). Opened new EPIC 8 (mobile
+  bare-`grid` sweep) since the resume-card bug is a PATTERN, not a one-off — the
+  same bare-`grid` (no `grid-cols-N`, so no `minmax(0,1fr)` protection) exists on
+  `quest-cards.tsx` too, just not yet triggered by long enough text. PATTERN: when
+  a rapid-input/desync bug is suspected, don't rely on separate `browser_click`
+  calls (each is a real round-trip, naturally spaced, so it WON'T reproduce a
+  same-batch React state race) — dispatch multiple `.click()` calls inside ONE
+  `browser_evaluate` to truly fire them in the same tick, then verify the SAME
+  three-tap sequence works fine when naturally spaced, to confirm the bug is
+  input-speed-specific and not a general regression. Admin login timing flake
+  (needs >=3s wait for the POST->redirect chain) reconfirmed again — this is now
+  the third run to hit it; the flake is real and stable, not worth re-filing.
+  Teardown: MCP browser `fetch('/logout',{method:'POST'})`->200 + `browser_close`;
+  the standalone admin/tutor script logs out inside its own contexts. Emailed the
+  owner the scenario summary for the NEW items only (B2, B3, F9, F10, F11).
