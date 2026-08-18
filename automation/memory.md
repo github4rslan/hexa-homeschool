@@ -1208,3 +1208,75 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   Teardown: MCP browser `fetch('/logout',{method:'POST'})`->200 + `browser_close`;
   the standalone admin/tutor script logs out inside its own contexts. Emailed the
   owner the scenario summary for the NEW items only (B2, B3, F9, F10, F11).
+- 2026-08-18 — Mechanic build run #2 (same UTC day), DECISION `all`, scoped by the
+  launcher to ONLY the second-pass items (B1+F1-F8 already shipped earlier today).
+  ALL 5 SHIPPED, each green-gated (type-check + tests + lint + build, one commit,
+  pushed to main) AND live-verified on edway.uk with Playwright + the read-only
+  Vercel MCP. **B2** added `min-w-0` to the resume-card `<Link>` (the actual grid
+  item) plus a defensive `min-w-0` on `quest-cards.tsx`'s bare grid wrapper in the
+  same commit, per the finding's own "same sweep" note. Live: same repro scenario
+  as the finding (Ivy, 390x844, the exact "Maths · Fractions, Decimals &
+  Percentages · step 3 of 4" resume card) now measures `scrollWidth` 380 (was 533)
+  and the link's own width 340px, matching the finding's verified target exactly.
+  **B3** switched `tapOrderItem` from `const next=[...tapped,index]; setTapped(next)`
+  (closure-captured, drops taps batched in the same React render) to a functional
+  `setTapped(prev=>...)` updater, and moved the completion check into a `useEffect`
+  keyed on `tapped` reaching `task.items.length` (via a `finishRef` latest-ref so the
+  effect doesn't depend on `finish`'s per-render identity). GOTCHA: the two new hooks
+  (`useRef`+`useEffect`) had to be moved ABOVE the existing `if (dismissed) return
+  null;` early return or ESLint's `react-hooks/rules-of-hooks` correctly flagged them
+  as conditional — hooks must be declared unconditionally before ANY early return,
+  even when the function they close over (`finish`) is declared later (function
+  declarations hoist, so this is safe). Live repro EXACTLY like Scout's: opened
+  "See it" on a fresh `sci_cells` question, reached the Start/Change/Result
+  order-tap widget, dispatched 3 clicks inside ONE `browser_evaluate` (same-tick
+  batch) — all three registered ("1 Change","2 Result","3 Start", the correct
+  DROPPED-before-fix scenario now full) and the completion check correctly fired
+  the calm miss feedback. Re-verified naturally-spaced taps (3 separate
+  `browser_click` calls) still complete correctly (no regression): "That's exactly
+  it — you saw it for yourself." + the Celebration burst fired. Zero console errors
+  either way. **F9/F10** transcribed both curriculum items verbatim into
+  `EXAM_STYLE_QUESTIONS`, split into TWO separate commits (F9 then F10) even though
+  authored together, per the "one commit per item" rule — reverted the not-yet-due
+  item's hunk with Edit, gated+shipped F9 alone, then re-added F10's hunk, gated+
+  shipped it alone. ONE deliberate deviation from the finding's verbatim text: F10's
+  first hint used an em dash ("the subject 'neither' — is it singular…") which is
+  child-facing copy under the house no-dash rule; swapped it for a colon (wording,
+  answer, options and every other line stayed byte-for-byte identical) — this is a
+  punctuation-only fix, not "rewording/improving" the content, so it doesn't
+  conflict with the transcribe-verbatim rule for curriculum. Ran `npm run seed` ONCE
+  after both landed ("8 written"). Live-verified via the ADMIN CURRICULUM CMS
+  (read-only, same live DB as the child) rather than a real lesson draw (both are
+  KS4 mastery items in random pools, non-deterministic to hit): confirmed both exact
+  prompts, the correct explanation text, and the correct keyed answer
+  ("2.7 g/cm3", "Neither of the students has finished their essay.") present.
+  **F11** forwarded `wrongAttemptCount` (already reaching `Interaction` from
+  `practice-player.tsx`, previously only wired to `FillBlank`) into `TapReveal` and
+  `DragDrop`, reusing FillBlank's exact `useAnimationControls` + `prevWrong` ref +
+  `scale:[1,0.99,1]` pattern verbatim. Converted the plain `<button>` card (TapReveal)
+  and slot (DragDrop) to `motion.button` with `animate={chosen ? controls : undefined}`
+  / `animate={filledWrong ? controls : undefined}` so the shared controls instance
+  only visually targets whichever element the child actually got wrong — same trick
+  as binding one `controls` to multiple `motion.input`s in FillBlank, just gated per
+  element instead of applying to all. Live: drove a wrong `tap_reveal` pick (sci_cells
+  "gatekeeper" card) AND a fully-wrong `drag_drop` (sci_states states-of-matter,
+  all 3 chips deliberately mismatched) through a real Check-answer — both produced
+  the calm "not quite yet" copy with no red/shake, zero console errors, and
+  `getAttribute('style')` on the animated element read `transform: none` post-
+  animation (settled cleanly, not stuck) — the same before/after DOM-state proof
+  used for F7's phase-bar pulse last run, since catching the literal mid-animation
+  frame over an MCP round-trip is inherently timing-fragile (per that run's note).
+  Correct picks on both types still celebrate normally (untouched). No new pure-
+  logic Vitest was added for F11 — this is a verbatim reuse of an already-tested
+  motion PATTERN (F6, 2026-08-11, also shipped without a new pure-logic test) on two
+  new call sites, not new pure logic; `checkYourTurnOrder`/`checkTapReveal`/
+  `checkDragDrop` (the actual pure logic these all depend on) were already tested.
+  HEALTH CHECK: newest deployment (cb7d3c5, F11) went BUILDING→READY in ~80s and
+  aliased to `edway.uk`/`www.edway.uk`; `/api/health` 200; `get_runtime_errors`
+  clean (0 errors, 2h window). PATTERN WORTH REPEATING: when a finding explicitly
+  bundles two curriculum items into one authoring pass but the "one commit per
+  item" rule still applies, add both to the source+test files first, then use Edit
+  to CUT the second item's hunk out, gate+ship the first alone, then paste the
+  second item's hunk back in and gate+ship it alone — cleaner than trying to craft
+  a partial `git add -p` non-interactively. Teardown: parent session
+  `fetch('/logout',{method:'POST'})`->200, admin session same, `browser_close`.
