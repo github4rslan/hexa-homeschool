@@ -461,6 +461,19 @@ describe("F1 (2026-08-18) — sci_atoms neutrons calculation item", () => {
   });
 });
 
+describe("F2 (2026-08-18) — sci_energy kinetic energy calculation item", () => {
+  const prompt =
+    "A ball of mass 2 kg moves at a speed of 3 m/s. Using kinetic energy = a half times mass times speed squared, calculate its kinetic energy.";
+
+  it("adds exactly one well-formed item keyed to 9 J", () => {
+    expectWellFormedItem("sci_energy", "science", prompt, "9 J");
+  });
+
+  it("computes: Ek = 0.5 * mass * speed^2 = 0.5 * 2 * 3^2 = 9 J", () => {
+    expect(0.5 * 2 * 3 ** 2).toBe(9);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);

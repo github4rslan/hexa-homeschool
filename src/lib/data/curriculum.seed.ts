@@ -988,6 +988,31 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "Looks like you added 19 and 9. Neutrons come from subtracting: 19 minus 9.",
     ],
   },
+  // ── F2 (2026-08-18): sci_energy kinetic energy calculation ("Calculate") ──
+  // AQA 8464 Physics 4.1.1.2, Ek = ½mv².
+  {
+    topic_tag: "sci_energy",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "A ball of mass 2 kg moves at a speed of 3 m/s. Using kinetic energy = a half times mass times speed squared, calculate its kinetic energy.",
+    options: ["9 J", "6 J", "18 J", "3 J"],
+    correct_index: 0,
+    explanation:
+      "Kinetic energy is a half times mass times speed squared. Speed squared is 3 times 3, which is 9. So a half times 2 times 9 is 9 joules.",
+    hints: [
+      "Square the speed first: 3 times 3.",
+      "Then multiply by the mass and by a half: a half times 2 times 9.",
+    ],
+    misconceptions: [
+      "",
+      "6 is 2 times 3 on its own. You still need to square the speed and take a half: a half times 2 times 9.",
+      "18 is 2 times 9, but the equation also has a half: a half times 2 times 9 is 9.",
+      "3 is a half times 2 times 3, but the speed must be squared first: 3 times 3 is 9.",
+    ],
+  },
   // Edexcel 1MA1 A18 — factorising quadratic with a mixed-sign trap ("Solve").
   {
     topic_tag: "maths_quadratics",
