@@ -1043,6 +1043,36 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "It stands on a rocky cliff, not beside a forest. Match the detail to the text.",
     ],
   },
+  // ── F4 (2026-08-18): eng_persuasive "identify the technique" item ──
+  // AQA 8700 Paper 2 Section B style.
+  {
+    topic_tag: "eng_persuasive",
+    subject: "english",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "'Imagine a town where every child walks safely to school.' Which persuasive technique does the writer use to draw the reader in?",
+    options: [
+      "A direct appeal to the reader's imagination",
+      "A statistic",
+      "A rhetorical question",
+      "A counter-argument",
+    ],
+    correct_index: 0,
+    explanation:
+      "The word 'Imagine' is a direct instruction asking the reader to picture a scene, which is a direct appeal to the imagination. There are no numbers, so it is not a statistic; it is a command, not a question; and it raises no opposing view, so it is not a counter-argument.",
+    hints: [
+      "Look at the first word: what is it asking the reader to do?",
+      "The writer invites you to picture something, rather than giving numbers or asking a question.",
+    ],
+    misconceptions: [
+      "",
+      "There are no numbers or data here, so it is not a statistic. The writer asks you to picture a scene.",
+      "This is a command ('Imagine'), not a question, so it is not a rhetorical question.",
+      "The writer does not raise an opposing viewpoint, so there is no counter-argument here.",
+    ],
+  },
   // Edexcel 1MA1 A18 — factorising quadratic with a mixed-sign trap ("Solve").
   {
     topic_tag: "maths_quadratics",
