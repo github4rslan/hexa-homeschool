@@ -515,6 +515,19 @@ describe("F9 (2026-08-18, second pass) — sci_states density calculation item",
   });
 });
 
+describe("F10 (2026-08-18, second pass) — eng_grammar subject-verb agreement item", () => {
+  const prompt = "Identify the sentence that uses correct subject-verb agreement.";
+
+  it("adds exactly one well-formed item keyed to the singular 'has' agreement", () => {
+    expectWellFormedItem(
+      "eng_grammar",
+      "english",
+      prompt,
+      "Neither of the students has finished their essay.",
+    );
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
