@@ -1013,6 +1013,36 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "3 is a half times 2 times 3, but the speed must be squared first: 3 times 3 is 9.",
     ],
   },
+  // ── F3 (2026-08-18): eng_comprehension retrieval item ──
+  // AQA 8700 Paper 1 Section A, Q1 style — retrieve explicit information.
+  {
+    topic_tag: "eng_comprehension",
+    subject: "english",
+    tier: 2,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "Read this sentence from a story: 'The old lighthouse stood alone on the rocky cliff, its white paint peeling in the salty wind.' Which detail about the lighthouse is actually stated in the text?",
+    options: [
+      "Its white paint was peeling",
+      "It had a bright lamp",
+      "It was newly built",
+      "It stood beside a forest",
+    ],
+    correct_index: 0,
+    explanation:
+      "The sentence directly says the lighthouse's white paint was peeling. The other options are never stated, so only the peeling paint can be retrieved from the text.",
+    hints: [
+      "Look only for what the words actually say, not what you picture in your head.",
+      "Find the part of the sentence that describes the paint.",
+    ],
+    misconceptions: [
+      "",
+      "The text does not mention a lamp. Choose only what the words actually state.",
+      "The lighthouse is described as old, not newly built. Read the exact wording.",
+      "It stands on a rocky cliff, not beside a forest. Match the detail to the text.",
+    ],
+  },
   // Edexcel 1MA1 A18 — factorising quadratic with a mixed-sign trap ("Solve").
   {
     topic_tag: "maths_quadratics",
