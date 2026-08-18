@@ -75,9 +75,10 @@ interface InteractionProps {
   /** STT bridge for mcq: selecting this option from a spoken answer. */
   forceMcqSelect?: number | null;
   /**
-   * Count of wrong (non-revealing) checks on this step. `fill_blank` uses an
-   * increase here to play a single calm supportive settle (breathe + refocus)
-   * so a miss invites a retype instead of just clearing. Other types ignore it.
+   * Count of wrong (non-revealing) checks on this step. `fill_blank`,
+   * `tap_reveal` and `drag_drop` all use an increase here to play a single
+   * calm supportive settle (breathe) on whatever the child chose, inviting
+   * another look. `mcq` gets its own celebrate/guide motion on reveal instead.
    */
   wrongAttemptCount?: number;
 }
@@ -106,6 +107,7 @@ export const Interaction = forwardRef<InteractionHandle, InteractionProps>(
             accent={accent}
             reveal={reveal}
             onReadyChange={onReadyChange}
+            wrongAttemptCount={wrongAttemptCount}
           />
         );
       case "fill_blank":
@@ -128,6 +130,7 @@ export const Interaction = forwardRef<InteractionHandle, InteractionProps>(
             accent={accent}
             reveal={reveal}
             onReadyChange={onReadyChange}
+            wrongAttemptCount={wrongAttemptCount}
           />
         );
       case "mcq":
@@ -322,13 +325,31 @@ const TapReveal = forwardRef<
     accent: AccentPreset;
     reveal: boolean;
     onReadyChange?: (ready: boolean) => void;
+    wrongAttemptCount?: number;
   }
->(function TapReveal({ it, accent, reveal, onReadyChange }, ref) {
+>(function TapReveal({ it, accent, reveal, onReadyChange, wrongAttemptCount }, ref) {
   const reduced = useReducedMotion();
+  const controls = useAnimationControls();
+  const prevWrong = useRef(wrongAttemptCount ?? 0);
   const [flipped, setFlipped] = useState<Set<number>>(new Set());
   const [selected, setSelected] = useState<number | null>(null);
 
   useEffect(() => onReadyChange?.(selected !== null), [selected, onReadyChange]);
+
+  // Supportive settle on a wrong (non-revealing) check: a single soft breathe
+  // on the card the child chose, inviting another look. Reuses the exact
+  // FillBlank pattern (F6, 2026-08-11). Reduced motion skips the motion
+  // entirely; never red, never a shake or buzzer (calm-wrong law).
+  useEffect(() => {
+    const next = wrongAttemptCount ?? 0;
+    if (next > prevWrong.current && !reveal && !reduced) {
+      controls.start({
+        scale: [1, 0.99, 1],
+        transition: { duration: 0.3, ease: "easeOut" },
+      });
+    }
+    prevWrong.current = next;
+  }, [wrongAttemptCount, reveal, reduced, controls]);
 
   useImperativeHandle(ref, () => ({
     isCorrect: () => checkTapReveal(it, selected),
@@ -358,12 +379,13 @@ const TapReveal = forwardRef<
           // missed, and never any red/shake on a wrong pick (that stays a soft dim).
           const celebrate = showCorrect && chosen;
           return (
-            <button
+            <motion.button
               key={i}
               type="button"
               aria-pressed={chosen}
               onClick={() => tap(i)}
               disabled={reveal}
+              animate={chosen ? controls : undefined}
               className={cn(
                 "child-touch relative flex flex-col items-start justify-center gap-1 overflow-hidden rounded-3xl border-2 px-5 py-4 text-left transition-all",
                 "focus-visible:outline-none focus-visible:ring-4",
@@ -418,7 +440,7 @@ const TapReveal = forwardRef<
                   )}
                 </span>
               )}
-            </button>
+            </motion.button>
           );
         })}
       </div>
@@ -571,9 +593,12 @@ const DragDrop = forwardRef<
     accent: AccentPreset;
     reveal: boolean;
     onReadyChange?: (ready: boolean) => void;
+    wrongAttemptCount?: number;
   }
->(function DragDrop({ it, accent, reveal, onReadyChange }, ref) {
+>(function DragDrop({ it, accent, reveal, onReadyChange, wrongAttemptCount }, ref) {
   const reduced = useReducedMotion();
+  const controls = useAnimationControls();
+  const prevWrong = useRef(wrongAttemptCount ?? 0);
   // slot index → chip index (or null)
   const [placement, setPlacement] = useState<(number | null)[]>(() =>
     it.slots.map(() => null),
@@ -588,6 +613,21 @@ const DragDrop = forwardRef<
   useEffect(() => {
     onReadyChange?.(placement.every((p) => p !== null));
   }, [placement, onReadyChange]);
+
+  // Supportive settle on a wrong (non-revealing) check: a single soft breathe
+  // on every slot the child has filled incorrectly, inviting another look.
+  // Reuses the exact FillBlank pattern (F6, 2026-08-11). Reduced motion skips
+  // the motion entirely; never red, never a shake or buzzer (calm-wrong law).
+  useEffect(() => {
+    const next = wrongAttemptCount ?? 0;
+    if (next > prevWrong.current && !reveal && !reduced) {
+      controls.start({
+        scale: [1, 0.99, 1],
+        transition: { duration: 0.3, ease: "easeOut" },
+      });
+    }
+    prevWrong.current = next;
+  }, [wrongAttemptCount, reveal, reduced, controls]);
 
   useImperativeHandle(ref, () => ({
     isCorrect: () => checkDragDrop(it, placement),
@@ -681,12 +721,15 @@ const DragDrop = forwardRef<
           const chip = placement[i];
           const correct = reveal && chip === slot.correctChip;
           const wrong = reveal && chip !== slot.correctChip;
+          // A slot the child has actually filled with the wrong chip, whether
+          // or not the answer is revealed yet — the settle target above.
+          const filledWrong = chip !== null && chip !== slot.correctChip;
           return (
             <div key={i} className="flex items-center gap-3">
               <span className="w-28 shrink-0 text-lg text-fog-300">
                 {slot.label}
               </span>
-              <button
+              <motion.button
                 type="button"
                 onClick={() => onSlotActivate(i)}
                 onDragOver={(e) => !reveal && e.preventDefault()}
@@ -698,6 +741,7 @@ const DragDrop = forwardRef<
                   if (!Number.isNaN(chipIdx)) placeChip(i, chipIdx);
                 }}
                 disabled={reveal}
+                animate={filledWrong ? controls : undefined}
                 aria-label={
                   chip !== null
                     ? `${slot.label}: ${it.chips[chip]}. Activate to remove.`
@@ -746,7 +790,7 @@ const DragDrop = forwardRef<
                     <DrawnCheck reduced={!!reduced} />
                   </span>
                 )}
-              </button>
+              </motion.button>
             </div>
           );
         })}
