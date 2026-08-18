@@ -502,6 +502,19 @@ describe("F4 (2026-08-18) — eng_persuasive 'identify the technique' item", () 
   });
 });
 
+describe("F9 (2026-08-18, second pass) — sci_states density calculation item", () => {
+  const prompt =
+    "A block of metal has a mass of 54 g and a volume of 20 cm3. Calculate its density using density = mass divided by volume.";
+
+  it("adds exactly one well-formed item keyed to 2.7 g/cm3", () => {
+    expectWellFormedItem("sci_states", "science", prompt, "2.7 g/cm3");
+  });
+
+  it("computes: density = mass / volume = 54 / 20 = 2.7", () => {
+    expect(54 / 20).toBe(2.7);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
