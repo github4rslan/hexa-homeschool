@@ -474,6 +474,20 @@ describe("F2 (2026-08-18) — sci_energy kinetic energy calculation item", () =>
   });
 });
 
+describe("F3 (2026-08-18) — eng_comprehension retrieval item", () => {
+  const prompt =
+    "Read this sentence from a story: 'The old lighthouse stood alone on the rocky cliff, its white paint peeling in the salty wind.' Which detail about the lighthouse is actually stated in the text?";
+
+  it("adds exactly one well-formed item keyed to the stated detail", () => {
+    expectWellFormedItem(
+      "eng_comprehension",
+      "english",
+      prompt,
+      "Its white paint was peeling",
+    );
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
