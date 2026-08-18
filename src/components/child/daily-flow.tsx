@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Explainer } from "./explainer";
 import { PracticePlayer } from "./practice-player";
 import { accentPreset } from "@/lib/child/accents";
+import { pulseTargetOnCrossing } from "@/lib/child/phase-bar";
 import { resolveResumeStep, type SavedProgress } from "@/lib/child/interactions";
 import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
@@ -101,6 +102,21 @@ export function DailyFlow({
   const inMastery = subPhase !== "practice";
   const phaseIndex = phase === "explainer" ? 0 : inMastery ? 2 : 1;
 
+  // F7 — one-shot "settle pulse" the moment a segment becomes active (forward
+  // progress only; never on a wrong answer). Tracks the previous phaseIndex so
+  // the pulse fires exactly once per crossing, not on every re-render, and is
+  // fully neutralised under prefers-reduced-motion (no scale/glow at all).
+  const reduceMotion = useReducedMotion();
+  const prevPhaseIndexRef = useRef(phaseIndex);
+  const [pulseIndex, setPulseIndex] = useState<number | null>(null);
+  useEffect(() => {
+    const target = pulseTargetOnCrossing(prevPhaseIndexRef.current, phaseIndex);
+    if (!reduceMotion && target !== null) {
+      setPulseIndex(target);
+    }
+    prevPhaseIndexRef.current = phaseIndex;
+  }, [phaseIndex, reduceMotion]);
+
   return (
     <div>
       {/* Phase progress — the accent fill animates as the journey advances. */}
@@ -115,15 +131,32 @@ export function DailyFlow({
                 transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
               />
             </div>
-            <span
-              className={
+            <motion.span
+              className={cn(
+                "mt-1.5 block rounded-md text-center text-sm",
                 i <= phaseIndex
-                  ? "mt-1.5 block text-center text-sm font-medium text-fog-200"
-                  : "mt-1.5 block text-center text-sm text-fog-500"
+                  ? "font-medium text-fog-200"
+                  : "text-fog-500",
+              )}
+              animate={
+                pulseIndex === i
+                  ? {
+                      scale: [1, 1.04, 1],
+                      boxShadow: [
+                        `0 0 0 ${accent.swatch}00`,
+                        `0 0 14px ${accent.swatch}80`,
+                        `0 0 0 ${accent.swatch}00`,
+                      ],
+                    }
+                  : { scale: 1, boxShadow: `0 0 0 ${accent.swatch}00` }
               }
+              transition={{ duration: 0.7, ease: "easeOut" }}
+              onAnimationComplete={() => {
+                if (pulseIndex === i) setPulseIndex(null);
+              }}
             >
               {p.label}
-            </span>
+            </motion.span>
           </div>
         ))}
       </div>
