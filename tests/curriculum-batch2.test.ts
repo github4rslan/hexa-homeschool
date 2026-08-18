@@ -488,6 +488,20 @@ describe("F3 (2026-08-18) — eng_comprehension retrieval item", () => {
   });
 });
 
+describe("F4 (2026-08-18) — eng_persuasive 'identify the technique' item", () => {
+  const prompt =
+    "'Imagine a town where every child walks safely to school.' Which persuasive technique does the writer use to draw the reader in?";
+
+  it("adds exactly one well-formed item keyed to the direct appeal to imagination", () => {
+    expectWellFormedItem(
+      "eng_persuasive",
+      "english",
+      prompt,
+      "A direct appeal to the reader's imagination",
+    );
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
