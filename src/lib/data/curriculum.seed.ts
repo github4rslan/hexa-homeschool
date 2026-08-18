@@ -1073,6 +1073,31 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "The writer does not raise an opposing viewpoint, so there is no counter-argument here.",
     ],
   },
+  // ── F9 (2026-08-18): sci_states "Calculate the density" item ──
+  // AQA 8464 Physics 4.5.1, density = mass / volume.
+  {
+    topic_tag: "sci_states",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "A block of metal has a mass of 54 g and a volume of 20 cm3. Calculate its density using density = mass divided by volume.",
+    options: ["2.7 g/cm3", "34 g/cm3", "1080 g/cm3", "0.37 g/cm3"],
+    correct_index: 0,
+    explanation:
+      "Density equals mass divided by volume. 54 divided by 20 is 2.7, so the density is 2.7 g/cm3.",
+    hints: [
+      "Density is mass divided by volume, not mass minus volume.",
+      "Divide 54 by 20.",
+    ],
+    misconceptions: [
+      "",
+      "34 is 54 minus 20, but density comes from dividing, not subtracting.",
+      "1080 is 54 times 20, but density comes from dividing mass by volume, not multiplying.",
+      "0.37 flips the calculation round: that is volume divided by mass. Density is mass divided by volume, 54 divided by 20.",
+    ],
+  },
   // Edexcel 1MA1 A18 — factorising quadratic with a mixed-sign trap ("Solve").
   {
     topic_tag: "maths_quadratics",
