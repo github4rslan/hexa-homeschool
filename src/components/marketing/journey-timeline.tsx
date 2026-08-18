@@ -1,11 +1,11 @@
 "use client";
 
 import { m } from "framer-motion";
-import * as Icons from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Badge } from "@/components/ui/badge";
 import { JOURNEY } from "@/lib/data/journey";
 import { AGENTS } from "@/lib/data/agents";
+import { journeyIcon } from "./journey-icon";
 
 export function JourneyTimeline() {
   return (
@@ -17,7 +17,7 @@ export function JourneyTimeline() {
 
           <div className="flex flex-col gap-24">
             {JOURNEY.map((step, i) => {
-              const Icon = (Icons as unknown as Record<string, React.ComponentType<{ className?: string }>>)[step.icon] ?? Icons.Circle;
+              const Icon = journeyIcon(step.icon);
               const agentNames = step.agentIds
                 .map((id) => AGENTS.find((a) => a.id === id)?.shortName)
                 .filter(Boolean);
