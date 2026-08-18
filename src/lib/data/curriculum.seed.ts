@@ -963,6 +963,31 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "Valves that prevent backflow are found in veins, where the pressure is low.",
     ],
   },
+  // ── F1 (2026-08-18): sci_atoms neutrons calculation ("Calculate") ──
+  // AQA 8464 Chemistry 4.1.1.2 — neutrons = mass number − atomic number.
+  {
+    topic_tag: "sci_atoms",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "A fluorine atom has an atomic number of 9 and a mass number of 19. Calculate the number of neutrons in this atom.",
+    options: ["10", "9", "19", "28"],
+    correct_index: 0,
+    explanation:
+      "The mass number 19 counts protons plus neutrons, and the atomic number 9 is the number of protons. Neutrons equals mass number minus atomic number, so 19 minus 9 is 10.",
+    hints: [
+      "The atomic number tells you the protons; the mass number counts protons and neutrons together.",
+      "Subtract the atomic number from the mass number: 19 minus 9.",
+    ],
+    misconceptions: [
+      "",
+      "9 is the number of protons (the atomic number), not the neutrons. Take it away from the mass number instead.",
+      "19 is the mass number, which counts protons and neutrons together. Subtract the 9 protons to get the neutrons.",
+      "Looks like you added 19 and 9. Neutrons come from subtracting: 19 minus 9.",
+    ],
+  },
   // Edexcel 1MA1 A18 — factorising quadratic with a mixed-sign trap ("Solve").
   {
     topic_tag: "maths_quadratics",
