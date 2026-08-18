@@ -62,7 +62,7 @@ export function QuestCards({ quests }: { quests: Quest[] }) {
   const [showCelebration] = useState(allDone);
 
   return (
-    <div className="relative grid gap-5">
+    <div className="relative grid min-w-0 gap-5">
       {allDone && showCelebration && (
         <div className="pointer-events-none absolute inset-x-0 -top-4 flex justify-center">
           <Celebration big variant={2} />
