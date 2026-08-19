@@ -904,9 +904,11 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   with F4 (Next 16 first-class nonce). Small known inline surface (2 THEME_NOFLASH_SCRIPT tags; JSON-LD is
   data not script-src). KEY LEARNINGS: (1) axe groups color-contrast as ONE violation with N nodes; sum
   nodes across all violations and fix every distinct token pair, don't stop at the first screenful. (2)
-  For the verify script after the playwright 1.62 bump, `npx playwright install chromium` then launch
-  playwright-core with the headless-shell executablePath; read creds from .env.local and never print
-  them. (3) Admin login in a script needs `domcontentloaded` + a fixed waitForTimeout, NOT
+  SCOPED TO MECHANIC'S DEPENDENCY-BUMP VERIFICATION ONLY, not general exploration: for the verify
+  script after the playwright 1.62 *package version* bump specifically, `npx playwright install
+  chromium` then launch playwright-core with the headless-shell executablePath; read creds from
+  .env.local and never print them. Scout must NOT use this technique for routine site exploration —
+  use the `mcp__playwright__browser_*` tools for that, always (see scout.md). (3) Admin login in a script needs `domcontentloaded` + a fixed waitForTimeout, NOT
   `waitForLoadState('networkidle')` (analytics keeps the network busy so networkidle races and lands you
   back on /login). (4) The MCP eval right after a client nav can read a stale DOM (dashboard <main> read
   0 then 1 on re-eval) — re-eval once before calling a landmark missing. (5) A new curriculum glossary on

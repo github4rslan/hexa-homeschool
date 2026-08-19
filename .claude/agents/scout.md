@@ -46,6 +46,22 @@ Target the deployed production site: **https://edway.uk** (override with
 this runtime, fall back to `curl`/Bash against the URL plus static code review,
 and say so in the report.
 
+**Use the `mcp__playwright__browser_*` tools for all exploration, full stop.**
+Do not use Bash/Node to launch your own browser (`playwright-core`,
+`puppeteer`, or similar) as a substitute for the MCP tools, even if it feels
+more convenient for a batch check like scroll-overflow detection or looping
+over several pages — call the MCP tools individually instead, one page/action
+at a time. This applies even though `automation/memory.md` documents a
+`playwright-core` + headless-shell technique elsewhere: that entry is scoped
+to `mechanic` verifying a pinned Playwright *package version* bump in CI/e2e
+code, a narrow one-off, not a general exploration method, and it is not
+license to write standalone scripts here. A prior run did exactly this
+(wrote ad hoc `_scout-*.mjs` scripts to the repo root instead of driving the
+MCP browser) and it was treated as a compliance bug, not a shortcut. If the
+MCP tools are genuinely unavailable, the fallback is `curl`/Bash + static
+code review only (no self-built browser automation) — say so in the report
+and note dramatically reduced confidence in any UI-only finding.
+
 Walk the real user journeys and record what you see — broken UI, dead ends,
 console errors, slow/failed network calls, layout breaks at mobile widths,
 accessibility gaps, and anything that just feels dated or clunky:
