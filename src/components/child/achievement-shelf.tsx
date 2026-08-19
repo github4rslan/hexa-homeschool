@@ -34,7 +34,17 @@ const ACCENT: Record<string, { ring: string; text: string; glow: string }> = {
 
 function earnedDate(d: Date | null): string {
   if (!d) return "";
-  return new Date(d).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  // B2: pin an explicit timeZone so this renders the SAME string on the server
+  // (SSR, UTC on Vercel) and the client (hydration, the child's local timezone).
+  // Without it, `toLocaleDateString` falls back to each environment's system
+  // timezone, and a badge earned within an hour of midnight UTC can format to
+  // a different calendar day on each side, which is exactly the kind of
+  // server/client text mismatch that trips React's hydration error #418.
+  return new Date(d).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
 }
 
 export function AchievementShelf({

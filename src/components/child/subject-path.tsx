@@ -36,10 +36,15 @@ const ACCENT: Record<string, { glow: string; ring: string; text: string; bar: st
 
 function formatDate(d: Date | null): string {
   if (!d) return "";
+  // B2: pin an explicit timeZone (same reasoning as achievement-shelf.tsx's
+  // earnedDate) — this text can render on the very first paint via the
+  // `?highlight=` deep-link from a certification celebration, which opens a
+  // node immediately, so it must match between SSR and hydration exactly.
   return new Date(d).toLocaleDateString("en-GB", {
     day: "numeric",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
