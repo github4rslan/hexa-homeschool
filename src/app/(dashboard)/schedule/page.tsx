@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { ArrowRight, CalendarDays, Check, KeyRound, Printer, Sparkles } from "lucide-react";
+import { ArrowRight, CalendarDays, KeyRound, Printer, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { SubmitButton } from "@/components/ui/submit-button";
 import {
   currentParentId,
@@ -19,6 +18,7 @@ import { sendWeeklyPlanEmail } from "@/lib/email/weekly-plan";
 import { approveSchedule, regenerateWeek } from "./actions";
 import { EditableSchedule, type SwapOption } from "@/components/dashboard/editable-schedule";
 import { InlineChildSwitcher } from "@/components/dashboard/inline-child-switcher";
+import { ApprovedBadge } from "@/components/dashboard/approved-badge";
 import type { Subject } from "@/lib/db/types";
 import { formatUkDate } from "@/lib/utils";
 
@@ -116,9 +116,7 @@ export default async function SchedulePage({
                 activeId={child._id.toHexString()}
               />
               {schedule?.approved_by_parent ? (
-                <Badge variant="neon" size="lg">
-                  <Check className="h-4 w-4" /> Approved
-                </Badge>
+                <ApprovedBadge />
               ) : (
                 <form action={approveSchedule}>
                   <input type="hidden" name="childId" value={child._id.toHexString()} />
