@@ -1280,3 +1280,50 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   second item's hunk back in and gate+ship it alone — cleaner than trying to craft
   a partial `git add -p` non-interactively. Teardown: parent session
   `fetch('/logout',{method:'POST'})`->200, admin session same, `browser_close`.
+- 2026-08-19 (Scout) — Wednesday deep-dive: delight/animation, plus the standing
+  max-depth child pass and all four B-journeys end to end. Found a real, well-
+  evidenced High bug (B1): the dashboard's per-child "Generate X's week" deep-link
+  renders the RIGHT child (page.tsx resolves `?child=` over the cookie, per an
+  existing F7 comment) but all five schedule-mutating server actions
+  (`approveSchedule`/`swapTopic`/`moveDay`/`clearDay`/`regenerateWeek` in
+  `schedule/actions.ts`) share one `activeChildId()` helper that ONLY reads the
+  active-child cookie, never the query param — so approving a non-active child's
+  plan from that exact, deliberately-provided deep-link silently mutates a
+  DIFFERENT child instead. Caught it not by inspection but by finishing the loop:
+  approved Sam's plan, then did a FRESH navigation back to the same URL and saw
+  the button hadn't flipped to "Approved" — the smoking gun. PATTERN WORTH
+  REPEATING: a "does this action affect what's on screen" bug is invisible from
+  a single request/response pair (the POST returned a clean 200); it only shows
+  up when you re-fetch the SAME page fresh afterward and check the state actually
+  changed, not just that the request succeeded. Also found a reproducible React
+  hydration error #418 on `/learn/map` (fires every load, page still renders fine
+  because React silently regenerates the mismatched subtree — filed with a
+  hypothesis, not a pinpointed line, since minified errors need `next dev` to
+  fully diagnose) and a real keyboard-a11y gap (mcq radiogroups don't support
+  arrow-key navigation, sitewide, one component fixes it everywhere). Tried to
+  live-audit accessibility with real axe-core by injecting the CDN build via
+  `browser_evaluate` — correctly BLOCKED by the site's own CSP
+  (`script-src 'self' 'unsafe-inline' https://meet.jit.si`, no CDN allowance) —
+  a good signal, but it means a real axe run needs an actual Playwright TEST
+  context with local node_modules access, not a live-site injection; filed that
+  as F6 (wire the already-installed-but-unused `@axe-core/playwright` into a real
+  spec) instead of forcing a workaround. Authored 4 more exam-style curriculum
+  questions (sci_genetics Punnett-square probability, sci_ecology % energy
+  transfer, eng_punctuation it's/its, eng_spelling their/there/they're) closing
+  4 of the 6 remaining zero-coverage EPIC 2 topics — only eng_creative/poetry/
+  Shakespeare remain, all more interpretive so worth extra care to keep each to
+  one truly defensible answer. Retired EPIC 8 (bare-grid mobile sweep) after a
+  clean re-grep found no new overflow risk. Opened EPIC 9 (a real visual mascot
+  for Eddie, currently text-only everywhere) since the brief explicitly asks for
+  a "reacting mascot" and Edway has the persona but not the face — scoped v1 to
+  self-hosted SVG/CSS (no Lottie/CDN) and ONE call site to keep the first PR
+  small. NON-FINDING WORTH NOTING: 3 of 14 `/api/tts` calls returned 502 under
+  this run's unusually heavy rapid-fire narration load — checked `use-narration.ts`
+  before filing anything and confirmed it already degrades gracefully to the
+  browser's native `speechSynthesis` on any fetch failure, so this was NOT filed
+  as a bug (verified-working resilience, not a gap) — read the actual fallback
+  code before assuming a console error is user-facing. Admin login timing flake
+  did NOT reproduce this run (logged in cleanly on the first attempt with no
+  extra wait — may be intermittent, not filed). Teardown: parent, admin and tutor
+  sessions each `fetch('/logout',{method:'POST'})`->200 or navigated through the
+  Sign-out button; confirmed logged out by landing back on `/login`; `browser_close`.
