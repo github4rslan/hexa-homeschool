@@ -172,6 +172,9 @@ const Mcq = forwardRef<
 ) {
   const reduced = useReducedMotion();
   const [selected, setSelected] = useState<number | null>(null);
+  // B3: roving-tabindex refs so Arrow keys can move focus to the newly-active
+  // radio (WAI-ARIA radiogroup pattern) after `setSelected` updates it.
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   // STT bridge — a spoken answer selects the matching option.
   useEffect(() => {
@@ -187,8 +190,36 @@ const Mcq = forwardRef<
     applySpokenAnswer: () => false, // parent matches spoken text to an option
   }));
 
+  // B3: standard ARIA radiogroup keyboard contract — Up/Left and Down/Right
+  // cycle (wrapping) the selection and move focus with it, mirroring the
+  // existing `setSelected` used by `onClick`. Reveal freezes input the same
+  // way the click handler already does.
+  const moveSelection = (delta: 1 | -1) => {
+    if (reveal) return;
+    const count = options.length;
+    if (count === 0) return;
+    const from = selected ?? 0;
+    const next = (from + delta + count) % count;
+    setSelected(next);
+    optionRefs.current[next]?.focus();
+  };
+
   return (
-    <div className="grid gap-4" role="radiogroup" aria-label="Answer choices">
+    <div
+      className="grid gap-4"
+      role="radiogroup"
+      aria-label="Answer choices"
+      onKeyDown={(e) => {
+        if (reveal) return;
+        if (e.key === "ArrowDown" || e.key === "ArrowRight") {
+          e.preventDefault();
+          moveSelection(1);
+        } else if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          moveSelection(-1);
+        }
+      }}
+    >
       {options.map((option, i) => {
         const chosen = selected === i;
         const showCorrect = reveal && i === correctIndex;
@@ -209,9 +240,13 @@ const Mcq = forwardRef<
         return (
           <motion.button
             key={i}
+            ref={(el) => {
+              optionRefs.current[i] = el;
+            }}
             type="button"
             role="radio"
             aria-checked={chosen}
+            tabIndex={chosen || (selected === null && i === 0) ? 0 : -1}
             onClick={() => !reveal && setSelected(i)}
             disabled={reveal}
             whileTap={reveal ? undefined : { scale: 0.98 }}
