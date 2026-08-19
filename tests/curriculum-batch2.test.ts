@@ -556,6 +556,19 @@ describe("F2 (2026-08-19) — sci_ecology percentage energy transfer item", () =
   });
 });
 
+describe("F3 (2026-08-19) — eng_punctuation apostrophe (it's vs its) item", () => {
+  const prompt = "Identify the sentence that uses the apostrophe correctly.";
+
+  it("adds exactly one well-formed item keyed to the it's contraction", () => {
+    expectWellFormedItem(
+      "eng_punctuation",
+      "english",
+      prompt,
+      "It's a lovely day today.",
+    );
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
