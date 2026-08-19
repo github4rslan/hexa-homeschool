@@ -1327,3 +1327,117 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   extra wait — may be intermittent, not filed). Teardown: parent, admin and tutor
   sessions each `fetch('/logout',{method:'POST'})`->200 or navigated through the
   Sign-out button; confirmed logged out by landing back on `/login`; `browser_close`.
+- 2026-08-19 — Mechanic build run, DECISION `all` (B1-B3 + F1-F8, 11 items, no cap;
+  findings 2026-08-19). ALL 11 SHIPPED, each green-gated (type-check + 787 tests +
+  lint + build, one commit, pushed to main) AND live-verified on edway.uk with
+  Playwright after the deploy went READY (Vercel MCP). **B1** (highest priority)
+  threaded a hidden `childId` field through every schedule-mutating form
+  (approve/swap/move/clear/regenerate), and `activeChildId()` in actions.ts now
+  prefers `formData.get("childId")` over the active-child cookie, falling back to
+  the cookie only when absent; ownership check unchanged (still inside
+  `getActiveChild`). LIVE-REPRODUCED THE EXACT SCOUT SCENARIO: dashboard showed Sam
+  Test's "Generate Sam's week" nudge while Ivy was the active-child cookie, clicked
+  through to `/schedule?child=<Sam's id>`, approved, then did a FRESH navigation to
+  the same URL — badge now correctly reads "Approved" (previously it silently
+  reverted, proving the write had landed on Ivy). Confirmed Ivy's own `/schedule`
+  was untouched (separate, already-approved plan, different topics) — the silo
+  holds. **B2** hydration mismatch on `/learn/map`: both `achievement-shelf.tsx`'s
+  `earnedDate` and `subject-path.tsx`'s `formatDate` called `toLocaleDateString`
+  with no explicit `timeZone`, so the string depended on the local system
+  timezone — different on the Vercel SSR pass (UTC) vs the child's browser
+  (BST currently) for any date within about an hour of midnight UTC, exactly
+  matching React's own canned #418 message ("Date formatting in a user's locale
+  which doesn't match the server"). Added `timeZone: "UTC"` to both (subject-path's
+  copy carries the same latent bug via the `?highlight=` deep-link, even though
+  Scout didn't happen to reproduce it there). LIVE: reloaded `/learn/map` fresh 3x,
+  zero console errors every time (was reproducible "every single time" per the
+  finding). **B3** roving-tabindex + Arrow-key handler on the shared mcq
+  radiogroup in `interaction.tsx` (ArrowDown/Right and ArrowUp/Left cycle+wrap,
+  calling the same `setSelected` as onClick; `tabIndex` 0 on the chosen-or-first
+  option, -1 elsewhere). LIVE via `browser_evaluate`+`press_key`: confirmed
+  `tabindex` starts `["0","-1","-1","-1"]`, ArrowDown moves focus+aria-checked to
+  index 1 and flips the tabindex array, and ArrowUp from index 0 wraps to the LAST
+  option (index 3) — the full WAI-ARIA radiogroup contract, zero new console
+  errors. **F1-F4** transcribed all four exam-style items verbatim into
+  `EXAM_STYLE_QUESTIONS` (sci_genetics Punnett-square, sci_ecology % transfer,
+  eng_punctuation it's/its, eng_spelling their/there/they're), one commit each with
+  its own Vitest well-formedness+computes test (reused the existing
+  `expectWellFormedItem` helper in `curriculum-batch2.test.ts`). Ran `npm run seed`
+  ONCE after all four landed ("10 written"). LIVE-VERIFIED via a standalone
+  Playwright script (`_verify-curriculum.mjs`, written to repo root then deleted
+  after use — reads `.env.local` itself so admin creds never touch the
+  transcript/MCP tool calls) that logged in as admin and grepped the
+  `/admin/curriculum` CMS page text for all 4 exact prompts — all 4 FOUND (same
+  authoritative-DB-read pattern as prior runs, since these are KS4 items none of
+  the smoke children are banded into for a real lesson draw). **F5** drag_drop chip
+  pick-up lift: added an `animate` lift (y:-4, scale:1.05, violet shadow) keyed on
+  `isSelected`. KEY CORRECTION vs the finding's own suggestion: framer-motion's
+  `whileDrag` only fires under framer's OWN drag gesture system (`drag` prop);
+  this component uses native HTML5 `draggable`+`dataTransfer` instead, so a literal
+  `whileDrag` prop would have been a silent no-op. Fixed by tracking real
+  `dragstart`/`dragend` state (`draggingChip`) and merging it into the same
+  `lifted` boolean instead. LIVE via `getComputedStyle`: selected chip's
+  `transform` read `matrix(1.05,0,0,1.05,0,-4)` with the exact coded box-shadow —
+  confirmed the lift actually applies, not just compiles. **F6** the axe-core
+  Playwright infra was ALREADY built (a prior run's F4), so the real unmet gaps
+  were the finding's specific named surfaces: added a `/pricing` check to
+  `a11y.public.spec.ts`, a real-lesson check to `a11y.authed.spec.ts` (clicks the
+  first `a[href^="/learn/lesson"]`, skips cleanly if none), a new
+  `a11y.admin.spec.ts` (reused `auth.setup`'s existing admin storageState — no new
+  setup needed), and a post-deploy `a11y` CI job mirroring `smoke`/`admin-mobile`.
+  LIVE-RAN `npm run a11y` against edway.uk (real Chromium, not a stub): all 9
+  pass, 0 critical anywhere; it also surfaced 3 pre-existing SERIOUS issues
+  (color-contrast on pricing/learn/admin, a missing `<title>` on the lesson page)
+  exactly as designed — logged for a future Scout pass, not fixed here (out of
+  this item's scope). **F7** (the L/ambitious item) built `EddieAvatar` — a
+  self-hosted inline SVG/CSS face (eyes + a mouth curve keyed by mood), NOT a
+  Lottie asset, zero network dependency in `(child)`. Mouth paths for all 4 moods
+  are deliberately NEVER inverted into a frown, so "encouraging" (shown on a miss)
+  still reads as "have another go", not sad/disappointed — re-checked this
+  explicitly against the calm-wrong law before shipping. Scoped to exactly the two
+  call sites the finding itself recommended (practice-player's correct panel =
+  warm-nod, replacing a plain text-only celebration; the wrong panel's existing
+  WandSparkles glyph = encouraging), leaving teaching-animation.tsx/my-stuff as a
+  deliberate v2. LIVE: screenshotted both an actual correct answer ("Brilliant!"
+  with a smiling violet face) and a deliberate wrong answer ("Ivy, not quite yet —
+  have another go" with the SAME calm smiling face, never a frown) — the face
+  visibly differs in expression between the two but neither reads as negative.
+  **F8** new `ApprovedBadge` client component (checkmark `pathLength` draw-in +
+  one-shot scale pulse, mirroring the interaction renderer's existing `DrawnCheck`
+  pattern) mounted only when `approved_by_parent` flips true, so it's a genuine
+  mount-triggered entrance, never a re-render loop. LIVE: drove Sam Smoke's
+  unapproved plan through Approve and screenshotted the rendered "✓ Approved"
+  badge. HEALTH CHECK: newest deployment READY + aliased to edway.uk/www.edway.uk,
+  `/api/health` 200 `{db:up}`, `get_runtime_errors` showed ONLY pre-existing
+  ElevenLabs `quota_exceeded` 401s (account literally down to 3 credits) and one
+  stale Cloudinary 502 from June — NEITHER caused by anything shipped this run;
+  noted for the owner as an ElevenLabs billing/quota issue, not a code bug (the
+  existing graceful-degradation to browser `speechSynthesis` was reconfirmed
+  working live during the B3/F7 drive: lessons continued normally through
+  multiple TTS 502/401s with zero user-facing breakage). KEY LEARNINGS: (1) when a
+  finding SUGGESTS a specific framer-motion prop (`whileDrag`) as the fix, verify
+  it actually applies to the component's existing gesture system before using it —
+  a component wired for native HTML5 drag/drop (not framer's `drag` prop) makes
+  `whileDrag` a silent no-op; track the native `dragstart`/`dragend` events
+  yourself instead, and confirm via `getComputedStyle` on the live element, not
+  just "it typechecks". (2) For an env-dependent hydration mismatch (React #418),
+  the FIRST question is always "does this component format a Date/time WITHOUT an
+  explicit timeZone/locale pin" — SSR (Vercel, UTC) and the child's browser
+  (their local TZ) can render different text for the identical Date value near a
+  timezone-offset boundary; pinning `timeZone: "UTC"` is a two-line fix that
+  removes the entire class of bug, cheaper than restructuring to pass
+  pre-formatted strings across the server/client boundary. (3) Before wiring a new
+  a11y/e2e spec, grep for whether the infra already exists (it did, from
+  2026-08-08) — the honest and useful move was extending it to the finding's
+  SPECIFIC uncovered surfaces (pricing/lesson/admin/CI-wiring) rather than
+  re-building or wrongly claiming it was "already done" and skipping the item
+  entirely; a finding can be PARTIALLY stale. (4) For a live "did the write land
+  on the right document" bug (B1-class), the definitive proof is a FRESH
+  navigation to the exact same URL after the mutating action, not just checking
+  the POST returned 200 — re-derived this from Scout's own repro method and reused
+  it verbatim as the live-verification step. (5) A standalone script that reads
+  `.env.local` directly (written to repo root, run, then deleted) is the clean way
+  to admin-login-and-verify without ever putting credentials through the MCP tool
+  call transcript — same pattern prior runs used for tutor/admin coverage. Teardown:
+  parent session `fetch('/logout',{method:'POST'})`->200, admin logged out inside
+  the standalone script's own context, `browser_close`.
