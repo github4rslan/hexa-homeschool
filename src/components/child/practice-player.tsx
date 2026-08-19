@@ -13,11 +13,11 @@ import {
   Lightbulb,
   Wind,
   Eye,
-  WandSparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CalmPause } from "@/components/child/calm-pause";
 import { HandoffPause } from "@/components/child/handoff-pause";
+import { EddieAvatar } from "@/components/child/eddie-avatar";
 import { Celebration } from "@/components/fx/celebration";
 import { ConfettiBurst } from "@/components/fx/confetti-burst";
 import { Interaction, type InteractionHandle } from "@/components/child/interaction";
@@ -189,45 +189,6 @@ function matchSpokenOption(transcript: string, options: string[]): number | null
     }
   });
   return best;
-}
-
-/**
- * F6 — inline Eddie reaction on a lesson miss. A small self-contained glyph
- * (the same WandSparkles Eddie mark the See-it coach panel uses) that slides in
- * gently beside the calm nudge line and gives one warm nod, so the support feels
- * human at the exact moment of the wobble. Strictly inside the calm-wrong law:
- * no red, no shake, no buzzer; it lives in the accent-tinted feedback region so
- * it can never read as a "wrong" signal, and it never blocks or delays input.
- * Fully neutralised under prefers-reduced-motion (the global provider plus this
- * local guard), so a reduce-motion child sees a static glyph. Decorative: the
- * calm line beside it carries the meaning, so the glyph is aria-hidden.
- */
-function EddieMiss({
-  accent,
-  reduced,
-}: {
-  accent: AccentPreset;
-  reduced: boolean | null;
-}) {
-  return (
-    <motion.div
-      initial={reduced ? false : { opacity: 0, x: -6, scale: 0.9 }}
-      animate={
-        reduced
-          ? undefined
-          : { opacity: 1, x: 0, scale: 1, rotate: [0, -7, 7, 0] }
-      }
-      transition={{ duration: 0.6, ease: "easeInOut" }}
-      className={cn(
-        "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border",
-        accent.bg,
-        accent.border,
-      )}
-      aria-hidden
-    >
-      <WandSparkles className={cn("h-5 w-5", accent.text)} />
-    </motion.div>
-  );
 }
 
 export function PracticePlayer({
@@ -1795,7 +1756,7 @@ export function PracticePlayer({
               role="status"
               aria-live="polite"
             >
-              <EddieMiss accent={accent} reduced={reduced} />
+              <EddieAvatar mood="encouraging" accent={accent} reduced={reduced} />
               <div className="min-w-0 text-lg text-fog-100">
                 {/* Eddie's one composed, answer-reactive line — the name, the
                     exact pick and the misconception folded into a single warm
@@ -1927,8 +1888,9 @@ export function PracticePlayer({
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="mt-6 rounded-3xl border border-neon-400/30 bg-neon-500/5 p-5 text-lg text-fog-100"
+              className="mt-6 flex items-start gap-3 rounded-3xl border border-neon-400/30 bg-neon-500/5 p-5 text-lg text-fog-100"
             >
+              <EddieAvatar mood="warm-nod" accent={accent} reduced={reduced} />
               <span className="relative inline-block font-semibold">
                 <Celebration variant={step} />
                 {PRAISE[step % PRAISE.length]}
