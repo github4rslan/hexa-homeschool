@@ -1155,6 +1155,31 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "The +2x means the two numbers add to +2, so one must be positive: +5 and −3.",
     ],
   },
+  // ── F1 (2026-08-19): sci_genetics Punnett-square probability item ──
+  // AQA 8464 Biology 4.6.1.2/4.6.2, closing a zero-coverage topic.
+  {
+    topic_tag: "sci_genetics",
+    subject: "science",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "In pea plants, tall (T) is dominant over short (t). Two heterozygous tall plants (Tt) are crossed. Calculate the probability that an offspring will be short.",
+    options: ["1/4", "1/2", "3/4", "0"],
+    correct_index: 0,
+    explanation:
+      "Crossing Tt with Tt gives offspring genotypes TT, Tt, Tt and tt in equal proportions. Only tt is short, and that is 1 out of the 4 combinations, so the probability is 1/4.",
+    hints: [
+      "Draw out all four combinations from crossing Tt with Tt: TT, Tt, Tt, tt.",
+      "Only the tt combination is short. How many of the 4 combinations is that?",
+    ],
+    misconceptions: [
+      "",
+      "1/2 is the probability of an offspring being Tt (heterozygous tall), not short. Only tt is short.",
+      "3/4 is the probability of an offspring being TALL (TT or Tt), which is the opposite of what's being asked.",
+      "Tall is dominant, but that doesn't mean short can never appear — two Tt parents can still produce a tt (short) offspring, with probability 1/4.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */

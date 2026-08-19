@@ -528,6 +528,21 @@ describe("F10 (2026-08-18, second pass) — eng_grammar subject-verb agreement i
   });
 });
 
+describe("F1 (2026-08-19) — sci_genetics Punnett-square probability item", () => {
+  const prompt =
+    "In pea plants, tall (T) is dominant over short (t). Two heterozygous tall plants (Tt) are crossed. Calculate the probability that an offspring will be short.";
+
+  it("adds exactly one well-formed item keyed to 1/4", () => {
+    expectWellFormedItem("sci_genetics", "science", prompt, "1/4");
+  });
+
+  it("computes: Tt x Tt gives TT, Tt, Tt, tt — 1 of 4 combinations is short (tt)", () => {
+    const combinations = ["TT", "Tt", "Tt", "tt"];
+    const shortCount = combinations.filter((g) => g === "tt").length;
+    expect(shortCount / combinations.length).toBe(0.25);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
