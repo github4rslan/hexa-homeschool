@@ -1205,6 +1205,35 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "Double-check the division: 200 divided by 2000, times 100, is 10%, not 20%.",
     ],
   },
+  // ── F3 (2026-08-19): eng_punctuation apostrophe use item (it's vs its) ──
+  // AQA 8700 AO6, closing a zero-coverage topic.
+  {
+    topic_tag: "eng_punctuation",
+    subject: "english",
+    tier: 2,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Identify the sentence that uses the apostrophe correctly.",
+    options: [
+      "Its a lovely day today.",
+      "It's a lovely day today.",
+      "The cat licked it's paw.",
+      "The dog chased it,s tail.",
+    ],
+    correct_index: 1,
+    explanation:
+      "'It's' (with an apostrophe) is the contraction of 'it is' or 'it has'. Here the sentence means 'It is a lovely day today', so it needs the apostrophe: it's.",
+    hints: [
+      "Ask yourself: does the sentence mean 'it is' or 'it has'? If yes, use it's with an apostrophe.",
+      "'Its' (no apostrophe) shows something belongs to it, like 'its paw' or 'its tail'.",
+    ],
+    misconceptions: [
+      "'Its' with no apostrophe means belonging to it. This sentence means 'It is a lovely day', so it needs the apostrophe: it's.",
+      "",
+      "'It's' with an apostrophe means 'it is' or 'it has'. Here the sentence means the paw belongs to the cat, so no apostrophe is needed: its paw.",
+      "An apostrophe never comes before an 's' like this just to show possession — 'its' (no apostrophe, no comma) is correct here.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
