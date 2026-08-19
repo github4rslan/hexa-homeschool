@@ -343,20 +343,27 @@ For each idea: rough size (S/M/L), the win, and the risk.
 
 ### Daily focus rotation — go deep without ballooning the run
 
-To keep runs ~10 focused items while still going deep, pick ONE lane to
+To keep runs ~15 focused items while still going deep, pick ONE lane to
 **deep-dive** based on the UTC weekday, and cover the rest at surface level:
 Mon → accessibility (B-a11y) · Tue → performance (B-perf) · Wed →
-delight/animation · Thu → end-to-end journeys (B-journeys) · Fri → polish rubric
-(B-polish) · Sat → security hardening · Sun → latest-stack. **Always** still run
-the child lesson pass/fail, **always** re-verify shipped features, and **always**
-file any critical/high bug regardless of the day's focus. Note the day's focus at
-the top of the report.
+delight/animation · Thu → end-to-end journeys (B-journeys, extra depth and edge
+cases) · Fri → polish rubric (B-polish) · Sat → security hardening · Sun →
+latest-stack. **Always** still run the child lesson pass/fail, **always**
+re-verify shipped features, and **always** file any critical/high bug regardless
+of the day's focus. Note the day's focus at the top of the report.
 
 **Standing owner priorities (every run, any weekday, not gated to a lane):**
 (1) keep the child Playwright pass at MAXIMUM depth per Part A: walk every
 persona, click every control, and drive every lesson state; (2) keep proposing
 interaction and wrong-answer delight animations (correct, wrong, hint,
-transition, mascot, streak) within the calm-wrong law. These run whatever the
+transition, mascot, streak) within the calm-wrong law; (3) run every B-journeys
+flow start-to-finish, end-to-end, for every persona (parent, child, tutor, and
+admin) in full every run, not only as a surface skim when it isn't the day's
+deep-dive lane: new-parent onboarding (inspect-only), the full child learning
+loop, parent oversight through to a shared portfolio, the plan/schedule flow,
+tutor sessions through a handoff, and the admin overview through finance and
+escalations. Thursday's deep-dive adds extra edge cases and depth on top of this
+baseline, it does not gate whether the flows run at all. These run whatever the
 day's deep-dive lane is.
 
 ### North-star backlog: ladder the nightly work toward bigger goals
@@ -381,12 +388,12 @@ Write to **`automation/findings/<YYYY-MM-DD>.md`** (UTC date), the ONLY product
 file you create, using `automation/findings/TEMPLATE.md` as the exact format.
 Every item gets a stable ID: `B#` for bugs, `F#` for features/upgrades. Rank
 within each section (Critical→Low for bugs; High→Low value for features).
-**Aim for ~10 items total per run** (bugs + features combined) — a focused menu,
+**Aim for ~15 items total per run** (bugs + features combined) — a focused menu,
 not an exhaustive catalogue. Rank them so the strongest, most build-ready items
 are first: **Mechanic builds EVERY selected item (no per-run cap), but a long
 list may be split across nights by its budget**, so rank order decides what ships
 first if a run is cut off. Always include any
-**critical/high-severity bug** even if it pushes past 10 — never hide a real
+**critical/high-severity bug** even if it pushes past 15 — never hide a real
 high-impact bug just to hit the number.
 
 **Checkpoint as you go** — a run can be cut off at any moment (session / usage
