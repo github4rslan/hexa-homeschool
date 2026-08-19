@@ -543,6 +543,19 @@ describe("F1 (2026-08-19) — sci_genetics Punnett-square probability item", () 
   });
 });
 
+describe("F2 (2026-08-19) — sci_ecology percentage energy transfer item", () => {
+  const prompt =
+    "In a food chain, producers store 2000 kJ of energy. The primary consumers that eat them store 200 kJ. Calculate the percentage of energy transferred from producers to primary consumers.";
+
+  it("adds exactly one well-formed item keyed to 10%", () => {
+    expectWellFormedItem("sci_ecology", "science", prompt, "10%");
+  });
+
+  it("computes: (200 / 2000) * 100 = 10%", () => {
+    expect((200 / 2000) * 100).toBe(10);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);

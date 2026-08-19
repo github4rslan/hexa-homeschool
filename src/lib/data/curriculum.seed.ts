@@ -1180,6 +1180,31 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "Tall is dominant, but that doesn't mean short can never appear — two Tt parents can still produce a tt (short) offspring, with probability 1/4.",
     ],
   },
+  // ── F2 (2026-08-19): sci_ecology percentage energy transfer item ──
+  // AQA 8464 Biology 4.7.3 trophic levels, closing a zero-coverage topic.
+  {
+    topic_tag: "sci_ecology",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "In a food chain, producers store 2000 kJ of energy. The primary consumers that eat them store 200 kJ. Calculate the percentage of energy transferred from producers to primary consumers.",
+    options: ["10%", "90%", "0.1%", "20%"],
+    correct_index: 0,
+    explanation:
+      "Percentage transferred is (energy received divided by energy available) times 100. That's 200 divided by 2000, times 100, which is 10%.",
+    hints: [
+      "Divide the energy the consumers stored by the energy the producers stored.",
+      "200 divided by 2000 gives a fraction — multiply by 100 to turn it into a percentage.",
+    ],
+    misconceptions: [
+      "",
+      "90% is the energy that is LOST between the levels (100% minus 10%), not the energy that is transferred. The question asks for the energy transferred.",
+      "200 divided by 2000 is correct as a fraction (0.1), but you still need to multiply by 100 to turn it into a percentage: 10%.",
+      "Double-check the division: 200 divided by 2000, times 100, is 10%, not 20%.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
