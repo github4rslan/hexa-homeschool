@@ -1443,3 +1443,98 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   call transcript — same pattern prior runs used for tutor/admin coverage. Teardown:
   parent session `fetch('/logout',{method:'POST'})`->200, admin logged out inside
   the standalone script's own context, `browser_close`.
+- 2026-08-20 (Scout) — Discovery pass, Thursday deep-dive = B-journeys (full
+  end-to-end persona flows, extra depth). Drove the full parent oversight
+  journey as SMOKE parent: dashboard → Ivy's child profile → curriculum
+  roadmap → generate portfolio (Q3 2026, real SHA-256 hash) → LA email-share
+  form (validated, did not actually send) → public `/verify-portfolio?hash=`
+  page (PASS, first-name-only, zero console errors) → `/compliance/cnis`
+  registration pre-fill (PASS). Plan/schedule flow: regenerate correctly
+  dropped the just-certified Fractions topic in favour of the next unmastered
+  one (Ratio & Proportion), approved, and a FRESH navigation confirmed the
+  "Approved" badge persisted (per the B1-2026-08-19 verification pattern).
+  Child pass (Ivy): full sci_cells re-lesson end-to-end incl. tap_reveal
+  (reveal-3-cards-then-pick) AND mcq, 2 deliberate wrong answers with
+  escalating hints + See-it Eddie walkthrough, correct settle, 3/3 mastery
+  incl. the live F1 magnification exam-style item, certification + trophy.
+  Resilience: a hard refresh mid-explainer (before an in-flight answer POST
+  resolved) looked like a false "restart" — re-tested properly (waited for
+  the click's request to settle before navigating) and confirmed the warm
+  resume is CORRECT (lands on the right step, score intact, "Welcome back,
+  Ivy"); logged as a methodology note, not a bug — always let a mutating
+  click's request settle before treating a refresh as a resilience test.
+  Keyboard: roving-tabindex + ArrowDown/Up radiogroup cycling reconfirmed
+  live via raw DOM focus + getComputedStyle (visible box-shadow focus ring).
+  Deep-linked `/learn/mock` while logged out → redirected through `/login`
+  and landed back on the exact mock page post-login (redirect param intact).
+  HEADLINE FINDING (B-seo lane, now a standing every-run check): B1 — the
+  root layout's `alternates.canonical` and `openGraph`/`twitter` blocks are
+  hardcoded to the HOMEPAGE and no marketing page overrides them (only
+  title/description are per-page), so `curl`-verified live that EVERY
+  non-home page (checked /pricing, /gallery) emits
+  `<link rel="canonical" href="https://edway.uk"/>` and homepage-only
+  og:title/og:url — a sitewide duplicate-content signal AND a broken social
+  share-card for every single inner page. B2: robots.txt never learned about
+  the (child)/(admin)/(tutor) route groups or several (dashboard) sub-paths
+  (only disallows /dashboard, /onboarding, /lesson), and sitemap.xml is
+  missing /gallery + /resources (live sitemap.xml fetch vs. FOOTER_NAV diff).
+  IMPORTANT SELF-CORRECTION: first suspected /gallery + /resources were fully
+  ORPHANED (a `grep href="/gallery"` across the footer component found
+  nothing) — but a live mobile screenshot of the footer clearly showed both
+  links, so I re-checked and found `footer.tsx` builds its links from a data
+  array (`lib/data/navigation.ts`'s `FOOTER_NAV`), not literal JSX `href="…"`
+  strings, which is exactly why the grep pattern missed them. Retracted the
+  "orphan pages" framing before writing the report — verify a suspected UI
+  gap with a real screenshot/render, not a single grep pattern, before filing
+  it. Curriculum (EPIC 2): confirmed via the Vercel deployment history that
+  sci_genetics/sci_ecology/eng_punctuation/eng_spelling (authored 2026-08-19)
+  are now SHIPPED — every Science + 9/10 English topics have >=1 command-word
+  item. Authored the LAST three (eng_poetry caesura-effect, eng_shakespeare
+  soliloquy-vs-dialogue, eng_creative narrative-viewpoint), each single-
+  defensible-answer and AQA English Language 8700 AO2/AO5-cited, closing
+  EPIC 2's zero-coverage gap entirely once seeded. Delight (EPIC 9 next
+  step): proposed expanding the shipped EddieAvatar mascot (2026-08-19) to
+  the See-it walkthrough coach and My-stuff voice preview, per the epic's own
+  scoping note. Perf/reliability, GROUNDED in real production data (new this
+  run — Vercel MCP tools): `get_runtime_errors` (48h) returned 50 error
+  groups, nearly all `[/api/tts] ElevenLabs 401 quota_exceeded` (recurring
+  since 2026-06-28, still firing dozens of times during this very run) — NOT
+  a correctness bug (the native-speechSynthesis fallback held perfectly
+  through 11 straight failures live), but every attempt still pays the full
+  failed network round-trip first; proposed a quota-exhausted cooldown flag
+  to skip straight to the fallback. `list_deployments` confirmed the exact
+  live production build (dpl_2GMHyhEEU75QLXSgxBScRqoTrt2p, the
+  "forbid Scout from bypassing MCP tools" commit) matched what I was testing.
+  COMPLIANCE NOTE (important, read before any future admin/tutor pass): while
+  preparing to log into ADMIN, I used a Node one-liner via Bash to read
+  `.env.local` and — via poor judgement in the moment — wrote the resolved
+  email/password to a scratch JSON file IN THE REPO WORKING DIRECTORY so a
+  later step could read it without me re-printing the values. Caught this
+  immediately (before any `git add`/commit — confirmed clean via
+  `git status --porcelain`), deleted the file, and made the call to SKIP live
+  admin/tutor re-authentication entirely for the rest of this run rather than
+  retry a workaround. LESSON FOR EVERY FUTURE RUN: never write a credential
+  value to ANY file inside the repo working tree, even a "temporary" one you
+  intend to delete before committing — a crash, an interrupted session, or a
+  stray `git add -A` before cleanup would leak it into a PUBLIC repo's
+  history forever. The one truly safe pattern for admin/tutor login under the
+  MCP-tools-only rule is: read the specific `.env.local` line via Bash/Read
+  ONLY into your own immediate context, type it directly into
+  `browser_type`'s parameters (this is the same category of transient
+  exposure as the SMOKE-parent password that naturally appears via browser
+  autofill + `browser_snapshot`, not a new risk), and NEVER let it touch a
+  Bash command that writes to a file, an echoed shell variable, or the
+  written findings report / final summary. If in doubt, it is better to skip
+  the login and report the coverage gap honestly (as this run did) than risk
+  a file-based leak. Also reconfirmed the SMOKE-parent password DOES still
+  appear in `browser_snapshot` output when the browser autofills the login
+  form (visible as `text: <password>` inside the textbox node) — this is
+  inherent to how the accessibility tree serialises input values, not
+  something a prompt can fully prevent; the mitigation is procedural (never
+  repeat it in Bash output, the report, or the final message), not technical.
+  Teardown: `fetch('/logout',{method:'POST'})`→200 after the parent session;
+  the admin/tutor logins were never completed so no session to close there;
+  confirmed logged out by landing on `/login`; `browser_close` at session end.
+  Static: `npm run type-check` and `npm run lint` both clean; `npm audit`
+  (both prod-only `--omit=dev` and full tree) = 0 vulnerabilities. Opened
+  EPIC 10 (SEO/metadata hygiene) from this run's B1/B2 findings.

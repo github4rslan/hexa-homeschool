@@ -12,7 +12,7 @@ exams (Edexcel Maths 1MA1, AQA English 8700, AQA Combined Science Trilogy 8464).
 ---
 
 ## EPIC 1 — Verified, correct question bank across every spec point
-Status: ACTIVE. The existing bank (~160 human-authored items across 5 seed files)
+Status: ACTIVE. The existing bank (~160+ human-authored items across 5 seed files)
 is arithmetically/factually clean (re-audited 2026-08-08, 08-09, and again the 17
 EXAM_STYLE_QUESTIONS on 2026-08-14).
 - Next step: continue a rolling per-subject correctness re-audit each run; note
@@ -22,19 +22,24 @@ EXAM_STYLE_QUESTIONS on 2026-08-14).
   (2026-08-08); B3 sci_body water-absorption item retired + reworded + orphan
   deleted (2026-08-09); curriculum.seed.extra.ts + the F7 exam-style items + F8
   mensuration re-derived clean (2026-08-09); all 17 EXAM_STYLE_QUESTIONS
-  re-derived clean again (2026-08-14 Scout) — no correctness bugs.
+  re-derived clean again (2026-08-14 Scout) — no correctness bugs. Spot-checked
+  the existing eng_creative/eng_poetry/eng_shakespeare seeded diagnostic/practice
+  items 2026-08-20 while authoring their first command-word items (EPIC 2) — all
+  correct-answer indices match their explanations, no ambiguity found.
 
 ## EPIC 2 — Exam-style, command-word practice (make questions feel like the paper)
-Status: ACTIVE (headline). The bank is almost all single-step recall MCQs; real
-papers use command words (calculate, work out, show that, explain, describe,
-compare) and multi-step reasoning.
-- Next step: only `eng_creative`, `eng_poetry` and `eng_shakespeare` remain with
-  zero exam-style items (all three are more interpretive/subjective than the
-  calculation- or fixed-rule-based items authored so far — worth extra care to
-  keep each to one truly defensible answer, e.g. a "identify the structural
-  feature" or "identify the rhyme scheme" style question rather than anything
-  open to genuine critical debate). Keep adding command-word items per topic
-  each run until every KS4 topic has >= 2.
+Status: ACTIVE (headline), very close to closing. Every Science topic and 9 of
+10 English topics now have >= 1 command-word item (sci_genetics/sci_ecology/
+eng_punctuation/eng_spelling all confirmed SHIPPED in the Vercel deployment
+history as of 2026-08-20).
+- Next step: `eng_creative`, `eng_poetry` and `eng_shakespeare` were the LAST
+  three zero-coverage topics. All three authored in full 2026-08-20 (Scout
+  F2/F3/F4: eng_poetry caesura-effect, eng_shakespeare soliloquy-vs-dialogue,
+  eng_creative narrative-viewpoint — each a single-defensible-answer, AQA
+  English Language 8700 AO2/AO5 item, deliberately steering clear of anything
+  open to genuine critical debate). Once these seed, EVERY KS4 topic across all
+  three subjects has at least one command-word item — the next slice after that
+  is depth (>= 2 per topic), not remaining zero-coverage gaps.
 - Done so far: 6 spec-mapped exam-style questions (F7, 2026-08-09) across
   maths_fractions/ratio/number, sci_forces/reactions, eng_devices; 5 MORE authored
   2026-08-09 (Scout F1) for maths_algebra_linear, maths_pythagoras,
@@ -44,12 +49,11 @@ compare) and multi-step reasoning.
   F1/F2/F3): sci_cells, sci_body, maths_quadratics — SHIPPED 2026-08-18. 4 MORE
   authored 2026-08-18 first pass: sci_atoms, sci_energy, eng_comprehension,
   eng_persuasive — SHIPPED same day. 2 MORE authored 2026-08-18 second pass
-  (F9/F10): sci_states, eng_grammar — pending seed. 4 MORE authored 2026-08-19
+  (F9/F10): sci_states, eng_grammar — SHIPPED. 4 MORE authored 2026-08-19
   (Scout F1-F4): sci_genetics (Punnett-square probability, AQA 8464 4.6),
   sci_ecology (percentage energy transfer, AQA 8464 4.7), eng_punctuation
-  (it's/its), eng_spelling (their/there/they're) — pending seed. After these
-  seed, every Science topic and 7 of 10 English topics will have >= 1
-  command-word item; only eng_creative/eng_poetry/eng_shakespeare remain at zero.
+  (it's/its), eng_spelling (their/there/they're) — SHIPPED (confirmed live in
+  the Vercel deployment history 2026-08-20).
 
 ## EPIC 3 — Full spec coverage: close missing GCSE topics
 Status: ACTIVE. Thin areas still to scope: simultaneous equations, transformations,
@@ -61,7 +65,9 @@ extract-based language analysis (English).
 - Done so far: `maths_mensuration` strand added + 3 checked starters seeded; mock
   unlock made a reachable count-driven floor (`lib/engine/mock-gate.ts`) so adding
   topics can't break the mock (F8, 2026-08-09). Inequalities strand authored
-  (2026-08-09 Scout F2), pending Mechanic seed + worked example.
+  (2026-08-09 Scout F2), pending Mechanic seed + worked example. Confirmed live
+  2026-08-20: Maths now has 12 GCSE topics on the child roadmap (inequalities
+  included) and the mock gate correctly stayed at a reachable 10/10, not 12/12.
 
 ## EPIC 4 — Exam-condition fidelity in the mock (rehearse exam day)
 Status: ACTIVE, further along than previously tracked. A real gentle countdown
@@ -69,9 +75,10 @@ timer AND the marks/boundary-grade work are BOTH already shipped and calm. Do no
 re-propose a mock timer.
 - Next step: live-drive the F7 (2026-08-14) exam-boundary-grade card once a test
   child crosses the reachable mock-unlock floor (10 certified topics per subject)
-  — still not reached by either smoke child as of 2026-08-19 (Ivy is at 6/10
-  Maths, 3/10 English, 6/10 Science). This is the one remaining unverified-live
-  piece of EPIC 4; everything else is built.
+  — still not reached by either smoke child as of 2026-08-20 (Ivy is at 6/10
+  Maths, 3/10 English, 6/10 Science; mock hub re-confirmed honestly locked live).
+  This is the one remaining unverified-live piece of EPIC 4; everything else is
+  built.
 - Done so far: calculator vs non-calculator framing + readiness-tiered paper via
   `lib/engine/mock-paper.ts` (F9, 2026-08-09); mark-weighted scoring + approximate
   boundary grade surfaced parent-only (F7, shipped 2026-08-14/18); calm countdown
@@ -95,20 +102,20 @@ trajectory schedule deterministically from certification dates/scores (non-profi
 Status: ONGOING background lane, not gated to a night. Every interaction type
 (mcq, fill_blank, tap_reveal, drag_drop) now has BOTH a correct settle and a
 wrong settle (F11, shipped 2026-08-18) — that milestone is complete.
-- Next step: the brief explicitly asks for "a reacting mascot" and Edway only has
-  Eddie as a TEXT label today, never a visual face — proposed as F7 2026-08-19
-  (a self-contained SVG/CSS mascot avatar, `mood` prop driven by the same
-  correct/wrong/mastery signals already computed, no Lottie/CDN dependency for
-  v1). This is the headline next slice: pursue it before smaller polish. Also
-  found the drag_drop chip tray has no pick-up/lift motion when grabbed (F5
-  2026-08-19) — the last "pure interaction" moment without its own beat.
+- Next step: a small polish gap found live 2026-08-20 — after a correct mastery
+  answer that followed a "See it" open, the See-it panel's own "Your turn" tap
+  widget stays live underneath the celebration instead of settling, so two calls
+  to action compete at the exact moment that should feel like a clean win
+  (proposed as F7 2026-08-20 in that day's findings).
 - Done so far: every interaction type has its own correct-answer settle
   (tap_reveal + drag_drop accent sweep + drawn check, 2026-08-09); warm hint-card
   entrance + calm See-it beckon on a miss (2026-08-09); calm guiding glow on
   reveal-after-a-miss + supportive fill_blank wrong-settle (2026-08-11/12); a
   one-shot settle pulse on phase-bar segment activation (2026-08-18); tap_reveal
   and drag_drop wrong-answer settle motion (F11, shipped + live-verified
-  2026-08-18, re-confirmed live 2026-08-19 during a full drag_drop lesson drive).
+  2026-08-18); drag_drop chip pick-up lift + a real reactive Eddie face on the
+  practice correct/wrong panel (F5/F7, shipped 2026-08-19) — both re-verified
+  live 2026-08-20 during a full tap_reveal + mcq lesson drive (Cell Biology).
 
 ## EPIC 7 (background) — Stay on the current stack + performance budget
 Status: ACTIVE. Next 16 + framer-motion→motion + several majors are GA.
@@ -123,33 +130,41 @@ Status: ACTIVE. Next 16 + framer-motion→motion + several majors are GA.
   on marketing/dashboard/child layouts + hero parallax reduced-motion gate
   (shipped 2026-08-12/15); `@next/bundle-analyzer` added + used to kill an eager
   lucide-react barrel-import chunk on `/how-it-works` (F6 2026-08-18); audit
-  stays at 0 vulnerabilities (re-confirmed 2026-08-19, full tree not just prod).
-  `@axe-core/playwright` has been a devDependency for a while but is unused —
-  flagged as F6 2026-08-19 to wire it into a real automated a11y test.
+  stays at 0 vulnerabilities (re-confirmed 2026-08-20, `npm audit` both
+  prod-only and full tree). `@axe-core/playwright` is now wired into a real CI
+  a11y job (shipped 2026-08-19), closing that gap.
 
 ## EPIC 8 — Mobile layout regressions: sweep the bare `grid` pattern
 Status: RETIRED as an active risk 2026-08-19. B2's fix (2026-08-18) was
-re-verified live and correct (`resume-card.tsx`'s `<Link>` has `min-w-0`;
-`quest-cards.tsx`'s wrapper does too). Re-grepped every other bare-`grid` hit in
-`src/components/child/**` and `src/app/(child)/**` this run
-(`interaction.tsx`, `math-visual.tsx`, `mock-exam-player.tsx`,
-`my-stuff-panel.tsx`, `warmup-player.tsx`, `teaching-animation.tsx`, several
-`loading.tsx` skeletons) — none wrap a `truncate`d long-text child the way the
-resume card did, and mobile 390px overflow measured clean (`scrollWidth` 380)
-on every page walked this run. Re-open only if a future run finds a concrete
-overflow repro, don't re-sweep speculatively.
+re-verified live and correct. Re-confirmed clean again 2026-08-20 (mobile 390px
+pass on marketing + child lesson, `scrollWidth` 380 on every page checked).
+Re-open only if a future run finds a concrete overflow repro, don't re-sweep
+speculatively.
 
-## EPIC 9 (new) — A visual mascot for Eddie
-Status: NEW, opened 2026-08-19. Eddie is a well-established text persona
-("Eddie, your Edway coach") across the See-it walkthrough, daily-flow header and
-my-stuff panel, but has never had a face. Proposed as F7 2026-08-19: a
-self-contained SVG/CSS mascot avatar (no Lottie/CDN for v1, to stay inside the
-child-safety self-hosted-assets rule and the bundle budget) with a small `mood`
-state machine driven by signals already computed in the calling components
-(`isCorrect`, `wrongAttemptCount`, mastery `certified`).
-- Next step: ship v1 scoped to ONE call site (recommended: the practice-player
-  correct/wrong feedback panel, the highest-traffic moment) rather than all four
-  Eddie call sites at once, so the first review is small. Once that lands and is
-  live-verified, expand to `teaching-animation.tsx` (See-it) and
-  `my-stuff-panel.tsx`.
-- Done so far: nothing shipped yet — this is a fresh epic.
+## EPIC 9 — A visual mascot for Eddie
+Status: ACTIVE, v1 SHIPPED 2026-08-19. `EddieAvatar` (self-hosted SVG/CSS, no
+Lottie/CDN, mood-driven off signals already computed) is live on the
+practice-player correct/wrong panel — re-verified live 2026-08-20 on a real
+Cell Biology lesson (warm-nod on a correct tap_reveal + mcq answer, encouraging
+face on a wrong mcq answer, never inverted into a frown).
+- Next step: expand to the other two Eddie call sites named in the original
+  scoping note — `teaching-animation.tsx` (the See-it walkthrough coach, the
+  single highest-dwell-time coaching moment, still text-only) and
+  `my-stuff-panel.tsx`'s voice preview. Proposed as F5, 2026-08-20.
+- Done so far: v1 on the practice-player panel (2026-08-19).
+
+## EPIC 10 (new) — SEO/metadata hygiene sitewide
+Status: NEW, opened 2026-08-20. The B-seo checklist (now a standing every-run
+lane) found a real, well-evidenced, sitewide gap: `alternates.canonical` and the
+`openGraph`/`twitter` blocks are only ever set once, in the root layout, to the
+HOMEPAGE's values — no marketing page overrides them, so every non-home page
+(confirmed live on `/pricing` and `/gallery`) declares its own canonical URL as
+the homepage and shows the homepage's title/description in a shared social-card
+preview. Separately, `robots.ts` never learned about the (child)/(admin)/(tutor)
+route groups or several (dashboard) sub-paths, and `sitemap.ts` has drifted out
+of sync with the real page tree (missing `/gallery`, `/resources`).
+- Next step: ship the per-page metadata helper (B1, 2026-08-20) across all ~19
+  marketing pages, then the robots.ts/sitemap.ts fixes (B2, 2026-08-20). Both
+  are mechanical, additive, low-risk — good candidates to ship together.
+- Done so far: nothing shipped yet — this is a fresh epic opened from today's
+  findings.
