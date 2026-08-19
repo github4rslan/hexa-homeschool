@@ -29,9 +29,12 @@ export interface SwapOption {
 export function EditableSchedule({
   items,
   swapOptionsBySubject,
+  childId,
 }: {
   items: ScheduleItemDoc[];
   swapOptionsBySubject: Record<Subject, SwapOption[]>;
+  /** The child this plan belongs to (the page's resolved `?child=` or active-child cookie) — threaded into every edit form so the server action always mutates THIS child, never a possibly-stale active-child cookie (B1). */
+  childId: string;
 }) {
   const [editing, setEditing] = useState<number | null>(null);
 
@@ -91,6 +94,7 @@ export function EditableSchedule({
               <div className="mt-4 grid gap-4 border-t border-white/5 pt-4 sm:pl-[7rem]">
                 {/* Swap topic */}
                 <form action={swapTopic} className="flex flex-wrap items-center gap-2">
+                  <input type="hidden" name="childId" value={childId} />
                   <input type="hidden" name="itemIndex" value={i} />
                   <label className="text-xs text-fog-400">Topic:</label>
                   <select
@@ -118,6 +122,7 @@ export function EditableSchedule({
 
                 {/* Move day */}
                 <form action={moveDay} className="flex flex-wrap items-center gap-2">
+                  <input type="hidden" name="childId" value={childId} />
                   <input type="hidden" name="itemIndex" value={i} />
                   <label className="text-xs text-fog-400">Move to:</label>
                   <select
@@ -141,6 +146,7 @@ export function EditableSchedule({
 
                 {/* Clear day */}
                 <form action={clearDay}>
+                  <input type="hidden" name="childId" value={childId} />
                   <input type="hidden" name="day" value={item.day} />
                   <button
                     type="submit"
