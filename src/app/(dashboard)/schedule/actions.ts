@@ -16,10 +16,26 @@ import { sendLifecycleEmail } from "@/lib/email/lifecycle";
 import { firstPlanTemplate } from "@/lib/email/templates";
 import { appUrl } from "@/lib/email/verification";
 
-async function activeChildId(): Promise<{ parentId: string; childId: import("mongodb").ObjectId } | null> {
+/**
+ * Resolve which child a schedule-mutating action should target. The page
+ * renders whichever child `?child=` resolved to (query param wins over the
+ * active-child cookie — see the `page.tsx` comment), so every form on that
+ * page carries a hidden `childId` field naming that same child. Prefer it
+ * over the cookie so an action always operates on the child the parent is
+ * actually looking at, never a possibly-stale cookie from another tab/visit.
+ * Ownership is still enforced exactly as before, inside `getActiveChild`
+ * (via `getChildById`'s `parent_id` filter) — an unowned/invalid id simply
+ * falls back to the parent's latest child, same as today.
+ */
+async function activeChildId(
+  formData?: FormData,
+): Promise<{ parentId: string; childId: import("mongodb").ObjectId } | null> {
   const parentId = await currentParentId();
   if (!parentId) return null;
-  const child = await getActiveChild(parentId, await readActiveChildId());
+  const formChildId = formData?.get("childId");
+  const preferredChildId =
+    (typeof formChildId === "string" && formChildId) || (await readActiveChildId());
+  const child = await getActiveChild(parentId, preferredChildId);
   if (!child?._id) return null;
   return { parentId, childId: child._id };
 }
@@ -37,7 +53,7 @@ function revalidatePlanPages(): void {
 }
 
 export async function swapTopic(formData: FormData): Promise<void> {
-  const ctx = await activeChildId();
+  const ctx = await activeChildId(formData);
   if (!ctx) return;
   const itemIndex = Number(formData.get("itemIndex"));
   const topicTag = String(formData.get("topicTag") || "");
@@ -47,7 +63,7 @@ export async function swapTopic(formData: FormData): Promise<void> {
 }
 
 export async function moveDay(formData: FormData): Promise<void> {
-  const ctx = await activeChildId();
+  const ctx = await activeChildId(formData);
   if (!ctx) return;
   const itemIndex = Number(formData.get("itemIndex"));
   const newDay = Number(formData.get("newDay"));
@@ -57,7 +73,7 @@ export async function moveDay(formData: FormData): Promise<void> {
 }
 
 export async function clearDay(formData: FormData): Promise<void> {
-  const ctx = await activeChildId();
+  const ctx = await activeChildId(formData);
   if (!ctx) return;
   const day = Number(formData.get("day"));
   if (Number.isNaN(day)) return;
@@ -65,17 +81,18 @@ export async function clearDay(formData: FormData): Promise<void> {
   revalidatePlanPages();
 }
 
-export async function regenerateWeek(): Promise<void> {
-  const ctx = await activeChildId();
+export async function regenerateWeek(formData: FormData): Promise<void> {
+  const ctx = await activeChildId(formData);
   if (!ctx) return;
   await regenerateWeeklySchedule(ctx.parentId, ctx.childId);
   revalidatePlanPages();
 }
 
-export async function approveSchedule(): Promise<void> {
-  const parentId = await currentParentId();
-  if (!parentId) return;
-  const child = await getActiveChild(parentId, await readActiveChildId());
+export async function approveSchedule(formData: FormData): Promise<void> {
+  const ctx = await activeChildId(formData);
+  if (!ctx) return;
+  const { parentId, childId } = ctx;
+  const child = await getActiveChild(parentId, childId.toHexString());
   if (!child?._id) return;
   const ok = await approveWeeklySchedule(parentId, child._id);
   revalidatePlanPages();

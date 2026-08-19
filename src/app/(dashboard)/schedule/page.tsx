@@ -121,6 +121,7 @@ export default async function SchedulePage({
                 </Badge>
               ) : (
                 <form action={approveSchedule}>
+                  <input type="hidden" name="childId" value={child._id.toHexString()} />
                   <SubmitButton variant="primary" size="md" pendingLabel="Approving…">
                     Approve this week
                   </SubmitButton>
@@ -145,6 +146,7 @@ export default async function SchedulePage({
                 </Button>
               )}
               <form action={regenerateWeek}>
+                <input type="hidden" name="childId" value={child._id.toHexString()} />
                 <SubmitButton variant="ghost" size="sm" pendingLabel="Regenerating…">
                   <Sparkles className="h-3.5 w-3.5" /> Regenerate week
                 </SubmitButton>
@@ -156,6 +158,7 @@ export default async function SchedulePage({
             <EditableSchedule
               items={schedule.items}
               swapOptionsBySubject={swapOptionsBySubject}
+              childId={child._id.toHexString()}
             />
           ) : (
             <p className="text-sm text-fog-400 py-6 text-center">
