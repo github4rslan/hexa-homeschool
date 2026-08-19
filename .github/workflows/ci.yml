@@ -132,3 +132,48 @@ jobs:
           name: admin-mobile-screenshots
           path: e2e/screenshots
           if-no-files-found: ignore
+
+  # Post-deploy ACCESSIBILITY audit (axe-core) against the LIVE site. READ-ONLY:
+  # only navigates + asserts no critical wcag violation. Push-to-main only,
+  # after `checks`, and self-skips the authed/admin projects when SMOKE_* /
+  # SMOKE_ADMIN_* secrets are absent (same discipline as smoke/admin-mobile).
+  a11y:
+    needs: checks
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    env:
+      SMOKE_BASE_URL: ${{ secrets.SMOKE_BASE_URL }}
+      SMOKE_EMAIL: ${{ secrets.SMOKE_EMAIL }}
+      SMOKE_PASSWORD: ${{ secrets.SMOKE_PASSWORD }}
+      SMOKE_ADMIN_EMAIL: ${{ secrets.SMOKE_ADMIN_EMAIL }}
+      SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Wait for the production deploy to be live
+        run: |
+          URL="${SMOKE_BASE_URL:-https://edway.uk}/api/health"
+          echo "Probing $URL …"
+          for i in $(seq 1 18); do
+            if curl -fsS --max-time 10 "$URL" >/dev/null 2>&1; then
+              echo "Deploy is live."
+              exit 0
+            fi
+            echo "Not ready yet (attempt $i/18); waiting 10s…"
+            sleep 10
+          done
+          echo "Health probe never went green; running audit anyway to surface the failure."
+
+      - name: Accessibility audit (read-only)
+        run: npm run a11y
