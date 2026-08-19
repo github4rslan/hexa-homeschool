@@ -639,6 +639,9 @@ const DragDrop = forwardRef<
     it.slots.map(() => null),
   );
   const [selectedChip, setSelectedChip] = useState<number | null>(null);
+  // F5: which chip (if any) is mid native-drag, purely for the pick-up lift —
+  // the actual drop is still read from dataTransfer, this is presentational.
+  const [draggingChip, setDraggingChip] = useState<number | null>(null);
 
   const placedChips = useMemo(
     () => new Set(placement.filter((p): p is number => p !== null)),
@@ -714,6 +717,9 @@ const DragDrop = forwardRef<
         {it.chips.map((chip, i) => {
           const placed = placedChips.has(i);
           const isSelected = selectedChip === i;
+          // F5: "picked up" while tap-selected OR mid native-drag — either way
+          // it should feel physically lifted off the tray, not just re-tinted.
+          const lifted = isSelected || draggingChip === i;
           return (
             <motion.button
               key={i}
@@ -721,17 +727,30 @@ const DragDrop = forwardRef<
               role="option"
               aria-selected={isSelected}
               draggable={!reveal && !placed}
-              onDragStart={(e) =>
+              onDragStart={(e) => {
                 (e as unknown as React.DragEvent).dataTransfer?.setData(
                   "text/plain",
                   String(i),
-                )
-              }
+                );
+                setDraggingChip(i);
+              }}
+              onDragEnd={() => setDraggingChip(null)}
               onClick={() =>
                 !reveal && !placed && setSelectedChip(isSelected ? null : i)
               }
               disabled={reveal || placed}
               whileTap={reveal || placed ? undefined : { scale: 0.96 }}
+              // A physical "pick-up" lift on the chip the child has grabbed —
+              // a gentle rise + shadow so it feels lifted off the tray, not
+              // just re-tinted. Reduced motion collapses to the existing
+              // static colour swap (no animate override at all).
+              animate={
+                reduced
+                  ? undefined
+                  : lifted
+                    ? { y: -4, scale: 1.05, boxShadow: "0 8px 20px -6px rgba(139,92,246,0.4)" }
+                    : { y: 0, scale: 1, boxShadow: "0 0px 0px 0px rgba(139,92,246,0)" }
+              }
               transition={{ duration: 0.15, ease: [0.34, 1.56, 0.64, 1] }}
               className={cn(
                 "child-touch rounded-2xl border-2 px-5 text-lg font-medium transition-all",
