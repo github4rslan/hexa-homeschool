@@ -569,6 +569,19 @@ describe("F3 (2026-08-19) — eng_punctuation apostrophe (it's vs its) item", ()
   });
 });
 
+describe("F4 (2026-08-19) — eng_spelling homophone (their/there/they're) item", () => {
+  const prompt = "Identify the sentence that uses the correct word.";
+
+  it("adds exactly one well-formed item keyed to the they're contraction", () => {
+    expectWellFormedItem(
+      "eng_spelling",
+      "english",
+      prompt,
+      "They're going to the shop later.",
+    );
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
