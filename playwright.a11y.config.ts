@@ -7,10 +7,12 @@ import { resolve } from "node:path";
  * QA tooling: runs against the DEPLOYED site (SMOKE_BASE_URL or edway.uk) with
  * read-only navigations, never a local server and never bundled into the app.
  *
- * Two projects:
+ * Three projects:
  *   - public  : marketing + auth pages, no secrets needed.
- *   - authed  : parent dashboard + child lesson, using the shared auth.setup
- *               storageState; skips cleanly without SMOKE_* creds.
+ *   - authed  : parent dashboard + child hub + a real lesson, using the shared
+ *               auth.setup storageState; skips cleanly without SMOKE_* creds.
+ *   - admin   : the staff overview, using the same shared auth.setup's admin
+ *               storageState; skips cleanly without SMOKE_ADMIN_* creds.
  *
  * Run with `npm run a11y`.
  */
@@ -30,10 +32,11 @@ try {
 
 const baseURL = process.env.SMOKE_BASE_URL || "https://edway.uk";
 const PARENT_STORAGE = "e2e/.auth/parent.json";
+const ADMIN_STORAGE = "e2e/.auth/admin.json";
 
 export default defineConfig({
   testDir: "./e2e",
-  testMatch: /(auth\.setup|a11y\.(public|authed)\.spec)\.ts$/,
+  testMatch: /(auth\.setup|a11y\.(public|authed|admin)\.spec)\.ts$/,
   timeout: 45_000,
   expect: { timeout: 12_000 },
   retries: process.env.CI ? 1 : 0,
@@ -56,6 +59,12 @@ export default defineConfig({
       testMatch: /a11y\.authed\.spec\.ts$/,
       dependencies: ["setup"],
       use: { ...devices["Desktop Chrome"], storageState: PARENT_STORAGE },
+    },
+    {
+      name: "admin",
+      testMatch: /a11y\.admin\.spec\.ts$/,
+      dependencies: ["setup"],
+      use: { ...devices["Desktop Chrome"], storageState: ADMIN_STORAGE },
     },
   ],
 });

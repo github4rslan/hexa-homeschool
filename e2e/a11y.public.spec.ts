@@ -16,4 +16,11 @@ test.describe("a11y — public pages", () => {
     await page.goto("/login");
     await auditPage(page, "auth /login");
   });
+
+  // F6 — /pricing is one of the highest-traffic marketing pages (the funnel's
+  // conversion surface) and wasn't covered by the original public sweep.
+  test("pricing page has no critical violations", async ({ page }) => {
+    await page.goto("/pricing");
+    await auditPage(page, "marketing /pricing");
+  });
 });

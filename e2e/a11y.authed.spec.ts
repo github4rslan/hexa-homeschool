@@ -29,4 +29,23 @@ test.describe("a11y — authenticated pages", () => {
     }
     await auditPage(page, "child /learn");
   });
+
+  // F6 — the actual lesson surface (the deepest, most animation-heavy child
+  // page) wasn't covered by the original authed sweep; the hub alone doesn't
+  // exercise the interactive question renderer.
+  test("a real lesson page has no critical violations", async ({ page }) => {
+    await page.goto("/learn");
+    if (!/\/learn/.test(page.url())) {
+      test.skip(true, "no active child for the smoke parent");
+      return;
+    }
+    const lessonLink = page.locator('a[href^="/learn/lesson"]').first();
+    if ((await lessonLink.count()) === 0) {
+      test.skip(true, "no playable quest for the smoke child today");
+      return;
+    }
+    await lessonLink.click();
+    await page.waitForURL(/\/learn\/lesson/, { timeout: 15_000 });
+    await auditPage(page, "child /learn/lesson");
+  });
 });
