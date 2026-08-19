@@ -81,3 +81,7 @@ scripts/.findings-email.json
 # Local Loom / demo scripts (not for the repo)
 /EDWAY-LOOM-SCRIPT.md
 /EDWAY-SCRIPT-WHATSAPP.txt
+/EDWAY-BUSINESS-DOCUMENTATION.md
+
+# MCP config backups (mirrors .mcp.json, local-only)
+.mcp.json.bak
