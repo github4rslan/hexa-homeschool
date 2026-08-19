@@ -1234,6 +1234,35 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "An apostrophe never comes before an 's' like this just to show possession — 'its' (no apostrophe, no comma) is correct here.",
     ],
   },
+  // ── F4 (2026-08-19): eng_spelling homophone item (their/there/they're) ──
+  // AQA 8700 AO6, closing a zero-coverage topic.
+  {
+    topic_tag: "eng_spelling",
+    subject: "english",
+    tier: 1,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Identify the sentence that uses the correct word.",
+    options: [
+      "Their going to the shop later.",
+      "They're going to the shop later.",
+      "There going to the shop later.",
+      "Theyre going to the shop later.",
+    ],
+    correct_index: 1,
+    explanation:
+      "'They're' is a contraction of 'they are'. 'Their' shows possession and 'there' refers to a place. Since the sentence means 'they are going', it needs the apostrophe: they're.",
+    hints: [
+      "Ask: does the sentence mean 'they are'? If so, use they're.",
+      "'Their' shows something belongs to them; 'there' refers to a place.",
+    ],
+    misconceptions: [
+      "'Their' shows possession (something belonging to them). This sentence means 'they are going', so it needs they're.",
+      "",
+      "'There' refers to a place, not a contraction of 'they are'. This sentence needs they're.",
+      "This is missing the apostrophe. 'They're' (with an apostrophe) is the contraction of 'they are'.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
