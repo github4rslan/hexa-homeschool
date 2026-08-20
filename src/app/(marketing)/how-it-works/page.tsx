@@ -3,6 +3,7 @@ import { JourneyTimeline } from "@/components/marketing/journey-timeline";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { CTA } from "@/components/marketing/cta";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
+import { CourseJsonLd } from "@/components/seo/course-jsonld";
 import { buildPageMetadata } from "@/lib/site";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -16,6 +17,7 @@ export default function HowItWorksPage() {
   return (
     <>
       <BreadcrumbJsonLd items={[{ name: "How it works", path: "/how-it-works" }]} />
+      <CourseJsonLd />
       <Section padded className="pt-16">
         <SectionHeader
           as="h1"
