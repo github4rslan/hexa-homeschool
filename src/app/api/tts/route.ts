@@ -23,6 +23,12 @@ import {
   getCloudinaryConfig,
   MediaConfigError,
 } from "@/lib/media/cloudinary";
+import {
+  clearTtsQuotaExhausted,
+  isQuotaExceeded,
+  markTtsQuotaExhausted,
+  ttsQuotaExhausted,
+} from "@/lib/ai/tts-quota";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -179,6 +185,17 @@ export async function POST(request: Request) {
     }
   }
 
+  // Confirmed-exhausted cooldown: skip the ElevenLabs round-trip (and the
+  // Cloudinary cache-store attempt that would follow it) entirely, and
+  // return the same clean signal that already triggers the client's native
+  // speech-synthesis fallback, until the cooldown elapses or a call succeeds.
+  if (ttsQuotaExhausted()) {
+    return NextResponse.json(
+      { error: "Narration is temporarily unavailable." },
+      { status: 502 },
+    );
+  }
+
   let key: string;
   try {
     key = getElevenLabsKey();
@@ -215,11 +232,18 @@ export async function POST(request: Request) {
     if (!res.ok) {
       const detail = await res.text().catch(() => "");
       console.error("[/api/tts] ElevenLabs error:", res.status, detail.slice(0, 300));
+      if (isQuotaExceeded(res.status, detail)) {
+        markTtsQuotaExhausted();
+      }
       return NextResponse.json(
         { error: "Narration is temporarily unavailable." },
         { status: 502 },
       );
     }
+
+    // A successful call proves the account has credits again — clear any
+    // stale cooldown from a prior quota_exceeded response.
+    clearTtsQuotaExhausted();
 
     let audio: ArrayBuffer;
     let words: WordTiming[] | null = null;
