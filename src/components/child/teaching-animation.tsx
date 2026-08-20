@@ -1472,6 +1472,7 @@ function YourTurnPanel({
   onSpeak,
   onSuccess,
   childName = null,
+  settled = false,
 }: {
   task: YourTurnTask;
   accent: AccentPreset;
@@ -1481,6 +1482,15 @@ function YourTurnPanel({
   onSuccess?: () => void;
   /** Sanitised first name — the ask is addressed to THIS child. */
   childName?: string | null;
+  /**
+   * F7 — the underlying mastery question has already been answered correctly
+   * (the mastery celebration is firing). If the child never engaged this
+   * recall widget, or only missed it, fold it away quietly so the
+   * celebration is the sole focus instead of two competing calls-to-action.
+   * A widget the child already completed successfully is left as-is — its
+   * own calm confirmation is not a competing prompt.
+   */
+  settled?: boolean;
 }) {
   const [dismissed, setDismissed] = useState(false);
   const [result, setResult] = useState<"correct" | "miss" | null>(null);
@@ -1491,6 +1501,10 @@ function YourTurnPanel({
     setResult(null);
     setTapped([]);
   }, [task]);
+
+  useEffect(() => {
+    if (settled && result !== "correct") setDismissed(true);
+  }, [settled, result]);
 
   // Fires the completion check once `tapped` actually reaches full length,
   // driven by state rather than a value computed inside the (batch-unsafe)
@@ -1670,6 +1684,7 @@ export function TeachingAnimation({
   getTime,
   childName = null,
   lowText = false,
+  questionSettled = false,
 }: {
   animation: TeachingAnimationData;
   accent: AccentPreset;
@@ -1695,6 +1710,12 @@ export function TeachingAnimation({
    * bigger glyphs. Meaning never depends on reading.
    */
   lowText?: boolean;
+  /**
+   * F7 — the child has already answered this question correctly (the
+   * mastery celebration is firing). Auto-settles the "Your turn" recall
+   * widget so it stops competing with the celebration.
+   */
+  questionSettled?: boolean;
 }) {
   const reduced = useReducedMotion() ?? false;
   const [current, setCurrent] = useState(0);
@@ -2098,6 +2119,7 @@ export function TeachingAnimation({
               window.setTimeout(() => setEddieCelebrating(false), 1300);
             }}
             childName={childName}
+            settled={questionSettled}
           />
         )}
       </AnimatePresence>

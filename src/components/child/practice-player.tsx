@@ -1698,6 +1698,7 @@ export function PracticePlayer({
                   getTime={narration.getTime}
                   childName={childName}
                   lowText={lowText}
+                  questionSettled={isCorrect}
                 />
               )}
             </AnimatePresence>
