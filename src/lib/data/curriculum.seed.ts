@@ -1293,6 +1293,36 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "A caesura is punctuation used deliberately mid-line, not the absence of punctuation.",
     ],
   },
+  // ── F3 (2026-08-20): eng_shakespeare soliloquy item ──
+  // AQA 8700 AO2, closing a zero-coverage topic.
+  {
+    topic_tag: "eng_shakespeare",
+    subject: "english",
+    tier: 5,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "In a play, a character sometimes speaks alone on stage, sharing their private thoughts directly with the audience. This is called a soliloquy. Explain why a playwright like Shakespeare uses one instead of dialogue.",
+    options: [
+      "To let a character share private thoughts directly with the audience",
+      "To move the plot forward through conversation between characters",
+      "To introduce a brand new character to the story",
+      "To signal that the play has ended",
+    ],
+    correct_index: 0,
+    explanation:
+      "A soliloquy is spoken by a character alone, giving the audience direct access to their private thoughts and feelings in a way ordinary dialogue between characters cannot.",
+    hints: [
+      "Notice the character is ALONE on stage when they say it — who are they really talking to?",
+      "Compare this to dialogue, which is spoken between two or more characters.",
+    ],
+    misconceptions: [
+      "",
+      "That describes dialogue between characters, not a soliloquy spoken alone.",
+      "A soliloquy reveals an existing character's thoughts; it does not introduce someone new.",
+      "A soliloquy can happen at any point in a play, not only at the end.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */

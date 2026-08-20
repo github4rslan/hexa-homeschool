@@ -596,6 +596,20 @@ describe("F2 (2026-08-20) — eng_poetry caesura item", () => {
   });
 });
 
+describe("F3 (2026-08-20) — eng_shakespeare soliloquy item", () => {
+  const prompt =
+    "In a play, a character sometimes speaks alone on stage, sharing their private thoughts directly with the audience. This is called a soliloquy. Explain why a playwright like Shakespeare uses one instead of dialogue.";
+
+  it("adds exactly one well-formed item keyed to the private-thoughts answer", () => {
+    expectWellFormedItem(
+      "eng_shakespeare",
+      "english",
+      prompt,
+      "To let a character share private thoughts directly with the audience",
+    );
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
