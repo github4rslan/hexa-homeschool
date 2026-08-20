@@ -1323,6 +1323,36 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "A soliloquy can happen at any point in a play, not only at the end.",
     ],
   },
+  // ── F4 (2026-08-20): eng_creative narrative viewpoint item ──
+  // AQA 8700 AO5, closing the last zero-coverage EPIC 2 topic.
+  {
+    topic_tag: "eng_creative",
+    subject: "english",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "A story opens: 'I walked into the empty house and felt my chest tighten.' Identify the narrative viewpoint being used.",
+    options: [
+      "First person",
+      "Second person",
+      "Third person omniscient",
+      "Third person limited",
+    ],
+    correct_index: 0,
+    explanation:
+      "The narrator uses 'I' throughout, telling the story from inside their own experience — this is first-person narrative viewpoint.",
+    hints: [
+      "Look at the pronoun the narrator uses to refer to themselves: 'I'.",
+      "First person uses 'I/we', second person uses 'you', third person uses 'he/she/they'.",
+    ],
+    misconceptions: [
+      "",
+      "Second person would use 'you', not 'I'.",
+      "Third person omniscient uses 'he/she/they' and knows every character's thoughts — this uses 'I'.",
+      "Third person limited also uses 'he/she/they', following one character from outside — this uses 'I'.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */

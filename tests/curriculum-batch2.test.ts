@@ -610,6 +610,15 @@ describe("F3 (2026-08-20) — eng_shakespeare soliloquy item", () => {
   });
 });
 
+describe("F4 (2026-08-20) — eng_creative narrative viewpoint item", () => {
+  const prompt =
+    "A story opens: 'I walked into the empty house and felt my chest tighten.' Identify the narrative viewpoint being used.";
+
+  it("adds exactly one well-formed item keyed to first person", () => {
+    expectWellFormedItem("eng_creative", "english", prompt, "First person");
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
