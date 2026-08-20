@@ -21,6 +21,8 @@ const ROUTES = [
   { path: "/terms", priority: 0.4, changeFrequency: "yearly" as const },
   { path: "/cookies", priority: 0.3, changeFrequency: "yearly" as const },
   { path: "/childrens-code", priority: 0.5, changeFrequency: "yearly" as const },
+  { path: "/gallery", priority: 0.5, changeFrequency: "monthly" as const },
+  { path: "/resources", priority: 0.6, changeFrequency: "monthly" as const },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
