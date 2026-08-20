@@ -7,12 +7,14 @@ import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/fx/reveal";
 import { ROADMAP, type PhaseStatus } from "@/lib/data/roadmap";
 import { CTA } from "@/components/marketing/cta";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/roadmap",
   title: "Roadmap",
   description:
     "The four-phase Edway roadmap — from internal trial to £2.5M+ ARR.",
-};
+});
 
 const statusMap: Record<
   PhaseStatus,

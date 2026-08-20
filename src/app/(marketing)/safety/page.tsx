@@ -5,12 +5,14 @@ import { Card } from "@/components/ui/card";
 import { ShieldAlert, Users, Activity, GitBranch } from "lucide-react";
 import { CTA } from "@/components/marketing/cta";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/safety",
   title: "Safety & escalation",
   description:
     "Human safety net with seven SLA-bound escalation gateways. AI never overrides safeguarding.",
-};
+});
 
 const PRINCIPLES = [
   {

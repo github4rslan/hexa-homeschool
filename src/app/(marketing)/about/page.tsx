@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { Container } from "@/components/ui/container";
 import { CTA } from "@/components/marketing/cta";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/about",
   title: "About Edway",
   description:
     "Meet Aziz — founder, father, believer in childhood. The story behind Edway, written by the parent who built it.",
-};
+});
 
 /**
  * Founder's Story — Section J. Verbatim from the approved Edway Website

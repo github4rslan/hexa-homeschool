@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { LegalLayout } from "@/components/marketing/legal-layout";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/terms",
   title: "Terms of Service",
   description:
     "The terms under which Edway Education Ltd provides its AI-powered homeschooling platform to UK families.",
-};
+});
 
 export default function TermsPage() {
   return (

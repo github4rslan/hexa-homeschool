@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { LegalLayout } from "@/components/marketing/legal-layout";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/childrens-code",
   title: "Children's Code Compliance",
   description:
     "How Edway implements the 15 standards of the ICO Age-Appropriate Design Code.",
-};
+});
 
 const STANDARDS = [
   { num: 1, title: "Best interests of the child", body: "Every product decision is evaluated against the best interests of the child, not engagement or revenue metrics." },

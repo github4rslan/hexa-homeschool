@@ -13,11 +13,13 @@ import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/fx/reveal";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/contact",
   title: "Contact",
   description: "How to reach Edway — by department, with response times.",
-};
+});
 
 const CHANNELS = [
   {

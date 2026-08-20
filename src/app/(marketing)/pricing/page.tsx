@@ -7,12 +7,14 @@ import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 import { TrackOnMount } from "@/components/analytics/analytics-provider";
 import { PricingPlans, type PricingTier } from "@/components/marketing/pricing-plans";
 import { annualBillingConfigured } from "@/lib/billing/stripe";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/pricing",
   title: "Pricing",
   description:
     "Edway Complete £49/mo, Edway Partner £99/mo. Additional subjects £15/mo each. 14-day free trial. Cancel anytime.",
-};
+});
 
 const TIERS: PricingTier[] = [
   {

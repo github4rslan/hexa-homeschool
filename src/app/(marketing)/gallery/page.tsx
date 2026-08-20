@@ -4,12 +4,14 @@ import { Card } from "@/components/ui/card";
 import { CTA } from "@/components/marketing/cta";
 import { listMedia } from "@/lib/db/repo";
 import { cloudinaryThumb } from "@/lib/media/cloudinary";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/gallery",
   title: "Success gallery",
   description:
     "Real moments from UK homeschooling families learning with Edway.",
-};
+});
 
 export const dynamic = "force-dynamic";
 

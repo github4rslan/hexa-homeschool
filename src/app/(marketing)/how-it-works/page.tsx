@@ -3,12 +3,14 @@ import { JourneyTimeline } from "@/components/marketing/journey-timeline";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { CTA } from "@/components/marketing/cta";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/how-it-works",
   title: "How Edway works",
   description:
     "From the Day 1 diagnostic to sitting the exam when ready — the six-step end-to-end student journey.",
-};
+});
 
 export default function HowItWorksPage() {
   return (

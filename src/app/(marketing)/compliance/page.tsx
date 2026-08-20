@@ -5,12 +5,14 @@ import { Card } from "@/components/ui/card";
 import { CTA } from "@/components/marketing/cta";
 import { Check, FileText } from "lucide-react";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/compliance",
   title: "Compliance & data protection",
   description:
     "UK GDPR. ICO Children's Code. AES-256 encryption. SHA-256 verifiable Local Authority portfolios.",
-};
+});
 
 const PORTFOLIO_FEATURES = [
   "Statutory category grouping (Breadth, Balance, Progression)",

@@ -3,13 +3,15 @@ import { Section, SectionHeader } from "@/components/ui/section";
 import { Card } from "@/components/ui/card";
 import { CTA } from "@/components/marketing/cta";
 import { CheckCircle2, MessageCircle, FileText, Calendar, Lightbulb } from "lucide-react";
+import { buildPageMetadata } from "@/lib/site";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/for-parents",
   title: "For UK homeschooling parents",
   description:
     "Designed for UK homeschooling families. Compliance handled. Anxiety reduced. Outcomes proven.",
-};
+});
 
 const PAINS = [
   {

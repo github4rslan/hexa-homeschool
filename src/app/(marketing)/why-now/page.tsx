@@ -5,12 +5,14 @@ import { Card } from "@/components/ui/card";
 import { CountUp } from "@/components/fx/count-up";
 import { Reveal } from "@/components/fx/reveal";
 import { CTA } from "@/components/marketing/cta";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/why-now",
   title: "Why now",
   description:
     "Why Edway, and why now? The UK homeschooling movement is at an inflection point. Here's the data.",
-};
+});
 
 const SIGNALS = [
   {

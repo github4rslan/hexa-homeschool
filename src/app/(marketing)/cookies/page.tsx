@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { LegalLayout } from "@/components/marketing/legal-layout";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/cookies",
   title: "Cookie Policy",
   description: "How Edway uses cookies and similar technologies.",
-};
+});
 
 export default function CookiesPage() {
   return (

@@ -3,12 +3,14 @@ import { Section, SectionHeader } from "@/components/ui/section";
 import { AgentDetails } from "@/components/marketing/agent-detail";
 import { AgentNetwork } from "@/components/marketing/agent-network";
 import { CTA } from "@/components/marketing/cta";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/agents",
   title: "The AI agents",
   description:
     "Six specialised autonomous agents with checker validators and a Meta Checker supervisor — the multi-agent architecture powering Edway.",
-};
+});
 
 export default function AgentsPage() {
   return (

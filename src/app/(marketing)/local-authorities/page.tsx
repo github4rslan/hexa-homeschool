@@ -11,12 +11,14 @@ import { Section } from "@/components/ui/section";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/fx/reveal";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/local-authorities",
   title: "For Local Authorities",
   description:
     "Information for UK Local Authority EHE officers reviewing children registered on Edway. Cryptographically signed, statutorily defensible portfolios.",
-};
+});
 
 const STATUTORY = [
   {

@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { DemoWalkthrough } from "@/components/marketing/demo-walkthrough";
 import { CTA } from "@/components/marketing/cta";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/demo",
   title: "Live demo · Aisha's path to a Grade 8",
   description:
     "Walk through 24 months of Edway in 60 seconds. From Day 1 diagnostic to GCSE results day.",
-};
+});
 
 export default function DemoPage() {
   return (

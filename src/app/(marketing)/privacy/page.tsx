@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { LegalLayout } from "@/components/marketing/legal-layout";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/privacy",
   title: "Privacy Policy",
   description:
     "How Edway collects, uses, and protects your data. Designed for UK GDPR and ICO Age-Appropriate Design Code (Children's Code) compliance.",
-};
+});
 
 export default function PrivacyPage() {
   return (

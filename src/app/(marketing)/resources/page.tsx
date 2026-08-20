@@ -4,12 +4,14 @@ import { Section, SectionHeader } from "@/components/ui/section";
 import { Card } from "@/components/ui/card";
 import { CTA } from "@/components/marketing/cta";
 import { listMedia } from "@/lib/db/repo";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/resources",
   title: "Resources",
   description:
     "Free guides and downloads for UK homeschooling families — Local Authority help, sample portfolios and more.",
-};
+});
 
 export const dynamic = "force-dynamic";
 

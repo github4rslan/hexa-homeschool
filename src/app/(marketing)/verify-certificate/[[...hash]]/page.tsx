@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { VerifyCertificate } from "@/components/marketing/verify-certificate";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
+import { buildPageMetadata } from "@/lib/site";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
+  path: "/verify-certificate",
   title: "Verify a certificate",
   description:
     "Confirm the authenticity of an Edway mastery certificate. Paste the certificate's SHA-256 verification code to check it against our tamper-evident record.",
-};
+});
 
 export default async function VerifyCertificatePage({
   params,
