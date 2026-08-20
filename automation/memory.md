@@ -1538,3 +1538,95 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   Static: `npm run type-check` and `npm run lint` both clean; `npm audit`
   (both prod-only `--omit=dev` and full tree) = 0 vulnerabilities. Opened
   EPIC 10 (SEO/metadata hygiene) from this run's B1/B2 findings.
+- 2026-08-20 — Mechanic build run, DECISION `all` (findings file listed 3 bugs + 7
+  features, B1-B3/F1-F7, not the 5 features a prior message estimated; confirmed
+  the real count from the file itself before starting, per the brief). ALL 10
+  SHIPPED, each green-gated (type-check + tests + lint + build, one commit per
+  item, pushed to main) AND live-verified on edway.uk. **B1** new
+  `buildPageMetadata({path,title,description})` helper in `lib/site.ts` (full
+  `openGraph`/`twitter` objects, not just title/url: Next.js metadata merging
+  replaces a nested object like `openGraph` WHOLESALE when a segment defines its
+  own, it does not deep-merge field by field, so a partial override would have
+  silently dropped `og:type`/`og:site_name`/images inherited from the root
+  layout) wired into all 19 marketing pages. Live: `/pricing`'s canonical, og:url
+  and og/twitter titles all now read the PAGE's own values, not the homepage's.
+  **B2** `robots.ts` disallow list extended with `/learn`, `/admin`, `/tutor`,
+  `/schedule`, `/portfolio`, `/settings`, `/tutoring`, `/compliance/cnis` (bare
+  `/compliance` stays allowed); `sitemap.ts` gained `/gallery` + `/resources`.
+  Live: both confirmed via direct fetch. **B3** literal `{" "}` before the
+  roadmap "Now" badge so screen readers/copy-paste no longer read
+  "Ratio & ProportionNow". Live: child profile roadmap now reads
+  "Ratio & Proportion Now" with a real space in the DOM. **F1** `lib/ai/tts-quota.ts`
+  (module-level in-memory cooldown, `isQuotaExceeded(status,detail)` matches
+  ONLY a 401 with `quota_exceeded` in the body, 20-min cooldown, cleared on any
+  success) wired into `/api/tts`: a confirmed-exhausted request now returns 502
+  immediately, before touching ElevenLabs or Cloudinary. Live-verified via
+  `get_runtime_logs`: first preview click hit ElevenLabs (logged the real
+  quota_exceeded error), a second click ~15s later produced ONLY an
+  edge-middleware 502 with NO matching "[/api/tts] ElevenLabs error" log line —
+  proof the short-circuit fired. CAVEAT (important, don't re-diagnose as a bug
+  next time): the cooldown is per-serverless-instance in-memory (exactly as the
+  finding explicitly pre-approved, "in-memory is fine"), so a BURST of several
+  CONCURRENT `/api/tts` calls (e.g. a lesson page firing narration for the
+  explainer + question + hints near-simultaneously) can land on several
+  different cold Lambda instances that don't share state, and each one
+  independently eats one real failed ElevenLabs call before it personally
+  learns the cooldown — confirmed live (5 distinct quota_exceeded log lines in
+  the same second during one page load). It still works correctly for
+  SEQUENTIAL calls on a warm instance (proven above) and never breaks the
+  native-speechSynthesis fallback either way; if the owner wants it fully
+  burst-proof, the fix is swapping the in-memory flag for the same Upstash
+  Redis client already used by `lib/rate-limit.ts` (shared across instances) —
+  worth flagging, not worth blocking this item on. **F2/F3/F4** transcribed the
+  three EPIC-2 English command-word questions VERBATIM from the findings file
+  (eng_poetry caesura, eng_shakespeare soliloquy, eng_creative narrative
+  viewpoint) into `curriculum.seed.ts`'s `EXAM_STYLE_QUESTIONS`, one item + one
+  `expectWellFormedItem` test per commit (reused the existing shared helper in
+  `tests/curriculum-batch2.test.ts` rather than writing new boilerplate). Ran
+  `npm run seed` ONCE after all three (plus F5/F6/F7 code work) landed: "9
+  written" (idempotent upsert, curriculum-only). These 3 topics are KS4
+  Grade-5+ English (`eng_poetry`/`eng_shakespeare`/`eng_creative`), out of band
+  for every current SMOKE test child, so live-verification is seed-success +
+  unit-tests + no console/runtime regression only, not a driven answer-flow —
+  consistent with prior runs' "expensive end-state, gate-verified only" pattern.
+  **F5** reused `EddieAvatar` (already shipped 2026-08-19 on the practice
+  correct/wrong panel) at its two remaining scoped call sites: replaced
+  `teaching-animation.tsx`'s custom `WandSparkles`-in-a-`motion.div` coach icon
+  with `<EddieAvatar>` (added an `isFinalStep` prop so the See-it panel's coach
+  gets a warm-nod on the reveal's last "result" step, not just on a step
+  advance or the one-shot Your-Turn celebration), and added it next to
+  `my-stuff-panel.tsx`'s "Eddie's voice" heading (mood tied to the `previewing`
+  state via the existing `accentPreset()` helper — no new accent-lookup logic
+  needed). Live: My-stuff's avatar SVG confirmed in the DOM next to the voice
+  list; the See-it panel showed the same coach face on the ratio lesson.
+  **F6** new pure `buildCourseJsonLd()` in `lib/seo/course-jsonld.ts` (kept
+  OUT of the `.tsx` component — see gotcha below) rendered via
+  `components/seo/course-jsonld.tsx` on `/how-it-works`. Live: the `Course`
+  JSON-LD block parses with the right `provider.@id` pointing at the shared
+  `#organization` node and 3 `CourseInstance` entries. **F7** the See-it
+  "Your turn" recall widget now auto-collapses (`dismissed=true`) the moment
+  the PARENT question is answered correctly (`questionSettled` prop threaded
+  from `practice-player.tsx`'s `isCorrect` down through `TeachingAnimation` to
+  `YourTurnPanel`) UNLESS the child already got the recall task itself right
+  (`result === "correct"`, left alone since it's not competing with anything).
+  Live-verified end-to-end: opened See-it on a wrong-twice ratio question,
+  reached the "Your turn" tap widget, then answered the REAL question
+  correctly WITHOUT touching Your-Turn — the celebration ("You nailed it! ⭐")
+  fired and the tap widget disappeared from the DOM in the same render, while
+  Replay/the animation controls stayed available. GOTCHA (new, worth
+  repeating): a `.tsx` file with JSX cannot be imported by a `tests/*.test.ts`
+  file in this repo — `vitest.config.ts` has no `@vitejs/plugin-react`/JSX
+  transform configured (by design: every existing test only imports from
+  `lib/*.ts`, never a component). Importing a `.tsx` component straight into a
+  test throws a rolldown "Unexpected JSX expression" parse error. Fix: put any
+  new pure-data builder a component needs in a sibling `lib/**/*.ts` file (no
+  JSX) and have the `.tsx` component do nothing but import + render it — this
+  is also just better structure (matches the `buildYourTurn`/`buildWeeklyRecap`
+  pattern already used everywhere else in this codebase). Also: `git checkout --
+  <path>` mid-run to split an already-combined multi-item edit back into
+  separate per-item commits is a safe, fast way to recover from "I edited 3
+  findings in one Edit call" without losing work, since the edits are still
+  fully re-derivable from the findings file text itself. Health check: newest
+  deployment READY, `/api/health` 200 (via the apex→www redirect, as always),
+  only 1 runtime error group in the 2h window and it's the expected/handled
+  ElevenLabs quota_exceeded (F1's own target, not a regression).
