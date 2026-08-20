@@ -100,9 +100,12 @@ export function RoadmapCard({
                       >
                         {t.title}
                         {t.state === "current" && (
-                          <span className="ml-1.5 rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-violet-200">
-                            Now
-                          </span>
+                          <>
+                            {" "}
+                            <span className="ml-1.5 rounded-full bg-violet-500/15 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-violet-200">
+                              Now
+                            </span>
+                          </>
                         )}
                       </span>
                     </li>
