@@ -582,6 +582,20 @@ describe("F4 (2026-08-19) — eng_spelling homophone (their/there/they're) item"
   });
 });
 
+describe("F2 (2026-08-20) — eng_poetry caesura item", () => {
+  const prompt =
+    "A line of poetry is broken by a comma or full stop halfway through, for example: 'She waited. The room stayed silent.' This kind of mid-line pause is called a caesura. Explain its main effect here.";
+
+  it("adds exactly one well-formed item keyed to the pause-draws-attention answer", () => {
+    expectWellFormedItem(
+      "eng_poetry",
+      "english",
+      prompt,
+      "It creates a sudden pause that draws attention to what follows",
+    );
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);

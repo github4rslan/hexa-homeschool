@@ -1263,6 +1263,36 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "This is missing the apostrophe. 'They're' (with an apostrophe) is the contraction of 'they are'.",
     ],
   },
+  // ── F2 (2026-08-20): eng_poetry caesura item ──
+  // AQA 8700 AO2, closing a zero-coverage topic.
+  {
+    topic_tag: "eng_poetry",
+    subject: "english",
+    tier: 5,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "A line of poetry is broken by a comma or full stop halfway through, for example: 'She waited. The room stayed silent.' This kind of mid-line pause is called a caesura. Explain its main effect here.",
+    options: [
+      "It creates a sudden pause that draws attention to what follows",
+      "It speeds up the whole poem's rhythm",
+      "It forces the poem to rhyme",
+      "It removes all punctuation from the line",
+    ],
+    correct_index: 0,
+    explanation:
+      "A caesura is a deliberate pause inside a line, often shown by punctuation. It interrupts the rhythm, slowing the reader down and drawing extra attention to the words that follow the pause.",
+    hints: [
+      "Think about what happens to your reading speed when you hit a comma or full stop mid-line.",
+      "A caesura is a PAUSE — what does a pause usually do to the reader's attention?",
+    ],
+    misconceptions: [
+      "",
+      "A pause slows a line down; it does not speed the rhythm up.",
+      "A caesura is about rhythm and pause, not about making lines rhyme.",
+      "A caesura is punctuation used deliberately mid-line, not the absence of punctuation.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
