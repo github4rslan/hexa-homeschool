@@ -2,9 +2,11 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import { ArrowLeft, Check, Volume2, Loader2, Palette, BookOpenText, Type, Ruler } from "lucide-react";
-import type { AccentPreset } from "@/lib/child/accents";
+import { accentPreset, type AccentPreset } from "@/lib/child/accents";
+import { EddieAvatar } from "@/components/child/eddie-avatar";
 import {
   TEXT_SCALES,
   textScaleLabel,
@@ -73,8 +75,12 @@ export function MyStuffPanel({
   ) => Promise<{ ok: boolean }>;
 }) {
   const router = useRouter();
+  const reduced = useReducedMotion() ?? false;
   const [voiceId, setVoiceId] = useState(currentVoiceId);
   const [accent, setAccent] = useState(currentAccent);
+  // F5 — Eddie's face reacts to the voice preview, same component/moods as
+  // the practice panel and the See-it walkthrough.
+  const selectedAccentPreset = accentPreset(accent);
   const [readAloud, setReadAloud] = useState(currentNarrationAutoplay);
   const [soundCues, setSoundCues] = useState(currentSoundCues);
   const [lowText, setLowText] = useState(currentLowText);
@@ -149,9 +155,16 @@ export function MyStuffPanel({
       {/* Eddie's voice (Wave 8, Feature 9) — the same curated, tier-gated TTS
           voices as before, framed as EDDIE so the choice builds attachment. */}
       <section className="mb-10">
-        <h2 className="mb-1 flex items-center gap-2 text-2xl font-semibold text-fog-100">
-          <Volume2 className="h-6 w-6 text-fog-300" /> Eddie&apos;s voice
-        </h2>
+        <div className="mb-1 flex items-center gap-3">
+          <EddieAvatar
+            mood={previewing ? "warm-nod" : "neutral"}
+            accent={selectedAccentPreset}
+            reduced={reduced}
+          />
+          <h2 className="flex items-center gap-2 text-2xl font-semibold text-fog-100">
+            <Volume2 className="h-6 w-6 text-fog-300" /> Eddie&apos;s voice
+          </h2>
+        </div>
         <p className="mb-4 text-base text-fog-400">
           Pick the voice Eddie uses when he reads and teaches. Tap the speaker
           to hear each one.

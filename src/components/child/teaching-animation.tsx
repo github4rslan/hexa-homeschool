@@ -11,11 +11,11 @@ import {
   Sparkles,
   StepForward,
   Turtle,
-  WandSparkles,
   Volume2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { AccentPreset } from "@/lib/child/accents";
+import { EddieAvatar, type EddieMood } from "@/components/child/eddie-avatar";
 import {
   buildYourTurn,
   checkYourTurnOrder,
@@ -125,6 +125,7 @@ function EddieCoach({
   accent,
   speaking,
   stepIndex,
+  isFinalStep = false,
   focus,
   reduced,
   celebrating = false,
@@ -133,6 +134,8 @@ function EddieCoach({
   accent: AccentPreset;
   speaking: boolean;
   stepIndex: number;
+  /** The choreographed reveal has landed on its last ("result") beat. */
+  isFinalStep?: boolean;
   focus?: string;
   reduced: boolean;
   /** A warm one-shot celebration pose (e.g. the child nailed "Your turn"). */
@@ -153,39 +156,18 @@ function EddieCoach({
 
   const focusTokens = focus ? splitExpression(focus) : [];
 
+  // F5 — the same reactive face already shipped on the practice panel: idle
+  // breathing bob while narrating, a warm nod stepping into a beat or landing
+  // on the final "result" step, and a bigger celebration on a "Your turn" win.
+  const mood: EddieMood = celebrating
+    ? "celebrating"
+    : reacting || isFinalStep
+      ? "warm-nod"
+      : "neutral";
+
   return (
     <div className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3">
-      <motion.div
-        animate={
-          reduced
-            ? undefined
-            : celebrating
-              ? { rotate: [0, 9, -9, 5, 0], scale: [1, 1.16, 1], y: [0, -7, 0] }
-              : reacting
-                ? { rotate: [0, -7, 7, 0], scale: [1, 1.08, 1], y: 0 }
-                : speaking
-                  ? { y: [0, -3, 0], rotate: [0, 1.5, -1.5, 0], scale: 1 }
-                  : { scale: [1, 1.04, 1], y: 0, rotate: 0 }
-        }
-        transition={
-          reduced
-            ? undefined
-            : celebrating
-              ? { duration: 1.1, ease: "easeInOut" }
-              : reacting
-                ? { duration: 0.65, ease: "easeInOut" }
-                : speaking
-                  ? { duration: 1.6, repeat: Infinity, ease: "easeInOut" }
-                  : { duration: 4, repeat: Infinity, ease: "easeInOut" }
-        }
-        className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border",
-          accent.bg,
-          accent.border,
-        )}
-      >
-        <WandSparkles className={cn("h-5 w-5", accent.text)} aria-hidden />
-      </motion.div>
+      <EddieAvatar mood={mood} accent={accent} reduced={reduced} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-fog-500">
           Eddie, your Edway coach
@@ -1978,6 +1960,7 @@ export function TeachingAnimation({
           accent={accent}
           speaking={speaking}
           stepIndex={current}
+          isFinalStep={current >= total - 1}
           focus={step.focus}
           reduced={reduced}
           celebrating={eddieCelebrating}
