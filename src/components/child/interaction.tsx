@@ -18,6 +18,7 @@ import {
   checkMcq,
   checkTapReveal,
   spokenBlankValue,
+  tapRevealTap,
   type DragDropInteraction,
   type FillBlankInteraction,
   type Interaction as InteractionDef,
@@ -396,8 +397,12 @@ const TapReveal = forwardRef<
 
   function tap(i: number) {
     if (reveal) return;
-    setFlipped((prev) => new Set(prev).add(i));
-    setSelected(i);
+    // B4 fix: the first tap on a card only reveals it — re-reading another
+    // card can never silently overwrite an already-chosen answer. A second
+    // tap on an already-flipped card is what commits the choice.
+    const result = tapRevealTap(flipped, selected, i);
+    setFlipped(result.flipped);
+    setSelected(result.selected);
   }
 
   return (
@@ -465,6 +470,11 @@ const TapReveal = forwardRef<
                 </motion.span>
               ) : (
                 <span className="relative z-10 text-lg text-fog-400">Tap to reveal</span>
+              )}
+              {isFlipped && !reveal && !chosen && (
+                <span className="relative z-10 text-xs text-fog-500">
+                  Tap again to choose this
+                </span>
               )}
               {showCorrect && (
                 <span className="absolute right-4 top-4 z-10">

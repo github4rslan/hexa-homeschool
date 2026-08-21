@@ -183,6 +183,34 @@ export function checkTapReveal(
   return chosen !== null && chosen === it.correctCard;
 }
 
+export interface TapRevealTapResult {
+  /** The flipped-card set after this tap (reveal never un-reveals). */
+  flipped: Set<number>;
+  /** The chosen answer after this tap, or null if nothing is chosen yet. */
+  selected: number | null;
+}
+
+/**
+ * B4 fix: "reveal a card to read it" and "choose it as your final answer" are
+ * two different actions, not one. A tap on a card that ISN'T flipped yet only
+ * reveals it — reading a second or third card can never silently overwrite an
+ * earlier choice. A tap on a card that's ALREADY flipped (the same one again,
+ * or a different already-read one) commits it as the chosen answer. Pure +
+ * deterministic so it's unit-testable without mounting the component.
+ */
+export function tapRevealTap(
+  flipped: ReadonlySet<number>,
+  selected: number | null,
+  i: number,
+): TapRevealTapResult {
+  if (!flipped.has(i)) {
+    const next = new Set(flipped);
+    next.add(i);
+    return { flipped: next, selected };
+  }
+  return { flipped: new Set(flipped), selected: i };
+}
+
 export function checkFillBlank(
   it: FillBlankInteraction,
   values: string[],

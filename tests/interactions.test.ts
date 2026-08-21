@@ -12,6 +12,7 @@ import {
   pickMisconception,
   resolveResumeStep,
   spokenBlankValue,
+  tapRevealTap,
   type DragDropInteraction,
   type FillBlankInteraction,
   type TapRevealInteraction,
@@ -92,6 +93,31 @@ describe("answer checking (pure, deterministic)", () => {
     expect(checkTapReveal(it, 0)).toBe(true);
     expect(checkTapReveal(it, 1)).toBe(false);
     expect(checkTapReveal(it, null)).toBe(false);
+  });
+
+  it("B4: tapRevealTap only reveals a card on its first tap, never selecting it", () => {
+    const first = tapRevealTap(new Set(), null, 0);
+    expect(first.flipped.has(0)).toBe(true);
+    expect(first.selected).toBeNull();
+  });
+
+  it("B4: re-reading a different already-revealed card does NOT overwrite an earlier choice", () => {
+    // Card A: reveal, then a second tap commits it as chosen.
+    let flipped = new Set<number>();
+    let selected: number | null = null;
+    ({ flipped, selected } = tapRevealTap(flipped, selected, 0));
+    ({ flipped, selected } = tapRevealTap(flipped, selected, 0));
+    expect(selected).toBe(0);
+
+    // Now the child taps Card B just to READ it (first tap on B) — this must
+    // only reveal B, never silently replace the chosen answer (the B4 bug).
+    ({ flipped, selected } = tapRevealTap(flipped, selected, 1));
+    expect(flipped.has(1)).toBe(true);
+    expect(selected).toBe(0);
+
+    // A second, deliberate tap on the already-revealed Card B DOES commit it.
+    ({ flipped, selected } = tapRevealTap(flipped, selected, 1));
+    expect(selected).toBe(1);
   });
 
   it("checkFillBlank is case- and whitespace-insensitive and rejects blanks", () => {
