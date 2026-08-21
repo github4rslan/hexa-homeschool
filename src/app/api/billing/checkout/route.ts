@@ -9,6 +9,7 @@ import {
   TRIAL_PERIOD_DAYS,
   BillingConfigError,
 } from "@/lib/billing/stripe";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -42,6 +43,19 @@ export async function GET(request: Request) {
   const parent = await findParentById(parentId);
   if (!parent) {
     return NextResponse.redirect(new URL("/login?redirect=/pricing", url));
+  }
+
+  // F4 (2026-08-22) — defence-in-depth: creates a real Stripe Checkout session
+  // on every hit. Same friendly-redirect pattern as the config-error branch
+  // below, so a trip never surfaces a raw error to a parent.
+  const limited = await rateLimit(`billing-checkout:${parentId}`, 10, 60_000);
+  if (!limited.ok) {
+    return NextResponse.redirect(
+      new URL(
+        `/settings?error=${encodeURIComponent("Too many attempts. Please wait a moment and try again.")}`,
+        url,
+      ),
+    );
   }
 
   try {

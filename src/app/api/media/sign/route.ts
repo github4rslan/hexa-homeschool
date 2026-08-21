@@ -5,6 +5,7 @@ import {
   MediaConfigError,
   type MediaUseCase,
 } from "@/lib/media/cloudinary";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,20 @@ export async function POST(request: Request) {
   const parentId = await currentParentId();
   if (!parentId) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+
+  // F4 (2026-08-22) — defence-in-depth: this issues a fresh signed Cloudinary
+  // upload credential on every hit. Generous per-parent limit so a normal
+  // multi-photo "add work" flow never trips it.
+  const limited = await rateLimit(`media-sign:${parentId}`, 20, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment and try again." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSeconds) },
+      },
+    );
   }
 
   let body: { useCase?: unknown; childId?: unknown };
