@@ -385,3 +385,43 @@ describe("difference-of-squares derivation (the choreographed reveal)", () => {
     expect(labels).not.toContain("Factor");
   });
 });
+
+describe("B2: subject-gated grammar/science derivation (no false-subject match)", () => {
+  it("never renders the Science walkthrough for an English question that merely contains the word 'sound'", () => {
+    const anim = normalizeTeachingAnimation({
+      prompt: "'Silently, slowly, secretly she crept.' The repeated 's' sound is:",
+      explanation: "Repeating the same starting sound is alliteration.",
+      subject: "english",
+    });
+    expect(anim.type).not.toBe("science_sequence");
+    // The broadened literary-device keyword list should still route this to a
+    // real grammar/reading-devices walkthrough, not the generic fallback.
+    expect(anim.type).toBe("grammar_highlight");
+  });
+
+  it("still falls through to the generic strategy when the subject is known and no deriver matches", () => {
+    const anim = normalizeTeachingAnimation({
+      prompt: "What is the main idea of the passage?",
+      explanation: "Look at what the writer keeps coming back to.",
+      subject: "english",
+    });
+    expect(anim.type).toBe("choice_strategy");
+  });
+
+  it("a genuine Science 'sound' question still resolves to the Science walkthrough", () => {
+    const anim = normalizeTeachingAnimation({
+      prompt: "Sound waves travel fastest through which medium?",
+      explanation: "Sound needs particles to travel, so it moves fastest through solids.",
+      subject: "science",
+    });
+    expect(anim.type).toBe("science_sequence");
+  });
+
+  it("without a known subject, the broadened grammar keyword list still wins over the Science deriver", () => {
+    const anim = normalizeTeachingAnimation({
+      prompt: "'Silently, slowly, secretly she crept.' The repeated 's' sound is:",
+      explanation: "Repeating the same starting sound is alliteration.",
+    });
+    expect(anim.type).toBe("grammar_highlight");
+  });
+});

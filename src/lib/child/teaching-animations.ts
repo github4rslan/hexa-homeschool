@@ -1,3 +1,5 @@
+import type { Subject } from "@/lib/db/types";
+
 export type TeachingAnimationType =
   | "equation_steps"
   | "fraction_bars"
@@ -453,9 +455,21 @@ function deriveFactorisedDifference(prompt: string): TeachingAnimation | null {
   };
 }
 
-function deriveGrammar(prompt: string, explanation: string): TeachingAnimation | null {
+function deriveGrammar(
+  prompt: string,
+  explanation: string,
+  subject?: Subject | null,
+): TeachingAnimation | null {
+  // Subject-gate first (B2 fix): when the question's real subject is known and
+  // isn't English, never let a keyword coincidence dress it up as a grammar
+  // walkthrough.
+  if (subject && subject !== "english") return null;
   const lower = `${prompt} ${explanation}`.toLowerCase();
-  if (!/(verb|noun|adjective|sentence|comma|apostrophe|grammar)/.test(lower)) {
+  if (
+    !/(verb|noun|adjective|sentence|comma|apostrophe|grammar|simile|metaphor|personification|alliteration|onomatopoeia|rhyme|stanza|narrator|viewpoint)/.test(
+      lower,
+    )
+  ) {
     return null;
   }
   return {
@@ -486,7 +500,16 @@ function deriveGrammar(prompt: string, explanation: string): TeachingAnimation |
   };
 }
 
-function deriveScience(prompt: string, explanation: string): TeachingAnimation | null {
+function deriveScience(
+  prompt: string,
+  explanation: string,
+  subject?: Subject | null,
+): TeachingAnimation | null {
+  // Subject-gate first (B2 fix): a keyword coincidence (e.g. the ordinary
+  // English word "sound" in "the repeated 's' sound is") must never dress a
+  // non-Science question up as a Science walkthrough when the real subject is
+  // already known.
+  if (subject && subject !== "science") return null;
   const lower = `${prompt} ${explanation}`.toLowerCase();
   if (
     !/(particle|energy|force|circuit|current|voltage|cell|atom|reaction|light|sound)/.test(
@@ -796,6 +819,14 @@ export function normalizeTeachingAnimation(input: {
   raw?: unknown;
   prompt: string;
   explanation: string;
+  /**
+   * The question's real subject, when known (e.g. `topicDoc.subject`). Gates
+   * `deriveGrammar`/`deriveScience` so a keyword coincidence in the prompt
+   * (e.g. the English word "sound") can never dress a question up as the
+   * wrong subject's walkthrough (B2). Optional + legacy-safe: omitted ⇒ the
+   * derivers fall back to keyword-only sniffing, unchanged.
+   */
+  subject?: Subject | null;
 }): TeachingAnimation {
   return (
     fromRaw(input.raw) ??
@@ -803,8 +834,8 @@ export function normalizeTeachingAnimation(input: {
     deriveFactorisedDifference(input.prompt) ??
     deriveFractionSum(input.prompt, input.explanation) ??
     derivePlaceValueLesson(input.prompt) ??
-    deriveGrammar(input.prompt, input.explanation) ??
-    deriveScience(input.prompt, input.explanation) ??
+    deriveGrammar(input.prompt, input.explanation, input.subject) ??
+    deriveScience(input.prompt, input.explanation, input.subject) ??
     deriveChoiceStrategy(input.prompt, input.explanation)
   );
 }

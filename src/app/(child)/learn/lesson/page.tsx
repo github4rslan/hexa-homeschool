@@ -113,6 +113,7 @@ export default async function ChildLessonPage({
       raw: q.teaching_animation,
       prompt: q.prompt,
       explanation: q.explanation,
+      subject: topicDoc.subject,
     }),
   });
 
