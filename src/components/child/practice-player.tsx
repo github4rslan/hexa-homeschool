@@ -530,6 +530,24 @@ export function PracticePlayer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [outcome, autoplayOn]);
 
+  // B5 fix: a correct answer should collapse the WHOLE See-it panel (transport
+  // controls, step card, "Hide animation" toggle), not just the inner "Your
+  // turn" recall widget (F7 only settled that). A short delay lets the
+  // celebration register first; the collapse itself is a gentle fade (handled
+  // by the AnimatePresence around the panel below), never instant/jarring, and
+  // never blocks the celebration which renders independently of this panel.
+  // The child can still re-open "See it" afterwards — this only un-forces it.
+  useEffect(() => {
+    if (outcome !== "correct" || !visualOpen) return;
+    const delay = reduced ? 0 : 900;
+    const t = setTimeout(() => {
+      setVisualOpen(false);
+      narration.stop();
+    }, delay);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outcome, visualOpen, reduced]);
+
   // Resume once on mount: reconcile the server copy (props) with a same-device
   // localStorage copy (which may be a step ahead if a server write lagged), then
   // land at the exact saved step. Pure math via resolveResumeStep keeps this
