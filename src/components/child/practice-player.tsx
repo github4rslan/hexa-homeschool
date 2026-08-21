@@ -1414,19 +1414,31 @@ export function PracticePlayer({
     return (
       <div className="mx-auto max-w-2xl">
         <div className="child-panel p-8 sm:p-12 text-center animate-child-pop">
-          <div
-            className={cn(
-              "relative mx-auto mb-6 flex h-28 w-28 items-center justify-center rounded-full border-2",
-              mastered
-                ? "bg-neon-500/10 border-neon-400/50 glow-neon"
-                : cn(accent.bg, accent.border),
-            )}
-          >
-            {mastered && <Celebration variant={1} big />}
-            {mastered && <ConfettiBurst />}
-            <span className="text-6xl" aria-hidden>
-              {mastered ? "🏆" : "🌟"}
-            </span>
+          <div className="mb-6 flex items-center justify-center gap-3">
+            <div
+              className={cn(
+                "relative flex h-28 w-28 items-center justify-center rounded-full border-2",
+                mastered
+                  ? "bg-neon-500/10 border-neon-400/50 glow-neon"
+                  : cn(accent.bg, accent.border),
+              )}
+            >
+              {mastered && <Celebration variant={1} big />}
+              {mastered && <ConfettiBurst />}
+              <span className="text-6xl" aria-hidden>
+                {mastered ? "🏆" : "🌟"}
+              </span>
+            </div>
+            {/* F3 — Eddie's purpose-built "celebrating" mood (a bigger bounce +
+                tilt flourish) finally lands on the moment it was built for: the
+                topic-mastery completion screen, not just the small in-lesson
+                recall flash. A warm "encouraging" beat closes the non-mastered
+                path too, so the screen never ends on a bare trophy alone. */}
+            <EddieAvatar
+              mood={mastered ? "celebrating" : "encouraging"}
+              accent={accent}
+              reduced={reduced}
+            />
           </div>
           <h1 className="text-4xl font-semibold text-fog-50 mb-3">
             {mastered ? "Topic mastered!" : "Great effort!"}
