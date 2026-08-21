@@ -212,7 +212,13 @@ function deriveGroups(prompt: string): MathVisualSpec | null {
 /** Parse `a ± b` (integers, incl. negatives) → a number-line spec, or null. */
 function deriveNumberLine(prompt: string): MathVisualSpec | null {
   const text = prompt.replace(/−/g, "-");
-  const m = text.match(/\(?\s*(-?\d+)\s*\)?\s*([+-])\s*\(?\s*(-?\d+)\s*\)?/);
+  // Boundary guard: a digit immediately preceded or followed by a letter (or
+  // preceded by another digit) belongs to a variable term (e.g. the "3" in
+  // "3x") or a longer number, not a standalone integer — never match it as
+  // one side of a plain arithmetic sum/difference.
+  const m = text.match(
+    /(?<![a-zA-Z0-9])\(?\s*(-?\d+)\s*\)?\s*([+-])\s*\(?\s*(-?\d+)\s*\)?(?![a-zA-Z0-9])/,
+  );
   if (!m) return null;
   const a = Number(m[1]);
   const op = m[2] === "+" ? "+" : "-";

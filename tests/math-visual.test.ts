@@ -78,6 +78,16 @@ describe("deriveMathVisual", () => {
     expect(deriveMathVisual("100 + 5")).toBeNull();
   });
 
+  // ── B1: a digit belonging to a variable term must never be read as a
+  // standalone integer for the number-line deriver ──
+  it("never derives a wrong number line from a collect-like-terms prompt with a constant between (5x + 2 − 3x)", () => {
+    expect(deriveMathVisual("Simplify 5x + 2 − 3x.")).toBeNull();
+  });
+
+  it("never derives a wrong number line when the second number is a coefficient (2 − 3x)", () => {
+    expect(deriveMathVisual("2 − 3x")).toBeNull();
+  });
+
   it("draws a dot array for a multiplication (4 × 3)", () => {
     const spec = deriveMathVisual("What is 4 × 3?");
     if (spec?.kind !== "array") throw new Error("expected array");
