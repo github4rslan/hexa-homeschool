@@ -1686,3 +1686,80 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   tutor→admin) + browser_close. Credential handling: read PIN/tutor/admin creds
   from .env.local via Bash into context only, typed directly into browser_type
   params, never written to any file — confirmed clean.
+- 2026-08-22 — Mechanic build run, DECISION `all` (all 5 bugs + 4 features, no cap).
+  ALL 9 SHIPPED, each green-gated (type-check + tests + lint + build, one commit,
+  pushed to main). No Playwright browser tools were available this run (task said
+  to rely on Vercel MCP deploy state + runtime errors instead), so live verification
+  was deploy-state + get_runtime_errors + curl, not a browser drive. **B1**
+  `deriveNumberLine` in math-visual.ts now has a boundary guard (negative lookbehind
+  before the first digit, negative lookahead after the second: neither may sit next
+  to a letter or another digit) so it never grabs a stray "2 − 3" out of
+  "Simplify 5x + 2 − 3x." (the "3" there is the coefficient of 3x, not a standalone
+  integer). New tests confirm the exact bug prompt and a reversed variant both
+  return null while every existing arithmetic number-line prompt still matches.
+  **B2** gated `deriveGrammar`/`deriveScience` in teaching-animations.ts on the
+  question's real `subject` (now threaded through `normalizeTeachingAnimation` from
+  `topicDoc.subject`, which was already in scope at the one call site in
+  learn/lesson/page.tsx but never passed) — a keyword coincidence (the English word
+  "sound" in an alliteration question) can no longer dress a question up as the
+  wrong subject's walkthrough. Also broadened deriveGrammar's keyword list with
+  literary-device terms (simile/metaphor/alliteration/etc.) as a general, non-
+  string-specific second guard, matching the backlog's ask not to over-narrow the
+  fix to the one exact reported string. **B3** added the SAME rate-limit pair
+  `login` already uses (per-IP 10/60s + per-parent 10/15min) directly inside
+  `verifyParentPin`, so all three call sites (learn/actions exit-to-parent,
+  onboarding diagnostic restart ×2) get the protection for free with one change;
+  trip returns the SAME generic "PIN not recognised" message, never a distinct
+  "too many attempts" line, so a child guessing never learns they hit a limit
+  rather than a wrong PIN. **B4** extracted a pure `tapRevealTap(flipped, selected,
+  i)` state-transition helper (+ unit tests) so a card's first tap only reveals it;
+  a SECOND tap on an already-flipped card (the same one, or a different
+  already-read one) is what commits it as the chosen answer — re-reading another
+  card mid-decision can never again silently overwrite an earlier pick. Added a
+  small "Tap again to choose this" affordance line so the new two-step gesture is
+  discoverable. **B5** added a `useEffect` keyed on `outcome`/`visualOpen` that, on
+  a correct mastery answer, closes the WHOLE See-it panel (`setVisualOpen(false)`)
+  after a short delay (900ms, 0 under reduced motion) rather than only the F7-fixed
+  inner "Your turn" widget — the panel's own `motion.div` already has `exit`
+  animation so `AnimatePresence` fades it out gently, no new motion code needed.
+  **F1/F2** transcribed the two owner-authored curriculum items VERBATIM from the
+  findings file into `EXAM_STYLE_QUESTIONS` in curriculum.seed.ts (maths_ratio
+  direct-proportion "Calculate", sci_body heart-rate "Calculate"), re-verified both
+  computations in a Vitest test (350/5×2=140, 72×10=720) alongside the existing
+  `expectWellFormedItem` well-formedness check, then ran `npm run seed` ONCE after
+  both were committed (idempotent upsert by topic_tag+prompt natural key; "8
+  written" — picked up both new questions cleanly, no orphaned rows since both
+  prompts are new). **F3** added `<EddieAvatar mood={mastered ? "celebrating" :
+  "encouraging"} .../>` beside the trophy/star circle on the Topic-mastered
+  completion screen (previously Eddie's purpose-built "celebrating" mood was wired
+  ONLY to a 1.3s in-lesson recall flash, never the actual biggest payoff screen);
+  reused the component's default size/props exactly as used elsewhere (my-stuff
+  voice preview) rather than inventing a custom size, since a size override needed
+  `twMerge` reasoning that wasn't worth the risk for a purely additive change.
+  **F4** added `rateLimit()` to `/api/billing/checkout` (per-parent, friendly
+  `/settings?error=` redirect on trip, same pattern as its own `BillingConfigError`
+  branch) and `/api/media/sign` (per-parent, JSON 429 + Retry-After, same pattern
+  as `/api/tts`) — generous limits (10/min, 20/min) so no legitimate flow trips
+  them. KEY LEARNINGS: (1) When splitting two curriculum items that were authored
+  together into separate one-commit-per-item pushes, it's easiest to write BOTH
+  edits first, then temporarily revert the second item's block (Edit back to the
+  pre-edit string), gate + commit the first, then re-apply the second edit fresh
+  and gate + commit it — cleaner than trying to stage partial hunks by hand. (2)
+  A regex boundary guard (negative lookbehind/lookahead for
+  `[a-zA-Z0-9]`) is a general, reusable pattern for "this digit must not be part of
+  a longer token" bugs — prefer it over a special-case exclusion for the one
+  reported string, per the backlog's explicit ask to avoid over-narrow fixes when a
+  general guard is equally cheap. (3) For a subject-gated deriver chain, thread the
+  ALREADY-KNOWN field (here `topicDoc.subject`, resolved earlier in the same
+  function) through as an optional parameter rather than re-deriving it from text —
+  it's free, and makes the keyword-only path a documented fallback rather than the
+  only signal. (4) A background Vercel build can occasionally run past the usual
+  ~90s (this run's final deploy took ~4.5 minutes with a Restored build cache
+  step); poll `get_deployment` patiently rather than assuming a stall — checking
+  `get_deployment_build_logs` mid-wait confirmed it was still progressing
+  (Finalizing page optimization) rather than stuck. (5) `get_runtime_errors` +
+  `get_runtime_logs` (`group_by: statusCode`) over the whole post-push window
+  showed zero errors and only 200/307 status codes — a good fast substitute for a
+  browser drive when Playwright tools aren't available for a run, though it can't
+  confirm CLIENT-rendered UI (e.g. the new Eddie mood, the "Tap again to choose"
+  copy) actually paints correctly — that gap is worth a follow-up Scout pass.
