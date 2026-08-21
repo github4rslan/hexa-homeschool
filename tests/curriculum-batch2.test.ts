@@ -633,6 +633,19 @@ describe("F1 (2026-08-22) — second maths_ratio command-word item (direct propo
   });
 });
 
+describe("F2 (2026-08-22) — second sci_body command-word item (heart-rate calculation)", () => {
+  const prompt =
+    "A person's resting heart rate is 72 beats per minute. Calculate how many times their heart beats in 10 minutes.";
+
+  it("adds exactly one well-formed item keyed to 720", () => {
+    expectWellFormedItem("sci_body", "science", prompt, "720");
+  });
+
+  it("computes: beats = 72 * 10 = 720", () => {
+    expect(72 * 10).toBe(720);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);

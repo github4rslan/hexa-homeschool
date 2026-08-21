@@ -1378,6 +1378,30 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "That swaps the ratio around. Flour is 5 parts and sugar is 2 parts, not the other way round.",
     ],
   },
+  // ── F2 (2026-08-22): second sci_body command-word item ("Calculate") ──
+  // AQA Combined Science Trilogy 8464, Biology 4.2.2 (circulatory system).
+  {
+    topic_tag: "sci_body",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "A person's resting heart rate is 72 beats per minute. Calculate how many times their heart beats in 10 minutes.",
+    options: ["720", "82", "360", "700"],
+    correct_index: 0,
+    explanation: "72 beats per minute × 10 minutes = 720 beats.",
+    hints: [
+      "Multiply the beats-per-minute rate by the number of minutes.",
+      "72 × 10 — work out the exact answer, without rounding first.",
+    ],
+    misconceptions: [
+      "",
+      "That looks like 72 + 10. Multiply the rate by the minutes, don't add them.",
+      "That's the total for 5 minutes, not 10 — multiply 72 by the full 10 minutes.",
+      "That rounds 72 down to 70 first. Use the exact rate: 72 × 10.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
