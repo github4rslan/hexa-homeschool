@@ -619,6 +619,20 @@ describe("F4 (2026-08-20) — eng_creative narrative viewpoint item", () => {
   });
 });
 
+describe("F1 (2026-08-22) — second maths_ratio command-word item (direct proportion)", () => {
+  const prompt =
+    "A recipe uses flour and sugar in the ratio 5:2. A baker uses 350 g of flour. Calculate how much sugar is needed.";
+
+  it("adds exactly one well-formed item keyed to 140 g", () => {
+    expectWellFormedItem("maths_ratio", "mathematics", prompt, "140 g");
+  });
+
+  it("computes: 1 part = 350 / 5 = 70 g; sugar = 2 parts = 70 * 2 = 140 g", () => {
+    expect(350 / 5).toBe(70);
+    expect((350 / 5) * 2).toBe(140);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);

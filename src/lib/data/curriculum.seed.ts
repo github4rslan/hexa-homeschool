@@ -1353,6 +1353,31 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "Third person limited also uses 'he/she/they', following one character from outside — this uses 'I'.",
     ],
   },
+  // ── F1 (2026-08-22): second maths_ratio command-word item ("Calculate") ──
+  // Pearson Edexcel 1MA1 R — direct-proportion scaling (EPIC 2 depth).
+  {
+    topic_tag: "maths_ratio",
+    subject: "mathematics",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "A recipe uses flour and sugar in the ratio 5:2. A baker uses 350 g of flour. Calculate how much sugar is needed.",
+    options: ["140 g", "175 g", "360 g", "875 g"],
+    correct_index: 0,
+    explanation:
+      "Flour is 5 parts and 350 g, so 1 part = 350 ÷ 5 = 70 g. Sugar is 2 parts, so 2 × 70 g = 140 g.",
+    hints: [
+      "First work out how much 1 part is worth, using the flour amount and its ratio number.",
+      "Flour is 5 parts = 350 g, so 1 part = 70 g. Sugar is 2 parts — multiply.",
+    ],
+    misconceptions: [
+      "",
+      "That's roughly half of 350g, but halving isn't the ratio — find one part first (350 ÷ 5), then scale by the sugar's ratio number (2).",
+      "That's the amount for 5 minutes' worth of scaling, not the full ratio — use 350 ÷ 5 to find one part, then × 2 for sugar.",
+      "That swaps the ratio around. Flour is 5 parts and sugar is 2 parts, not the other way round.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
