@@ -17,7 +17,13 @@ is arithmetically/factually clean (re-audited 2026-08-08, 08-09, and again the 1
 EXAM_STYLE_QUESTIONS on 2026-08-14).
 - Next step: continue a rolling per-subject correctness re-audit each run; note
   that a "retire" of a seed question must delete the orphaned old doc (seed never
-  deletes), not just reword the prompt.
+  deletes), not just reword the prompt. NEW ANGLE (2026-08-22): the seed TEXT is
+  clean, but the DERIVED VISUALS built from a question's prompt string are a
+  separate correctness surface that needs its own audit — a keyword-sniffing or
+  loosely-bounded regex deriver can silently attach a wrong-subject or wrong-maths
+  figure to a perfectly correct question. Worth spot-checking a derived figure
+  against its own question, not just assuming the deriver chain is safe because
+  the answer text is.
 - Done so far: full re-derivation of all quantitative + factual answers
   (2026-08-08); B3 sci_body water-absorption item retired + reworded + orphan
   deleted (2026-08-09); curriculum.seed.extra.ts + the F7 exam-style items + F8
@@ -25,21 +31,29 @@ EXAM_STYLE_QUESTIONS on 2026-08-14).
   re-derived clean again (2026-08-14 Scout) — no correctness bugs. Spot-checked
   the existing eng_creative/eng_poetry/eng_shakespeare seeded diagnostic/practice
   items 2026-08-20 while authoring their first command-word items (EPIC 2) — all
-  correct-answer indices match their explanations, no ambiguity found.
+  correct-answer indices match their explanations, no ambiguity found. 2026-08-22:
+  seed TEXT re-confirmed clean, but found TWO derived-visual correctness bugs
+  (not in the seed data itself, but in the deterministic figure/animation deriver
+  chain that reads the prompt string): B1 a number-line figure showing false
+  arithmetic for a "5x + 2 − 3x" collect-like-terms question
+  (lib/child/math-visual.ts's deriveNumberLine grabbing a stray "2 − 3"
+  substring), and B2 a Science "See the process" template rendering on an
+  English alliteration question because the prompt contains the word "sound"
+  (lib/child/teaching-animations.ts's deriveScience keyword regex). Both
+  filed for Mechanic; fix is a regex boundary guard (B1) and a subject-gate (B2).
 
 ## EPIC 2 — Exam-style, command-word practice (make questions feel like the paper)
 Status: ACTIVE (headline), very close to closing. Every Science topic and 9 of
 10 English topics now have >= 1 command-word item (sci_genetics/sci_ecology/
 eng_punctuation/eng_spelling all confirmed SHIPPED in the Vercel deployment
 history as of 2026-08-20).
-- Next step: `eng_creative`, `eng_poetry` and `eng_shakespeare` were the LAST
-  three zero-coverage topics. All three authored in full 2026-08-20 (Scout
-  F2/F3/F4: eng_poetry caesura-effect, eng_shakespeare soliloquy-vs-dialogue,
-  eng_creative narrative-viewpoint — each a single-defensible-answer, AQA
-  English Language 8700 AO2/AO5 item, deliberately steering clear of anything
-  open to genuine critical debate). Once these seed, EVERY KS4 topic across all
-  three subjects has at least one command-word item — the next slice after that
-  is depth (>= 2 per topic), not remaining zero-coverage gaps.
+- Next step: zero-coverage is CLOSED — every KS4 topic across all three
+  subjects has at least one command-word item (confirmed shipped 2026-08-20).
+  The active slice is now depth (>= 2 per topic). 2026-08-22 (Scout F1/F2)
+  authored the first two depth items: a second maths_ratio item ("Calculate"
+  direct-proportion) and a second sci_body item ("Calculate" heart-rate) —
+  both topics had exactly one command-word item before. Keep picking
+  single-coverage topics each run rather than re-sweeping the whole bank.
 - Done so far: 6 spec-mapped exam-style questions (F7, 2026-08-09) across
   maths_fractions/ratio/number, sci_forces/reactions, eng_devices; 5 MORE authored
   2026-08-09 (Scout F1) for maths_algebra_linear, maths_pythagoras,
@@ -147,11 +161,15 @@ Lottie/CDN, mood-driven off signals already computed) is live on the
 practice-player correct/wrong panel — re-verified live 2026-08-20 on a real
 Cell Biology lesson (warm-nod on a correct tap_reveal + mcq answer, encouraging
 face on a wrong mcq answer, never inverted into a frown).
-- Next step: expand to the other two Eddie call sites named in the original
-  scoping note — `teaching-animation.tsx` (the See-it walkthrough coach, the
-  single highest-dwell-time coaching moment, still text-only) and
-  `my-stuff-panel.tsx`'s voice preview. Proposed as F5, 2026-08-20.
-- Done so far: v1 on the practice-player panel (2026-08-19).
+- Next step: the See-it coach + my-stuff voice-preview call sites (F5,
+  2026-08-20) are SHIPPED and re-verified live. 2026-08-22 (Scout) found the
+  NEXT gap: the "celebrating" mood (explicitly documented as "mastery: a bigger
+  bounce + tilt flourish") is wired only into a tiny 1.3s in-lesson recall-success
+  flash — the actual "Topic mastered!" completion screen (the biggest emotional
+  payoff in the app, trophy + confetti, no Eddie at all) has never used it.
+  Proposed as F3, 2026-08-22.
+- Done so far: v1 on the practice-player panel (2026-08-19); See-it coach +
+  my-stuff voice preview (2026-08-20).
 
 ## EPIC 10 (new) — SEO/metadata hygiene sitewide
 Status: NEW, opened 2026-08-20. The B-seo checklist (now a standing every-run

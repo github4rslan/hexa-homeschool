@@ -1630,3 +1630,59 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   deployment READY, `/api/health` 200 (via the apex→www redirect, as always),
   only 1 runtime error group in the 2h window and it's the expected/handled
   ElevenLabs quota_exceeded (F1's own target, not a regression).
+
+- 2026-08-22 — Discovery pass, Saturday security-hardening deep-dive, FULL coverage
+  (parent/child/tutor/admin; desktop 1280 + mobile 390 both confirmed innerWidth,
+  no overflow). Took the **Maths KS4 Ratio & Proportion** lesson end-to-end as Ivy
+  (Learn→Practise 3/3→Mastery 3/3→certified: wrong#1 calm no-red/"Why isn't that
+  right?"/2-left, wrong#2 See-it unlocks/hints escalate, correct=star burst, phase
+  bar per stage, "Save my certificate" worked), then drove ALL FOUR interaction
+  types to completion in separate topics: drag_drop (maths_geometry, both the real
+  drag AND the tap-to-place fallback), fill_blank (eng_spelling, keyboard-typed),
+  tap_reveal (eng_devices), and a SECOND full mastery run on eng_ks3_reading
+  deliberately failed (0/3) to walk the reteach loop end-to-end ("Let's look at
+  this another way" screen, AI-checked fallback explanation, "Try a fresh check").
+  Rapid-triple-click on Check-answer did NOT double-score. Refresh-mid-lesson and
+  a raw deep-link into an unstarted lesson both warm-resumed/loaded correctly.
+  Parent oversight (dashboard→child profile→portfolio generate→share-button-ready)
+  and plan/schedule (already-approved week correctly reflected for Ivy) both PASS.
+  Tutor (empty queue, silo holds) + admin (overview/finance/escalations, all
+  numbers honest) both READ-ONLY clean. ZERO console errors on every surface this
+  run. Static: type-check + lint green, npm audit 0 vulnerabilities (both
+  --omit=dev and full tree). BEST findings this run were NOT static-analysis catches
+  but LIVE PLAYTHROUGH catches: **B1** (Critical) a derived number-line figure shows
+  false arithmetic ("start at 2, move 3 left to land on -1") on a "Simplify
+  5x + 2 − 3x" algebra question — deriveNumberLine's regex grabbed a "2 − 3"
+  substring from inside the algebraic expression with no guard against a digit
+  being part of a variable term (an adjacent "x"), and runs BEFORE deriveAlgebraTiles
+  in the chain so the wrong figure wins by default. **B2** (High) an English
+  alliteration question ("The repeated 's' sound is:") rendered a Science "See the
+  process" animation template (Start/Change/Result, "Find the object, energy,
+  force, or material...") because deriveScience's keyword-sniff regex treats the
+  ordinary word "sound" as physics evidence, and deriveGrammar (which runs first)
+  has no literary-device vocabulary to catch it. Both bugs are the SAME class:
+  regex-based content deriver over raw prompt text with no anchor to the actual
+  ground-truth (variable-adjacency for B1, subject field for B2) — worth grepping
+  every deriver chain for this pattern before trusting it's exhaustive. **B3**
+  (security) verifyParentPin (the PIN gate between child mode and the parent
+  dashboard) has ZERO rate limiting, unlike login/forgot-password which explicitly
+  comment on defending the exact same bcrypt-compare-DoS/brute-force threat model —
+  a real asymmetry in an otherwise carefully hardened codebase. **B4** tap_reveal's
+  "tap to reveal" and "tap to select" are the same gesture (tap(i) sets both
+  flipped and selected together), so a child who follows the interaction's own
+  instruction ("tap each card to read it, THEN choose") has their answer silently
+  overwritten by innocent re-reading. **B5** the See-it animation SHELL (not just
+  the "Your turn" widget F7 already fixed 2026-08-20) stays fully expanded above a
+  correct-answer celebration — visualOpen never learns about isCorrect. Features:
+  F1/F2 curriculum EPIC2 depth (second command-word item each for maths_ratio and
+  sci_body, both re-derived by hand before authoring); F3 wire EddieAvatar's
+  purpose-built but UNUSED "celebrating" mood to the actual Topic-mastered
+  completion screen (it's currently wired only to a tiny 1.3s in-lesson flash);
+  F4 extend rate-limiting to /api/billing/checkout and /api/media/sign (found
+  during the B3 security sweep). Pattern: a security-lane day is a good prompt to
+  grep every OTHER credential-check call site for the rate-limit pattern the lane
+  already established elsewhere in the code — that's exactly how B3 surfaced.
+  Teardown: fetch('/logout',{method:'POST'})→200 between each role switch (parent→
+  tutor→admin) + browser_close. Credential handling: read PIN/tutor/admin creds
+  from .env.local via Bash into context only, typed directly into browser_type
+  params, never written to any file — confirmed clean.
