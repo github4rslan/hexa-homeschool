@@ -1763,3 +1763,67 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   browser drive when Playwright tools aren't available for a run, though it can't
   confirm CLIENT-rendered UI (e.g. the new Eddie mood, the "Tap again to choose"
   copy) actually paints correctly — that gap is worth a follow-up Scout pass.
+- 2026-08-23 — Discovery pass, Sunday latest-stack deep-dive, FULL coverage
+  (parent/child/tutor/admin; desktop 1280 + mobile 390 both confirmed innerWidth,
+  no overflow). Priority task: visually re-verify three 2026-08-22 client-rendered
+  ships that had only gate/static verification that night (no Playwright then) —
+  ALL THREE CONFIRMED CORRECTLY LIVE: Eddie's "celebrating" mood on the
+  Topic-mastered screen (drove it on eng_devices + maths_geometry twice +
+  eng_spelling), tap_reveal's reveal/select split with the "Tap again to choose
+  this" affordance (stepped through Card A reveal → Card B reveal → Card B
+  second-tap-to-select, confirmed no silent overwrite), and the See-it panel's
+  full collapse after a correct mastery answer (opened See-it on maths_geometry,
+  answered correctly, whole panel — not just the inner widget — collapsed).
+  Took eng_devices (tap_reveal focus) and maths_geometry (drag_drop + mcq, twice)
+  and eng_spelling (fill_blank + a deliberately-failed 2/3 mastery to walk the
+  reteach loop) end-to-end as Ivy; also drove sci_states drag_drop via the
+  tap-to-place fallback and a keyboard-only mcq pass (Tab/Arrow/Enter, visible
+  focus ring throughout). BEST findings were live-drive catches, not static ones:
+  **B1** (Critical, NEW) the "Topic mastered!" screen's own CTA row ("Save my
+  certificate"/"See it on my journey"/"Back to subjects") renders with visibly
+  clipped text on BOTH desktop (flex-row squeezed by flex-shrink with no
+  shrink-0) AND mobile (flex-col stacked, but text-2xl + px-10 still wider than
+  the column) — confirmed via DOM measurement (clientWidth < scrollWidth on
+  every button, every viewport). This is the single highest-visibility bug found
+  in many recent runs since it hits the biggest reward screen in the product,
+  every time, both viewports. **B2** a THIRD instance of the "shallow regex over
+  raw prompt text" deriver-bug class (same family as 2026-08-22's B1/B2): an
+  English `letter_tiles` visual fires on the FIRST quoted word of a multi-word
+  onomatopoeia list question ("'Buzz', 'crash' and 'splash' are examples of:"),
+  spelling out "buzz" with no relation to the actual question. **B3** the
+  dashboard's TodayCard conflates "nothing scheduled today" with "no plan
+  exists" — reproduced live on a Sunday against Ivy's fully-approved Mon-Fri
+  week: dashboard said "doesn't have a plan yet — Generate the week" while
+  /schedule showed the SAME week already Approved. **B4** (Low) dashboard topbar
+  date header has no `timeZone` pin, so it renders server-UTC date/weekday
+  instead of Europe/London — caught by comparing it against the SAME-session
+  portfolio generator's explicit "BST" timestamp, which was a full day ahead of
+  the topbar during the ~23:00-00:00 UTC BST-boundary hour. Parent oversight
+  (dashboard→child profile→generate portfolio→verify-portfolio page→schedule)
+  and plan/schedule both exercised end-to-end; tutor + admin (overview, finance,
+  escalations) both READ-ONLY clean, tutor empty queue (silo holds). Static:
+  type-check + lint GREEN; **npm audit 0 vulnerabilities** both --omit=dev and
+  full tree. Stack check (today's deep-dive lane): confirmed via `npm ls`/`npm
+  view` that Next.js (15.5.23→16.3.2), framer-motion (11.18.2→ renamed
+  motion@13.1.1), lucide-react (0.469.0→1.33.0), tailwind-merge (2.6.1→3.6.0)
+  and eslint (9.39.5→10.9.0) have each drifted a further major behind, while
+  React 19 and Tailwind 4 are already current — proposed a staged ladder (F6)
+  in ascending risk order. Curriculum: authored 2 more EPIC-2 depth items
+  (maths_quadratics factorising "Solve", sci_energy kinetic-energy "Calculate"),
+  both hand-re-derived before authoring. KEY PATTERN (repeat this): when a
+  component visually looks fine in an accessibility-tree snapshot (button text
+  IS present in the DOM, just visually truncated), a snapshot alone will not
+  catch the bug — take an actual screenshot AND cross-check
+  `element.clientWidth` vs `element.scrollWidth` in the browser; a positive gap
+  on a `whitespace-nowrap` + `overflow-hidden` element is definitive proof of
+  silent text clipping that no accessibility-tree read would ever surface. Also
+  confirmed a good methodology save: a snapshot that appeared to show BOTH a
+  wrong-answer nudge AND a correct-answer celebration stacked together on the
+  same screen turned out to be a transient mid-render frame (confirmed via a
+  fresh `document.querySelectorAll` check returning empty for the stale text) —
+  always re-snapshot/re-query before filing a "two states shown at once" bug.
+  Teardown: `fetch('/logout',{method:'POST'})`→200 between each role switch
+  (parent→tutor→admin) + browser_close. Credential handling: all creds read from
+  .env.local via Bash into context only, typed directly into browser_type/
+  browser_evaluate params, never written to any file — confirmed clean via
+  git status before finishing.
