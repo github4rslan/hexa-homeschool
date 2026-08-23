@@ -50,6 +50,19 @@ describe("deriveEnglishVisual", () => {
   it("returns null for a spelling prompt with no quoted word", () => {
     expect(deriveEnglishVisual("eng_ks2_reading", "Which word is spelled correctly?")).toBeNull();
   });
+
+  it("does not trigger letter_tiles on a multi-word onomatopoeia list question (B2)", () => {
+    expect(
+      deriveEnglishVisual("eng_devices", "'Buzz', 'crash' and 'splash' are examples of:"),
+    ).toBeNull();
+  });
+
+  it("still fires letter_tiles when exactly one quoted word is present", () => {
+    const spec = deriveEnglishVisual("eng_devices", "'Buzz' is an example of onomatopoeia because:");
+    expect(spec?.kind).toBe("letter_tiles");
+    if (spec?.kind !== "letter_tiles") throw new Error("expected letter_tiles");
+    expect(spec.word).toBe("buzz");
+  });
 });
 
 describe("pluralRuleFor", () => {

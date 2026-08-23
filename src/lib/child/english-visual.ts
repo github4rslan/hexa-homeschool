@@ -86,14 +86,23 @@ export function deriveEnglishVisual(
   // ── plain letter tiles for a single quoted word the question is about ──
   // (e.g. the opposite of 'begin'). Requires the quotes to wrap ONE word with no
   // spaces, so a quoted sentence never triggers a misleading single-word figure.
-  const quoted = prompt.match(new RegExp(`${Q}([a-z][a-z]{2,})${Q}`, "i"));
-  if (quoted) {
-    const word = quoted[1].toLowerCase();
-    return {
-      kind: "letter_tiles",
-      word,
-      alt: `The word “${word}” shown as individual letter tiles.`,
-    };
+  // Also requires the prompt to contain EXACTLY ONE such quoted word: a prompt
+  // with several quoted single words ("'Buzz', 'crash' and 'splash' are
+  // examples of:") is asking about a shared PROPERTY of multiple words, not
+  // featuring one word to spell out, so firing on just the first match would
+  // show a figure with no relationship to the actual question.
+  const quotedWordPattern = new RegExp(`${Q}([a-z][a-z]{2,})${Q}`, "gi");
+  const allQuoted = prompt.match(quotedWordPattern);
+  if (allQuoted && allQuoted.length === 1) {
+    const quoted = new RegExp(`${Q}([a-z][a-z]{2,})${Q}`, "i").exec(prompt);
+    if (quoted) {
+      const word = quoted[1].toLowerCase();
+      return {
+        kind: "letter_tiles",
+        word,
+        alt: `The word “${word}” shown as individual letter tiles.`,
+      };
+    }
   }
 
   return null;

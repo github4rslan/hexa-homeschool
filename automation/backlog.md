@@ -48,6 +48,25 @@ EXAM_STYLE_QUESTIONS on 2026-08-14).
   of the same class in `english-visual.ts`'s `letter_tiles` deriver (filed as B2
   today) — fix proposed is the same "add a guard, don't special-case the one
   string" pattern as the first two.
+- 2026-08-23 (Mechanic, post-B2 targeted check): grepped every deriver file under
+  `src/lib/child/` for the same shape (regex/keyword match over raw prompt text
+  with no anchor to a structured field). `math-visual.ts`'s numeric derivers are
+  lower risk, since they require an actual digit/operator shape rather than a
+  bare keyword, and already got a boundary-guard fix for B1. The next real
+  candidate for this class is `science-visual.ts`: the `food_chain`,
+  `life_cycle`, `states_of_matter` and `material_property` branches keyword
+  sniff the raw prompt (e.g. "predator", "melt", "bendy") gated only on the
+  topic being any `sci_*` topic, unlike the `cell`/`plant_parts` branches a few
+  lines below them, which additionally require `topicTag.includes("cell"` or
+  `"living")`. So a prompt in an unrelated science topic that happens to
+  contain one of those words (a chemistry or space topic mentioning "melt" or
+  "predator" in passing) could still render the wrong diagram. Not reproduced
+  live tonight, since no such authored prompt currently exists in the seed
+  bank, so this is undetermined risk rather than a confirmed bug. Flagging for
+  a dedicated future audit pass: either add the same `topicTag.includes(...)`
+  guard those four branches are missing, or run a live playthrough sweep
+  across every sci_* topic to check whether any current prompt actually
+  collides.
 
 ## EPIC 2 — Exam-style, command-word practice (make questions feel like the paper)
 Status: ACTIVE (headline), zero-coverage closed, now purely a depth/variety lane.
