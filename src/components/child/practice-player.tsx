@@ -1470,13 +1470,14 @@ export function PracticePlayer({
               <Sparkles className="h-4 w-4" /> Progress saved.
             </p>
           )}
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 justify-center">
             {mastered && (
               <>
                 <Button
                   href={`/learn/certificate?topic=${encodeURIComponent(curriculumTopic)}`}
                   variant="child"
                   size="child"
+                  className="shrink-0"
                 >
                   Save my certificate
                 </Button>
@@ -1484,6 +1485,7 @@ export function PracticePlayer({
                   href={`/learn/map?highlight=${encodeURIComponent(curriculumTopic)}`}
                   variant="secondary"
                   size="child"
+                  className="shrink-0"
                 >
                   See it on my journey
                 </Button>
@@ -1493,6 +1495,7 @@ export function PracticePlayer({
               href="/learn"
               variant={mastered ? "secondary" : "child"}
               size="child"
+              className="shrink-0"
             >
               Back to subjects
             </Button>

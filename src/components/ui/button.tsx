@@ -78,8 +78,13 @@ const buttonVariants = cva(
         lg: "h-14 px-8 text-base rounded-2xl",
         xl: "h-16 px-10 text-lg rounded-2xl",
         icon: "h-11 w-11 rounded-xl",
-        // Child mode: 80px tall, large text, big rounded corners.
-        child: "h-20 px-10 text-2xl rounded-3xl",
+        // Child mode: 80px tall (grows if the label wraps), large text, big
+        // rounded corners. `whitespace-normal` + `h-auto`/`min-h-20` override
+        // the base `whitespace-nowrap` so a long label wraps onto a second
+        // line instead of being silently clipped by `overflow-hidden` (the
+        // base classes come first in the cva string, so these later,
+        // same-property declarations win via the outer `cn()`'s `twMerge`).
+        child: "min-h-20 h-auto py-4 px-10 text-2xl rounded-3xl whitespace-normal",
       },
     },
     defaultVariants: {
