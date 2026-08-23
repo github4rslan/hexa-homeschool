@@ -9,6 +9,7 @@ export function DashboardTopbar({ greeting }: { greeting?: string }) {
             weekday: "long",
             day: "numeric",
             month: "long",
+            timeZone: "Europe/London",
           })}
         </span>
         {greeting && (
