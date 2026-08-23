@@ -114,6 +114,20 @@ export function TodayCard({ card, index }: { card: TodayCardData; index: number 
             </li>
           ))}
         </ul>
+      ) : card.hasApprovedWeek ? (
+        <div className="rounded-xl border border-white/8 bg-white/[0.02] px-4 py-4">
+          <p className="text-sm text-fog-200">
+            Nothing scheduled for {card.childName.split(" ")[0]} today, this
+            week&apos;s plan is already set.
+          </p>
+          <Link
+            href={`/schedule?child=${encodeURIComponent(card.childId)}`}
+            className="group mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-fog-300 transition-colors hover:text-fog-100"
+          >
+            View the week
+            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
       ) : (
         <div className="rounded-xl border border-violet-400/20 bg-violet-500/[0.06] px-4 py-4">
           <p className="text-sm text-fog-200">

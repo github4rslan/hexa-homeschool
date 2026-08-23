@@ -1738,6 +1738,13 @@ export interface TodayCard {
    * separately so the parent sees "paused — a tutor is coming", not a failure.
    */
   pausedTopics: { topicTag: string; topicTitle: string }[];
+  /**
+   * Whether an approved weekly plan exists for the current week, independent of
+   * whether it happens to have anything scheduled for TODAY specifically (e.g. a
+   * Mon-Fri plan on a weekend). Lets the "no quests today" render branch tell
+   * "nothing scheduled today" apart from "no plan was ever generated" (B3).
+   */
+  hasApprovedWeek: boolean;
 }
 
 /**
@@ -1805,6 +1812,7 @@ export async function todayCard(
   }
 
   const allDone = quests.length > 0 && quests.every((q) => q.done);
+  const hasApprovedWeek = schedule?.approved_by_parent === true;
 
   return {
     childId: childId.toHexString(),
@@ -1815,6 +1823,7 @@ export async function todayCard(
     reviewsDue,
     openEscalations: escalations.length,
     certifiedToday,
+    hasApprovedWeek,
     allDone,
     pausedTopics,
   };
