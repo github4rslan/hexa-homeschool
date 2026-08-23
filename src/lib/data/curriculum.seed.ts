@@ -1155,6 +1155,30 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "The +2x means the two numbers add to +2, so one must be positive: +5 and −3.",
     ],
   },
+  // ── F1 (2026-08-23): second maths_quadratics command-word item ──
+  // Edexcel 1MA1 A17, solving a quadratic equation by factorisation.
+  {
+    topic_tag: "maths_quadratics",
+    subject: "mathematics",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Solve x² − 5x + 6 = 0 by factorising.",
+    options: ["x = 2 or x = 3", "x = −2 or x = −3", "x = 2 or x = −3", "x = 5 or x = 6"],
+    correct_index: 0,
+    explanation:
+      "Factorise as (x − 2)(x − 3) = 0, so x = 2 or x = 3.",
+    hints: [
+      "Find two numbers that multiply to 6 and add to −5.",
+      "Those numbers are −2 and −3, so the factors are (x − 2) and (x − 3).",
+    ],
+    misconceptions: [
+      "",
+      "This flips both signs — expanding (x + 2)(x + 3) gives x² + 5x + 6, not x² − 5x + 6. The correct factors are (x − 2)(x − 3).",
+      "This mixes a positive and negative root — expanding (x − 2)(x + 3) gives x² + x − 6, which doesn't match. Both factors need the same sign pattern here.",
+      "This uses the coefficients (5 and 6) directly as the roots instead of factorising first — factorise to (x − 2)(x − 3), then read the roots off the factors.",
+    ],
+  },
   // ── F1 (2026-08-19): sci_genetics Punnett-square probability item ──
   // AQA 8464 Biology 4.6.1.2/4.6.2, closing a zero-coverage topic.
   {

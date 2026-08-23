@@ -646,6 +646,29 @@ describe("F2 (2026-08-22) — second sci_body command-word item (heart-rate calc
   });
 });
 
+describe("F1 (2026-08-23) — second maths_quadratics command-word item (factorising)", () => {
+  const prompt = "Solve x² − 5x + 6 = 0 by factorising.";
+
+  it("adds exactly one well-formed item keyed to x = 2 or x = 3", () => {
+    expectWellFormedItem("maths_quadratics", "mathematics", prompt, "x = 2 or x = 3");
+  });
+
+  it("computes: (x − 2)(x − 3) factorisation gives roots that satisfy the equation", () => {
+    // Factor pair multiplies to +6 and adds to −5.
+    expect(-2 * -3).toBe(6);
+    expect(-2 + -3).toBe(-5);
+    // Each keyed root satisfies x² − 5x + 6 = 0.
+    const f = (x: number) => x ** 2 - 5 * x + 6;
+    expect(f(2)).toBe(0);
+    expect(f(3)).toBe(0);
+    // Every distractor's roots do NOT satisfy the equation (none is secretly correct).
+    expect(f(-2)).not.toBe(0);
+    expect(f(-3)).not.toBe(0);
+    expect(f(5)).not.toBe(0);
+    expect(f(6)).not.toBe(0);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
