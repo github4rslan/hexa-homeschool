@@ -1366,14 +1366,22 @@ export function PracticePlayer({
     return (
       <div className="mx-auto max-w-2xl">
         <div className="child-panel p-8 sm:p-12 text-center animate-child-pop">
-          <div
-            className={cn(
-              "mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border-2",
-              accent.bg,
-              accent.border,
-            )}
-          >
-            <Lightbulb className={cn("h-11 w-11", accent.text)} aria-hidden />
+          <div className="mb-6 flex items-center justify-center gap-3">
+            <div
+              className={cn(
+                "flex h-24 w-24 items-center justify-center rounded-full border-2",
+                accent.bg,
+                accent.border,
+              )}
+            >
+              <Lightbulb className={cn("h-11 w-11", accent.text)} aria-hidden />
+            </div>
+            {/* F4 — the reteach screen previously had no Eddie at all, the
+                one lesson-ending state with the least warmth even though it's
+                the moment a near-miss child most needs a calm, encouraging
+                face. Matches the "encouraging" mood already used on the
+                non-mastered complete branch. */}
+            <EddieAvatar mood="encouraging" accent={accent} reduced={reduced} />
           </div>
           <h1 className="mb-4 text-4xl font-semibold text-fog-50">
             Let&apos;s look at this another way
