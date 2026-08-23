@@ -1441,12 +1441,20 @@ export function PracticePlayer({
                 tilt flourish) finally lands on the moment it was built for: the
                 topic-mastery completion screen, not just the small in-lesson
                 recall flash. A warm "encouraging" beat closes the non-mastered
-                path too, so the screen never ends on a bare trophy alone. */}
-            <EddieAvatar
-              mood={mastered ? "celebrating" : "encouraging"}
-              accent={accent}
-              reduced={reduced}
-            />
+                path too, so the screen never ends on a bare trophy alone.
+                F5 — at default size Eddie read as a small afterthought next to
+                the much larger trophy circle on this exact screen, so scale
+                Eddie up as a co-star of the celebration here only; a plain CSS
+                scale on a wrapper (not the motion.div itself) so it composes
+                cleanly with Eddie's own bounce animation instead of fighting
+                framer-motion's inline transform. */}
+            {mastered ? (
+              <div className="scale-125 origin-center">
+                <EddieAvatar mood="celebrating" accent={accent} reduced={reduced} />
+              </div>
+            ) : (
+              <EddieAvatar mood="encouraging" accent={accent} reduced={reduced} />
+            )}
           </div>
           <h1 className="text-4xl font-semibold text-fog-50 mb-3">
             {mastered ? "Topic mastered!" : "Great effort!"}
