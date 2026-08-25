@@ -1827,3 +1827,62 @@ mistakes not to repeat. Keep entries short and dated. Newest at the bottom.
   .env.local via Bash into context only, typed directly into browser_type/
   browser_evaluate params, never written to any file — confirmed clean via
   git status before finishing.
+
+## 2026-08-24 — Mechanic (build pass for 2026-08-23 findings)
+
+Shipped all 4 bugs (B1-B4), F1, F4, F5, and F6 steps 1-2 of 5. Blocked/deferred
+with reasons written directly into `automation/findings/2026-08-23.md`: F2
+(near-duplicate of an already-shipped 2026-08-18 kinetic-energy item, same
+mass/speed/answer — not a genuinely second item), F3 (no verbatim question
+content supplied, curriculum-authoring rule forbids inventing it), F6 steps
+3-5 (eslint 10 is blocked on `eslint-config-next` — its own peerDependencies
+cap at `^9.0.0` until the Next 16 major lands, so eslint is really coupled to
+the Next.js upgrade, not independent; framer-motion→motion rename and Next
+15→16 itself both deliberately deferred to a dedicated future run per the
+finding's own risk note, needs live Playwright regression afterward).
+
+**Session-continuity note:** this run was originally started by an autonomous
+Mechanic agent that hit an API session-limit mid-task (right after committing
+B1-B4/F1 and marking F2/F3 blocked, right before running `npm run seed` for
+F1). The owner's primary session picked up the task directly afterward rather
+than via a fresh Mechanic agent invocation — confirmed the tree was still
+green (type-check + 817 tests) before continuing, then ran the pending seed,
+and carried on through F4/F5/F6 by hand-driving the exact same gate (type-
+check + test + lint + build, one commit per item, live health-check via
+`curl` since Vercel MCP had also lost its OAuth token mid-session — see next
+note). Lesson: a died-mid-task agent's already-committed work is generally
+safe to trust and build on top of directly, rather than re-doing it — just
+re-verify the gate is still green first before assuming where it left off.
+
+**Vercel MCP OAuth token expired mid-session** (`MCP server "vercel" requires
+re-authorization (token expired)`) and could not be silently refreshed since
+this is a non-interactive session — no `/mcp` flow available to re-auth.
+Fell back to `curl -sL https://edway.uk/api/health` for live verification
+instead (redirects to `www.edway.uk`, returns `{"ok":true,"db":"up",...}`)
+across every commit this run. This is a real gap worth the owner's attention:
+Vercel MCP tokens apparently don't survive indefinitely and there's no
+automatic recovery path from inside an agent run — the owner needs to
+re-authorize it themselves via claude.ai connector settings or `/mcp` in an
+interactive session when convenient. Not urgent (curl is a perfectly good
+fallback for the simple health check), but Vercel's richer checks
+(`get_runtime_errors`, `get_deployment` build logs) were unavailable this run.
+
+**F5 sizing choice:** used a conservative `scale-125` (not the finding's
+suggested `scale-150`) for Eddie on the Topic-mastered screen, since no live
+Playwright was available this run to tune it visually — applied the scale to
+a wrapper `div` around `EddieAvatar`, never to the component's own
+`motion.div`, so it composes with Eddie's existing bounce animation instead
+of two competing inline `transform` styles fighting each other (framer-motion
+sets `transform` via inline style during animation, which would silently
+override a Tailwind scale utility class placed on the same element). This
+composition pattern (CSS transform on a wrapper, motion's own transform stays
+on the inner animated element) is the right way to combine a static resize
+with an existing framer-motion animation anywhere else in this codebase too.
+
+**Lint check before F6 step 3:** don't assume a "same-family, low digit"
+dependency bump (eslint 9→10) is safe just because its own install succeeds —
+check the *consuming* package's peerDependencies too (here,
+`eslint-config-next`, which pins the framework-adjacent config, not eslint
+itself). `npm view <package>@<version> peerDependencies` is a fast way to
+confirm compatibility before spending a full gate cycle on a bump that would
+just fail lint or produce a silently-broken flat config.
