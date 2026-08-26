@@ -1494,6 +1494,31 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "This gives the total (180°) rather than the missing angle itself.",
     ],
   },
+  // ── F2 (2026-08-26): second maths_fractions command-word item ("Calculate") ──
+  // Edexcel 1MA1 N12/R9 — VAT, the most common forward-percentage-increase
+  // context, distinct from the existing reverse-percentage item above.
+  {
+    topic_tag: "maths_fractions",
+    subject: "mathematics",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "A jacket costs £84 before VAT at 20% is added. Calculate the price including VAT.",
+    options: ["£100.80", "£16.80", "£68.80", "£105.00"],
+    correct_index: 0,
+    explanation:
+      "20% of £84 is £16.80. Add this to the original price: £84 + £16.80 = £100.80.",
+    hints: [
+      "Find 20% of £84 first.",
+      "VAT is ADDED to the price. The answer is the original price plus the VAT, not the VAT alone.",
+    ],
+    misconceptions: [
+      "",
+      "That's just the VAT amount. The question asks for the TOTAL price including VAT, so add it to £84.",
+      "This subtracts the VAT instead of adding it. VAT is added on top of the price.",
+      "This uses 25% instead of 20%. Check 20% of £84 (£16.80), not a quarter.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */

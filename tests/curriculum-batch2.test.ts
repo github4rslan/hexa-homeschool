@@ -713,6 +713,30 @@ describe("F1 (2026-08-26) — 3 maths_geometry mastery items (angle facts)", () 
   });
 });
 
+describe("F2 (2026-08-26) — second maths_fractions command-word item (VAT)", () => {
+  const prompt =
+    "A jacket costs £84 before VAT at 20% is added. Calculate the price including VAT.";
+
+  it("adds exactly one well-formed item keyed to £100.80", () => {
+    expectWellFormedItem("maths_fractions", "mathematics", prompt, "£100.80");
+  });
+
+  it("computes: 20% of £84 is £16.80; £84 + £16.80 = £100.80", () => {
+    expect(84 * 0.2).toBeCloseTo(16.8, 5);
+    expect(84 + 84 * 0.2).toBeCloseTo(100.8, 5);
+  });
+
+  it("is a distinct forward-percentage item, not a duplicate of the existing reverse-percentage question", () => {
+    const fractionsPrompts = ALL.filter(
+      (q) => q.topic_tag === "maths_fractions" && q.kind === "mastery",
+    ).map((q) => q.prompt);
+    expect(fractionsPrompts).toContain(
+      "In a sale, a coat is reduced by 20% to £60. Work out the original price before the sale.",
+    );
+    expect(new Set(fractionsPrompts).size).toBe(fractionsPrompts.length);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);
