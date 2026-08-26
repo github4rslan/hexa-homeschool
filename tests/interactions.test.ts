@@ -8,6 +8,7 @@ import {
   checkTapReveal,
   clampResumeScore,
   distractorExplanation,
+  mockDisplayPrompt,
   normalizeInteraction,
   pickMisconception,
   resolveResumeStep,
@@ -330,6 +331,53 @@ describe("resume math", () => {
     expect(clampResumeScore({ step: 3, score: 99, total: 7 }, 3)).toBe(3);
     expect(clampResumeScore({ step: 3, score: -2, total: 7 }, 3)).toBe(0);
     expect(clampResumeScore({ step: 3, score: 2, total: 7 }, 3)).toBe(2);
+  });
+});
+
+describe("mockDisplayPrompt (B1 — fill_blank must show its real question in the mock)", () => {
+  it("synthesises a self-contained prompt from interaction.parts for fill_blank", () => {
+    const q = {
+      prompt: "Solve the equation by filling in the answer.",
+      interaction: {
+        type: "fill_blank",
+        parts: ["2x + 3 = 11,  so  x = ", ""],
+        blanks: [{ answers: ["4"], numeric: true, placeholder: "?" }],
+      },
+    };
+    const result = mockDisplayPrompt(q);
+    expect(result).toContain("2x + 3 = 11");
+    expect(result).toBe("2x + 3 = 11, so x = ___");
+  });
+
+  it("falls back to the raw prompt for mcq / absent interaction", () => {
+    expect(mockDisplayPrompt({ prompt: "What is 2 + 2?" })).toBe(
+      "What is 2 + 2?",
+    );
+    expect(
+      mockDisplayPrompt({ prompt: "What is 2 + 2?", interaction: { type: "mcq" } }),
+    ).toBe("What is 2 + 2?");
+  });
+
+  it("leaves a self-contained drag_drop/tap_reveal prompt untouched", () => {
+    expect(
+      mockDisplayPrompt({
+        prompt: "Match each shape to its number of sides.",
+        interaction: {
+          type: "drag_drop",
+          chips: ["3", "4", "5"],
+          slots: [{ label: "Triangle", correctChip: 0 }],
+        },
+      }),
+    ).toBe("Match each shape to its number of sides.");
+  });
+
+  it("falls back to the raw prompt when interaction is malformed", () => {
+    expect(
+      mockDisplayPrompt({
+        prompt: "Solve the equation by filling in the answer.",
+        interaction: { type: "fill_blank", parts: ["only one part"] },
+      }),
+    ).toBe("Solve the equation by filling in the answer.");
   });
 });
 

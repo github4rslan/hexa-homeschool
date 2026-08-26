@@ -22,6 +22,7 @@ import {
 } from "@/lib/engine/spaced-repetition";
 import { shouldQueueHandoff } from "@/lib/engine/remediation";
 import { selectMockPaper, marksForTier } from "@/lib/engine/mock-paper";
+import { mockDisplayPrompt } from "@/lib/child/interactions";
 import type {
   ParentDoc,
   ChildDoc,
@@ -1894,7 +1895,7 @@ export async function buildMockPaper(
       topicTag: q.topic_tag,
       tier: q.tier,
       marks: marksForTier(q.tier),
-      prompt: q.prompt,
+      prompt: mockDisplayPrompt(q),
       options: q.options,
       correctIndex: q.correct_index,
       explanation: q.explanation,

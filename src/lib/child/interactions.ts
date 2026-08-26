@@ -462,6 +462,34 @@ export function distractorExplanation({
   return `Let's look at this another way. ${workedExplanation}`;
 }
 
+// ── Mock-exam display prompt (B1) ────────────────────────────
+
+/**
+ * A `fill_blank` question's authored `prompt` is, by convention, a generic
+ * wrapper ("Solve the equation by filling in the answer.") — the real
+ * question text lives only in `interaction.parts`, since the child-facing
+ * lesson UI renders the interaction, never the raw prompt. The mock-exam
+ * paper has no interactive renderer (it's a plain MCQ paper), so it must
+ * synthesise a self-contained display prompt for `fill_blank` items by
+ * joining `parts` with the blank shown as a literal placeholder. Every other
+ * interaction type already carries a self-contained top-level `prompt`, so
+ * this only changes behaviour for `fill_blank`. Pure + deterministic.
+ */
+export function mockDisplayPrompt(q: {
+  prompt: string;
+  interaction?: unknown;
+}): string {
+  const interaction = normalizeInteraction(q.interaction);
+  if (interaction.type === "fill_blank") {
+    const joined = interaction.parts
+      .join("___")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (joined) return joined;
+  }
+  return q.prompt;
+}
+
 // ── Resume math (Feature 3) ──────────────────────────────────
 
 export interface SavedProgress {
