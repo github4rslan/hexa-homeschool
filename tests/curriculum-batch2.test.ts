@@ -669,6 +669,50 @@ describe("F1 (2026-08-23) — second maths_quadratics command-word item (factori
   });
 });
 
+describe("F1 (2026-08-26) — 3 maths_geometry mastery items (angle facts)", () => {
+  const items = [
+    {
+      prompt: "Calculate the exterior angle of a regular pentagon.",
+      answer: "72°",
+    },
+    {
+      prompt:
+        "Two angles lie on a straight line. One is 118°. Calculate the other angle.",
+      answer: "62°",
+    },
+    {
+      prompt:
+        "In a parallelogram, one angle is 65°. Calculate the angle next to it (the adjacent angle).",
+      answer: "115°",
+    },
+  ];
+
+  it("adds exactly one well-formed item per question, keyed to the intended answer", () => {
+    for (const { prompt, answer } of items) {
+      expectWellFormedItem("maths_geometry", "mathematics", prompt, answer);
+    }
+  });
+
+  it("computes to the keyed answer for each item", () => {
+    // Exterior angles of any polygon sum to 360°; pentagon has 5 sides.
+    expect(360 / 5).toBe(72);
+    // Angles on a straight line sum to 180°.
+    expect(180 - 118).toBe(62);
+    // Adjacent (co-interior) parallelogram angles sum to 180°.
+    expect(180 - 65).toBe(115);
+  });
+
+  it("does not collide with the existing hexagon mastery item (real variety, not a duplicate)", () => {
+    const geometryPrompts = ALL.filter(
+      (q) => q.topic_tag === "maths_geometry" && q.kind === "mastery",
+    ).map((q) => q.prompt);
+    expect(geometryPrompts).toContain(
+      "Calculate the size of each interior angle of a regular hexagon.",
+    );
+    expect(new Set(geometryPrompts).size).toBe(geometryPrompts.length);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);

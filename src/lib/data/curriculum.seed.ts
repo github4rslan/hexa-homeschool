@@ -1426,6 +1426,74 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "That rounds 72 down to 70 first. Use the exact rate: 72 × 10.",
     ],
   },
+  // ── F1 (2026-08-26): 3 maths_geometry mastery items closing a
+  // near-duplicate-hexagon gap in the mastery pool (Edexcel 1MA1 G3/G4). ──
+  {
+    topic_tag: "maths_geometry",
+    subject: "mathematics",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Calculate the exterior angle of a regular pentagon.",
+    options: ["72°", "108°", "60°", "90°"],
+    correct_index: 0,
+    explanation:
+      "Exterior angles of any polygon add up to 360°. For a regular pentagon (5 equal sides), 360° ÷ 5 = 72°.",
+    hints: [
+      "All the exterior angles of a polygon add up to 360°.",
+      "Divide 360° by the number of sides.",
+    ],
+    misconceptions: [
+      "",
+      "108° is the INTERIOR angle of a regular pentagon, not the exterior angle. Exterior + interior = 180°.",
+      "This divides 360° by 6, not 5. A pentagon has 5 sides.",
+      "This isn't how exterior angles work. Divide 360° by the number of sides (5), not use a right angle.",
+    ],
+  },
+  {
+    topic_tag: "maths_geometry",
+    subject: "mathematics",
+    tier: 2,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Two angles lie on a straight line. One is 118°. Calculate the other angle.",
+    options: ["62°", "118°", "72°", "298°"],
+    correct_index: 0,
+    explanation:
+      "Angles on a straight line add up to 180°, so the other angle is 180° − 118° = 62°.",
+    hints: [
+      "Angles on a straight line always sum to 180°.",
+      "Subtract 118° from 180°.",
+    ],
+    misconceptions: [
+      "",
+      "This repeats the given angle instead of finding the OTHER one on the line.",
+      "Close, but check the subtraction: 180° − 118° = 62°, not 72°.",
+      "This adds 118° to 180° instead of subtracting it.",
+    ],
+  },
+  {
+    topic_tag: "maths_geometry",
+    subject: "mathematics",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "In a parallelogram, one angle is 65°. Calculate the angle next to it (the adjacent angle).",
+    options: ["115°", "65°", "125°", "180°"],
+    correct_index: 0,
+    explanation:
+      "Adjacent angles in a parallelogram lie between the parallel sides (co-interior angles), so they add up to 180°. 180° − 65° = 115°.",
+    hints: [
+      "Adjacent angles in a parallelogram sum to 180° (they sit between the parallel sides).",
+      "Subtract 65° from 180°.",
+    ],
+    misconceptions: [
+      "",
+      "This repeats the given angle. OPPOSITE angles in a parallelogram are equal, but the ADJACENT one is different. It sums to 180° with the given angle.",
+      "Check the subtraction: 180° − 65° = 115°, not 125°.",
+      "This gives the total (180°) rather than the missing angle itself.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
