@@ -737,6 +737,28 @@ describe("F2 (2026-08-26) — second maths_fractions command-word item (VAT)", (
   });
 });
 
+describe("F3 (2026-08-26) — second maths_number command-word item (small-decimal standard form)", () => {
+  const prompt = "Write 0.00034 in standard form.";
+
+  it("adds exactly one well-formed item keyed to 3.4 × 10⁻⁴", () => {
+    expectWellFormedItem("maths_number", "mathematics", prompt, "3.4 × 10⁻⁴");
+  });
+
+  it("computes: 0.00034 = 3.4 × 10⁻⁴ (decimal point moves 4 places)", () => {
+    expect(0.00034).toBeCloseTo(3.4 * 10 ** -4, 10);
+  });
+
+  it("is a distinct negative-power item, not a duplicate of the existing multiplication question", () => {
+    const numberPrompts = ALL.filter(
+      (q) => q.topic_tag === "maths_number" && q.kind === "mastery",
+    ).map((q) => q.prompt);
+    expect(numberPrompts).toContain(
+      "Work out (3 × 10⁴) × (2 × 10³). Give your answer in standard form.",
+    );
+    expect(new Set(numberPrompts).size).toBe(numberPrompts.length);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
     expect(gcseTopicCount("mathematics")).toBe(12);

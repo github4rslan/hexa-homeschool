@@ -1519,6 +1519,31 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "This uses 25% instead of 20%. Check 20% of £84 (£16.80), not a quarter.",
     ],
   },
+  // ── F3 (2026-08-26): second maths_number command-word item ("Write") ──
+  // Edexcel 1MA1 N9 — standard form for a small decimal (negative power of 10),
+  // distinct from the existing standard-form-multiplication item above.
+  {
+    topic_tag: "maths_number",
+    subject: "mathematics",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Write 0.00034 in standard form.",
+    options: ["3.4 × 10⁻⁴", "3.4 × 10⁴", "34 × 10⁻⁵", "3.4 × 10⁻³"],
+    correct_index: 0,
+    explanation:
+      "Move the decimal point 4 places to get 3.4, and since the original number is smaller than 1, the power of 10 is negative: 3.4 × 10⁻⁴.",
+    hints: [
+      "Standard form is A × 10ⁿ, where A is between 1 and 10.",
+      "Numbers smaller than 1 always use a NEGATIVE power of 10.",
+    ],
+    misconceptions: [
+      "",
+      "This flips the sign of the power. Small numbers less than 1 need a NEGATIVE power of 10, not positive.",
+      "This isn't standard form: the front number must be between 1 and 10, not 34.",
+      "Close, but the decimal point needs to move 4 places, not 3, to get from 0.00034 to 3.4.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
