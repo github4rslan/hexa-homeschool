@@ -2,7 +2,12 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  useAnimationControls,
+  useReducedMotion,
+} from "framer-motion";
 import { Timer, ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
 import { MockGradeReveal } from "@/components/child/mock-result-view";
 import { submitMock, type MockSubmitResult } from "@/app/(child)/learn/mock/actions";
@@ -184,18 +189,14 @@ export function MockExamPlayer({
             {q.options.map((opt, i) => {
               const chosen = answers[index] === i;
               return (
-                <button
+                <MockOption
                   key={i}
-                  onClick={() => pick(i)}
-                  className={[
-                    "child-touch rounded-2xl border p-5 text-left text-lg transition-colors",
-                    chosen
-                      ? "border-violet-400/60 bg-violet-500/15 text-violet-100"
-                      : "border-white/10 bg-white/[0.03] text-fog-100 hover:border-white/25 hover:bg-white/[0.06]",
-                  ].join(" ")}
+                  chosen={chosen}
+                  reduce={!!reduce}
+                  onPick={() => pick(i)}
                 >
                   {opt}
-                </button>
+                </MockOption>
               );
             })}
           </div>
@@ -232,6 +233,62 @@ export function MockExamPlayer({
         You can go back and change answers any time before you finish.
       </p>
     </div>
+  );
+}
+
+/**
+ * F4 — a correctness-blind "pick" acknowledgment for the mock's answer
+ * options. Unlike the practice/mastery mcq (which settles green on a CORRECT
+ * pick), a mock never reveals right/wrong per-question — this is purely a
+ * "your tap registered" flourish, identical whichever option is chosen.
+ * State updates instantly (onPick fires synchronously first); the settle is
+ * fire-and-forget so it never gates the click. Reduced motion fully
+ * neutralises to the existing instant colour swap.
+ */
+function MockOption({
+  chosen,
+  reduce,
+  onPick,
+  children,
+}: {
+  chosen: boolean;
+  reduce: boolean;
+  onPick: () => void;
+  children: React.ReactNode;
+}) {
+  const controls = useAnimationControls();
+
+  function handleClick() {
+    onPick();
+    if (reduce) return;
+    // A fresh .start() call cancels any in-flight pulse and restarts, so
+    // rapid re-picking (changing an answer) never stacks or desyncs.
+    void controls.start({
+      scale: [1, 1.03, 1],
+      boxShadow: [
+        "0 0 0 0 rgba(139,92,246,0)",
+        "0 0 22px 3px rgba(139,92,246,0.35)",
+        "0 0 0 0 rgba(139,92,246,0)",
+      ],
+      transition: { duration: 0.22, ease: "easeOut" },
+    });
+  }
+
+  return (
+    <motion.button
+      type="button"
+      onClick={handleClick}
+      animate={controls}
+      whileTap={reduce ? undefined : { scale: 0.97 }}
+      className={[
+        "child-touch rounded-2xl border p-5 text-left text-lg transition-colors",
+        chosen
+          ? "border-violet-400/60 bg-violet-500/15 text-violet-100"
+          : "border-white/10 bg-white/[0.03] text-fog-100 hover:border-white/25 hover:bg-white/[0.06]",
+      ].join(" ")}
+    >
+      {children}
+    </motion.button>
   );
 }
 
