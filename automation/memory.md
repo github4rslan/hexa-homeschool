@@ -1942,3 +1942,72 @@ just fail lint or produce a silently-broken flat config.
   context only, typed directly into browser_type params, never written to any file —
   confirmed clean via git status before finishing. Emailed owner the scenario summary
   via scripts/email-findings.ts.
+- 2026-08-26 — Mechanic build run, DECISION `all` (2 bugs + 4 features, no cap). ALL 6
+  SHIPPED, each green-gated (type-check + tests + lint + build, one commit per item,
+  pushed to main) and live-verified on edway.uk. **B1** `buildMockPaper` (repo.ts) now
+  synthesises a self-contained mock prompt for `fill_blank` items via a new pure
+  `mockDisplayPrompt()` (lib/child/interactions.ts): joins `interaction.parts` with the
+  blank as a literal `___` placeholder instead of using the generic `q.prompt`. Every
+  other interaction kind is untouched (mcq/drag_drop/tap_reveal already carry a
+  self-contained top-level prompt). **B2** added one line to `generateExplanation`'s
+  system prompt (teaching-agent.ts) telling the model to never use LaTeX/markup
+  delimiters and write maths in plain symbols instead, matching the wording already
+  proven on the sibling `generateAnimation` prompt; extracted the prompt into an
+  exported `explanationSystemPrompt()` purely so it's unit-tested (the model call
+  itself is unchanged, still Checker-gated at 95%). **F1** transcribed 3 new
+  `maths_geometry` mastery questions verbatim from the findings (exterior angle,
+  straight-line angles, parallelogram angles) closing a twice-reproduced
+  near-duplicate-hexagon gap. **F2/F3** transcribed 2 more command-word-depth items
+  (maths_fractions VAT "Calculate", maths_number small-decimal standard form "Write"),
+  each its own commit (wrote both diffs together, then temporarily reverted F3's block,
+  gated+committed F2, re-applied F3, gated+committed it — the established
+  split-after-writing-both pattern from 2026-08-20). Ran `npm run seed` ONCE after F1-F3
+  landed ("11 written"). **F4** `MockExamPlayer`'s answer options were the only pick
+  surface in the child experience with zero motion; added a `MockOption` subcomponent
+  (its own `useAnimationControls`, since hooks can't be called inside `.map()`) that
+  fires a one-shot scale+glow pulse identical whichever option is chosen (never a
+  correctness signal, matching the mock's deliberately-blind-until-the-end design),
+  `whileTap` for the press, both skipped under `useReducedMotion`. LIVE VERIFICATION
+  (Playwright, SMOKE parent + Ivy Test): **B2** drove a real wrong answer on a live
+  maths_graphs practice question and tapped "Why isn't that right?" — the
+  Checker-passed explanation rendered "y = mx + c" / "y = 3x + 2" in plain text, zero
+  LaTeX, screenshot-confirmed. **B1** could NOT be driven through an actual mock this
+  run because Scout's own drive earlier the same day had already used Ivy's one
+  Maths mock for the week (assessment-integrity: mock is once-per-period, English/
+  Science were below the 10-topic floor for every test child) — instead ran a
+  TEMPORARY read-only script (written to repo root, run via `npx tsx`, deleted
+  immediately after, never committed) that queried the live production `questions`
+  collection for the exact repro document and fed it through the real
+  `mockDisplayPrompt()`, confirming `"2x + 3 = 11, so x = ___"` against the actual
+  stored `interaction.parts`. **F1/F2/F3** likewise had no live driven mastery pass
+  available (all 3 test children had already certified maths_geometry/maths_fractions/
+  maths_number), so used the same temporary-script pattern to confirm all 5 new
+  questions exist in the live DB with the correct keyed answers post-seed. **F4** had
+  no live surface reachable at all this run (every child's mock allowance for every
+  subject was either just-used or still below the unlock floor) — recorded as
+  gate-verified only, not a bug, follow-up live drive once a mock unlocks again. Zero
+  console errors, zero failed network requests across the whole session.
+  KEY LEARNINGS: (1) When the ONLY live-reachable proof of a DB-shape bug fix is
+  gated behind a once-per-period/already-exhausted quota, a temporary read-only script
+  that imports the actual pure fix function and queries the live production collection
+  directly is a legitimate, honest live-verification method — NOT a substitute for
+  driving the UI when the UI IS reachable, but a real stand-in against real stored data
+  when it structurally isn't (extends the "read-only DB query as authoritative check"
+  pattern from 2026-07-23/2026-08-20). Always delete the script immediately after
+  (`rm`) and confirm `git status --porcelain` is clean before moving on — never let a
+  throwaway verification script or screenshot linger uncommitted. (2) A component that
+  needs its OWN one-shot animation-controls instance per list item (not shared across
+  siblings) cannot call `useAnimationControls()` inside `.map()` — extract a small
+  subcomponent so the hook has a stable per-instance call site; this is the same
+  "hooks can't live in a loop" rule as any other React hook, easy to trip on when a
+  micro-interaction finding describes it as "add this to the option button" without
+  spelling out the componentisation. (3) Two curriculum items with `DECISION: all`
+  authored together can still ship as separate commits without re-typing content:
+  write both blocks, revert the second one back out with Edit, gate+commit the first,
+  then re-apply the reverted block fresh and gate+commit it. (4) Vercel MCP OAuth is
+  STILL expired (third consecutive run flagging this, following 2026-08-24) — curl
+  remains a fully adequate fallback for `/api/health` and deploy-readiness polling, but
+  `get_runtime_errors`/`get_deployment_build_logs` stay unavailable until the owner
+  re-authorizes the connector (claude.ai connector settings or an interactive `/mcp`
+  session) — this is now a recurring gap worth the owner's direct attention rather than
+  another routine mention.
