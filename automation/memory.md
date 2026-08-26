@@ -1886,3 +1886,59 @@ check the *consuming* package's peerDependencies too (here,
 itself). `npm view <package>@<version> peerDependencies` is a fast way to
 confirm compatibility before spending a full gate cycle on a bump that would
 just fail lint or produce a silently-broken flat config.
+- 2026-08-26 — Discovery pass, Wednesday delight/animation deep-dive, FULL coverage
+  (parent/child/tutor/admin; desktop 1280 + mobile 390 both confirmed innerWidth, no
+  overflow). Approved a fresh (previously-draft) week for Ivy live (parent oversight +
+  plan/schedule journeys both PASS end-to-end, re-confirming EPIC 11's B3 fix holds
+  under a real approve-then-reload, not just the weekend-empty case it was found in).
+  Took **Linear Algebra** (maths_algebra_linear, via the hub's own "Pick up where you
+  left off" resume card) end-to-end: warm resume landed on step 3/5 with score intact
+  ("Welcome back, Ivy"), wrong#1 calm/no-red + "Why isn't that right?", correct settle,
+  fill_blank 3/3, mastery 3/3, certified. Then drove maths_geometry (drag_drop both
+  drag+tap-to-place, calm-break trigger, See-it walkthrough incl. Your-turn, See-it
+  panel full-collapse after correct re-confirmed) and eng_devices (tap_reveal
+  reveal/select split re-confirmed, keyboard-only Tab/Arrow/Enter submit with a real
+  4px focus ring measured via getComputedStyle, rapid-triple-click did not double-score)
+  to certification, then deliberately failed a maths_geometry mastery attempt 1/3 to
+  re-verify the reteach screen's Eddie (F4/2026-08-23) is still live. HEADLINE: certified
+  a 10th Maths topic (maths_sequences) live, crossing the mock-unlock floor for the
+  FIRST TIME by any smoke child, then took the full Maths mock end-to-end (10/10,
+  Foundation/Non-calculator framing correct) through to the boundary-grade reveal
+  ("Maths is at a grade 3 level today", warm non-pass/fail framing) — closing EPIC 4's
+  last-unverified-live piece. That same drive surfaced the run's best bug: **B1** a
+  `fill_blank` practice question pulled into the mock renders with NO question content
+  at all — `buildMockPaper` (repo.ts) copies only prompt/options/correct_index/
+  explanation and never reads `interaction`, so a question whose real text lives in
+  `interaction.parts` (by design, per the fill_blank authoring convention) shows only
+  its generic wrapper prompt in the mock. Confirmed via direct seed-file read
+  (curriculum.seed.interactive.ts) — a real, well-scoped, small-fix bug that directly
+  undermines the North star (a Foundation-tier mock question a child cannot actually
+  attempt). Opened as its own EPIC 12 (distinct from EPIC 1's derived-visual-deriver
+  class — this is a data-shape mismatch in the mock builder, not a regex/keyword
+  deriver bug). **B2**: the AI "why isn't that right?" explanation (`/api/tutor` →
+  `generateExplanation` in teaching-agent.ts) can leak raw LaTeX delimiters (`\( x = 4
+  \)`, `\times`) verbatim to the child — confirmed live via screenshot, confirmed via
+  grep that NO math-rendering library exists anywhere in the repo, and confirmed the
+  sibling `generateAnimation` prompt already has the fix ("plain ASCII only") that
+  `generateExplanation` is simply missing — a one-line prompt fix. Curriculum (EPIC 2):
+  live-reproduced the maths_geometry near-duplicate-hexagon mastery-pool gap AGAIN
+  (blocked 2026-08-23 for lack of content) and authored 3 real new mastery items this
+  time (exterior angle, straight-line angles, parallelogram angles) to unblock it, plus
+  2 more command-word depth items (maths_fractions VAT, maths_number small-decimal
+  standard form). Admin (overview/finance/escalations) + tutor (empty queue, silo
+  holds) both READ-ONLY clean. ZERO console errors on every surface all session.
+  Static: type-check + lint GREEN, npm audit 0 vulnerabilities, security headers
+  unchanged/strong (curl -IL). PATTERN WORTH REPEATING: when a mock/exam surface is
+  finally reachable (crossed an unlock floor for the first time), drive it live rather
+  than deferring — EPIC 4's boundary-grade card had been "gate-verified only, deferred
+  as an expensive end-state" for THREE runs; one topic's worth of extra certification
+  effort this run closed it AND surfaced the run's best bug in the same drive. Also:
+  when an AI explanation renders oddly, don't just eyeball the accessibility-tree text —
+  take a real screenshot; the raw `\(`/`\)` characters were visible in the a11y snapshot
+  text too, but a screenshot confirmed exactly how a child would see it and made the
+  root-cause grep (no KaTeX/MathJax anywhere) trivial to justify. Teardown:
+  fetch('/logout',{method:'POST'})→200 between each role switch (parent→admin→tutor) +
+  browser_close. Credential handling: all creds read from .env.local via Bash into
+  context only, typed directly into browser_type params, never written to any file —
+  confirmed clean via git status before finishing. Emailed owner the scenario summary
+  via scripts/email-findings.ts.
