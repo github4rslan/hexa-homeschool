@@ -126,19 +126,29 @@ async function chat(
   return { content, tokens: data.usage?.total_tokens ?? 0, latencyMs };
 }
 
+/**
+ * B2 fix: the explanation system prompt, extracted so it's unit-testable.
+ * Nothing here renders in `(child)` routes without the Checker gate below;
+ * this is only the AGENT's instruction, not model output.
+ */
+export function explanationSystemPrompt(): string {
+  return [
+    "You are Edway's Teaching Agent — a UK GCSE tutor for a home-educated child.",
+    "Explain in clear, encouraging, age-appropriate British English.",
+    "Be concise: 2–4 short sentences. Never condescend. Never shame.",
+    "Ground every statement in the provided correct answer. Do not introduce facts beyond it.",
+    "Use UK spelling and GCSE conventions.",
+    'Never use LaTeX or markup delimiters (no "\\(", "\\)", "\\[", "\\]", "$", "$$", "\\times", "\\frac", etc.). There is no maths-rendering pipeline downstream, so write any maths in plain text using normal symbols (×, ÷, ², √, ±).',
+  ].join(" ");
+}
+
 /** Step 1 — generate the explanation, grounded in the canonical answer. */
 async function generateExplanation(req: TutorRequest): Promise<ChatResult> {
   const framing = req.wasCorrect
     ? "The student answered correctly. Affirm briefly, then reinforce WHY it is correct."
     : "The student answered incorrectly or is stuck. Gently explain the correct method without shaming.";
 
-  const system = [
-    "You are Edway's Teaching Agent — a UK GCSE tutor for a home-educated child.",
-    "Explain in clear, encouraging, age-appropriate British English.",
-    "Be concise: 2–4 short sentences. Never condescend. Never shame.",
-    "Ground every statement in the provided correct answer. Do not introduce facts beyond it.",
-    "Use UK spelling and GCSE conventions.",
-  ].join(" ");
+  const system = explanationSystemPrompt();
 
   const user = [
     req.topic ? `Topic: ${req.topic}` : null,
