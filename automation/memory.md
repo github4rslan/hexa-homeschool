@@ -2011,3 +2011,81 @@ just fail lint or produce a silently-broken flat config.
   re-authorizes the connector (claude.ai connector settings or an interactive `/mcp`
   session) — this is now a recurring gap worth the owner's direct attention rather than
   another routine mention.
+- 2026-08-27 — Discovery pass, Thursday B-journeys deep-dive, FULL coverage (parent/
+  child/tutor/admin; desktop 1280 + mobile 390 both confirmed innerWidth, no
+  horizontal overflow anywhere checked). Drove the full child loop at max depth:
+  certified **English "Inference & Language"** (eng_ks3_reading) fresh end-to-end
+  (wrong#1 calm/no-red + distractor-aware "Why isn't that right?", wrong#2 calm
+  break + See-it walkthrough with Eddie, correct settle, 3/3 mastery, brain-stretch
+  bonus with its own confetti) and **Science "Human Body Systems"** (sci_body),
+  DELIBERATELY failing mastery once (2/3) to re-confirm the reteach screen +
+  Eddie, then a fresh retake to certify. All 4 interaction types completed this
+  run: mcq, fill_blank (wrong-then-right, both desktop AND a genuine mobile
+  browser-refresh resume mid-fill_blank), drag_drop (tap-to-place AND full
+  keyboard placement via Tab+Enter), tap_reveal (reveal/select gesture split).
+  Resilience: real refresh mid-lesson resumed at the exact step ("Welcome back")
+  with score intact; rapid triple-click on Check-answer did not double-score;
+  full keyboard-only Tab/Arrow/Enter completed a question end-to-end with a
+  measured focus-visible box-shadow ring throughout. Every B-journeys flow ran
+  start-to-finish and PASSED: parent oversight (dashboard → Ivy's child profile →
+  generated + emailed a real Q3 2026 portfolio, share-confirmation shown → CNIS
+  registration pre-fill), plan/schedule (approved a fresh Sam Smoke week live —
+  dashboard immediately reflected the real topic, re-confirming EPIC 11 holds a
+  SECOND time on a different child), tutor (empty queue, silo holds, read-only),
+  admin (overview → finance → escalations, all read-only, zero destructive
+  clicks). Mock stayed honestly locked ("next one unlocks on 31 August").
+  HEADLINE FINDING: **B1** `deriveScienceVisual`'s `states_of_matter` branch
+  (science-visual.ts) has NO topic gate and matches bare "gas" — live-reproduced
+  a wrong Solid/Liquid/Gas particle diagram on the sci_body "gas exchange in the
+  lungs" question, then grepped the whole bank and found the SAME collision on
+  sci_reactions ("what gas is produced...") and sci_ecology ("which gas do
+  plants remove..."). This is the exact class the 2026-08-23 backlog note
+  predicted ("undetermined risk, no colliding prompt found yet") — now confirmed
+  with a live repro. **B2** (code-audit, not live-reproduced on purpose):
+  `upsertCompetence` (repo.ts) unconditionally bumps `certified_at` to `new
+  Date()` on EVERY certified write, with no guard against a re-mastery of an
+  already-certified topic — even though the function's own neighbouring code
+  correctly guards the spaced-rep `next_review_at` against exactly that. This
+  would silently corrupt the LA portfolio's "Awarded {date}" evidence and the
+  weekly certified-topic stats on any harmless "Practice more" re-take that
+  reaches a perfect mastery again. Deliberately did NOT live-reproduce this one
+  (would have corrupted real test-family certification dates with no clean
+  rollback) — confirmed by code read alone, which was unambiguous enough to file
+  with confidence. **B3**: the child profile's "Understanding these results"
+  card still says "English/Science has not been assessed yet" directly below a
+  "Current standing" card that correctly says "Working at GCSE level · 6/7
+  topics certified" for the same two subjects on the SAME page — the identical
+  contradiction the 2026-08-05 B1 fix solved for "Current standing" was never
+  applied to `buildAssessmentNarrative`, its sibling card two sections down.
+  **B4**: "Mock score · Grade Grade 3" doubled word (tierToGrade() already
+  returns "Grade 3", the JSX template adds a second "Grade " prefix). Curriculum
+  (EPIC 3 headline): grepped for "simultaneous"/"transformation" across every
+  seed file and found ZERO matches — Transformations (Edexcel 1MA1 G7) has total,
+  not thin, coverage absence; authored a full topic entry + worked example + 3
+  checked starters to close it (F1). EPIC 2 depth: 2 more command-word items
+  (maths_pythagoras trig "Calculate the angle", sci_electricity P=VI "Calculate
+  the power"). New capability: F2 a "command word" tap-to-define chip
+  (Calculate/Explain/Describe/Evaluate...) reusing the exact shipped glossary
+  pattern — genuinely new capability, zero new UI risk. Static: type-check + lint
+  GREEN, npm audit 0 vulnerabilities (several in-range "Wanted" bumps available
+  via plain `npm update` — mongodb/stripe/jose/@sentry/nextjs/@upstash/redis —
+  filed as F7, routine hygiene, NOT the Next 16 migration). PATTERN WORTH
+  REPEATING: (1) a live-reproduced deriver-chain bug is worth an immediate
+  bank-wide grep for the SAME triggering keyword across every seed file before
+  writing it up — this run turned one screenshot into a 4-topic-wide confirmed
+  bug instead of a narrow one-off. (2) A "next step" prediction left in
+  automation/backlog.md from a prior run (EPIC 1's 2026-08-23 science-visual
+  risk note) is worth actively re-testing, not just re-reading — it paid off
+  today. (3) When a data-integrity bug is real but reproducing it live would
+  itself corrupt production data with no clean rollback (re-certifying an
+  already-certified topic to prove certified_at moves), a careful code read is
+  a legitimate, sufficient basis to file the bug — don't manufacture the exact
+  repro at the cost of real data. (4) The Playwright screenshot tool in this
+  runtime cannot write to the real OS temp dir — only inside the repo
+  (`.playwright-mcp/`, gitignored, fine) or the repo root if no subpath is
+  given (NOT fine — caught and deleted 9 stray PNGs from repo root before
+  finishing; always pass at least one path segment, or just rely on
+  `browser_snapshot`'s own auto-saved `.playwright-mcp/*.yml`, which needs no
+  manual path at all). Teardown: `fetch('/logout',{method:'POST'})`→200 between
+  each role switch (parent→tutor→parent→admin) + `browser_close`. Credential
+  handling confirmed clean via `git status --porcelain` before finishing.
