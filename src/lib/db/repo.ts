@@ -21,6 +21,7 @@ import {
   reviewDueCounts,
 } from "@/lib/engine/spaced-repetition";
 import { shouldQueueHandoff } from "@/lib/engine/remediation";
+import { resolveCertifiedAt, isFreshCertification } from "@/lib/engine/competence";
 import { selectMockPaper, marksForTier } from "@/lib/engine/mock-paper";
 import { mockDisplayPrompt } from "@/lib/child/interactions";
 import type {
@@ -1540,21 +1541,26 @@ export async function upsertCompetence(
   if (!(await assertOwnsChild(parentId, childId))) return false;
   const col = await getCollection<CompetenceDoc>(Collections.competence);
 
-  // Schedule the first spaced-repetition review only on a FRESH certification
-  // (a topic moving into "certified" that wasn't already certified). Re-running
-  // a certified topic must not reset its review schedule.
+  const existing =
+    state === "certified"
+      ? await col.findOne({ child_id: childId, topic_tag: topicTag })
+      : null;
+
+  // Schedule the first spaced-repetition review, and set the certification
+  // date, only on a FRESH certification (a topic moving into "certified" that
+  // wasn't already certified). Re-running a certified topic must not reset its
+  // review schedule, and must not overwrite its original "Awarded {date}"
+  // evidence in the LA portfolio with today's date. Both guards share the same
+  // pure `resolveCertifiedAt` / `isFreshCertification` logic (unit-tested).
   const set: Partial<CompetenceDoc> = {
     state,
-    certified_at: state === "certified" ? new Date() : null,
+    certified_at: resolveCertifiedAt(state, existing),
     updated_at: new Date(),
   };
-  if (state === "certified") {
-    const existing = await col.findOne({ child_id: childId, topic_tag: topicTag });
-    if (existing?.state !== "certified") {
-      const sched = scheduleFirstReview();
-      set.next_review_at = sched.nextReviewAt;
-      set.review_interval_days = sched.intervalDays;
-    }
+  if (isFreshCertification(state, existing)) {
+    const sched = scheduleFirstReview();
+    set.next_review_at = sched.nextReviewAt;
+    set.review_interval_days = sched.intervalDays;
   }
 
   await col.updateOne(
