@@ -51,6 +51,28 @@ describe("deriveEnglishVisual", () => {
     expect(deriveEnglishVisual("eng_ks2_reading", "Which word is spelled correctly?")).toBeNull();
   });
 
+  it("returns null (never a wrong figure) for the irregular plural of 'child' (B1)", () => {
+    expect(
+      deriveEnglishVisual("eng_grammar", "Pick the correct plural of 'child'."),
+    ).toBeNull();
+  });
+
+  it("returns null (never a wrong figure) for the irregular plural of 'leaf' (B1)", () => {
+    expect(deriveEnglishVisual("eng_ks2_reading", "The plural of 'leaf' is:")).toBeNull();
+  });
+
+  it("returns null for other known irregular plural bases (B1)", () => {
+    for (const base of ["man", "woman", "mouse", "foot", "tooth", "person", "goose", "ox", "knife", "wife", "life", "wolf", "half", "shelf", "thief"]) {
+      expect(deriveEnglishVisual("eng_ks2_reading", `What is the plural of '${base}'?`)).toBeNull();
+    }
+  });
+
+  it("still derives the correct rule for genuinely regular words (B1 regression guard)", () => {
+    expect(deriveEnglishVisual("eng_ks2_reading", "What is the plural of 'box'?")?.kind).toBe("plural_rule");
+    expect(deriveEnglishVisual("eng_ks2_reading", "What is the plural of 'church'?")?.kind).toBe("plural_rule");
+    expect(deriveEnglishVisual("eng_ks2_reading", "What is the plural of 'baby'?")?.kind).toBe("plural_rule");
+  });
+
   it("does not trigger letter_tiles on a multi-word onomatopoeia list question (B2)", () => {
     expect(
       deriveEnglishVisual("eng_devices", "'Buzz', 'crash' and 'splash' are examples of:"),
@@ -81,5 +103,13 @@ describe("pluralRuleFor", () => {
   it("just adds -s otherwise (incl. vowel + y)", () => {
     expect(pluralRuleFor("cat").ending).toBe("s");
     expect(pluralRuleFor("day").ending).toBe("s");
+  });
+});
+
+describe("deriveEnglishVisual B1 live repro (exact seeded prompts)", () => {
+  it("matches the exact seeded 'child' mastery prompt", () => {
+    expect(
+      deriveEnglishVisual("eng_grammar", "Pick the correct plural of 'child'."),
+    ).toBeNull();
   });
 });
