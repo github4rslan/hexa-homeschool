@@ -768,6 +768,22 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "Looks like you divided current by resistance. V = I × R, so 2 × 5.",
     ],
   },
+  // F4 (2026-08-27): second sci_electricity command-word item ("Calculate")
+  // AQA 8464 Physics 4.2.1 — P = V × I, the other core electrical-quantities
+  // equation, distinct from the existing V = I × R item above.
+  {
+    topic_tag: "sci_electricity",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "A 12 V battery drives a current of 3 A through a lamp. Calculate the power delivered to the lamp.",
+    options: ["36 W", "4 W", "15 W", "0.25 W"],
+    correct_index: 0,
+    explanation: "Using P = V × I: power = 12 V × 3 A = 36 W.",
+    hints: ["Power = voltage × current (P = V × I).", "Multiply 12 V by 3 A."],
+    misconceptions: ["", "This divides voltage by current (12 ÷ 3) instead of multiplying them.", "This adds voltage and current (12 + 3) instead of multiplying them.", "This divides current by voltage (3 ÷ 12) instead of multiplying voltage by current."],
+  },
   // AQA 8700 Paper 1 Q3-style — effect of a simile ("Explain").
   {
     topic_tag: "eng_analysis",

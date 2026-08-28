@@ -788,6 +788,29 @@ describe("F3 (2026-08-27) — second maths_pythagoras command-word item (trig an
   });
 });
 
+describe("F4 (2026-08-27) — second sci_electricity command-word item (P = VI)", () => {
+  const prompt =
+    "A 12 V battery drives a current of 3 A through a lamp. Calculate the power delivered to the lamp.";
+
+  it("adds exactly one well-formed item keyed to 36 W", () => {
+    expectWellFormedItem("sci_electricity", "science", prompt, "36 W");
+  });
+
+  it("computes: P = V × I = 12 × 3 = 36", () => {
+    expect(12 * 3).toBe(36);
+  });
+
+  it("is a distinct P = VI item, not a duplicate of the existing V = IR question", () => {
+    const electricityPrompts = ALL.filter(
+      (q) => q.topic_tag === "sci_electricity" && q.kind === "mastery",
+    ).map((q) => q.prompt);
+    expect(electricityPrompts).toContain(
+      "A current of 2 A flows through a resistor of 5 Ω. Calculate the potential difference across the resistor.",
+    );
+    expect(new Set(electricityPrompts).size).toBe(electricityPrompts.length);
+  });
+});
+
 describe("F1 (2026-08-27) — GCSE Maths transformations strand", () => {
   it("adds the maths_transformations topic in the maths GCSE band with a worked example", () => {
     const topic = SEED_TOPICS.find((t) => t.topic_tag === "maths_transformations");
