@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   pickPlayableQuestTopic,
   pickScheduleQuestTopic,
+  isQuestTopicDone,
   type QuestTopicLike,
 } from "@/lib/engine/quest-selection";
 
@@ -82,5 +83,29 @@ describe("pickScheduleQuestTopic", () => {
       playable: new Set(["sci_b", "sci_c"]),
     });
     expect(pick?.topic_tag).toBe("sci_b");
+  });
+});
+
+describe("isQuestTopicDone (B2)", () => {
+  it("is done when completed today", () => {
+    expect(isQuestTopicDone("eng_grammar", new Set(["eng_grammar"]), new Set())).toBe(true);
+  });
+
+  it("is done when certified on a prior day, even if NOT completed today", () => {
+    // The exact B2 repro: certified yesterday, plan still lists it today, and
+    // today's completion log doesn't include it — must still show as done.
+    expect(
+      isQuestTopicDone("eng_ks3_reading", new Set(), new Set(["eng_ks3_reading"])),
+    ).toBe(true);
+  });
+
+  it("is NOT done when neither completed today nor certified", () => {
+    expect(isQuestTopicDone("eng_grammar", new Set(), new Set())).toBe(false);
+  });
+
+  it("is done when both true (no double-counting issue)", () => {
+    expect(
+      isQuestTopicDone("eng_grammar", new Set(["eng_grammar"]), new Set(["eng_grammar"])),
+    ).toBe(true);
   });
 });

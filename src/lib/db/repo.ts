@@ -81,6 +81,7 @@ import { buildRoadmapTopics, type RoadmapTopic } from "@/lib/engine/roadmap";
 import {
   pickPlayableQuestTopic,
   pickScheduleQuestTopic,
+  isQuestTopicDone,
 } from "@/lib/engine/quest-selection";
 import {
   periodWindowFromWeekStart,
@@ -1791,13 +1792,21 @@ export async function todayCard(
     topicTitle: titleByTag.get(tag) || tag,
   }));
 
+  // A topic already certified (any day, not just today) is done for good —
+  // the checklist must agree with real certification state, not just
+  // "completed in the last 24h" (B2), or it shows a stale, already-mastered
+  // topic as an outstanding quest.
+  const certifiedTags = new Set(
+    comps.filter((c) => c.state === "certified").map((c) => c.topic_tag),
+  );
+
   const quests: TodayQuest[] = (schedule?.items ?? [])
     .filter((it) => it.day === todayIndex && !pausedTags.has(it.topic_tag))
     .map((it) => ({
       subject: it.subject,
       topicTag: it.topic_tag,
       topicTitle: it.topic_title || titleByTag.get(it.topic_tag) || it.topic_tag,
-      done: doneTags.has(it.topic_tag),
+      done: isQuestTopicDone(it.topic_tag, doneTags, certifiedTags),
     }));
 
   const reviewsDue = comps.filter(
