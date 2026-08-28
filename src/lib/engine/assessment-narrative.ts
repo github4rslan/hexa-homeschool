@@ -37,6 +37,19 @@ export interface AssessmentNarrative {
   planNote: string;
 }
 
+/**
+ * Lesson-based standing for a subject with no diagnostic/mock evaluation yet
+ * (B3, 2026-08-27). Mirrors the fallback already used by the "Current
+ * standing" card above this narrative on the same page (2026-08-05 B1) so the
+ * two cards never contradict each other again.
+ */
+export interface SubjectLessonProgress {
+  /** How many topics in this subject are certified through lessons. */
+  certifiedCount: number;
+  /** Human working-band label, e.g. "GCSE level" — parent-only, never a child string. */
+  bandLabel: string | null;
+}
+
 /** Last digit in a grade string: "5" → 5, "Grade 4–5" → 5, "A" → null. */
 function gradeNumber(grade: string): number | null {
   const digits = grade.match(/\d/g);
@@ -75,10 +88,15 @@ function readinessSentence(readiness: number): string {
  * Build the narrative. `planCounts` (sessions per subject on this week's
  * schedule) grounds the plan sentence in the real plan; pass null/undefined
  * when no schedule exists yet and a forward-looking line is used instead.
+ * `lessonProgress` (certified-topic count + working band per subject) lets a
+ * subject with no diagnostic/mock evaluation, but real lesson-based progress,
+ * say so honestly instead of flatly "not been assessed yet" (B3) — matching
+ * the same fallback the "Current standing" card above it already uses.
  */
 export function buildAssessmentNarrative(
   standings: SubjectNarrativeInput[],
   planCounts?: Partial<Record<NarrativeSubject, number>> | null,
+  lessonProgress?: Partial<Record<NarrativeSubject, SubjectLessonProgress>> | null,
 ): AssessmentNarrative {
   const intro =
     "These results come from a short adaptive assessment, so treat them as a confident starting point rather than a verdict — the picture sharpens as real lesson evidence builds up.";
@@ -86,6 +104,16 @@ export function buildAssessmentNarrative(
   const subjects: SubjectNarrative[] = standings.map((s) => {
     const label = LABEL[s.subject];
     if (s.readiness === null && !s.grade) {
+      const progress = lessonProgress?.[s.subject];
+      if (progress && progress.certifiedCount > 0) {
+        const n = progress.certifiedCount;
+        const bandClause = progress.bandLabel ? ` at ${progress.bandLabel}` : "";
+        return {
+          subject: s.subject,
+          label,
+          text: `${label} hasn't had a formal diagnostic yet, but ${n} topic${n === 1 ? "" : "s"} ${n === 1 ? "is" : "are"} already certified through lessons${bandClause} — the diagnostic can still add a scored baseline whenever you're ready.`,
+        };
+      }
       return {
         subject: s.subject,
         label,

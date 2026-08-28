@@ -24,7 +24,7 @@ import {
   CHILD_NOTE_MAX,
   KEY_STAGE_LABEL,
 } from "@/lib/db/repo";
-import { buildAssessmentNarrative } from "@/lib/engine/assessment-narrative";
+import { buildAssessmentNarrative, type SubjectLessonProgress } from "@/lib/engine/assessment-narrative";
 import { WorkEvidenceUploader } from "@/components/media/work-evidence-uploader";
 import { ExamDecisionCard } from "@/components/dashboard/exam-decision-card";
 import { TrajectoryChart } from "@/components/dashboard/trajectory-chart";
@@ -98,7 +98,22 @@ export default async function ChildProfilePage({
         {},
       )
     : null;
-  const narrative = buildAssessmentNarrative(standings, planCounts);
+  // B3: thread lesson-based progress (certified count + working band) into the
+  // narrative so a subject with no diagnostic/mock evaluation, but real
+  // certified topics, doesn't contradict the "Current standing" card above.
+  const lessonProgress: Partial<Record<typeof standings[number]["subject"], SubjectLessonProgress>> =
+    Object.fromEntries(
+      (Object.keys(certifiedCounts) as (keyof typeof certifiedCounts)[]).map((subject) => [
+        subject,
+        {
+          certifiedCount: certifiedCounts[subject],
+          bandLabel: bandBySubject.has(subject)
+            ? KEY_STAGE_LABEL[bandBySubject.get(subject) ?? 4]
+            : null,
+        },
+      ]),
+    );
+  const narrative = buildAssessmentNarrative(standings, planCounts, lessonProgress);
   const assessed = standings.some((s) => s.readiness !== null || s.grade !== null);
 
   return (
