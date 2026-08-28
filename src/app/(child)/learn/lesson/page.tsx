@@ -14,6 +14,7 @@ import {
   getLessonProgress,
   getTutorHandoffState,
   todaysCheckin,
+  isTopicCertified,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import { normalizeInteraction } from "@/lib/child/interactions";
@@ -159,6 +160,13 @@ export default async function ChildLessonPage({
       : null;
   const resumeKey = child?._id?.toHexString() ?? "anon";
 
+  // F3: was this topic already certified BEFORE this attempt? Frames the
+  // Explainer + completion screens as a review rather than a first mastery.
+  const isReview =
+    parentId && child?._id
+      ? await isTopicCertified(parentId, child._id, topicDoc.topic_tag)
+      : false;
+
   return (
     <FocusFrame reading={reading}>
       <DailyFlow
@@ -182,6 +190,7 @@ export default async function ChildLessonPage({
         firstName={firstName}
         resumeKey={resumeKey}
         tutorNote={handoff.note}
+        isReview={isReview}
       />
     </FocusFrame>
   );

@@ -1496,6 +1496,28 @@ export async function getLessonProgress(
 }
 
 /**
+ * Whether a child already certified this topic BEFORE entering the lesson
+ * (F3): read once at page-load so the Explainer + completion screens can
+ * frame a re-attempt as a review rather than a first-time mastery moment.
+ * Ownership enforced; presentational only, never used for scoring/mastery
+ * logic (that stays exactly as it was).
+ */
+export async function isTopicCertified(
+  parentId: string,
+  childId: ObjectId,
+  topicTag: string,
+): Promise<boolean> {
+  if (!(await assertOwnsChild(parentId, childId))) return false;
+  const col = await getCollection<CompetenceDoc>(Collections.competence);
+  const doc = await col.findOne({
+    child_id: childId,
+    topic_tag: topicTag,
+    state: "certified",
+  });
+  return doc !== null;
+}
+
+/**
  * Clear saved progress (on completion, so a finished lesson never resumes).
  * Ownership enforced.
  */

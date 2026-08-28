@@ -64,6 +64,7 @@ import { EnglishVisual } from "@/components/child/english-visual";
 import { deriveEnglishVisual } from "@/lib/child/english-visual";
 import { GlossaryText } from "@/components/child/glossary-text";
 import { detectCommandWord } from "@/lib/child/command-words";
+import { completionCopy } from "@/lib/child/review-framing";
 import { buildQuestionNarration } from "@/lib/child/narration-copy";
 import dynamic from "next/dynamic";
 
@@ -210,6 +211,7 @@ export function PracticePlayer({
   firstName,
   resumeKey,
   onPhaseChange,
+  isReview = false,
 }: {
   questions: Question[];
   /** Human-authored mastery bank for deterministic certification attempts. */
@@ -246,6 +248,12 @@ export function PracticePlayer({
   onPhaseChange?: (
     phase: "practice" | "mastery" | "reteach" | "handoff" | "complete",
   ) => void;
+  /**
+   * F3: true when this topic was already certified BEFORE this attempt.
+   * Frames the completion screen as a review rather than a first-time
+   * mastery moment; never affects scoring, hints or mastery-cap logic.
+   */
+  isReview?: boolean;
 }) {
   const accent: AccentPreset = accentPreset(accentId);
   // Eddie only ever uses a sanitised FIRST name — anything unusable degrades
@@ -1430,6 +1438,7 @@ export function PracticePlayer({
   if (complete) {
     const pct = Math.round((score / masterySet.length) * 100);
     const mastered = pct >= 100;
+    const { heading, subtitle } = completionCopy({ mastered, isReview });
     return (
       <div className="mx-auto max-w-2xl">
         <div className="child-panel p-8 sm:p-12 text-center animate-child-pop">
@@ -1467,17 +1476,11 @@ export function PracticePlayer({
               <EddieAvatar mood="encouraging" accent={accent} reduced={reduced} />
             )}
           </div>
-          <h1 className="text-4xl font-semibold text-fog-50 mb-3">
-            {mastered ? "Topic mastered!" : "Great effort!"}
-          </h1>
+          <h1 className="text-4xl font-semibold text-fog-50 mb-3">{heading}</h1>
           <p className="text-xl text-fog-300 mb-2">
             You got {score} out of {masterySet.length} right.
           </p>
-          <p className="text-fog-400 mb-8">
-            {mastered
-              ? "You answered everything correctly — this topic is certified! 🎉"
-              : "Keep going — you can master this topic next time."}
-          </p>
+          <p className="text-fog-400 mb-8">{subtitle}</p>
           {mastered && bandPromotion && (
             <div className="mb-8 rounded-3xl border border-neon-400/40 bg-neon-500/10 p-5 text-center">
               <div className="text-3xl" aria-hidden>

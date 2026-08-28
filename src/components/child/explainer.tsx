@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Lightbulb,
   HeartHandshake,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { accentPreset } from "@/lib/child/accents";
@@ -24,6 +25,7 @@ import {
 } from "@/lib/child/reexplain";
 import type { WorkedExample } from "@/lib/child/worked-examples";
 import type { GlossaryTerm } from "@/lib/child/glossary";
+import { REVIEW_CHIP_TEXT } from "@/lib/child/review-framing";
 
 /**
  * Explainer step (Brief: Daily Flow step 2). Phase-1 uses a clear written
@@ -43,6 +45,7 @@ export function Explainer({
   accent: accentId,
   autoplay = true,
   tutorNote,
+  isReview = false,
 }: {
   title: string;
   summary: string;
@@ -63,11 +66,18 @@ export function Explainer({
   autoplay?: boolean;
   /** A human tutor's note from a handoff session — shown warmly up top. */
   tutorNote?: string | null;
+  /**
+   * F3: true when this topic is already certified, so re-entering it is a
+   * review, not a first-time lesson. Shows a small acknowledging chip instead
+   * of implying this is new ground.
+   */
+  isReview?: boolean;
 }) {
   if (workedExample) {
     return (
       <div className="mx-auto max-w-2xl">
         <TutorNote note={tutorNote} accent={accentId} />
+        <ReviewChip show={isReview} />
         <StepReveal
           example={workedExample}
           onDone={onContinue}
@@ -104,7 +114,28 @@ export function Explainer({
       accent={accentId}
       autoplay={autoplay}
       tutorNote={tutorNote}
+      isReview={isReview}
     />
+  );
+}
+
+/**
+ * F3: a small, calm chip acknowledging a re-entered, already-certified
+ * topic so a review never looks identical to earning it for the first time.
+ * Purely presentational: no scoring/mastery logic reads this.
+ */
+function ReviewChip({ show }: { show: boolean }) {
+  if (!show) return null;
+  return (
+    <motion.p
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      className="mb-4 inline-flex items-center gap-2 rounded-full border border-fog-700 bg-fog-900/60 px-4 py-2 text-sm font-medium text-fog-300"
+    >
+      <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
+      {REVIEW_CHIP_TEXT}
+    </motion.p>
   );
 }
 
@@ -151,6 +182,7 @@ function LegacyExplainer({
   accent: accentId,
   autoplay,
   tutorNote,
+  isReview = false,
 }: {
   title: string;
   summary: string;
@@ -163,6 +195,7 @@ function LegacyExplainer({
   accent?: string | null;
   autoplay: boolean;
   tutorNote?: string | null;
+  isReview?: boolean;
 }) {
   const accent = accentPreset(accentId);
   const narration = useNarration(voiceId, keyStage);
@@ -191,6 +224,7 @@ function LegacyExplainer({
   return (
     <div className="mx-auto max-w-2xl">
       <TutorNote note={tutorNote} accent={accentId} />
+      <ReviewChip show={isReview} />
       <div className="child-panel p-6 sm:p-8">
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex items-center gap-3 min-w-0">

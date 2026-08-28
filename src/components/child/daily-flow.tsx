@@ -40,6 +40,7 @@ export function DailyFlow({
   firstName,
   resumeKey,
   tutorNote,
+  isReview = false,
 }: {
   title: string;
   summary: string;
@@ -78,6 +79,12 @@ export function DailyFlow({
   firstName?: string;
   /** Per-child localStorage namespace for instant same-device resume. */
   resumeKey?: string;
+  /**
+   * F3: true when the child already certified this topic BEFORE this
+   * attempt. Frames the Explainer + completion screens as a review rather
+   * than a first-time mastery moment; never affects scoring or mastery logic.
+   */
+  isReview?: boolean;
 }) {
   const accent = accentPreset(accentId);
   // If there's resumable progress, drop straight into practice at the saved step
@@ -183,6 +190,7 @@ export function DailyFlow({
               accent={accentId}
               autoplay={narrationAutoplay}
               tutorNote={tutorNote}
+              isReview={isReview}
             />
           ) : (
             <PracticePlayer
@@ -202,6 +210,7 @@ export function DailyFlow({
               firstName={firstName}
               resumeKey={resumeKey}
               onPhaseChange={setSubPhase}
+              isReview={isReview}
             />
           )}
         </motion.div>
