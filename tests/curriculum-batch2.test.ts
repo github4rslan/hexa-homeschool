@@ -759,9 +759,54 @@ describe("F3 (2026-08-26) — second maths_number command-word item (small-decim
   });
 });
 
+describe("F1 (2026-08-27) — GCSE Maths transformations strand", () => {
+  it("adds the maths_transformations topic in the maths GCSE band with a worked example", () => {
+    const topic = SEED_TOPICS.find((t) => t.topic_tag === "maths_transformations");
+    expect(topic, "transformations topic present").toBeDefined();
+    if (!topic) return;
+    expect(topic.subject).toBe("mathematics");
+    expect(topic.key_stage).toBe(4);
+    expect(topic.title).toBe("Transformations");
+    expect(topic.prerequisite_tags).toContain("maths_geometry");
+    expect(topic.worked_example).toBeDefined();
+  });
+
+  it("ships the three authored starters, well-formed and correctly keyed", () => {
+    const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_transformations");
+    expect(qs.length).toBe(3);
+    for (const q of qs) {
+      expect(q.subject).toBe("mathematics");
+      expect(q.key_stage).toBe(4);
+      expect(q.correct_index).toBeGreaterThanOrEqual(0);
+      expect(q.correct_index).toBeLessThan(q.options.length);
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(q.explanation.trim().length).toBeGreaterThan(0);
+    }
+    const answerOf = (needle: string) => {
+      const q = qs.find((item) => item.prompt.includes(needle))!;
+      return q.options[q.correct_index];
+    };
+    // Enlarge 4 cm by scale factor 3 → 12 cm.
+    expect(4 * 3).toBe(12);
+    expect(answerOf("enlarged by scale factor 3")).toBe("12 cm");
+    // Translate (1, 4) by vector (3, −2) → (4, 2).
+    expect([1 + 3, 4 + -2]).toEqual([4, 2]);
+    expect(answerOf("translated by the vector")).toBe("(4, 2)");
+    // A reflection is the only one of the four transformations that flips
+    // orientation to produce a mirror image.
+    expect(answerOf("mirror image")).toBe("Reflection");
+  });
+
+  it("stays certifiable: at least one practice and one mastery item", () => {
+    const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_transformations");
+    expect(qs.filter((q) => q.kind === "practice").length).toBeGreaterThanOrEqual(1);
+    expect(qs.filter((q) => q.kind === "mastery").length).toBeGreaterThanOrEqual(1);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
-  it("maths now has 12 GCSE topics (mensuration + inequalities lifted it past 10)", () => {
-    expect(gcseTopicCount("mathematics")).toBe(12);
+  it("maths now has 13 GCSE topics (transformations lifted it past 12)", () => {
+    expect(gcseTopicCount("mathematics")).toBe(13);
     expect(gcseTopicCount("english")).toBe(10);
     expect(gcseTopicCount("science")).toBe(10);
   });

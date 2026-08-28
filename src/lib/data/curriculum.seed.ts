@@ -81,6 +81,9 @@ const BASE_SEED_TOPICS: SeedTopic[] = [
   // F2 (2026-08-09) — inequalities strand (Edexcel 1MA1 A22), a high-frequency
   // Foundation + Higher topic the bank was missing entirely.
   { subject: "mathematics", topic_tag: "maths_inequalities", title: "Inequalities", summary: "Solving linear inequalities and representing solutions on a number line.", key_stage: 4, working_grade_band: "Grade 3–5", order: 12, prerequisite_tags: ["maths_algebra_linear"], glossary: [{ term: "inequality", definition: "A statement that one amount is less than or greater than another, using signs like <, >, ≤ or ≥ instead of an equals sign." }, { term: "number line", definition: "A straight line with numbers marked in order, used to show where a solution lies." }] },
+  // F1 (2026-08-27) — transformations strand (Edexcel 1MA1 G7), a total
+  // zero-coverage spec gap the bank was missing entirely.
+  { subject: "mathematics", topic_tag: "maths_transformations", title: "Transformations", summary: "Translations, reflections, rotations and enlargements.", key_stage: 4, working_grade_band: "Grade 3–5", order: 13, prerequisite_tags: ["maths_geometry"] },
 
   // ── English (AQA 8700) ──
   { subject: "english", topic_tag: "eng_spelling", title: "Spelling & Vocabulary", summary: "Common spelling patterns and precise word choice.", key_stage: 4, working_grade_band: "Grade 1–3", order: 1, prerequisite_tags: [] },
@@ -117,6 +120,16 @@ const WORKED_EXAMPLES_BY_TOPIC: Record<string, SeedTopic["worked_example"]> = {
       { line: "On a number line, put an open circle at 4 and shade to the left, because 4 itself is not included.", visual: { label: "Number line", value: "◦—— 4" } },
     ],
     yourTurn: "Try solving x + 2 < 9. Subtract 2 from both sides first.",
+  },
+  maths_transformations: {
+    title: "Enlarge a shape by scale factor 2",
+    scenario: "A rectangle has sides 3 cm and 5 cm. It is enlarged by scale factor 2.",
+    steps: [
+      { line: "Multiply every side length by the scale factor.", visual: { label: "Scale factor", value: "× 2" } },
+      { line: "3 cm becomes 3 × 2 = 6 cm.", visual: { label: "Side 1", value: "6 cm" } },
+      { line: "5 cm becomes 5 × 2 = 10 cm.", visual: { label: "Side 2", value: "10 cm" } },
+    ],
+    yourTurn: "Try enlarging a 4 cm side by scale factor 3.",
   },
   maths_number: {
     title: "Round 3,748 to the nearest hundred",
@@ -1543,6 +1556,48 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "This isn't standard form: the front number must be between 1 and 10, not 34.",
       "Close, but the decimal point needs to move 4 places, not 3, to get from 0.00034 to 3.4.",
     ],
+  },
+  // ── F1 (2026-08-27): maths_transformations starter set (Edexcel 1MA1 G7) ──
+  // Closes a total, zero-coverage spec gap: translations/reflections/
+  // rotations/enlargements had no bank coverage at all before this topic.
+  {
+    topic_tag: "maths_transformations",
+    subject: "mathematics",
+    tier: 2,
+    key_stage: 4,
+    kind: "practice",
+    prompt: "A shape is enlarged by scale factor 3. Its original side length is 4 cm. Calculate the new side length.",
+    options: ["12 cm", "7 cm", "1⅓ cm", "8 cm"],
+    correct_index: 0,
+    explanation: "To enlarge a length, multiply it by the scale factor: 4 cm × 3 = 12 cm.",
+    hints: ["Multiply the original length by the scale factor — don't add it.", "4 × 3 = ?"],
+    misconceptions: ["", "This adds the scale factor to the length (4 + 3) instead of multiplying.", "This divides by the scale factor (4 ÷ 3) instead of multiplying.", "This doubles the length as if the scale factor were 2, not 3."],
+  },
+  {
+    topic_tag: "maths_transformations",
+    subject: "mathematics",
+    tier: 2,
+    key_stage: 4,
+    kind: "practice",
+    prompt: "Triangle A is translated by the vector (3, −2). A vertex of A is at (1, 4). Find the coordinates of that vertex after the translation.",
+    options: ["(4, 2)", "(−2, 6)", "(4, 6)", "(1, 4)"],
+    correct_index: 0,
+    explanation: "Add the vector to the point: (1 + 3, 4 + (−2)) = (4, 2).",
+    hints: ["Add the x-values together, then add the y-values together.", "1 + 3 = 4, and 4 + (−2) = 2."],
+    misconceptions: ["", "This subtracts from x and adds to y (1 − 3, 4 + 2) — the signs are swapped.", "This adds 3 and 2 as if both were positive, ignoring the negative sign on the y-value.", "This is the original point — the translation was never applied."],
+  },
+  {
+    topic_tag: "maths_transformations",
+    subject: "mathematics",
+    tier: 3,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Which single transformation maps a shape onto an identical mirror image of itself, as if reflected in a mirror line?",
+    options: ["Reflection", "Rotation", "Translation", "Enlargement"],
+    correct_index: 0,
+    explanation: "A reflection flips a shape over a line, producing a mirror image that is the same size but the opposite way round.",
+    hints: ["Think about what happens when you hold a shape up to a mirror.", "Rotation turns a shape, translation slides it, and enlargement resizes it — none of those flip it."],
+    misconceptions: ["", "A rotation turns the shape around a fixed point — it doesn't create a mirror-image flip.", "A translation slides the shape without turning or flipping it.", "An enlargement changes the size of the shape; it doesn't create a mirror image."],
   },
 ];
 
