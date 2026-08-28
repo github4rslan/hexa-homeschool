@@ -14,12 +14,15 @@ export type RoadmapState = "certified" | "current" | "upcoming";
 export interface RoadmapTopicInput {
   topic_tag: string;
   title: string;
+  /** GCSE working-grade band, e.g. "Grade 3–5" — parent-only context (F8). */
+  working_grade_band?: string | null;
 }
 
 export interface RoadmapTopic {
   topicTag: string;
   title: string;
   state: RoadmapState;
+  workingGradeBand: string | null;
 }
 
 /**
@@ -34,13 +37,14 @@ export function buildRoadmapTopics(
 ): RoadmapTopic[] {
   let currentAssigned = false;
   return inBandOrdered.map((t) => {
+    const workingGradeBand = t.working_grade_band ?? null;
     if (certified.has(t.topic_tag)) {
-      return { topicTag: t.topic_tag, title: t.title, state: "certified" as const };
+      return { topicTag: t.topic_tag, title: t.title, state: "certified" as const, workingGradeBand };
     }
     if (!currentAssigned) {
       currentAssigned = true;
-      return { topicTag: t.topic_tag, title: t.title, state: "current" as const };
+      return { topicTag: t.topic_tag, title: t.title, state: "current" as const, workingGradeBand };
     }
-    return { topicTag: t.topic_tag, title: t.title, state: "upcoming" as const };
+    return { topicTag: t.topic_tag, title: t.title, state: "upcoming" as const, workingGradeBand };
   });
 }

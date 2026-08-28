@@ -51,4 +51,21 @@ describe("buildRoadmapTopics", () => {
   it("returns an empty array for a band with no authored topics", () => {
     expect(buildRoadmapTopics([], new Set())).toEqual([]);
   });
+
+  // F8 (2026-08-27): surface each topic's GCSE working-grade band, already
+  // stored but previously discarded before it reached the parent-facing card.
+  it("carries the working_grade_band through as workingGradeBand", () => {
+    const withBands = [
+      { topic_tag: "t1", title: "Topic One", working_grade_band: "Grade 1–3" },
+      { topic_tag: "t2", title: "Topic Two", working_grade_band: "Grade 3–5" },
+    ];
+    const out = buildRoadmapTopics(withBands, new Set(["t1"]));
+    expect(out[0]).toMatchObject({ topicTag: "t1", workingGradeBand: "Grade 1–3" });
+    expect(out[1]).toMatchObject({ topicTag: "t2", workingGradeBand: "Grade 3–5" });
+  });
+
+  it("defaults workingGradeBand to null when a topic has none", () => {
+    const out = buildRoadmapTopics(topics, new Set());
+    expect(out.every((t) => t.workingGradeBand === null)).toBe(true);
+  });
 });

@@ -99,6 +99,11 @@ export function RoadmapCard({
                         }
                       >
                         {t.title}
+                        {t.workingGradeBand && (
+                          <span className="ml-1.5 text-xs font-normal text-fog-500">
+                            · {t.workingGradeBand}
+                          </span>
+                        )}
                         {t.state === "current" && (
                           <>
                             {" "}

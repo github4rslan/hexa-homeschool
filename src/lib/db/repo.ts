@@ -2429,7 +2429,11 @@ export async function childSubjectRoadmap(
         subject,
         keyStage: band,
         topics: buildRoadmapTopics(
-          inBand.map((t) => ({ topic_tag: t.topic_tag, title: t.title })),
+          inBand.map((t) => ({
+            topic_tag: t.topic_tag,
+            title: t.title,
+            working_grade_band: t.working_grade_band,
+          })),
           certified,
         ),
       };
