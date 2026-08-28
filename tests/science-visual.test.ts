@@ -86,11 +86,14 @@ describe("deriveScienceVisual", () => {
 
   // B1 (2026-08-27): the states-of-matter branch used to match the bare word
   // "gas" anywhere in the prompt with no topic gate, so it wrongly rendered a
-  // Solid/Liquid/Gas particle diagram on unrelated real questions.
+  // Solid/Liquid/Gas particle diagram on unrelated real questions. F5 (same
+  // run) then gave sci_body its own correct figure, so this prompt now draws
+  // an honest respiratory diagram instead of the wrong one (see the F5 test
+  // below) — the key assertion here is simply that it is NOT states_of_matter.
   it("does not draw a states-of-matter diagram on a Human Body Systems 'gas exchange' question", () => {
     expect(
-      deriveScienceVisual("sci_body", "Where does gas exchange happen in the lungs?"),
-    ).toBeNull();
+      deriveScienceVisual("sci_body", "Where does gas exchange happen in the lungs?")?.kind,
+    ).not.toBe("states_of_matter");
   });
 
   it("does not draw a states-of-matter diagram on a Chemical Reactions 'what gas is produced' question", () => {
@@ -114,5 +117,31 @@ describe("deriveScienceVisual", () => {
     expect(deriveScienceVisual("sci_states", "Which of these is a gas at room temperature?")?.kind).toBe(
       "states_of_matter",
     );
+  });
+
+  // F5 (2026-08-27): sci_body's own honest figure, the companion fix to B1.
+  it("draws a respiratory figure for a lungs/gas-exchange prompt, strictly on sci_body", () => {
+    const spec = deriveScienceVisual("sci_body", "Where does gas exchange happen in the lungs?");
+    expect(spec?.kind).toBe("human_body");
+    if (spec?.kind !== "human_body") throw new Error("expected human_body");
+    expect(spec.system).toBe("respiratory");
+    expect(spec.alt).toMatch(/lungs/i);
+  });
+
+  it("draws a circulatory figure for a heart/blood-vessel prompt on sci_body", () => {
+    const spec = deriveScienceVisual(
+      "sci_body",
+      "Which blood vessel carries blood away from the heart?",
+    );
+    expect(spec?.kind).toBe("human_body");
+    if (spec?.kind !== "human_body") throw new Error("expected human_body");
+    expect(spec.system).toBe("circulatory");
+  });
+
+  it("never fires the human_body branch outside sci_body, even with the same keywords", () => {
+    // Same collision class as B1: "gas"/"blood"-adjacent wording on an
+    // unrelated topic must never draw a body diagram.
+    expect(deriveScienceVisual("sci_reactions", "What gas is produced when an acid reacts with a metal?")).toBeNull();
+    expect(deriveScienceVisual("sci_ecology", "Which gas do plants remove from the air during photosynthesis?")).toBeNull();
   });
 });

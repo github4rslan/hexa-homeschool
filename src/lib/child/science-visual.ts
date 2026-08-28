@@ -44,6 +44,12 @@ export type ScienceVisualSpec =
       alt: string;
     }
   | {
+      kind: "human_body";
+      /** Which body system the figure illustrates. */
+      system: "respiratory" | "circulatory";
+      alt: string;
+    }
+  | {
       kind: "material_property";
       /** The property being tested, e.g. "waterproof". */
       property: string;
@@ -183,6 +189,29 @@ export function deriveScienceVisual(
       kind: "cell",
       alt: "A cell diagram: an outer membrane, jelly-like cytoplasm inside, and a nucleus in the centre.",
     };
+  }
+
+  // ── human body: respiratory / circulatory systems (F5 — the companion fix
+  //    to B1: sci_body previously had no dedicated branch at all, so it fell
+  //    through to the WRONG states-of-matter figure whenever a prompt
+  //    mentioned "gas". Strictly gated to sci_body (never a keyword-only
+  //    match), so it can never collide with sci_reactions/sci_ecology, the
+  //    exact class of bug B1 fixed. ──
+  if (topicTag === "sci_body") {
+    if (has(text, "lungs", "alveoli", "breath")) {
+      return {
+        kind: "human_body",
+        system: "respiratory",
+        alt: "A simple lungs diagram: the airway branches into two lungs, each ending in tiny alveoli air sacs where gas exchange happens.",
+      };
+    }
+    if (has(text, "heart", "blood", "artery", "vein", "capillary")) {
+      return {
+        kind: "human_body",
+        system: "circulatory",
+        alt: "A simple circulatory diagram: the heart pumps blood out through arteries and receives it back through veins.",
+      };
+    }
   }
 
   // ── states of matter: particle arrangements. Gated on the actual

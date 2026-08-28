@@ -342,6 +342,125 @@ function CellDiagram({
   );
 }
 
+function HumanBody({
+  system,
+  accent,
+  reduced,
+}: {
+  system: "respiratory" | "circulatory";
+  accent: AccentPreset;
+  reduced: boolean;
+}) {
+  if (system === "respiratory") {
+    const alveoli: [number, number][] = [
+      [24, 60],
+      [18, 66],
+      [30, 68],
+      [76, 60],
+      [82, 66],
+      [70, 68],
+    ];
+    return (
+      <svg viewBox="0 0 100 80" className="w-full" style={{ maxHeight: 180 }}>
+        {/* airway branching into two lungs */}
+        <motion.path
+          d="M50 6 L50 30 M50 30 L26 46 M50 30 L74 46"
+          stroke="rgba(255,255,255,0.5)"
+          strokeWidth={2}
+          fill="none"
+          strokeLinecap="round"
+          initial={reduced ? false : { pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={reduced ? { duration: 0 } : { duration: 0.5 }}
+        />
+        {/* lungs */}
+        <motion.ellipse
+          cx={26}
+          cy={56}
+          rx={16}
+          ry={20}
+          fill={accent.swatch}
+          fillOpacity={0.14}
+          stroke={accent.swatch}
+          strokeWidth={1.4}
+          initial={reduced ? false : { opacity: 0, scale: 0.7 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={reduced ? { duration: 0 } : { duration: 0.35, delay: 0.3 }}
+          style={{ transformOrigin: "26px 56px" }}
+        />
+        <motion.ellipse
+          cx={74}
+          cy={56}
+          rx={16}
+          ry={20}
+          fill={accent.swatch}
+          fillOpacity={0.14}
+          stroke={accent.swatch}
+          strokeWidth={1.4}
+          initial={reduced ? false : { opacity: 0, scale: 0.7 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={reduced ? { duration: 0 } : { duration: 0.35, delay: 0.35 }}
+          style={{ transformOrigin: "74px 56px" }}
+        />
+        {alveoli.map(([cx, cy], i) => (
+          <Dot key={i} cx={cx} cy={cy} r={2.2} fill={accent.swatch} reduced={reduced} delay={0.5 + i * 0.05} />
+        ))}
+        <text x={50} y={16} textAnchor="middle" fontSize={4.6} fill="rgba(255,255,255,0.65)">Airway</text>
+        <text x={50} y={78} textAnchor="middle" fontSize={4.6} fill="rgba(255,255,255,0.65)">Lungs</text>
+        <text x={26} y={40} textAnchor="middle" fontSize={4} fill="rgba(255,255,255,0.55)">Alveoli</text>
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 100 70" className="w-full" style={{ maxHeight: 170 }}>
+      {/* heart */}
+      <motion.path
+        d="M50 54 C30 40, 16 28, 16 16 C16 6, 30 2, 40 10 C44 13, 47 16, 50 21 C53 16, 56 13, 60 10 C70 2, 84 6, 84 16 C84 28, 70 40, 50 54 Z"
+        fill={accent.swatch}
+        fillOpacity={0.85}
+        initial={reduced ? false : { opacity: 0, scale: 0.6 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={reduced ? { duration: 0 } : { type: "spring", stiffness: 240, damping: 18 }}
+        style={{ transformOrigin: "50px 28px" }}
+      />
+      <text x={50} y={30} textAnchor="middle" fontSize={4.6} fontWeight="bold" fill="rgba(255,255,255,0.95)">
+        Heart
+      </text>
+      {/* blood flow out through the artery */}
+      <motion.text
+        x={90}
+        y={18}
+        textAnchor="middle"
+        fontSize={7}
+        fill="rgba(255,255,255,0.6)"
+        aria-hidden
+        initial={reduced ? false : { opacity: 0, x: -4 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={reduced ? { duration: 0 } : { duration: 0.3, delay: 0.4 }}
+      >
+        →
+      </motion.text>
+      <text x={90} y={28} textAnchor="middle" fontSize={4.2} fill="rgba(255,255,255,0.65)">Artery</text>
+      {/* blood flow back through the vein */}
+      <motion.text
+        x={10}
+        y={18}
+        textAnchor="middle"
+        fontSize={7}
+        fill="rgba(255,255,255,0.6)"
+        aria-hidden
+        initial={reduced ? false : { opacity: 0, x: 4 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={reduced ? { duration: 0 } : { duration: 0.3, delay: 0.5 }}
+      >
+        ←
+      </motion.text>
+      <text x={10} y={28} textAnchor="middle" fontSize={4.2} fill="rgba(255,255,255,0.65)">Vein</text>
+    </svg>
+  );
+}
+
 function MaterialProperty({
   property,
   test,
@@ -423,6 +542,8 @@ export function ScienceVisual({
         <LifeCycle stages={spec.stages} accent={accent} reduced={reduced} />
       ) : spec.kind === "food_chain" ? (
         <FoodChain links={spec.links} accent={accent} reduced={reduced} />
+      ) : spec.kind === "human_body" ? (
+        <HumanBody system={spec.system} accent={accent} reduced={reduced} />
       ) : spec.kind === "material_property" ? (
         <MaterialProperty
           property={spec.property}
