@@ -881,9 +881,56 @@ describe("B3 (2026-08-28) — misplaced quadratic-expansion item removed from ma
   });
 });
 
+describe("F1 (2026-08-28) — GCSE Maths simultaneous equations strand", () => {
+  it("adds the maths_simultaneous topic in the maths GCSE band with a worked example", () => {
+    const topic = SEED_TOPICS.find((t) => t.topic_tag === "maths_simultaneous");
+    expect(topic, "simultaneous equations topic present").toBeDefined();
+    if (!topic) return;
+    expect(topic.subject).toBe("mathematics");
+    expect(topic.key_stage).toBe(4);
+    expect(topic.title).toBe("Simultaneous Equations");
+    expect(topic.prerequisite_tags).toContain("maths_algebra_linear");
+    expect(topic.prerequisite_tags).toContain("maths_graphs");
+    expect(topic.worked_example).toBeDefined();
+  });
+
+  it("ships the three authored starters, well-formed and correctly keyed", () => {
+    const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_simultaneous");
+    expect(qs.length).toBe(3);
+    for (const q of qs) {
+      expect(q.subject).toBe("mathematics");
+      expect(q.key_stage).toBe(4);
+      expect(q.correct_index).toBeGreaterThanOrEqual(0);
+      expect(q.correct_index).toBeLessThan(q.options.length);
+      expect(new Set(q.options).size).toBe(q.options.length);
+      expect(q.explanation.trim().length).toBeGreaterThan(0);
+    }
+    const answerOf = (needle: string) => {
+      const q = qs.find((item) => item.prompt.includes(needle))!;
+      return q.options[q.correct_index];
+    };
+    // x + y = 9, x − y = 3 → 2x = 12 → x = 6.
+    expect((9 + 3) / 2).toBe(6);
+    expect(answerOf("x + y = 9 and x − y = 3")).toBe("x = 6");
+    // y = x + 2, 2x + y = 11 → 2x + x + 2 = 11 → 3x = 9 → x = 3.
+    expect((11 - 2) / 3).toBe(3);
+    expect(answerOf("y = x + 2 and 2x + y = 11")).toBe("x = 3");
+    // Verify x = 2, y = 3 satisfies both 3x + y = 9 and x + 2y = 8.
+    expect(3 * 2 + 3).toBe(9);
+    expect(2 + 2 * 3).toBe(8);
+    expect(answerOf("3x + y = 9 and x + 2y = 8")).toBe("x = 2, y = 3");
+  });
+
+  it("stays certifiable: at least one practice and one mastery item", () => {
+    const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_simultaneous");
+    expect(qs.filter((q) => q.kind === "practice").length).toBeGreaterThanOrEqual(1);
+    expect(qs.filter((q) => q.kind === "mastery").length).toBeGreaterThanOrEqual(1);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
-  it("maths now has 13 GCSE topics (transformations lifted it past 12)", () => {
-    expect(gcseTopicCount("mathematics")).toBe(13);
+  it("maths now has 14 GCSE topics (simultaneous equations lifted it past 13)", () => {
+    expect(gcseTopicCount("mathematics")).toBe(14);
     expect(gcseTopicCount("english")).toBe(10);
     expect(gcseTopicCount("science")).toBe(10);
   });

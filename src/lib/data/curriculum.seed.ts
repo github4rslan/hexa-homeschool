@@ -84,6 +84,9 @@ const BASE_SEED_TOPICS: SeedTopic[] = [
   // F1 (2026-08-27) — transformations strand (Edexcel 1MA1 G7), a total
   // zero-coverage spec gap the bank was missing entirely.
   { subject: "mathematics", topic_tag: "maths_transformations", title: "Transformations", summary: "Translations, reflections, rotations and enlargements.", key_stage: 4, working_grade_band: "Grade 3–5", order: 13, prerequisite_tags: ["maths_geometry"] },
+  // F1 (2026-08-28) — simultaneous equations strand (Edexcel 1MA1 A19/A20), a
+  // total zero-coverage spec gap the bank was missing entirely.
+  { subject: "mathematics", topic_tag: "maths_simultaneous", title: "Simultaneous Equations", summary: "Solving pairs of linear equations algebraically and graphically.", key_stage: 4, working_grade_band: "Grade 5–7", order: 14, prerequisite_tags: ["maths_algebra_linear", "maths_graphs"] },
 
   // ── English (AQA 8700) ──
   { subject: "english", topic_tag: "eng_spelling", title: "Spelling & Vocabulary", summary: "Common spelling patterns and precise word choice.", key_stage: 4, working_grade_band: "Grade 1–3", order: 1, prerequisite_tags: [] },
@@ -130,6 +133,16 @@ const WORKED_EXAMPLES_BY_TOPIC: Record<string, SeedTopic["worked_example"]> = {
       { line: "5 cm becomes 5 × 2 = 10 cm.", visual: { label: "Side 2", value: "10 cm" } },
     ],
     yourTurn: "Try enlarging a 4 cm side by scale factor 3.",
+  },
+  maths_simultaneous: {
+    title: "Solve x + y = 7 and x − y = 1",
+    scenario: "Two numbers add to 7. Their difference is 1. Find both numbers.",
+    steps: [
+      { line: "Add the two equations together — this cancels out y.", visual: { label: "Add", value: "2x = 8" } },
+      { line: "Divide both sides by 2 to find x.", visual: { label: "x", value: "4" } },
+      { line: "Substitute x = 4 back into the first equation: 4 + y = 7, so y = 3.", visual: { label: "y", value: "3" } },
+    ],
+    yourTurn: "Try solving x + y = 10 and x − y = 2.",
   },
   maths_number: {
     title: "Round 3,748 to the nearest hundred",
@@ -1630,6 +1643,48 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     explanation: "A reflection flips a shape over a line, producing a mirror image that is the same size but the opposite way round.",
     hints: ["Think about what happens when you hold a shape up to a mirror.", "Rotation turns a shape, translation slides it, and enlargement resizes it — none of those flip it."],
     misconceptions: ["", "A rotation turns the shape around a fixed point — it doesn't create a mirror-image flip.", "A translation slides the shape without turning or flipping it.", "An enlargement changes the size of the shape; it doesn't create a mirror image."],
+  },
+  // ── F1 (2026-08-28): maths_simultaneous starter set (Edexcel 1MA1 A19/A20) ──
+  // Closes a total, zero-coverage spec gap: solving pairs of linear equations
+  // algebraically had no bank coverage at all before this topic.
+  {
+    topic_tag: "maths_simultaneous",
+    subject: "mathematics",
+    tier: 3,
+    key_stage: 4,
+    kind: "practice",
+    prompt: "Solve the simultaneous equations: x + y = 9 and x − y = 3. Find the value of x.",
+    options: ["x = 6", "x = 3", "x = 9", "x = 12"],
+    correct_index: 0,
+    explanation: "Add the two equations to eliminate y: (x + y) + (x − y) = 9 + 3, so 2x = 12, and x = 6.",
+    hints: ["Add the two equations together — the y terms will cancel out.", "2x = 9 + 3 = 12. Now divide both sides by 2."],
+    misconceptions: ["", "This is the value of y once you substitute back (9 − 6 = 3), not x.", "This is the right-hand side of the first equation (9), not the solved value of x.", "This is 2x (12) before dividing by 2 — you still need the final step."],
+  },
+  {
+    topic_tag: "maths_simultaneous",
+    subject: "mathematics",
+    tier: 4,
+    key_stage: 4,
+    kind: "practice",
+    prompt: "Solve the simultaneous equations: y = x + 2 and 2x + y = 11. Find the value of x.",
+    options: ["x = 3", "x = 5", "x = 4", "x = 9"],
+    correct_index: 0,
+    explanation: "Substitute y = x + 2 into the second equation: 2x + (x + 2) = 11, so 3x + 2 = 11, giving 3x = 9 and x = 3.",
+    hints: ["Replace y in the second equation with the expression 'x + 2' from the first equation.", "2x + x + 2 = 11 simplifies to 3x + 2 = 11 — solve for x from there."],
+    misconceptions: ["", "This is the value of y once you substitute back (x + 2 = 3 + 2 = 5), not x.", "A slip when simplifying 3x + 2 = 11 — go through each step again.", "This is 3x (9) before dividing by 3 — you still need the final step."],
+  },
+  {
+    topic_tag: "maths_simultaneous",
+    subject: "mathematics",
+    tier: 5,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Which pair of values satisfies BOTH simultaneous equations: 3x + y = 9 and x + 2y = 8?",
+    options: ["x = 2, y = 3", "x = 3, y = 2", "x = 1, y = 6", "x = 4, y = −3"],
+    correct_index: 0,
+    explanation: "Check each equation: 3(2) + 3 = 9 ✓ and 2 + 2(3) = 8 ✓. Both equations are satisfied only by x = 2, y = 3.",
+    hints: ["Test each pair in BOTH equations — a solution must satisfy both, not just one.", "Try x = 2, y = 3 first: does it work in the first equation? Does it also work in the second?"],
+    misconceptions: ["", "This pair fails the first equation: 3(3) + 2 = 11, not 9.", "This pair satisfies the first equation (3(1) + 6 = 9) but fails the second: 1 + 2(6) = 13, not 8.", "This pair satisfies the first equation (3(4) − 3 = 9) but fails the second: 4 + 2(−3) = −2, not 8."],
   },
 ];
 
