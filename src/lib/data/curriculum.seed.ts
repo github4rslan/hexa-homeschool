@@ -1704,6 +1704,21 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     hints: ["Multiply the probability of the first event by the probability of the second, remembering one counter is now gone.", "After picking one blue counter, there are 9 counters left and only 5 are blue."],
     misconceptions: ["", "This treats the counter as replaced (6/10 × 6/10 = 9/25), but it was NOT replaced, so the second fraction must change.", "This is only the probability of the FIRST pick being blue, not both picks together.", "This is only the probability of the SECOND pick being blue (given the first was already blue), not the combined probability of both."],
   },
+  // F5 (2026-08-28): second sci_cells command-word mastery item, a
+  // microscope magnification calculation (AQA 8464 required-practical skill).
+  {
+    topic_tag: "sci_cells",
+    subject: "science",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "A cell has an actual width of 20 micrometres (μm). Its image under a microscope measures 100 millimetres (mm) wide. Calculate the magnification of the image.",
+    options: ["×5,000", "×5", "×500", "×50,000"],
+    correct_index: 0,
+    explanation: "Convert units first: 100 mm = 100,000 micrometres (μm). Magnification = image size ÷ actual size = 100,000 ÷ 20 = ×5,000.",
+    hints: ["Magnification = image size ÷ actual size, but both must be in the SAME units first.", "Convert 100 mm into micrometres before dividing: 1 mm = 1,000 μm."],
+    misconceptions: ["", "This comes from dividing 100 ÷ 20 without converting millimetres to micrometres first. The units must match.", "This is off by a factor of 10. Check the division 100,000 ÷ 20 again.", "This uses the wrong conversion factor for millimetres to micrometres (should be ×1,000, not ×10,000)."],
+  },
 ];
 
 /** Flattened question list ready to seed. */

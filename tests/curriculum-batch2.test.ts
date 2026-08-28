@@ -951,6 +951,35 @@ describe("F2 (2026-08-28): maths_statistics combined/dependent-event probability
   });
 });
 
+describe("F5 (2026-08-28): second sci_cells command-word item (micrometre/millimetre magnification)", () => {
+  const prompt =
+    "A cell has an actual width of 20 micrometres (μm). Its image under a microscope measures 100 millimetres (mm) wide. Calculate the magnification of the image.";
+
+  it("adds exactly one well-formed item keyed to ×5,000", () => {
+    expectWellFormedItem("sci_cells", "science", prompt, "×5,000");
+  });
+
+  it("computes: 100 mm = 100,000 μm, so magnification = 100,000 / 20 = 5,000", () => {
+    expect(100 * 1000).toBe(100000);
+    expect(100000 / 20).toBe(5000);
+    // The unreplaced-unit trap distractor: 100 / 20 = 5, without converting.
+    expect(100 / 20).toBe(5);
+  });
+
+  it("tests a distinct cross-unit-conversion step beyond the existing same-unit magnification item", () => {
+    const cellsPrompts = ALL.filter((q) => q.topic_tag === "sci_cells").map(
+      (q) => q.prompt,
+    );
+    // The existing 2026-08-14 item keeps both lengths in millimetres already
+    // (no conversion required); today's item requires a μm ↔ mm conversion,
+    // a genuinely different sub-skill, not a rephrasing of the same numbers.
+    expect(cellsPrompts).toContain(
+      "A cell has a real width of 0.05 mm. Under a microscope its image measures 10 mm across. Calculate the magnification.",
+    );
+    expect(new Set(cellsPrompts).size).toBe(cellsPrompts.length);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 14 GCSE topics (simultaneous equations lifted it past 13)", () => {
     expect(gcseTopicCount("mathematics")).toBe(14);
