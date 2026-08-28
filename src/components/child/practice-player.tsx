@@ -62,6 +62,8 @@ import { ScienceVisual } from "@/components/child/science-visual";
 import { deriveScienceVisual } from "@/lib/child/science-visual";
 import { EnglishVisual } from "@/components/child/english-visual";
 import { deriveEnglishVisual } from "@/lib/child/english-visual";
+import { GlossaryText } from "@/components/child/glossary-text";
+import { detectCommandWord } from "@/lib/child/command-words";
 import { buildQuestionNarration } from "@/lib/child/narration-copy";
 import dynamic from "next/dynamic";
 
@@ -425,6 +427,15 @@ export function PracticePlayer({
         ? deriveEnglishVisual(curriculumTopic, question.prompt)
         : null,
     [question, mathVisual, scienceVisual, curriculumTopic],
+  );
+
+  // F2 — a tap-to-define "command word" chip (Calculate/Explain/Describe/...)
+  // so a child learns what the exam is actually asking them to DO, separate
+  // from the specific question. Deterministic (no AI); null ⇒ no badge, never
+  // a wrong or misleading tag.
+  const commandWord = useMemo(
+    () => (question ? detectCommandWord(question.prompt) : null),
+    [question],
   );
 
   const hintLadder = question
@@ -1646,9 +1657,28 @@ export function PracticePlayer({
               "lg:grid-cols-[1fr_220px] lg:items-start",
           )}
         >
-          <h1 className="text-3xl sm:text-4xl font-semibold text-fog-50 leading-snug">
-            {question.prompt}
-          </h1>
+          <div>
+            {commandWord && (
+              <div
+                className={cn(
+                  "mb-3 inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide",
+                  accent.softBorder,
+                  accent.text,
+                )}
+              >
+                <GlossaryText
+                  text={commandWord.word.toUpperCase()}
+                  glossary={[{ term: commandWord.word, definition: commandWord.definition }]}
+                  voiceId={voiceId}
+                  keyStage={keyStage}
+                  accent={accentId}
+                />
+              </div>
+            )}
+            <h1 className="text-3xl sm:text-4xl font-semibold text-fog-50 leading-snug">
+              {question.prompt}
+            </h1>
+          </div>
           {(mathVisual || scienceVisual || englishVisual || questionVisual) && (
             <figure
               className={cn(
