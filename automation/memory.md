@@ -2291,3 +2291,119 @@ just fail lint or produce a silently-broken flat config.
   everything this run needed; still worth the owner's direct attention to
   re-authorize the connector. Emailed owner the scenario summary via
   scripts/email-findings.ts.
+- 2026-08-28 — Mechanic build run, DECISION `all` (3 bugs + 8 features, no cap).
+  7 of 8 features SHIPPED plus all 3 bugs, each green-gated (type-check + tests +
+  lint + build, one commit per item, pushed to main) and live-verified on
+  edway.uk with Playwright; 1 feature (F4) BLOCKED as a duplicate-content finding.
+  **B1** (headline, Critical/High) added a curated `IRREGULAR_PLURALS` Set to
+  `english-visual.ts`, checked before `pluralRuleFor` runs, so "child"/"leaf"/
+  "man"/"knife"/etc. now return `null` (decorative fallback) instead of a
+  confidently wrong "add s" tile figure. **B2** `todayCard` now ORs
+  `doneToday.has(tag)` with a new `certifiedTags` set via a pure
+  `isQuestTopicDone()` (lib/engine/quest-selection.ts, unit tested), so a topic
+  certified on a prior day no longer shows as an outstanding quest. **B3** removed
+  the misplaced quadratic-expansion question from `maths_algebra_linear`'s array
+  and deleted the orphaned live DB row by natural key via a temporary one-off
+  script (run once, deleted immediately). **F1** new `maths_simultaneous` topic
+  (Edexcel 1MA1 A19/A20) + worked example + 3 starters. **F2** `maths_statistics`
+  combined/dependent-event probability question (pick-two-without-replacement).
+  **F3** review framing: new `repo.isTopicCertified()` feeds an `isReview` flag
+  through `DailyFlow` → `Explainer` (a small chip) and `PracticePlayer`'s
+  completion screen (pure `completionCopy()` in a new `lib/child/review-framing.ts`,
+  unit tested) so re-mastering an already-certified topic never claims a first
+  mastery moment. **F5** second `sci_cells` command-word item (magnification with
+  a μm↔mm unit conversion). **F6** second `eng_devices` command-word item (explain
+  the EFFECT of a metaphor, not just identify it). **F7** certificate page gets a
+  gentle `motion.article` scale/fade entrance + a delayed hash fade-in, neutralised
+  by the ambient `(child)/learn` `MotionConfig`, with a `.cert-paper, .cert-paper *`
+  print-media reset so print/PDF is never mid-animation. **F8** bumped next
+  15.5.23→15.5.24, @next/bundle-analyzer→15.5.24, @types/node→22.20.1,
+  lucide-react→1.35.0, posthog-js→1.422.3 (explicitly named in this run's finding,
+  unlike prior runs' narrower scoping); left `eslint-config-next` untouched since
+  it was NOT explicitly named. Ran `npm run seed` ONCE after F1/F2/F5/F6 landed
+  ("1 topic / 12 questions written") and verified all 6 new questions + the new
+  topic live in the DB via a temporary read-only script (deleted after).
+  **BLOCKED F4**: the proposed `maths_sequences` "reverse nth-term" item
+  ("A sequence has nth term 4n − 1... equals 39" → n=10) turned out to duplicate
+  an EXISTING item seeded since the original curriculum bank ("Which term of
+  3n + 1 equals 31?" → n=10, `curriculum.seed.ts`, `git log -S` confirmed it
+  predates this session): same skill, same final answer, only the coefficients
+  differ. The finding's own premise ("existing items use... all forward
+  calculations") was factually stale. Per the 2026-08-23 duplicate-content
+  precedent (same numbers/same answer = blocking bar), did NOT ship it; marked
+  blocked in the findings file with the exact existing-item citation. **F5 was A
+  CLOSE CALL in the same direction but did NOT meet the blocking bar**: `sci_cells`
+  already had a same-unit magnification item (2026-08-14, ×200, no conversion
+  needed), so the finding's "zero representation" framing was ALSO stale, but
+  today's item requires a genuine additional μm↔mm conversion step and produces a
+  DIFFERENT final answer (×5,000), so it tests a materially different sub-skill,
+  not a reworded duplicate, so built it, and added a test explicitly asserting both
+  items coexist with different prompts. KEY LEARNING: when a "second command-word"
+  finding's premise claims a skill has zero/single coverage, ALWAYS grep every
+  seed file for the topic_tag first and read the full existing pool before
+  transcribing. The disqualifying bar from the 2026-08-23 precedent is "same
+  skill AND same final answer", not merely "similar topic area"; a genuinely new
+  final answer + a genuinely new required step (unit conversion, elimination vs.
+  substitution, etc.) is enough to clear that bar even when the command word and
+  general topic overlap.
+  SELF-CAUGHT MID-RUN: after committing and pushing B1/B2/B3/F1/F2, re-read this
+  run's own new code/comments/copy against the "no dashes as punctuation, covers
+  code comments too" rule and found MULTIPLE violations I had just introduced
+  (em dashes in doc comments, a test `describe()` label, and worst, inside
+  NEWLY-AUTHORED child-facing hints/misconceptions/worked-example text for F1/F2).
+  Fixed all of them (commas/colons/periods, zero factual change) in a dedicated
+  follow-up `Chore` commit, gated + pushed separately, BEFORE continuing to the
+  next item, then re-applied the same discipline live to every subsequent file
+  (F3's new comments, F5/F6's new hints, F7) so nothing new violated it again.
+  IMPORTANT PATTERN FOR FUTURE RUNS: this codebase's PRE-EXISTING comments and
+  curriculum content (going back months, hundreds of instances) are SATURATED
+  with em dashes as separators. That ambient style is NOT a licence to keep
+  using it in anything freshly authored; the rule applies fully to every new
+  line a run writes, even inside an existing file whose surrounding style still
+  uses dashes, and even inside code comments (not just user-facing copy). Do NOT
+  mass-retrofit the whole pre-existing codebase in an unrelated cleanup commit
+  (out of scope, high blast radius): only ever fix (a) tonight's own new lines,
+  and (b) at most the specific pre-existing lines a commit is already touching
+  for an unrelated reason (e.g. moving a ternary into a new pure function).
+  LIVE VERIFICATION (Playwright, SMOKE parent + Ivy Test, parent-only this run):
+  drove Ivy's ALREADY-CERTIFIED `eng_grammar` through a full real re-mastery pass
+  (Learn→3/3 Practise→3/3 Mastery→Finish) specifically BECAUSE it let one pass
+  verify B1, F3 AND F7 together: the Explainer showed the F3 review chip
+  ("You've already mastered this: great for keeping it fresh!"), mastery question
+  3 of 3 was the EXACT seeded "Pick the correct plural of 'child'." prompt with
+  NO `<figure>` element in the DOM at all (confirmed via `document.querySelector`,
+  not just the accessibility snapshot): the wrong tile figure is gone, and the
+  completion screen read "Still mastered! ⭐" / "Great review, you've still got
+  this locked in! 🎉" (F3's distinct copy, not the first-mastery text), then the
+  certificate page rendered with the article settled at its final resting state
+  (`opacity:1, transform:none` via computed style, confirming the entrance motion
+  completed cleanly). B2 was independently confirmed on the SAME live dashboard
+  load before this: Ivy's `/schedule` still listed `eng_ks3_reading` (Inference &
+  Language) for Friday even though it was certified YESTERDAY per the recent-
+  activity feed, yet her dashboard card showed only "All done for today," never
+  an unchecked "Inference & Language" row, the exact repro Scout filed, now
+  fixed. Zero console errors and zero failed network requests across every page
+  (dashboard, schedule, lesson, certificate, marketing homepage) both before and
+  after the F8 dependency bump deployed. F1/F2/F5/F6/B3's curriculum-only changes
+  were verified via the temporary read-only DB script (not the admin CMS) because
+  it's strictly more authoritative (reads the actual production documents) and
+  keeps the run's `.env.local` touch surface to zero for that portion of
+  verification. DELIBERATELY SKIPPED logging into admin/tutor this run: tonight's
+  brief added a stricter, blanket "do NOT pipe `.env.local` through grep/cat/sed/
+  cut/echo for any reason" instruction on top of the standing credential-handling
+  rule; since every non-parent item this run was already fully verifiable via the
+  DB-script pattern, skipping the admin/tutor login entirely (rather than reading
+  `ADMIN_EMAIL`/`ADMIN_PASSWORD` via any file-reading tool, which would still
+  surface the raw value in my own tool-call output exactly like the flagged
+  incidents) was the strictly safer choice with no loss of coverage. Future runs:
+  if a finding genuinely has NO DB-verifiable surface and truly requires an
+  admin/tutor login, a single targeted `Grep` (not a Bash pipe chain) for ONE
+  named variable remains the documented, previously-accepted minimal-exposure
+  pattern, but prefer the DB-script / parent-account path whenever it covers the
+  same ground, as it did entirely tonight. Vercel MCP still not in the tool list
+  at all this run (sixth+ consecutive run flagging this, following
+  2026-08-24/26/27/28-Scout/28-Mechanic-prior): curl against `/api/health`
+  (200, `db:"up"`) was the only deploy-readiness signal available; no
+  `get_runtime_errors` equivalent, so a server-only regression with no
+  client-visible symptom could theoretically be missed this run too. Still
+  worth the owner's direct attention to re-authorize the connector.
