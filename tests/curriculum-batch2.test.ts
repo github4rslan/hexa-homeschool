@@ -928,6 +928,29 @@ describe("F1 (2026-08-28) — GCSE Maths simultaneous equations strand", () => {
   });
 });
 
+describe("F2 (2026-08-28) — maths_statistics combined/dependent-event probability", () => {
+  const prompt =
+    "A bag contains 4 red counters and 6 blue counters. A counter is picked at random and NOT replaced. A second counter is then picked. Work out the probability that both counters are blue.";
+
+  it("adds exactly one well-formed item keyed to 1/3", () => {
+    expectWellFormedItem("maths_statistics", "mathematics", prompt, "1/3");
+  });
+
+  it("computes: 6/10 × 5/9 = 30/90 = 1/3 (not replaced, so the second denominator drops)", () => {
+    expect((6 / 10) * (5 / 9)).toBeCloseTo(1 / 3, 10);
+    // The with-replacement trap distractor: 6/10 × 6/10 = 9/25.
+    expect((6 / 10) * (6 / 10)).toBeCloseTo(9 / 25, 10);
+  });
+
+  it("is a distinct combined-event item, not a duplicate of the existing single-die probability question", () => {
+    const statsPrompts = ALL.filter(
+      (q) => q.topic_tag === "maths_statistics" && q.kind === "mastery",
+    ).map((q) => q.prompt);
+    expect(statsPrompts).toContain("A fair die is rolled. P(even number) = ?");
+    expect(new Set(statsPrompts).size).toBe(statsPrompts.length);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 14 GCSE topics (simultaneous equations lifted it past 13)", () => {
     expect(gcseTopicCount("mathematics")).toBe(14);

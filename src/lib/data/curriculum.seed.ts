@@ -1686,6 +1686,24 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     hints: ["Test each pair in BOTH equations — a solution must satisfy both, not just one.", "Try x = 2, y = 3 first: does it work in the first equation? Does it also work in the second?"],
     misconceptions: ["", "This pair fails the first equation: 3(3) + 2 = 11, not 9.", "This pair satisfies the first equation (3(1) + 6 = 9) but fails the second: 1 + 2(6) = 13, not 8.", "This pair satisfies the first equation (3(4) − 3 = 9) but fails the second: 4 + 2(−3) = −2, not 8."],
   },
+  // ── F2 (2026-08-28): maths_statistics combined/dependent-event probability ──
+  // Closes a real gap inside an existing topic: every prior maths_statistics
+  // item is a single-stage calculation; this is the first combining two events
+  // (multiplying along branches, adjusting the denominator when an item is not
+  // replaced) — a core, heavily-examined GCSE Statistics & Probability skill.
+  {
+    topic_tag: "maths_statistics",
+    subject: "mathematics",
+    tier: 5,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "A bag contains 4 red counters and 6 blue counters. A counter is picked at random and NOT replaced. A second counter is then picked. Work out the probability that both counters are blue.",
+    options: ["1/3", "9/25", "3/5", "5/9"],
+    correct_index: 0,
+    explanation: "P(first blue) = 6/10. Since the counter isn't replaced, P(second blue) = 5/9. Multiply along the branches: 6/10 × 5/9 = 30/90 = 1/3.",
+    hints: ["Multiply the probability of the first event by the probability of the second, remembering one counter is now gone.", "After picking one blue counter, there are 9 counters left and only 5 are blue."],
+    misconceptions: ["", "This treats the counter as replaced (6/10 × 6/10 = 9/25) — but it was NOT replaced, so the second fraction must change.", "This is only the probability of the FIRST pick being blue, not both picks together.", "This is only the probability of the SECOND pick being blue (given the first was already blue), not the combined probability of both."],
+  },
 ];
 
 /** Flattened question list ready to seed. */
