@@ -2089,3 +2089,110 @@ just fail lint or produce a silently-broken flat config.
   manual path at all). Teardown: `fetch('/logout',{method:'POST'})`→200 between
   each role switch (parent→tutor→parent→admin) + `browser_close`. Credential
   handling confirmed clean via `git status --porcelain` before finishing.
+- 2026-08-28 — Mechanic build run (clean retry; an earlier same-day attempt died mid-task
+  from a weekly API limit before committing anything), DECISION `all` (4 bugs + 8 features,
+  no cap). ALL 12 SHIPPED, each green-gated (type-check + tests + lint + build, one commit
+  per item, pushed to main) AND live-verified on edway.uk with Playwright/curl. **B1**
+  `deriveScienceVisual`'s `states_of_matter` branch now gated on `topicTag === "sci_states"
+  || "sci_ks2_materials"` (mirroring the existing `cell` topic gate) instead of a bare "gas"
+  keyword match anywhere. **B2** `upsertCompetence` no longer overwrites `certified_at` on a
+  re-mastery of an already-certified topic; extracted pure `resolveCertifiedAt`/
+  `isFreshCertification` into a new `lib/engine/competence.ts` (unit-tested), verified by
+  code + test only, per the finding's explicit instruction not to live-drive a real
+  re-certification. **B3** `buildAssessmentNarrative` now accepts a `lessonProgress` param
+  (certified count + working band) so a subject with no diagnostic but real certified
+  topics says so instead of flatly "not been assessed yet", mirroring the 2026-08-05 fix
+  already applied to the sibling "Current standing" card. **B4** dropped the redundant
+  literal "Grade " prefix (`tierToGrade()` already returns "Grade 3"). **F1** new
+  `maths_transformations` topic (Edexcel 1MA1 G7) + worked example + 3 starters,
+  transcribed verbatim from the findings, re-derived by hand and in a Vitest test. **F2** a
+  tap-to-define "command word" chip: new pure `lib/child/command-words.ts`
+  (`detectCommandWord`, opening-word-only match) + a badge in `PracticePlayer` that reuses
+  the EXACT existing `<GlossaryText>` popover component (fed a synthetic one-term glossary)
+  rather than building new popover UI. **F3/F4** second command-word mastery items for
+  `maths_pythagoras` (trig angle) and `sci_electricity` (P=VI), transcribed verbatim +
+  re-derived. **F5** `sci_body` gets its own honest `human_body` visual (respiratory
+  lungs/alveoli SVG, circulatory heart/artery/vein SVG), strictly `topicTag === "sci_body"`
+  gated so it can never collide with sci_reactions/sci_ecology (the B1 class); this is
+  additive to B1, not a duplicate — the exact previously-broken "gas exchange in the
+  lungs" question now renders the correct new figure instead of falling to `null`.
+  **F6** wrapped the reflection "Thanks for sharing!" line in `AnimatePresence` +
+  `motion.p` fade/slide, matching `ParentNoteCard`'s exact entrance pattern; the
+  `(child)/learn` layout's `MotionConfig reducedMotion="user"` already neutralises it, no
+  per-component guard needed. **F7** bumped mongodb/stripe/jose/@sentry/nextjs/
+  @upstash/redis/@axe-core/playwright/@types/react-dom/tsx/vitest to their in-range
+  "Wanted" versions individually (NOT a blanket `npm update`, to avoid also picking up
+  next/eslint-config-next/lucide-react/posthog-js which the finding explicitly scoped
+  out); `npm audit` stayed at 0 vulnerabilities. **F8** threaded `working_grade_band`
+  through `RoadmapTopicInput`/`RoadmapTopic`/`buildRoadmapTopics` and rendered it as a
+  muted badge per topic in `RoadmapCard`. LIVE VERIFICATION (Playwright, SMOKE parent +
+  Ivy Test + admin, all read-only for admin): **B3/B4** confirmed on Ivy's child profile
+  ("Mock score · Grade 3" not doubled; "English/Science hasn't had a formal diagnostic
+  yet, but N topics are already certified... at GCSE level" replacing the old
+  contradiction). **B1/F5** drove the EXACT Scout-flagged `sci_body` practice question
+  ("Where does gas exchange happen in the lungs?") live: it now renders the new
+  respiratory lungs/alveoli figure, and the next question ("Which carries oxygen in the
+  blood?") rendered the circulatory heart/artery/vein figure — neither is the old wrong
+  Solid/Liquid/Gas panel. **F2** drove into `sci_body` mastery and hit the "Explain why
+  arteries..." question: an "EXPLAIN" badge rendered above the heading; tapping it opened
+  the popover "give a reason or mechanism, not just what happens" + Read aloud, exactly as
+  designed. Deliberately did NOT complete this mastery attempt (exited after 2/3 correct,
+  before the 3rd question) to avoid re-triggering B2's exact repro against Ivy's real
+  already-certified `sci_body` row per the finding's explicit caution; separately confirmed
+  her Human Body Systems certificate still reads "Awarded 27 August 2026" (unchanged, not
+  bumped to today) after this session. **F1/F3/F4** were not reachable through Ivy's real
+  lesson flow (all three sit behind topics/questions well ahead of her current band
+  position), so verified instead via the READ-ONLY admin Curriculum CMS (already-permitted
+  read-only surface, no script needed this time): "Transformations · KS4 · Grade 3–5 · 3
+  questions" listed with the exact authored prompts/answers; the Pythagoras trig item
+  (36.9°) and the electricity P=VI item (36 W) both listed under their topics with correct
+  keyed answers. **F8** roadmap badges initially did NOT appear on the first post-push
+  check (deploy-lag false alarm, see below) but WERE present ~8 minutes later after doing
+  other verification work in between — reloaded and confirmed "Number & Place Value·
+  Grade 1–3", ..., "Transformations· Grade 3–5" etc. **F6** NOT live-driven: Ivy had "1
+  quest left today" so `finishedToday` was false and the reflection card never mounted;
+  gate-verified + unit-equivalent-covered only (pure presentational change), deferred
+  rather than force a full extra lesson completion just to see an entrance animation,
+  matching the 2026-08-05 F5 precedent for the same class of expensive end-state. **F7**
+  had no direct UI surface, but the live Sentry envelope requests captured during this
+  session showed `sentry.javascript.nextjs%2F10.71.0` in their query string — direct
+  confirmation the bumped Sentry SDK is the one actually running in production. Zero
+  console errors and zero failed network requests across every page visited this session
+  (dashboard, child profile, `/learn`, two lesson topics, admin overview, admin curriculum
+  CMS). KEY LEARNINGS: (1) a server-rendered (non-static) authenticated route is NOT
+  CDN-cached, so if a just-shipped change to it doesn't appear on the first post-push load,
+  it is very likely still a genuine DEPLOY-PROPAGATION lag, not a caching artifact worth
+  hard-refreshing around — the fix is simply to do other useful verification work for a few
+  minutes and recheck, exactly as this run did for F8 (confirmed correct once given more
+  time, no code change needed). Don't mistake "topic X already visible in a DB-driven list"
+  as proof a given commit is deployed — a topic list is driven by the DATABASE, not the
+  app's code version, so it will show up under ANY sufficiently-recent deploy regardless of
+  which specific commit added the row; only a change that requires NEW RENDERING CODE (a
+  new badge, a new figure) is a valid signal of that commit's own deploy state. (2) When a
+  bug's own finding explicitly says "verify via code + unit test, not a live re-mastery"
+  (B2), that instruction holds even mid-verification-session if you find yourself already
+  a few steps into the exact repro flow for unrelated reasons (here, chasing F2/F5 through
+  sci_body's mastery check) — stop and exit before the final step that would trigger the
+  write, rather than rationalising that "the fix is probably deployed so it's probably
+  fine". Confirmed the certificate's `certified_at` was unchanged afterward as a passive
+  (not the primary) piece of reassurance. (3) The read-only admin Curriculum CMS is a
+  lower-effort substitute for the established "temporary read-only DB script" pattern when
+  verifying newly-seeded content that sits behind a child's real progression — it already
+  lists every topic's full question table (prompt/answer/tier) with no script to write or
+  delete. Reach for the script pattern only when the CMS doesn't surface the specific field
+  needed. (4) Mistakenly printed the smoke/admin/tutor test-account passwords to the Bash
+  tool's own output once via `grep .env.local | sed ... | cut` (the `sed` substitution
+  didn't actually match the literal env-var syntax, so the redaction silently no-op'd) —
+  this technically leaked cleartext credentials into my own tool-call transcript, violating
+  the "read via Bash, never print them" rule even though nothing external was exposed.
+  Going forward: NEVER pipe `.env.local` through `grep`/`cat`/`sed`/`cut` even with an
+  intended redaction step; read the specific values once with a method that doesn't echo
+  them (or accept the values already in context from an earlier read) and never re-print
+  them for a "verify redaction worked" sanity check. (5) Vercel MCP is STILL unavailable
+  this run (not present in the tool list at all, not just an expired-token error) —
+  fourth+ consecutive run flagging this gap (following 2026-08-24/26/27); curl against
+  `/api/health` and admin-CMS/DOM-based live checks remain fully adequate substitutes for
+  everything this run needed (deploy-readiness, runtime-error visibility was simply not
+  available — no `get_runtime_errors` equivalent via curl, so a server-only regression with
+  no client-visible symptom could theoretically be missed). Still worth the owner's direct
+  attention to re-authorize the connector.
