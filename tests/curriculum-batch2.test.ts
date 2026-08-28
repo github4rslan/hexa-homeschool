@@ -980,6 +980,31 @@ describe("F5 (2026-08-28): second sci_cells command-word item (micrometre/millim
   });
 });
 
+describe("F6 (2026-08-28): second eng_devices command-word item (explain the effect of a metaphor)", () => {
+  const prompt =
+    "Which sentence best explains the EFFECT of the metaphor 'The classroom was a zoo'?";
+
+  it("adds exactly one well-formed item keyed to the chaos/atmosphere effect", () => {
+    expectWellFormedItem(
+      "eng_devices",
+      "english",
+      prompt,
+      "It suggests the classroom was chaotic and noisy, like the atmosphere of a zoo full of animals.",
+    );
+  });
+
+  it("tests EXPLAINING the effect, distinct from the existing pure-identification item", () => {
+    const devicesPrompts = ALL.filter((q) => q.topic_tag === "eng_devices").map(
+      (q) => q.prompt,
+    );
+    // The existing item asks the child to IDENTIFY the device used; today's
+    // item asks the child to EXPLAIN its effect, a distinct, higher-order
+    // command-word skill even though it illustrates with the same metaphor.
+    expect(devicesPrompts).toContain("'The classroom was a zoo' is a:");
+    expect(new Set(devicesPrompts).size).toBe(devicesPrompts.length);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 14 GCSE topics (simultaneous equations lifted it past 13)", () => {
     expect(gcseTopicCount("mathematics")).toBe(14);

@@ -1719,6 +1719,26 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     hints: ["Magnification = image size ÷ actual size, but both must be in the SAME units first.", "Convert 100 mm into micrometres before dividing: 1 mm = 1,000 μm."],
     misconceptions: ["", "This comes from dividing 100 ÷ 20 without converting millimetres to micrometres first. The units must match.", "This is off by a factor of 10. Check the division 100,000 ÷ 20 again.", "This uses the wrong conversion factor for millimetres to micrometres (should be ×1,000, not ×10,000)."],
   },
+  // F6 (2026-08-28): second eng_devices command-word mastery item, the first
+  // item to ask for the EFFECT of a device rather than pure identification.
+  {
+    topic_tag: "eng_devices",
+    subject: "english",
+    tier: 4,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "Which sentence best explains the EFFECT of the metaphor 'The classroom was a zoo'?",
+    options: [
+      "It suggests the classroom was chaotic and noisy, like the atmosphere of a zoo full of animals.",
+      "It means the classroom literally contained wild animals.",
+      "It compares the classroom to a zoo using the word 'like' or 'as'.",
+      "It shows the teacher's opinion of the students.",
+    ],
+    correct_index: 0,
+    explanation: "A metaphor states one thing IS another to transfer its qualities. Saying the classroom 'was a zoo' suggests chaos and noise, like the atmosphere of a zoo full of animals: that is the effect created for the reader.",
+    hints: ["Think about what a zoo is usually like: what images and feelings does it bring to mind?", "The 'effect' is what the comparison makes the reader FEEL or IMAGINE, not a literal, word-for-word description."],
+    misconceptions: ["", "A metaphor is not literal. No real animals are involved. This misreads the figurative language as fact.", "This describes what a SIMILE does (using 'like' or 'as'). A metaphor states something IS something else, with no 'like' or 'as'.", "This goes beyond what the metaphor itself supports. The sentence tells us nothing about the teacher's opinion."],
+  },
 ];
 
 /** Flattened question list ready to seed. */
