@@ -759,6 +759,35 @@ describe("F3 (2026-08-26) — second maths_number command-word item (small-decim
   });
 });
 
+describe("F3 (2026-08-27) — second maths_pythagoras command-word item (trig angle)", () => {
+  const prompt =
+    "A right-angled triangle has an opposite side of 6 cm and an adjacent side of 8 cm. Calculate the size of angle θ, to 1 decimal place.";
+
+  it("adds exactly one well-formed item keyed to 36.9°", () => {
+    expectWellFormedItem("maths_pythagoras", "mathematics", prompt, "36.9°");
+  });
+
+  it("computes: tan θ = 6/8 = 0.75, so θ = arctan(0.75) ≈ 36.9°", () => {
+    const thetaDeg = (Math.atan(6 / 8) * 180) / Math.PI;
+    expect(thetaDeg).toBeCloseTo(36.9, 1);
+    // The swapped-ratio distractor (arctan(8/6)) is the complementary angle,
+    // so both correctly sum to 90° — a sanity check the pair is consistent.
+    const swappedDeg = (Math.atan(8 / 6) * 180) / Math.PI;
+    expect(swappedDeg).toBeCloseTo(53.1, 1);
+    expect(thetaDeg + swappedDeg).toBeCloseTo(90, 5);
+  });
+
+  it("is a distinct trig item, not a duplicate of the existing Pythagoras hypotenuse question", () => {
+    const pythagorasPrompts = ALL.filter(
+      (q) => q.topic_tag === "maths_pythagoras" && q.kind === "mastery",
+    ).map((q) => q.prompt);
+    expect(pythagorasPrompts).toContain(
+      "A right-angled triangle has its two shorter sides 6 cm and 8 cm. Calculate the length of the hypotenuse.",
+    );
+    expect(new Set(pythagorasPrompts).size).toBe(pythagorasPrompts.length);
+  });
+});
+
 describe("F1 (2026-08-27) — GCSE Maths transformations strand", () => {
   it("adds the maths_transformations topic in the maths GCSE band with a worked example", () => {
     const topic = SEED_TOPICS.find((t) => t.topic_tag === "maths_transformations");

@@ -707,6 +707,23 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "That is 6² + 8² before the square root. Take the square root of 100.",
     ],
   },
+  // F3 (2026-08-27): second maths_pythagoras command-word item ("Calculate")
+  // Edexcel 1MA1 G21 — basic trig ratios (tan), distinct from the Pythagoras
+  // hypotenuse item above so the topic has command-word depth across both
+  // halves of its spec.
+  {
+    topic_tag: "maths_pythagoras",
+    subject: "mathematics",
+    tier: 5,
+    key_stage: 4,
+    kind: "mastery",
+    prompt: "A right-angled triangle has an opposite side of 6 cm and an adjacent side of 8 cm. Calculate the size of angle θ, to 1 decimal place.",
+    options: ["36.9°", "53.1°", "75°", "48.6°"],
+    correct_index: 0,
+    explanation: "tan θ = opposite ÷ adjacent = 6 ÷ 8 = 0.75. Taking the inverse tan (tan⁻¹) of 0.75 gives θ ≈ 36.9° (1 d.p.).",
+    hints: ["tan θ = opposite ÷ adjacent. Work out that ratio first.", "Use the inverse tan (tan⁻¹) button on your calculator to turn the ratio into an angle."],
+    misconceptions: ["", "This finds the OTHER angle in the triangle by dividing adjacent by opposite instead of opposite by adjacent (8 ÷ 6, not 6 ÷ 8).", "This treats the ratio 0.75 as if it were the angle in degrees — tan θ = 0.75 is not the same as θ = 75°. You still need to take the inverse tan.", "This uses sin instead of tan, and treats the adjacent side (8 cm) as if it were the hypotenuse."],
+  },
   // Edexcel 1MA1 P7 — single-event probability ("Work out").
   {
     topic_tag: "maths_statistics",
