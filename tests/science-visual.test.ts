@@ -83,4 +83,36 @@ describe("deriveScienceVisual", () => {
     expect(spec?.kind).toBe("cell");
     expect(spec?.alt).not.toMatch(/wall/i);
   });
+
+  // B1 (2026-08-27): the states-of-matter branch used to match the bare word
+  // "gas" anywhere in the prompt with no topic gate, so it wrongly rendered a
+  // Solid/Liquid/Gas particle diagram on unrelated real questions.
+  it("does not draw a states-of-matter diagram on a Human Body Systems 'gas exchange' question", () => {
+    expect(
+      deriveScienceVisual("sci_body", "Where does gas exchange happen in the lungs?"),
+    ).toBeNull();
+  });
+
+  it("does not draw a states-of-matter diagram on a Chemical Reactions 'what gas is produced' question", () => {
+    expect(
+      deriveScienceVisual("sci_reactions", "What gas is produced when an acid reacts with a metal?"),
+    ).toBeNull();
+  });
+
+  it("does not draw a states-of-matter diagram on an Ecology 'which gas do plants remove' question", () => {
+    expect(
+      deriveScienceVisual("sci_ecology", "Which gas do plants remove from the air during photosynthesis?"),
+    ).toBeNull();
+  });
+
+  it("does not draw a states-of-matter diagram on a Chemical Reactions limewater question", () => {
+    expect(deriveScienceVisual("sci_reactions", "What gas turns limewater cloudy?")).toBeNull();
+  });
+
+  it("still draws a states-of-matter diagram for genuine sci_states prompts", () => {
+    expect(deriveScienceVisual("sci_states", "When water freezes it becomes:")?.kind).toBe("states_of_matter");
+    expect(deriveScienceVisual("sci_states", "Which of these is a gas at room temperature?")?.kind).toBe(
+      "states_of_matter",
+    );
+  });
 });

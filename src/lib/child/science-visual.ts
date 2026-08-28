@@ -185,8 +185,15 @@ export function deriveScienceVisual(
     };
   }
 
-  // ── states of matter: particle arrangements ──
+  // ── states of matter: particle arrangements. Gated on the actual
+  //    states-of-matter topics (sci_states / sci_ks2_materials), mirroring the
+  //    `cell` branch's topicTag gate above — otherwise the bare word "gas"
+  //    (or "solid"/"melt"/etc used in a non-phase-of-matter sense) collides
+  //    with unrelated topics like sci_body ("gas exchange in the lungs"),
+  //    sci_reactions ("what gas is produced") and sci_ecology ("which gas do
+  //    plants remove"). ──
   if (
+    (topicTag === "sci_states" || topicTag === "sci_ks2_materials") &&
     has(
       text,
       "solid",
