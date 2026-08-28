@@ -186,7 +186,7 @@ export default async function ChildProfilePage({
                     </div>
                     <div className="text-[10px] font-mono uppercase tracking-widest text-fog-500">
                       {s.fromMock ? "Mock score" : "Readiness"}
-                      {s.grade ? ` · Grade ${s.grade}` : ""}
+                      {s.grade ? ` · ${s.grade}` : ""}
                     </div>
                     {s.fromMock && s.mockBoundaryGrade && (
                       <div className="mt-1 text-xs text-amber-200/90">
