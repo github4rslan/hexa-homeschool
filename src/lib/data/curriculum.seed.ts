@@ -216,7 +216,6 @@ const QUESTIONS_BY_TOPIC: Record<string, QTuple[]> = {
     [3, "practice", "Expand 2(x + 3).", ["2x + 3", "2x + 6", "x + 6", "2x + 5"], 1, "Multiply both terms by 2: 2x + 6."],
     [4, "mastery", "Solve 5x − 4 = 2x + 11.", ["x = 3", "x = 5", "x = 7", "x = 15"], 1, "5x − 2x = 11 + 4 → 3x = 15 → x = 5."],
     [4, "mastery", "Make y the subject: 2y + 6 = 10.", ["y = 2", "y = 4", "y = 8", "y = 16"], 0, "2y = 4 → y = 2."],
-    [5, "mastery", "Expand (x + 2)(x + 3).", ["x² + 5x + 6", "x² + 6x + 5", "x² + 5x + 5", "x² + 6"], 0, "x² + 3x + 2x + 6 = x² + 5x + 6."],
   ],
   maths_sequences: [
     [3, "diagnostic", "Find the next term: 4, 7, 10, 13, …", ["15", "16", "17", "14"], 1, "The rule is +3, so 13 + 3 = 16."],

@@ -856,6 +856,31 @@ describe("F1 (2026-08-27) — GCSE Maths transformations strand", () => {
   });
 });
 
+describe("B3 (2026-08-28) — misplaced quadratic-expansion item removed from maths_algebra_linear", () => {
+  it("no longer carries the double-bracket expansion question (that's maths_quadratics' subject matter)", () => {
+    const stale = SEED_QUESTIONS.find(
+      (q) => q.topic_tag === "maths_algebra_linear" && q.prompt === "Expand (x + 2)(x + 3).",
+    );
+    expect(stale).toBeUndefined();
+  });
+
+  it("maths_quadratics keeps testing the identical skill with its own worked example", () => {
+    const q = ALL.find(
+      (item) => item.topic_tag === "maths_quadratics" && item.prompt === "Expand (x + 5)(x − 2).",
+    );
+    expect(q, "maths_quadratics still has its own expand-brackets item").toBeDefined();
+    if (!q) return;
+    expect(q.options[q.correct_index]).toBe("x² + 3x − 10");
+  });
+
+  it("maths_algebra_linear keeps only single-bracket (linear) expansion, one grade band below quadratics", () => {
+    const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_algebra_linear");
+    for (const q of qs) {
+      expect(q.prompt).not.toMatch(/\)\s*\(/); // no "(...)(" double-bracket shape
+    }
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 13 GCSE topics (transformations lifted it past 12)", () => {
     expect(gcseTopicCount("mathematics")).toBe(13);
