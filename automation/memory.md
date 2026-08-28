@@ -2196,3 +2196,98 @@ just fail lint or produce a silently-broken flat config.
   available — no `get_runtime_errors` equivalent via curl, so a server-only regression with
   no client-visible symptom could theoretically be missed). Still worth the owner's direct
   attention to re-authorize the connector.
+- 2026-08-28 — Discovery pass, Friday B-polish deep-dive, FULL coverage (parent/
+  child/tutor/admin; desktop 1280 + mobile 390 both confirmed innerWidth, no
+  horizontal overflow anywhere checked). Drove the full child loop at max depth:
+  certified **English "Grammar & Sentence Structure"** (eng_grammar) fresh
+  end-to-end (wrong#1 calm misconception-specific nudge + AI "Why isn't that
+  right?", correct settle, 3/3 mastery, trophy+Eddie); separately drove an
+  ALREADY-CERTIFIED topic (`maths_algebra_linear`) through a DELIBERATE mastery
+  fail (2/3 — reteach screen + Eddie re-confirmed) then a fresh 3/3 re-pass, and
+  confirmed **live** (not just by code) that 2026-08-27's B2/EPIC13 fix holds:
+  the certificate still read "Awarded 26 August 2026", unchanged, after today's
+  real re-mastery — the strongest possible verification for that class of fix.
+  All 4 interaction types completed: mcq, fill_blank (resumed after a genuine
+  page refresh mid-lesson at the exact step with score intact; rapid
+  double-click on Check-answer did not double-score), tap_reveal (reveal/select
+  split), drag_drop (both tap-to-place AND full keyboard Tab+Enter placement).
+  HEADLINE FINDING: **B1** (Critical/High) `english-visual.ts`'s `pluralRuleFor`
+  has no irregular-plural exception list, so it live-rendered "child + s / Most
+  words just add s" for the seeded "Pick the correct plural of 'child'." mastery
+  question — correct answer is "children" — the figure actively ASSERTS the
+  WRONG rule right beside the correct MCQ option (screenshot-confirmed). A
+  second live instance: "The plural of 'leaf' is:" (correct: leaves). This is
+  the FIFTH instance of the tracked deriver-chain correctness class (EPIC 1) but
+  a NEW shape within it: a heuristic with an unguarded "else" default that
+  ALWAYS asserts something, vs. the prior four which were keyword-collision
+  false-positives. **B2** (opened as new EPIC 14): the parent dashboard's
+  `todayCard` (repo.ts:1763-1837) computes each quest's `done` flag from
+  TODAY-only completions and never cross-references the topic's actual
+  certified state (even though the full competence list is already fetched in
+  the same function) — live-reproduced on Ivy's real dashboard: her
+  Inference & Language, certified YESTERDAY, was still shown as her one
+  outstanding "1 quest left today", unchecked and clickable, while her own
+  child hub (computed independently) correctly showed a different real next
+  topic. **B3** (opened as new EPIC 15): `maths_algebra_linear`'s mastery pool
+  contains "Expand (x + 2)(x + 3)." — a quadratic-expansion question that is
+  explicitly `maths_quadratics`' own subject matter one grade-band higher (which
+  already separately tests the identical skill) — a topic/grade-band
+  categorisation leak, not an arithmetic error. Curriculum (EPIC 3 headline):
+  `maths_transformations` (2026-08-27's F1) confirmed SHIPPED live via the admin
+  Curriculum CMS; authored the next EPIC 3 slice, `maths_simultaneous` (Edexcel
+  1MA1 A19/A20, zero coverage confirmed by grep), as F1 — topic + worked example
+  + 3 starters (elimination, substitution, and a "which pair satisfies BOTH
+  equations" verify-style mastery item). EPIC 2 depth: read the LIVE
+  `maths_statistics` bank via the admin CMS (8 questions: mean/range/mode/
+  median/simple-probability, all correct) and found it has genuinely ZERO
+  combined/dependent-event probability content (the classic "pick two, no
+  replacement" tree-diagram skill) — authored F2 to close it, plus 3 more
+  command-word depth items (maths_sequences nth-term back-solving, sci_cells
+  magnification calculation, eng_devices "explain the effect" — its first
+  EFFECT item, not just identification). New feature: F3 ties directly to B2 —
+  a distinct "review" framing (chip + different completion copy) when a child
+  re-enters Practise/Mastery on an already-certified topic, so re-doing a topic
+  never looks identical to earning it the first time. Delight: F7 the
+  certificate page is the one remaining zero-motion arrival in the child flow
+  (confirmed live twice, static instant render) — proposed a gentle scale/fade
+  entrance. Static: type-check + lint GREEN, npm audit 0 vulnerabilities
+  (prod-only AND full-tree), security headers unchanged/strong (curl -IL), stack
+  mostly current with one more small in-range bump batch available (F8: next
+  15.5.23→15.5.24, @next/bundle-analyzer, @types/node, lucide-react, posthog-js).
+  Admin (overview/finance/escalations/curriculum CMS) + tutor (empty queue, silo
+  holds) both READ-ONLY clean. Plan/schedule journey re-verified a THIRD time on
+  a third child (approved a fresh Sam Test week live — dashboard immediately
+  reflected the real topic). ZERO console errors and ZERO failed network
+  requests across the entire session, both viewports.
+  GOTCHAS/PATTERNS WORTH REPEATING: (1) the persisted MCP browser profile's
+  autofill on `/login` surfaced the SMOKE parent's plaintext password in an
+  early accessibility snapshot this run BEFORE I registered the pattern — not a
+  grep/sed/cut redaction failure like the incident flagged at the top of this
+  run's brief, but the same class of unintended credential exposure in tool
+  output. Going forward: never `browser_snapshot` a `/login` page without first
+  checking whether a password field might be pre-filled — submit a pre-filled
+  form via a CSS-selector click with NO prior/following snapshot of that field,
+  and for admin/tutor logins, `browser_type` directly into `input[type=email]`/
+  `input[type=password]` selectors (no snapshot needed to find them) rather than
+  snapshotting first. (2) A `deriveXVisual`-style heuristic with an unguarded
+  default/"else" branch is a DIFFERENT and worse risk shape than the
+  keyword-collision bugs found in the same class on 2026-08-22/23/27 — it never
+  returns `null`, so it always confidently asserts something, even when wrong;
+  worth explicitly checking for this shape (not just keyword collisions) in
+  future deriver-chain sweeps. (3) The read-only admin Curriculum CMS remains
+  the fastest way to audit a topic's FULL live question set (prompt/answer/tier
+  table) without writing a throwaway script — used it this run to find the
+  maths_statistics combined-probability gap AND to confirm 2026-08-27's
+  maths_transformations shipped. (4) A live RE-TAKE of an already-certified
+  topic (not just a DB read) is the strongest verification for a
+  re-certification data-integrity fix (EPIC 13) — worth deliberately routing
+  into this state (via a leftover "pick up where you left off" resume or a
+  "Practice more" link) when one is naturally available, rather than only ever
+  reading the DB. Teardown: `fetch('/logout',{method:'POST'})` → 200 between
+  each role switch (parent→admin→tutor) + `browser_close`. Vercel MCP still not
+  in the tool list at all this run (fifth+ consecutive run flagging this,
+  following 2026-08-24/26/27/28-Mechanic) — curl against `/api/health` and
+  admin-CMS/DOM-based live checks remain fully adequate substitutes for
+  everything this run needed; still worth the owner's direct attention to
+  re-authorize the connector. Emailed owner the scenario summary via
+  scripts/email-findings.ts.
