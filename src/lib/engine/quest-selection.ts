@@ -71,7 +71,7 @@ export function pickScheduleQuestTopic<T extends QuestTopicLike>(input: {
 /**
  * Whether a scheduled quest for a topic should show as "done" (B2). A topic
  * counts as done when it was completed TODAY, or when it's already certified
- * on any prior day — a stale, already-mastered topic must never show as an
+ * on any prior day: a stale, already-mastered topic must never show as an
  * outstanding, unchecked quest just because the (unedited) plan still lists
  * it and today's completion log doesn't happen to include it.
  */

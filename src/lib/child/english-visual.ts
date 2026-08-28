@@ -42,7 +42,7 @@ const Q = "['\"‘’“”]";
 
 /**
  * Known irregular English plurals (base word, lower-cased) with no reliable
- * suffix rule — "add s/es/ies" is WRONG for every one of these (B1: the
+ * suffix rule: "add s/es/ies" is WRONG for every one of these (B1: the
  * derived figure must never assert a spelling rule that contradicts the
  * question's own correct answer). Checked before `pluralRuleFor` is applied;
  * when a base is in this set, `deriveEnglishVisual` returns `null` so the
@@ -73,7 +73,7 @@ const IRREGULAR_PLURALS = new Set([
  * Decide the plural spelling rule for a base word (pure). KS2 rules only:
  * words ending in s/x/z/ch/sh add "es"; consonant + y becomes "ies"; otherwise
  * just add "s". The returned `rule` text never contains the finished plural.
- * Callers MUST check `IRREGULAR_PLURALS` first — this function has no
+ * Callers MUST check `IRREGULAR_PLURALS` first: this function has no
  * knowledge of irregular plurals and will confidently return the wrong rule
  * for one (e.g. "child" → "s", "leaf" → "s").
  */
@@ -105,7 +105,7 @@ export function deriveEnglishVisual(
   const plural = prompt.match(new RegExp(`plural of\\s*${Q}?([a-z]+)${Q}?`, "i"));
   if (plural) {
     const base = plural[1].toLowerCase();
-    // Irregular plurals have no reliable "add s/es/ies" rule — never assert
+    // Irregular plurals have no reliable "add s/es/ies" rule, so never assert
     // one; fall back to the decorative (never wrong) AI image instead (B1).
     if (IRREGULAR_PLURALS.has(base)) return null;
     const { ending, rule } = pluralRuleFor(base);

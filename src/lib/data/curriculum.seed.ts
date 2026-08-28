@@ -84,7 +84,7 @@ const BASE_SEED_TOPICS: SeedTopic[] = [
   // F1 (2026-08-27) — transformations strand (Edexcel 1MA1 G7), a total
   // zero-coverage spec gap the bank was missing entirely.
   { subject: "mathematics", topic_tag: "maths_transformations", title: "Transformations", summary: "Translations, reflections, rotations and enlargements.", key_stage: 4, working_grade_band: "Grade 3–5", order: 13, prerequisite_tags: ["maths_geometry"] },
-  // F1 (2026-08-28) — simultaneous equations strand (Edexcel 1MA1 A19/A20), a
+  // F1 (2026-08-28): simultaneous equations strand (Edexcel 1MA1 A19/A20), a
   // total zero-coverage spec gap the bank was missing entirely.
   { subject: "mathematics", topic_tag: "maths_simultaneous", title: "Simultaneous Equations", summary: "Solving pairs of linear equations algebraically and graphically.", key_stage: 4, working_grade_band: "Grade 5–7", order: 14, prerequisite_tags: ["maths_algebra_linear", "maths_graphs"] },
 
@@ -138,7 +138,7 @@ const WORKED_EXAMPLES_BY_TOPIC: Record<string, SeedTopic["worked_example"]> = {
     title: "Solve x + y = 7 and x − y = 1",
     scenario: "Two numbers add to 7. Their difference is 1. Find both numbers.",
     steps: [
-      { line: "Add the two equations together — this cancels out y.", visual: { label: "Add", value: "2x = 8" } },
+      { line: "Add the two equations together: this cancels out y.", visual: { label: "Add", value: "2x = 8" } },
       { line: "Divide both sides by 2 to find x.", visual: { label: "x", value: "4" } },
       { line: "Substitute x = 4 back into the first equation: 4 + y = 7, so y = 3.", visual: { label: "y", value: "3" } },
     ],
@@ -1657,8 +1657,8 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     options: ["x = 6", "x = 3", "x = 9", "x = 12"],
     correct_index: 0,
     explanation: "Add the two equations to eliminate y: (x + y) + (x − y) = 9 + 3, so 2x = 12, and x = 6.",
-    hints: ["Add the two equations together — the y terms will cancel out.", "2x = 9 + 3 = 12. Now divide both sides by 2."],
-    misconceptions: ["", "This is the value of y once you substitute back (9 − 6 = 3), not x.", "This is the right-hand side of the first equation (9), not the solved value of x.", "This is 2x (12) before dividing by 2 — you still need the final step."],
+    hints: ["Add the two equations together: the y terms will cancel out.", "2x = 9 + 3 = 12. Now divide both sides by 2."],
+    misconceptions: ["", "This is the value of y once you substitute back (9 − 6 = 3), not x.", "This is the right-hand side of the first equation (9), not the solved value of x.", "This is 2x (12) before dividing by 2, you still need the final step."],
   },
   {
     topic_tag: "maths_simultaneous",
@@ -1670,8 +1670,8 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     options: ["x = 3", "x = 5", "x = 4", "x = 9"],
     correct_index: 0,
     explanation: "Substitute y = x + 2 into the second equation: 2x + (x + 2) = 11, so 3x + 2 = 11, giving 3x = 9 and x = 3.",
-    hints: ["Replace y in the second equation with the expression 'x + 2' from the first equation.", "2x + x + 2 = 11 simplifies to 3x + 2 = 11 — solve for x from there."],
-    misconceptions: ["", "This is the value of y once you substitute back (x + 2 = 3 + 2 = 5), not x.", "A slip when simplifying 3x + 2 = 11 — go through each step again.", "This is 3x (9) before dividing by 3 — you still need the final step."],
+    hints: ["Replace y in the second equation with the expression 'x + 2' from the first equation.", "2x + x + 2 = 11 simplifies to 3x + 2 = 11, solve for x from there."],
+    misconceptions: ["", "This is the value of y once you substitute back (x + 2 = 3 + 2 = 5), not x.", "A slip when simplifying 3x + 2 = 11, go through each step again.", "This is 3x (9) before dividing by 3, you still need the final step."],
   },
   {
     topic_tag: "maths_simultaneous",
@@ -1683,14 +1683,14 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     options: ["x = 2, y = 3", "x = 3, y = 2", "x = 1, y = 6", "x = 4, y = −3"],
     correct_index: 0,
     explanation: "Check each equation: 3(2) + 3 = 9 ✓ and 2 + 2(3) = 8 ✓. Both equations are satisfied only by x = 2, y = 3.",
-    hints: ["Test each pair in BOTH equations — a solution must satisfy both, not just one.", "Try x = 2, y = 3 first: does it work in the first equation? Does it also work in the second?"],
+    hints: ["Test each pair in BOTH equations: a solution must satisfy both, not just one.", "Try x = 2, y = 3 first: does it work in the first equation? Does it also work in the second?"],
     misconceptions: ["", "This pair fails the first equation: 3(3) + 2 = 11, not 9.", "This pair satisfies the first equation (3(1) + 6 = 9) but fails the second: 1 + 2(6) = 13, not 8.", "This pair satisfies the first equation (3(4) − 3 = 9) but fails the second: 4 + 2(−3) = −2, not 8."],
   },
   // ── F2 (2026-08-28): maths_statistics combined/dependent-event probability ──
   // Closes a real gap inside an existing topic: every prior maths_statistics
   // item is a single-stage calculation; this is the first combining two events
   // (multiplying along branches, adjusting the denominator when an item is not
-  // replaced) — a core, heavily-examined GCSE Statistics & Probability skill.
+  // replaced), a core, heavily-examined GCSE Statistics & Probability skill.
   {
     topic_tag: "maths_statistics",
     subject: "mathematics",
@@ -1702,7 +1702,7 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     correct_index: 0,
     explanation: "P(first blue) = 6/10. Since the counter isn't replaced, P(second blue) = 5/9. Multiply along the branches: 6/10 × 5/9 = 30/90 = 1/3.",
     hints: ["Multiply the probability of the first event by the probability of the second, remembering one counter is now gone.", "After picking one blue counter, there are 9 counters left and only 5 are blue."],
-    misconceptions: ["", "This treats the counter as replaced (6/10 × 6/10 = 9/25) — but it was NOT replaced, so the second fraction must change.", "This is only the probability of the FIRST pick being blue, not both picks together.", "This is only the probability of the SECOND pick being blue (given the first was already blue), not the combined probability of both."],
+    misconceptions: ["", "This treats the counter as replaced (6/10 × 6/10 = 9/25), but it was NOT replaced, so the second fraction must change.", "This is only the probability of the FIRST pick being blue, not both picks together.", "This is only the probability of the SECOND pick being blue (given the first was already blue), not the combined probability of both."],
   },
 ];
 

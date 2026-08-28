@@ -93,7 +93,7 @@ describe("isQuestTopicDone (B2)", () => {
 
   it("is done when certified on a prior day, even if NOT completed today", () => {
     // The exact B2 repro: certified yesterday, plan still lists it today, and
-    // today's completion log doesn't include it — must still show as done.
+    // today's completion log doesn't include it. Must still show as done.
     expect(
       isQuestTopicDone("eng_ks3_reading", new Set(), new Set(["eng_ks3_reading"])),
     ).toBe(true);

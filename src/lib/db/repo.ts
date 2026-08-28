@@ -1792,8 +1792,8 @@ export async function todayCard(
     topicTitle: titleByTag.get(tag) || tag,
   }));
 
-  // A topic already certified (any day, not just today) is done for good —
-  // the checklist must agree with real certification state, not just
+  // A topic already certified (any day, not just today) is done for good.
+  // The checklist must agree with real certification state, not just
   // "completed in the last 24h" (B2), or it shows a stale, already-mastered
   // topic as an outstanding quest.
   const certifiedTags = new Set(

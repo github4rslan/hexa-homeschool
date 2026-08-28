@@ -856,7 +856,7 @@ describe("F1 (2026-08-27) — GCSE Maths transformations strand", () => {
   });
 });
 
-describe("B3 (2026-08-28) — misplaced quadratic-expansion item removed from maths_algebra_linear", () => {
+describe("B3 (2026-08-28): misplaced quadratic-expansion item removed from maths_algebra_linear", () => {
   it("no longer carries the double-bracket expansion question (that's maths_quadratics' subject matter)", () => {
     const stale = SEED_QUESTIONS.find(
       (q) => q.topic_tag === "maths_algebra_linear" && q.prompt === "Expand (x + 2)(x + 3).",
@@ -881,7 +881,7 @@ describe("B3 (2026-08-28) — misplaced quadratic-expansion item removed from ma
   });
 });
 
-describe("F1 (2026-08-28) — GCSE Maths simultaneous equations strand", () => {
+describe("F1 (2026-08-28): GCSE Maths simultaneous equations strand", () => {
   it("adds the maths_simultaneous topic in the maths GCSE band with a worked example", () => {
     const topic = SEED_TOPICS.find((t) => t.topic_tag === "maths_simultaneous");
     expect(topic, "simultaneous equations topic present").toBeDefined();
@@ -928,7 +928,7 @@ describe("F1 (2026-08-28) — GCSE Maths simultaneous equations strand", () => {
   });
 });
 
-describe("F2 (2026-08-28) — maths_statistics combined/dependent-event probability", () => {
+describe("F2 (2026-08-28): maths_statistics combined/dependent-event probability", () => {
   const prompt =
     "A bag contains 4 red counters and 6 blue counters. A counter is picked at random and NOT replaced. A second counter is then picked. Work out the probability that both counters are blue.";
 
