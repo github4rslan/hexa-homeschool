@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { ArrowLeft, Printer } from "lucide-react";
 import type { TopicCertificate } from "@/lib/db/repo";
 import { ConfettiBurst } from "@/components/fx/confetti-burst";
@@ -11,6 +12,13 @@ import { ConfettiBurst } from "@/components/fx/confetti-burst";
  * fixed-light, so the certificate reads warm on screen and prints clean.
  * "Save as PDF" uses the browser's print-to-PDF (no PDF library, same pattern as
  * the parent mastery certificate). Carries no PII beyond the child's first name.
+ *
+ * F7 (2026-08-28): a gentle arrival for the certificate card instead of an
+ * instant, static render, matching the calm entrance pace used elsewhere in
+ * the child flow. `(child)/learn`'s ambient `MotionConfig reducedMotion="user"`
+ * already collapses this to an instant appearance under prefers-reduced-motion
+ * (no per-component guard needed), and the print stylesheet below forces the
+ * final, settled state so printing/PDF-saving is never delayed or mid-motion.
  */
 export function TopicCertificateView({
   certificate,
@@ -32,6 +40,7 @@ export function TopicCertificateView({
         @media print {
           .cert-noprint { display: none !important; }
           .cert-paper { box-shadow: none !important; max-width: none !important; margin: 0 !important; }
+          .cert-paper, .cert-paper * { transform: none !important; opacity: 1 !important; }
           @page { size: landscape; margin: 14mm; }
         }
       `}</style>
@@ -52,7 +61,12 @@ export function TopicCertificateView({
         </button>
       </div>
 
-      <article className="cert-paper mx-auto rounded-3xl border-4 border-amber-300 bg-white p-10 text-center shadow-2xl sm:p-14 print:rounded-none">
+      <motion.article
+        className="cert-paper mx-auto rounded-3xl border-4 border-amber-300 bg-white p-10 text-center shadow-2xl sm:p-14 print:rounded-none"
+        initial={{ opacity: 0, scale: 0.97, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+      >
         {/* Seal */}
         <div className="mb-6 flex justify-center">
           <svg width="88" height="88" viewBox="0 0 96 96" aria-hidden>
@@ -91,15 +105,20 @@ export function TopicCertificateView({
 
         <p className="mt-8 text-sm text-neutral-500">Awarded {dateLabel}</p>
 
-        <div className="mt-10 border-t border-neutral-200 pt-6">
+        <motion.div
+          className="mt-10 border-t border-neutral-200 pt-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.35, ease: "easeOut" }}
+        >
           <p className="text-xs text-neutral-400">
             Verified by Edway · tamper-evident reference
           </p>
           <p className="mt-1 break-all font-mono text-[10px] text-neutral-400">
             {certificate.verificationHash}
           </p>
-        </div>
-      </article>
+        </motion.div>
+      </motion.article>
     </div>
   );
 }
