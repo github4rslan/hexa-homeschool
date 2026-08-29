@@ -16,6 +16,14 @@ import withBundleAnalyzer from "@next/bundle-analyzer";
  * URLs. `'unsafe-inline'` script-src is required by Next.js hydration inline
  * scripts (a nonce-based policy would force every page dynamic); there are
  * still no foreign script origins.
+ *
+ * F3 (2026-08-29) — `report-uri` sends blocked-resource reports to our own
+ * same-origin, rate-limited endpoint (src/app/api/csp-report), which reduces
+ * every report to blocked-uri/violated-directive/document-uri before logging
+ * to Sentry. Using the older `report-uri` (not the newer Reporting-Endpoints/
+ * `report-to` pair) keeps this a same-origin relative path that works
+ * identically across prod and preview deploys, and it remains the only
+ * mechanism Firefox/Safari support for CSP violation reporting.
  */
 const csp = [
   "default-src 'self'",
@@ -32,6 +40,7 @@ const csp = [
   "form-action 'self'",
   "object-src 'none'",
   "upgrade-insecure-requests",
+  "report-uri /api/csp-report",
 ].join("; ");
 
 const securityHeaders = [
