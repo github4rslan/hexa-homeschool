@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Web Push is not configured." }, { status: 503 });
   }
 
-  // B4 (2026-08-29) — generous per-parent limit so a normal "enable
+  // B4 (2026-08-29): generous per-parent limit so a normal "enable
   // notifications" click never trips it, but a compromised session or a
   // buggy client retry-loop can't spam subscription writes.
   const limited = await rateLimit(`push-sub:${parentId}`, 10, 60_000);

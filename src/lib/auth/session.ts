@@ -37,7 +37,7 @@ export interface SessionUser {
 export interface CreateSessionOptions {
   /**
    * B3 fix: the `/login` "Remember me" checkbox. Defaults to `true` (today's
-   * 7-day session, unchanged) at every call site that doesn't pass it — only
+   * 7-day session, unchanged) at every call site that doesn't pass it; only
    * a parent who deliberately unchecks it on `/login` gets the shorter,
    * same-device-only window.
    */

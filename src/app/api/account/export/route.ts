@@ -16,7 +16,7 @@ export async function GET() {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
-  // B4 (2026-08-29) — this fans out to eight child-scoped collections plus
+  // B4 (2026-08-29): this fans out to eight child-scoped collections plus
   // tutor bookings per hit. Generous per-parent limit so a normal "download my
   // data" click never trips it, matching the pattern already used for
   // similarly expensive authenticated routes (e.g. /api/media/sign).

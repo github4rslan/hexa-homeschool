@@ -341,7 +341,7 @@ describe("resume math", () => {
   });
 });
 
-describe("resume math — Mastery checkpoint (B1: Mastery previously had zero persistence)", () => {
+describe("resume math, Mastery checkpoint (B1: Mastery previously had zero persistence)", () => {
   it("returns null when there is nothing to resume", () => {
     expect(resolveMasteryResumeStep(null, 3)).toBeNull();
     expect(

@@ -7,13 +7,13 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * POST /api/csp-report (F3) — the browser's own CSP violation report
+ * POST /api/csp-report (F3): the browser's own CSP violation report
  * (`report-uri`, see next.config.ts). Unauthenticated by nature: the browser
  * sends this before any session context is relevant, so it's rate-limited per
  * IP like the other public route (/api/newsletter). The payload is reduced to
  * only `blocked-uri` / `violated-directive` / `document-uri` (parseCspReport
  * strips everything else, e.g. `script-sample`) before logging to Sentry,
- * which is already PII-scrubbed via `scrubAndTag` — never a new, unscrubbed
+ * which is already PII-scrubbed via `scrubAndTag`, never a new, unscrubbed
  * sink. A no-op (not an error) when Sentry is unconfigured.
  */
 export async function POST(request: Request) {

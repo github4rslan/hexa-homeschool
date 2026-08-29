@@ -380,7 +380,7 @@ export function PracticePlayer({
   const [resumed, setResumed] = useState(false);
   const resumeAppliedRef = useRef(false);
 
-  // F2 — one warm, non-test-framed beat marking arrival into Mastery (ties to
+  // F2: one warm, non-test-framed beat marking arrival into Mastery (ties to
   // B1's finding that Mastery deserves its own small acknowledgement, distinct
   // from every other "Keep going" transition). Shown once, only on the genuine
   // practice-to-mastery transition, never a reteach retry or a resumed
@@ -589,7 +589,7 @@ export function PracticePlayer({
   // start, or a finished lesson/attempt all → no resume.
   //
   // B1 fix: a saved MASTERY checkpoint always takes priority over a Practice
-  // one — it can only exist once Practice is genuinely finished (Practice's
+  // one: it can only exist once Practice is genuinely finished (Practice's
   // own checkpoint is cleared the moment Mastery begins), so it supersedes any
   // lingering practice save for the same topic. Before this fix, Mastery had
   // no persistence at all: a refresh anywhere past Practice fell all the way
@@ -727,7 +727,7 @@ export function PracticePlayer({
       try {
         window.localStorage.setItem(storageKey, JSON.stringify(payload));
       } catch {
-        /* private mode / quota — server copy still saves */
+        /* private mode / quota: server copy still saves */
       }
       void saveLessonProgressAction({
         topicTag: curriculumTopic,
@@ -1375,7 +1375,7 @@ export function PracticePlayer({
       // too, on the CLIENT as well as the server. `logLessonCompletion`
       // (fired by the `complete` effect below) already clears the server-side
       // row, but that's a server action, it never touches this device's
-      // localStorage copy — without this, a stale mastery checkpoint written
+      // localStorage copy; without this, a stale mastery checkpoint written
       // by an earlier `persistMastery()` call would incorrectly resurrect a
       // finished attempt the next time this topic is opened.
       clearProgress();
@@ -1405,7 +1405,7 @@ export function PracticePlayer({
     resetStepState();
     // The in-progress Mastery checkpoint no longer reflects reality once this
     // attempt has concluded (a fresh attempt starts over from question 1 after
-    // "Try a fresh check") — clear it so a refresh here can't resurrect a
+    // "Try a fresh check"). Clear it so a refresh here can't resurrect a
     // superseded attempt.
     clearProgress();
     await runReteach(missedList);
@@ -1430,7 +1430,7 @@ export function PracticePlayer({
       if (lessonPhase === "practice") {
         clearProgress();
         startMasteryAttempt(1, []);
-        setMasteryIntro(true); // F2 — the one genuine arrival into Mastery
+        setMasteryIntro(true); // F2: the one genuine arrival into Mastery
         return;
       }
       if (lessonPhase === "mastery") {
@@ -1460,7 +1460,7 @@ export function PracticePlayer({
 
   /** First answering gesture on a step → go quiet so the child can think. */
   function onAnswerStart() {
-    // F2 — the first tap on a question dismisses the Mastery arrival beat
+    // F2: the first tap on a question dismisses the Mastery arrival beat
     // immediately, so it never lingers over the child's own answering.
     setMasteryIntro(false);
     if (silencedStepRef.current === step) return;
@@ -1705,7 +1705,7 @@ export function PracticePlayer({
         )}
       </AnimatePresence>
 
-      {/* F2 — one warm, non-test-framed beat marking arrival into Mastery.
+      {/* F2: one warm, non-test-framed beat marking arrival into Mastery.
           Never uses test/exam-pressure language; self-dismisses on a short
           timer or the child's first tap, and never gates the question below. */}
       <AnimatePresence>

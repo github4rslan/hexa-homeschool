@@ -17,7 +17,7 @@ import withBundleAnalyzer from "@next/bundle-analyzer";
  * scripts (a nonce-based policy would force every page dynamic); there are
  * still no foreign script origins.
  *
- * F3 (2026-08-29) — `report-uri` sends blocked-resource reports to our own
+ * F3 (2026-08-29): `report-uri` sends blocked-resource reports to our own
  * same-origin, rate-limited endpoint (src/app/api/csp-report), which reduces
  * every report to blocked-uri/violated-directive/document-uri before logging
  * to Sentry. Using the older `report-uri` (not the newer Reporting-Endpoints/

@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
-  // B4 (2026-08-29) — same generous per-parent limit as /api/push/subscribe.
+  // B4 (2026-08-29): same generous per-parent limit as /api/push/subscribe.
   const limited = await rateLimit(`push-unsub:${parentId}`, 10, 60_000);
   if (!limited.ok) {
     return NextResponse.json(
