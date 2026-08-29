@@ -47,7 +47,11 @@ export function FocusFrame({
 
       <div
         className={[
-          "mx-auto flex min-h-[85svh] w-full max-w-2xl flex-col justify-center",
+          // B2 fix: reserve top clearance matching the fixed "Exit lesson"
+          // pill's footprint (64px tall + its 14px offset) so tall content
+          // centred by `justify-center` never renders under it, even after an
+          // in-page interaction auto-scrolls the viewport.
+          "mx-auto flex min-h-[85svh] w-full max-w-2xl flex-col justify-center pt-20 sm:pt-24",
           reading.font ? "reading-dyslexic" : "",
         ].join(" ")}
         // Whole-lesson text zoom (accessibility). `zoom` scales content and its
