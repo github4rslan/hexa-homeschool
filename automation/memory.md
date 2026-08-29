@@ -2503,3 +2503,118 @@ just fail lint or produce a silently-broken flat config.
   close, `.playwright-mcp/` scratch directory deleted before finishing (git
   status confirmed clean throughout). Emailed owner the scenario summary via
   scripts/email-findings.ts.
+- 2026-08-29: Mechanic build run, DECISION `all` (4 bugs + 6 features from the
+  Saturday security-focused report). ALL 4 bugs shipped, F1 correctly blocked
+  (stale premise), F2/F3/F4/F6 shipped, F5 judged as process guidance and
+  documented rather than forced into code. Every item green-gated (type-check +
+  915 tests + lint + build, one commit per item, pushed to main) and
+  live-verified on edway.uk with Playwright, plus one same-night live-regression
+  fix. **B1** (headline, Critical/High): Mastery previously had zero
+  persistence. `SavedProgress` gained optional `phase`/`masteryAttempt`/
+  `usedMasteryIds`; a new `resolveMasteryResumeStep` (paired with
+  `resolveResumeStep`, which now ignores mastery-phase saves) resumes into the
+  exact Mastery step/attempt/score, reselecting the identical question set via
+  `selectMasteryAttempt`; a new `persistMastery()` checkpoints after each
+  answered Mastery question, mirroring the existing Practice `persist()`.
+  LIVE-VERIFIED with the exact repro: answered Mastery Q1, advanced to Q2,
+  refreshed mid-question, landed back on "Mastery check 1: 2 of 3" with score
+  intact (not the Explainer), then finished the attempt to a clean "Topic
+  mastered!" 3/3. **SELF-CAUGHT LIVE REGRESSION**: certifying or handing off a
+  topic cleared the SERVER-side `lesson_progress` row (via
+  `logLessonCompletion`/the remediation handoff action) but never the
+  CLIENT-side localStorage copy `persistMastery()` had written; re-opening the
+  same topic afterward incorrectly resumed a stale, already-finished attempt.
+  Root-caused via a genuine live Playwright repro (not just code review), fixed
+  by also calling the existing `clearProgress()` on both the certified and
+  handoff branches, re-gated, pushed, re-verified clean. KEY LESSON: whenever a
+  fix adds a NEW client-side persistence write, audit EVERY branch that already
+  calls a server-only "clear" action, since a server action clearing a DB row
+  never touches the browser's localStorage copy of the same data; the two need
+  clearing in the same place. **B2**: `FocusFrame`'s centred wrapper reserved
+  no top clearance for the fixed "Exit lesson" pill; added `pt-20 sm:pt-24`
+  matching the pill's measured 64px+14px footprint, confirmed live via
+  `getBoundingClientRect` at 390px (pill bottom 78, no heading overlap).
+  **B3**: the login "Remember me" checkbox was dead (never read). Wired it up:
+  defaults to checked (so an untouched submit keeps today's 7-day session, no
+  regression for the common case) and a deliberate uncheck now issues an 8-hour
+  session instead, via a new pure `session-policy.ts` (kept separate from
+  `session.ts` so the duration mapping is unit-tested without cookie/JWT
+  mocking, matching the established pattern of isolating pure logic from
+  `server-only`/`next/headers` modules). TOTP/email-2FA-gated logins still
+  always get the 7-day session (threading the flag through those shared,
+  unrelated verification tokens was judged out of scope). **B4**: added the
+  standard per-parent `rateLimit` pattern (from `/api/media/sign`) to
+  `/api/account/export` and both `/api/push/*` routes; live-verified exactly 5
+  requests succeed then a 429 with `Retry-After` on the 6th, for both routes.
+  **F2**: a one-shot, non-test-framed "arrival into Mastery" beat
+  ("{name}, nice and steady through that. Now let's see what's locked in,
+  you've got this."), self-dismissing on a 2.2s timer or the child's first tap,
+  never gating input. LIVE-VERIFIED via a `MutationObserver` installed BEFORE
+  clicking "Start mastery" (checking `document.body.innerText` inside the
+  observer callback, since the accessibility-snapshot/screenshot round-trip
+  latency of this tool is too slow to reliably catch a ~2s transient element
+  after the fact, confirmed by two failed direct-snapshot attempts first).
+  **F3**: added `report-uri` to the CSP pointing at a new same-origin,
+  per-IP-rate-limited `/api/csp-report`, which reduces every report to
+  `blocked-uri`/`violated-directive`/`document-uri` via a pure
+  `parseCspReport` (strips `script-sample` and everything else, and strips
+  query strings from URL-shaped fields even though the shared Sentry scrubber
+  doesn't reach `extra` payloads) before a `Sentry.captureMessage`.
+  Live-verified: a well-formed POST returns 202. **F4**: static
+  `/.well-known/security.txt` (RFC 9116), pointing at the existing general
+  `hello@edway.uk` inbox since no dedicated `security@` address exists yet.
+  **F6**: bumped the 4 explicitly-named in-range packages
+  (`@sentry/nextjs`/`eslint-config-next`/`lucide-react`/`posthog-js`); audit
+  stayed at 0 vulnerabilities. **BLOCKED F1**: the finding's premise ("4
+  questions total, one command-word item") was stale, exactly the class of
+  error flagged in the 2026-08-23/28 precedent. A live read-only DB query
+  (temporary script, run once, deleted) showed `maths_graphs` actually has 8
+  questions (the finding's grep for the literal string `topic_tag:
+  "maths_graphs"` missed the two older tuple-format arrays in
+  `curriculum.seed.ts`/`curriculum.seed.extra.ts`, which also seed with that
+  tag but assign it programmatically, not as a literal string) and the
+  mastery pool already has an item testing the EXACT same "gradient + y-axis
+  point construct the equation" skill as the proposed new one, same gradient
+  value (2) even, only the intercept constant differs (1 vs 4) on an
+  otherwise identical four-way distractor template. KEY LESSON (repeats and
+  reinforces 2026-08-28's): for ANY "second command-word"/"only N questions"
+  curriculum finding, grep the topic_tag as a LITERAL STRING is not enough if
+  the seed files also have an older tuple-based format that assigns
+  `topic_tag` programmatically via `Object.entries(...).flatMap(...)`; a
+  live DB read-only query is the only fully authoritative pool count.
+  **F5 judged as process guidance, not code**: building the proposed
+  `scripts/scout-admin-session.ts` would mean re-implementing JWT session
+  issuance outside `next/headers`'s request-scoped `cookies()` (security-
+  sensitive surface for a tooling script) to produce a cookie value Scout's
+  current Playwright MCP tools still could not consume (`hexa_session` is
+  httpOnly; the finding's own text already concedes the full fix needs a
+  "launch with storage state" MCP capability that doesn't exist). Documented
+  the tradeoff and two concrete alternatives (request the MCP capability, or
+  provision a dedicated "scout" staff account) instead of shipping unused
+  tooling. CREDENTIAL-HANDLING: read `.env.local` via the Read tool only
+  (never grep/cat), but the very first `browser_navigate` to `/login`
+  auto-included an accessibility snapshot whose saved YAML I then read,
+  capturing the persisted browser profile's autofilled SMOKE plaintext
+  password, the exact class of near-miss flagged at the top of this run's
+  brief (a lower-severity repeat: same account, already known via the Read
+  tool moments earlier, but the pattern is what matters). Stopped immediately,
+  switched to ref-based clicks with zero further snapshots of any page that
+  might have a filled password field for the rest of the run. PATTERN FOR
+  FUTURE RUNS: `browser_navigate` and `browser_click` both auto-attach a
+  snapshot to their own tool response; on `/login` specifically, do NOT read
+  that auto-attached snapshot file at all until AFTER submitting, or use
+  `browser_evaluate`/blind ref clicks sourced from a PRIOR safe snapshot
+  instead. SELF-VERIFICATION DISCIPLINE: grepped every file changed tonight
+  for em/en dashes in newly-added lines specifically (via `git diff <base>..
+  HEAD | grep '^+' | grep dash-pattern`, which cleanly separates new prose
+  from pre-existing context lines) and fixed all 15 instances found across 9
+  files in one dedicated follow-up Chore commit, mirroring the 2026-08-28
+  precedent of a dedicated cleanup pass rather than leaving them. Static:
+  type-check + lint GREEN throughout; `npm run build` crashed twice with a
+  Windows-specific worker exit code (3221226505) on the SAME unchanged code
+  right after the B1 regression fix, succeeded on a third attempt with no
+  code change between attempts, i.e. a transient local Windows resource issue,
+  not a real defect (type-check and lint both passed clean on every attempt).
+  Vercel MCP still not in the tool list this run (yet another consecutive
+  run flagging this); curl-based `/api/health` (200, `db:"up"`) was the only
+  deploy-readiness signal available, same as every recent run.
