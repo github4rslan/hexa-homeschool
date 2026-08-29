@@ -1371,6 +1371,14 @@ export function PracticePlayer({
     });
 
     if (decision === "certified") {
+      // B1 fix follow-up: the lesson is finished, so the checkpoint must go
+      // too, on the CLIENT as well as the server. `logLessonCompletion`
+      // (fired by the `complete` effect below) already clears the server-side
+      // row, but that's a server action, it never touches this device's
+      // localStorage copy — without this, a stale mastery checkpoint written
+      // by an earlier `persistMastery()` call would incorrectly resurrect a
+      // finished attempt the next time this topic is opened.
+      clearProgress();
       setLessonPhase("complete");
       return;
     }
@@ -1385,6 +1393,9 @@ export function PracticePlayer({
         attempts: masteryAttempt,
         missedPrompts: missedList.map((q) => q.prompt),
       });
+      // Same reasoning as the certified branch above: the server action
+      // clears the DB row, but never this device's localStorage copy.
+      clearProgress();
       setLessonPhase("handoff");
       return;
     }
