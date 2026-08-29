@@ -380,6 +380,19 @@ export function PracticePlayer({
   const [resumed, setResumed] = useState(false);
   const resumeAppliedRef = useRef(false);
 
+  // F2 — one warm, non-test-framed beat marking arrival into Mastery (ties to
+  // B1's finding that Mastery deserves its own small acknowledgement, distinct
+  // from every other "Keep going" transition). Shown once, only on the genuine
+  // practice-to-mastery transition, never a reteach retry or a resumed
+  // session. Self-dismisses on a short timer or the child's first tap on the
+  // question below, whichever comes first; it never gates or delays input.
+  const [masteryIntro, setMasteryIntro] = useState(false);
+  useEffect(() => {
+    if (!masteryIntro) return;
+    const t = setTimeout(() => setMasteryIntro(false), 2200);
+    return () => clearTimeout(t);
+  }, [masteryIntro]);
+
   const activeQuestions = lessonPhase === "practice" ? questions : masterySet;
   const question = activeQuestions[step];
   const complete = lessonPhase === "complete";
@@ -1406,6 +1419,7 @@ export function PracticePlayer({
       if (lessonPhase === "practice") {
         clearProgress();
         startMasteryAttempt(1, []);
+        setMasteryIntro(true); // F2 — the one genuine arrival into Mastery
         return;
       }
       if (lessonPhase === "mastery") {
@@ -1435,6 +1449,9 @@ export function PracticePlayer({
 
   /** First answering gesture on a step → go quiet so the child can think. */
   function onAnswerStart() {
+    // F2 — the first tap on a question dismisses the Mastery arrival beat
+    // immediately, so it never lingers over the child's own answering.
+    setMasteryIntro(false);
     if (silencedStepRef.current === step) return;
     silencedStepRef.current = step;
     narration.stop();
@@ -1672,6 +1689,34 @@ export function PracticePlayer({
             <span>
               {firstName ? `Welcome back, ${firstName}` : "Welcome back"} — let&apos;s
               pick up where you left off.
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* F2 — one warm, non-test-framed beat marking arrival into Mastery.
+          Never uses test/exam-pressure language; self-dismisses on a short
+          timer or the child's first tap, and never gates the question below. */}
+      <AnimatePresence>
+        {masteryIntro && outcome === null && (
+          <motion.div
+            key="mastery-intro"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className={cn(
+              "mb-5 flex items-center gap-3 rounded-3xl border p-4 text-lg text-fog-100",
+              accent.softBg,
+              accent.softBorder,
+            )}
+            role="status"
+          >
+            <Sparkles className={cn("h-5 w-5 shrink-0", accent.text)} />
+            <span>
+              {childName ? `${childName}, nice` : "Nice"} and steady through
+              that. Now let&apos;s see what&apos;s locked in, you&apos;ve got
+              this.
             </span>
           </motion.div>
         )}
