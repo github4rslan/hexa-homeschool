@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { currentParentId, addPushSubscription } from "@/lib/db/repo";
 import { webPushConfigured } from "@/lib/notify/web-push";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,20 @@ export async function POST(request: Request) {
   }
   if (!webPushConfigured()) {
     return NextResponse.json({ error: "Web Push is not configured." }, { status: 503 });
+  }
+
+  // B4 (2026-08-29) — generous per-parent limit so a normal "enable
+  // notifications" click never trips it, but a compromised session or a
+  // buggy client retry-loop can't spam subscription writes.
+  const limited = await rateLimit(`push-sub:${parentId}`, 10, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment and try again." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSeconds) },
+      },
+    );
   }
 
   let body: {

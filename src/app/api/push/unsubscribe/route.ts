@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { currentParentId, removePushSubscription } from "@/lib/db/repo";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,18 @@ export async function POST(request: Request) {
   const parentId = await currentParentId();
   if (!parentId) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+
+  // B4 (2026-08-29) — same generous per-parent limit as /api/push/subscribe.
+  const limited = await rateLimit(`push-unsub:${parentId}`, 10, 60_000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a moment and try again." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limited.retryAfterSeconds) },
+      },
+    );
   }
 
   let body: { endpoint?: unknown };
