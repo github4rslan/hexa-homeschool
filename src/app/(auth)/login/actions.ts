@@ -22,6 +22,9 @@ import { TWOFA_COOKIE, TOTP_PENDING_COOKIE } from "./twofa-cookie";
 export async function login(formData: FormData) {
   const email = String(formData.get("email") || "").trim().toLowerCase();
   const password = String(formData.get("password") || "");
+  // B3 fix: the checkbox defaults to checked, so an untouched submit still
+  // reads "on" here; only a deliberate uncheck removes the field entirely.
+  const rememberMe = formData.get("remember") !== null;
   // A validated in-site `?redirect=` target (e.g. a parent bounced from
   // /settings) is honoured after sign-in; anything non-local falls back to the
   // role default below. Guards against open redirects.
@@ -133,11 +136,14 @@ export async function login(formData: FormData) {
     redirect(`/login/verify?email=${encodeURIComponent(parent.email)}`);
   }
 
-  await createSession({
-    id: parent._id.toHexString(),
-    email: parent.email,
-    tokenVersion: parent.token_version ?? 0,
-  });
+  await createSession(
+    {
+      id: parent._id.toHexString(),
+      email: parent.email,
+      tokenVersion: parent.token_version ?? 0,
+    },
+    { rememberMe },
+  );
   const role = resolveRole({ role: parent.role, is_admin: parent.is_admin });
   // A validated intended destination wins (e.g. a parent sent here from
   // /settings); otherwise land on the role default. Staff land on their own

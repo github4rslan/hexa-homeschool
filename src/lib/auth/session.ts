@@ -1,6 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
+import { sessionMaxAgeSeconds } from "./session-policy";
 
 /**
  * Custom auth session layer (replaces Supabase Auth).
@@ -11,7 +12,6 @@ import { SignJWT, jwtVerify } from "jose";
  */
 
 const COOKIE_NAME = "hexa_session";
-const MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 function getSecret(): Uint8Array {
   const secret = process.env.AUTH_SECRET;
@@ -34,13 +34,27 @@ export interface SessionUser {
   tokenVersion?: number;
 }
 
+export interface CreateSessionOptions {
+  /**
+   * B3 fix: the `/login` "Remember me" checkbox. Defaults to `true` (today's
+   * 7-day session, unchanged) at every call site that doesn't pass it — only
+   * a parent who deliberately unchecks it on `/login` gets the shorter,
+   * same-device-only window.
+   */
+  rememberMe?: boolean;
+}
+
 /** Issue a signed session cookie for the given user. */
-export async function createSession(user: SessionUser): Promise<void> {
+export async function createSession(
+  user: SessionUser,
+  options: CreateSessionOptions = {},
+): Promise<void> {
+  const maxAgeSeconds = sessionMaxAgeSeconds(options.rememberMe ?? true);
   const token = await new SignJWT({ email: user.email, tv: user.tokenVersion ?? 0 })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(user.id)
     .setIssuedAt()
-    .setExpirationTime(`${MAX_AGE_SECONDS}s`)
+    .setExpirationTime(`${maxAgeSeconds}s`)
     .sign(getSecret());
 
   const cookieStore = await cookies();
@@ -49,7 +63,7 @@ export async function createSession(user: SessionUser): Promise<void> {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: MAX_AGE_SECONDS,
+    maxAge: maxAgeSeconds,
   });
 }
 

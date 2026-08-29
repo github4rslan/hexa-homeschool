@@ -63,7 +63,15 @@ export default async function LoginPage({
 
         <div className="flex items-center justify-between text-xs">
           <label className="flex items-center gap-2 text-fog-400 cursor-pointer">
-            <input type="checkbox" name="remember" className="rounded border-white/10 bg-white/5" />
+            {/* B3 fix: checked by default so an untouched submit keeps
+                today's 7-day session; deliberately unchecking it (a shared or
+                public device) issues a much shorter one instead. */}
+            <input
+              type="checkbox"
+              name="remember"
+              defaultChecked
+              className="rounded border-white/10 bg-white/5"
+            />
             Remember me
           </label>
           <Link href="/forgot-password" className="text-violet-300 hover:text-violet-200">
