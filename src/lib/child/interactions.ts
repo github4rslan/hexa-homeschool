@@ -499,19 +499,35 @@ export interface SavedProgress {
   score: number;
   /** Total questions when this progress was saved (content-change guard). */
   total: number;
+  /**
+   * Sub-phase this checkpoint was captured in (B1 fix: Mastery previously had
+   * no persistence at all). Absent = a legacy or Practice-phase row; only a
+   * "mastery" checkpoint uses the two fields below.
+   */
+  phase?: "practice" | "mastery";
+  /** Which mastery attempt (1-based) this checkpoint belongs to. */
+  masteryAttempt?: number;
+  /**
+   * Mastery question ids already used in earlier attempts this lesson, so a
+   * resumed attempt reselects the identical question set via
+   * `selectMasteryAttempt`.
+   */
+  usedMasteryIds?: string[];
 }
 
 /**
- * Decide whether and where to resume. Returns the step to resume at, or null to
- * start fresh. Guards against: no save, a content change (different total), a
- * save at the very start (nothing to resume), and an already-finished lesson.
- * Pure + testable.
+ * Decide whether and where to resume a PRACTICE checkpoint. Returns the step
+ * to resume at, or null to start fresh. Guards against: no save, a save that
+ * belongs to the Mastery phase (see `resolveMasteryResumeStep`), a content
+ * change (different total), a save at the very start (nothing to resume), and
+ * an already-finished lesson. Pure + testable.
  */
 export function resolveResumeStep(
   saved: SavedProgress | null | undefined,
   total: number,
 ): number | null {
   if (!saved || total <= 0) return null;
+  if (saved.phase === "mastery") return null; // resumes via resolveMasteryResumeStep instead
   if (!Number.isFinite(saved.step) || !Number.isFinite(saved.total)) return null;
   if (saved.total !== total) return null; // questions changed → start fresh
   if (saved.step <= 0) return null; // at the start already
@@ -522,4 +538,30 @@ export function resolveResumeStep(
 /** Clamp a resumed score so it can never exceed the steps already passed. */
 export function clampResumeScore(saved: SavedProgress, resumeStep: number): number {
   return Math.min(Math.max(0, saved.score), resumeStep);
+}
+
+/**
+ * Decide whether and where to resume a MASTERY checkpoint (B1 fix: the
+ * resume mechanism previously only ever checkpointed Practice, so a refresh
+ * anywhere past it silently discarded a finished Practice pass and any
+ * Mastery answers already given). Mirrors `resolveResumeStep`'s guards (no
+ * save, a bank-size change, already at the start, already finished this
+ * attempt) but only ever matches a save explicitly tagged
+ * `phase: "mastery"` with a valid attempt number, so legacy and
+ * Practice-phase rows never resume as Mastery. Pure + testable.
+ */
+export function resolveMasteryResumeStep(
+  saved: SavedProgress | null | undefined,
+  masteryTotal: number,
+): number | null {
+  if (!saved || masteryTotal <= 0) return null;
+  if (saved.phase !== "mastery") return null;
+  if (!Number.isFinite(saved.step) || !Number.isFinite(saved.total)) return null;
+  if (saved.total !== masteryTotal) return null; // mastery bank size changed → start fresh
+  if (!Number.isInteger(saved.masteryAttempt) || (saved.masteryAttempt as number) < 1) {
+    return null;
+  }
+  if (saved.step <= 0) return null; // at the start of this attempt already
+  if (saved.step >= masteryTotal) return null; // already finished this attempt
+  return saved.step;
 }

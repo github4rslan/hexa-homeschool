@@ -202,6 +202,10 @@ export async function saveLessonProgressAction(input: {
   step: number;
   score: number;
   total: number;
+  /** B1 fix: which sub-phase this checkpoint belongs to (absent = "practice"). */
+  phase?: "practice" | "mastery";
+  masteryAttempt?: number;
+  usedMasteryIds?: string[];
 }): Promise<{ saved: boolean }> {
   if (input.total <= 0 || input.step < 0) return { saved: false };
   const parentId = await currentParentId();
@@ -212,6 +216,9 @@ export async function saveLessonProgressAction(input: {
     step: input.step,
     score: input.score,
     total: input.total,
+    phase: input.phase,
+    masteryAttempt: input.masteryAttempt,
+    usedMasteryIds: input.usedMasteryIds,
   });
   return { saved };
 }

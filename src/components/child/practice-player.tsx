@@ -34,6 +34,7 @@ import {
   decideHelpSpine,
   distractorExplanation,
   pickMisconception,
+  resolveMasteryResumeStep,
   resolveResumeStep,
   clampResumeScore,
   type Interaction as InteractionDef,
@@ -86,6 +87,7 @@ import {
 import {
   decideRemediation,
   selectMasteryAttempt,
+  MASTERY_CHECK_SIZE,
 } from "@/lib/engine/remediation";
 import {
   decideFeedback,
@@ -569,10 +571,19 @@ export function PracticePlayer({
 
   // Resume once on mount: reconcile the server copy (props) with a same-device
   // localStorage copy (which may be a step ahead if a server write lagged), then
-  // land at the exact saved step. Pure math via resolveResumeStep keeps this
-  // honest: a content change, a fresh start, or a finished lesson all → no resume.
+  // land at the exact saved step. Pure math via resolveResumeStep /
+  // resolveMasteryResumeStep keeps this honest: a content change, a fresh
+  // start, or a finished lesson/attempt all → no resume.
+  //
+  // B1 fix: a saved MASTERY checkpoint always takes priority over a Practice
+  // one — it can only exist once Practice is genuinely finished (Practice's
+  // own checkpoint is cleared the moment Mastery begins), so it supersedes any
+  // lingering practice save for the same topic. Before this fix, Mastery had
+  // no persistence at all: a refresh anywhere past Practice fell all the way
+  // back to the Explainer, discarding a finished Practice pass and any
+  // Mastery answers already given.
   useEffect(() => {
-    if (resumeAppliedRef.current || questions.length === 0 || lessonPhase !== "practice") return;
+    if (resumeAppliedRef.current) return;
     resumeAppliedRef.current = true;
 
     let local: SavedProgress | null = null;
@@ -585,27 +596,70 @@ export function PracticePlayer({
           typeof p.score === "number" &&
           typeof p.total === "number"
         ) {
-          local = { step: p.step, score: p.score, total: p.total };
+          local = {
+            step: p.step,
+            score: p.score,
+            total: p.total,
+            phase: p.phase === "mastery" ? "mastery" : undefined,
+            masteryAttempt:
+              typeof p.masteryAttempt === "number" ? p.masteryAttempt : undefined,
+            usedMasteryIds: Array.isArray(p.usedMasteryIds)
+              ? p.usedMasteryIds.filter(
+                  (id): id is string => typeof id === "string",
+                )
+              : undefined,
+          };
         }
       }
     } catch {
       /* corrupt localStorage is non-fatal */
     }
 
-    // Choose whichever valid candidate is further along.
+    const clearStaleLocal = () => {
+      if (!local) return;
+      try {
+        window.localStorage.removeItem(storageKey);
+      } catch {
+        /* ignore */
+      }
+    };
+
+    const masterySize = Math.min(MASTERY_CHECK_SIZE, masteryBank.length);
+    const masteryCandidates = [savedProgress ?? null, local].filter(
+      (c): c is SavedProgress => resolveMasteryResumeStep(c, masterySize) !== null,
+    );
+    if (masteryCandidates.length > 0) {
+      const best = masteryCandidates.reduce((a, b) => (b.step > a.step ? b : a));
+      const resumeStep = resolveMasteryResumeStep(best, masterySize);
+      if (resumeStep !== null) {
+        const attempt = best.masteryAttempt ?? 1;
+        const usedIds = best.usedMasteryIds ?? [];
+        setUsedMasteryIds(usedIds);
+        setMasteryAttempt(attempt);
+        setMasterySet(
+          selectMasteryAttempt(masteryBank, attempt, usedIds, masterySize),
+        );
+        setLessonPhase("mastery");
+        setStep(resumeStep);
+        setScore(clampResumeScore(best, resumeStep));
+        setResumed(true);
+        return;
+      }
+    }
+
+    if (questions.length === 0) {
+      clearStaleLocal();
+      return;
+    }
+
+    // Choose whichever valid PRACTICE candidate is further along.
     const candidates = [savedProgress ?? null, local].filter(
       (c): c is SavedProgress =>
         resolveResumeStep(c, questions.length) !== null,
     );
     if (candidates.length === 0) {
       // Clear any stale (content-changed) local copy so it can't mislead later.
-      if (local) {
-        try {
-          window.localStorage.removeItem(storageKey);
-        } catch {
-          /* ignore */
-        }
-      }
+      clearStaleLocal();
       return;
     }
     const best = candidates.reduce((a, b) => (b.step > a.step ? b : a));
@@ -639,6 +693,40 @@ export function PracticePlayer({
       }).catch(() => {});
     },
     [storageKey, curriculumTopic, questions.length],
+  );
+
+  /**
+   * B1 fix: persist mid-Mastery position the same way `persist()` already
+   * does for Practice, so a refresh anywhere in Mastery lands back on the
+   * exact question with score, attempt number and used-question history
+   * intact, instead of silently falling all the way back to the Explainer.
+   */
+  const persistMastery = useCallback(
+    (atStep: number, atScore: number, attempt: number, priorUsedIds: string[]) => {
+      const payload: SavedProgress = {
+        step: atStep,
+        score: atScore,
+        total: masterySet.length,
+        phase: "mastery",
+        masteryAttempt: attempt,
+        usedMasteryIds: priorUsedIds,
+      };
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(payload));
+      } catch {
+        /* private mode / quota — server copy still saves */
+      }
+      void saveLessonProgressAction({
+        topicTag: curriculumTopic,
+        step: atStep,
+        score: atScore,
+        total: masterySet.length,
+        phase: "mastery",
+        masteryAttempt: attempt,
+        usedMasteryIds: priorUsedIds,
+      }).catch(() => {});
+    },
+    [storageKey, curriculumTopic, masterySet.length],
   );
 
   const clearProgress = useCallback(() => {
@@ -1291,6 +1379,11 @@ export function PracticePlayer({
     setLessonPhase("reteach");
     setStep(0);
     resetStepState();
+    // The in-progress Mastery checkpoint no longer reflects reality once this
+    // attempt has concluded (a fresh attempt starts over from question 1 after
+    // "Try a fresh check") — clear it so a refresh here can't resurrect a
+    // superseded attempt.
+    clearProgress();
     await runReteach(missedList);
   }
 
@@ -1321,6 +1414,12 @@ export function PracticePlayer({
       }
     } else if (lessonPhase === "practice") {
       persist(nextStep, score);
+    } else if (lessonPhase === "mastery") {
+      // B1 fix: Mastery previously had zero persistence at all, so a refresh
+      // mid-attempt silently discarded a finished Practice pass and any
+      // Mastery answers already given. Checkpoint the same way Practice
+      // already does, tagged so a resume lands back in Mastery, not Practice.
+      persistMastery(nextStep, score, masteryAttempt, usedMasteryIds);
     }
 
     setStep(nextStep);

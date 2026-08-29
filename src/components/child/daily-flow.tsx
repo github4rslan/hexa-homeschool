@@ -6,7 +6,12 @@ import { Explainer } from "./explainer";
 import { PracticePlayer } from "./practice-player";
 import { accentPreset } from "@/lib/child/accents";
 import { pulseTargetOnCrossing } from "@/lib/child/phase-bar";
-import { resolveResumeStep, type SavedProgress } from "@/lib/child/interactions";
+import {
+  resolveMasteryResumeStep,
+  resolveResumeStep,
+  type SavedProgress,
+} from "@/lib/child/interactions";
+import { MASTERY_CHECK_SIZE } from "@/lib/engine/remediation";
 import { cn } from "@/lib/utils";
 import type { Question } from "@/components/lesson/lesson-player";
 import type { WorkedExample } from "@/lib/child/worked-examples";
@@ -88,9 +93,15 @@ export function DailyFlow({
 }) {
   const accent = accentPreset(accentId);
   // If there's resumable progress, drop straight into practice at the saved step
-  // rather than replaying the explainer.
+  // rather than replaying the explainer. B1 fix: a Mastery checkpoint (the
+  // child already finished Practice) counts too, not just a Practice one, so a
+  // refresh past Practice mounts PracticePlayer directly instead of replaying
+  // the whole Explainer + Practice pass again.
+  const masteryBank = masteryQuestions?.length ? masteryQuestions : questions;
+  const masterySize = Math.min(MASTERY_CHECK_SIZE, masteryBank.length);
   const canResume =
-    resolveResumeStep(savedProgress ?? null, questions.length) !== null;
+    resolveResumeStep(savedProgress ?? null, questions.length) !== null ||
+    resolveMasteryResumeStep(savedProgress ?? null, masterySize) !== null;
   const [phase, setPhase] = useState<"explainer" | "practice">(
     canResume ? "practice" : "explainer",
   );

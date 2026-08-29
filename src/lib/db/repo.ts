@@ -23,7 +23,7 @@ import {
 import { shouldQueueHandoff } from "@/lib/engine/remediation";
 import { resolveCertifiedAt, isFreshCertification } from "@/lib/engine/competence";
 import { selectMockPaper, marksForTier } from "@/lib/engine/mock-paper";
-import { mockDisplayPrompt } from "@/lib/child/interactions";
+import { mockDisplayPrompt, type SavedProgress } from "@/lib/child/interactions";
 import type {
   ParentDoc,
   ChildDoc,
@@ -1463,10 +1463,15 @@ export async function saveLessonProgress(
   parentId: string,
   childId: ObjectId,
   topicTag: string,
-  progress: { step: number; score: number; total: number },
+  progress: SavedProgress,
 ): Promise<boolean> {
   if (!(await assertOwnsChild(parentId, childId))) return false;
   const col = await getCollection<LessonProgressDoc>(Collections.lessonProgress);
+  // B1 fix: a checkpoint now also tags WHICH sub-phase it belongs to, so a
+  // refresh past Practice (Mastery) can resume at the exact step instead of
+  // silently discarding the whole lesson. Legacy/Practice rows carry no phase.
+  const phase: "practice" | "mastery" =
+    progress.phase === "mastery" ? "mastery" : "practice";
   await col.updateOne(
     { child_id: childId, topic_tag: topicTag },
     {
@@ -1474,6 +1479,9 @@ export async function saveLessonProgress(
         step: progress.step,
         score: progress.score,
         total: progress.total,
+        phase,
+        mastery_attempt: phase === "mastery" ? progress.masteryAttempt ?? null : null,
+        used_mastery_ids: phase === "mastery" ? progress.usedMasteryIds ?? [] : [],
         updated_at: new Date(),
       },
     },
@@ -1487,12 +1495,19 @@ export async function getLessonProgress(
   parentId: string,
   childId: ObjectId,
   topicTag: string,
-): Promise<{ step: number; score: number; total: number } | null> {
+): Promise<SavedProgress | null> {
   if (!(await assertOwnsChild(parentId, childId))) return null;
   const col = await getCollection<LessonProgressDoc>(Collections.lessonProgress);
   const doc = await col.findOne({ child_id: childId, topic_tag: topicTag });
   if (!doc) return null;
-  return { step: doc.step, score: doc.score, total: doc.total };
+  return {
+    step: doc.step,
+    score: doc.score,
+    total: doc.total,
+    phase: doc.phase === "mastery" ? "mastery" : undefined,
+    masteryAttempt: doc.mastery_attempt ?? undefined,
+    usedMasteryIds: doc.used_mastery_ids ?? undefined,
+  };
 }
 
 /**

@@ -298,6 +298,16 @@ export interface LessonProgressDoc {
   score: number;
   /** Question count when saved (content-change guard on resume). */
   total: number;
+  /**
+   * Sub-phase this checkpoint was captured in (B1 fix: Mastery previously had
+   * no persistence at all, so a refresh past Practice discarded the whole
+   * lesson). Absent on legacy rows, which are treated as "practice".
+   */
+  phase?: "practice" | "mastery";
+  /** Which mastery attempt this checkpoint belongs to; set only when phase === "mastery". */
+  mastery_attempt?: number | null;
+  /** Mastery question ids already used in earlier attempts; set only when phase === "mastery". */
+  used_mastery_ids?: string[];
   updated_at: Date;
 }
 

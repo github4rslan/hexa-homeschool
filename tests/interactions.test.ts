@@ -11,6 +11,7 @@ import {
   mockDisplayPrompt,
   normalizeInteraction,
   pickMisconception,
+  resolveMasteryResumeStep,
   resolveResumeStep,
   spokenBlankValue,
   tapRevealTap,
@@ -331,6 +332,61 @@ describe("resume math", () => {
     expect(clampResumeScore({ step: 3, score: 99, total: 7 }, 3)).toBe(3);
     expect(clampResumeScore({ step: 3, score: -2, total: 7 }, 3)).toBe(0);
     expect(clampResumeScore({ step: 3, score: 2, total: 7 }, 3)).toBe(2);
+  });
+
+  it("never resumes a Mastery-phase save as Practice", () => {
+    expect(
+      resolveResumeStep({ step: 1, score: 1, total: 3, phase: "mastery", masteryAttempt: 1 }, 3),
+    ).toBeNull();
+  });
+});
+
+describe("resume math — Mastery checkpoint (B1: Mastery previously had zero persistence)", () => {
+  it("returns null when there is nothing to resume", () => {
+    expect(resolveMasteryResumeStep(null, 3)).toBeNull();
+    expect(
+      resolveMasteryResumeStep({ step: 0, score: 0, total: 3, phase: "mastery", masteryAttempt: 1 }, 3),
+    ).toBeNull();
+    expect(
+      resolveMasteryResumeStep({ step: 3, score: 3, total: 3, phase: "mastery", masteryAttempt: 1 }, 3),
+    ).toBeNull(); // finished this attempt
+  });
+
+  it("ignores a Practice-phase or legacy save (no phase tag)", () => {
+    expect(resolveMasteryResumeStep({ step: 1, score: 1, total: 3 }, 3)).toBeNull();
+    expect(
+      resolveMasteryResumeStep({ step: 1, score: 1, total: 3, phase: "practice" }, 3),
+    ).toBeNull();
+  });
+
+  it("requires a valid attempt number", () => {
+    expect(
+      resolveMasteryResumeStep({ step: 1, score: 1, total: 3, phase: "mastery" }, 3),
+    ).toBeNull();
+    expect(
+      resolveMasteryResumeStep(
+        { step: 1, score: 1, total: 3, phase: "mastery", masteryAttempt: 0 },
+        3,
+      ),
+    ).toBeNull();
+  });
+
+  it("returns null when the mastery bank size changed (content edit)", () => {
+    expect(
+      resolveMasteryResumeStep(
+        { step: 1, score: 1, total: 3, phase: "mastery", masteryAttempt: 1 },
+        4,
+      ),
+    ).toBeNull();
+  });
+
+  it("resumes at the saved step + attempt mid-Mastery, score intact", () => {
+    expect(
+      resolveMasteryResumeStep(
+        { step: 1, score: 1, total: 3, phase: "mastery", masteryAttempt: 1, usedMasteryIds: ["q1"] },
+        3,
+      ),
+    ).toBe(1);
   });
 });
 
