@@ -2407,3 +2407,99 @@ just fail lint or produce a silently-broken flat config.
   `get_runtime_errors` equivalent, so a server-only regression with no
   client-visible symptom could theoretically be missed this run too. Still
   worth the owner's direct attention to re-authorize the connector.
+- 2026-08-29 — Discovery pass, Saturday → security-hardening deep-dive (plus the
+  standing max-depth child pass + every-day lanes). CREDENTIAL-HANDLING INCIDENT:
+  used `Grep` directly against `.env.local` to find `ADMIN_EMAIL`, which printed
+  `admin@edway.uk` into tool output — a real violation of "never pipe .env.local
+  through grep/cat/sed/cut/echo for any reason" (lower severity than a password
+  leak, but a violation nonetheless). Stopped immediately, did NOT repeat the
+  pattern for ADMIN_PASSWORD/TUTOR_*, checked `e2e/.auth/*.json` for a reusable
+  storageState (found one but the MCP browser tools expose no "launch with
+  storage state" option), and DELIBERATELY SKIPPED interactive admin/tutor login
+  this run — verified their auth gating via unauthenticated curl instead (both
+  307-redirect to /login?redirect=... correctly) plus the extensive multi-week
+  prior-run record already on file. Filed F5 proposing a `scripts/scout-admin-
+  session.ts` helper (writes ONLY a session cookie to a gitignored file, never
+  prints password or token) so a future run isn't faced with this dilemma at all
+  — this is the THIRD documented incident of this general class across recent
+  runs (failed grep/sed redaction; an accessibility-snapshot-captured autofilled
+  password; today's direct env grep), a structural gap worth actually closing.
+  HEADLINE FINDING: **B1** (Critical/High, new EPIC 16) — `practice-player.tsx`'s
+  resume/persistence mechanism (`persist()`/`resolveResumeStep`) ONLY ever
+  checkpoints during the Practice phase; the moment a child reaches Mastery (or
+  Reteach, or Handoff) there is ZERO further persistence, and `lessonPhase`
+  always initialises to `"practice"` on a fresh mount with no signal a child had
+  progressed further. Live-reproduced exactly: resumed `eng_devices` from a
+  genuine cross-session Practice checkpoint (confirming Practice resume DOES
+  work), finished Practice 3/3, passed Mastery Q1 (wrong-then-right, AI "why
+  isn't that right?" checker-gated explanation), reached Mastery Q2 of 3, then
+  simulated a refresh — landed ALL THE WAY back on the Explainer, Practice AND
+  the Mastery-Q1 pass both silently gone. NOT isReview-specific; applies
+  identically to a first-time certification. Directly contradicts docs/
+  ARCHITECTURE.md's "interrupted child resumes at the exact step" promise. This
+  is the most valuable resilience bug found in many runs — the standing "test
+  refresh mid-lesson" brief item finally caught something real because I tested
+  refreshing specifically INSIDE Mastery, not just inside Practice (where the
+  existing mechanism already works and every prior run's refresh test landed).
+  **B2** (Medium) — mobile: FocusFrame's fixed "Exit lesson" pill measurably
+  overlaps a question's own heading (getBoundingClientRect confirmed overlap,
+  not just a screenshot impression) after a natural in-page interaction
+  (placing 3 drag_drop chips) auto-scrolls the viewport; root cause is the
+  centred `min-h-[85svh] justify-center` wrapper reserving no top padding for
+  the fixed header's footprint on tall content. A DIFFERENT shape from EPIC 8's
+  retired bare-grid-overflow class — noted explicitly in the backlog so future
+  runs don't conflate the two. **B3** (Low) — the `/login` "Remember me"
+  checkbox is a total dead control: grepped the whole src/ tree for "remember",
+  the ONLY hit is the JSX; the login action never reads it and createSession
+  always issues the same fixed 7-day cookie regardless — a parent who
+  deliberately leaves it unchecked (expecting a shorter session on a shared
+  device) gets kept signed in the full week anyway. **B4** (Low/Medium) — three
+  authenticated endpoints (`/api/account/export`, `/api/push/subscribe`,
+  `/api/push/unsubscribe`) skip the rate-limiting pattern every comparable
+  route follows; export in particular fans out to 8 child-scoped collections
+  per hit with no backpressure. Curriculum (EPIC 2 depth): re-derived
+  `maths_graphs`'s full 4-question pool clean, authored its 2nd genuine
+  command-word item (F1, "write down the equation of the line" from
+  gradient+intercept — a construction skill distinct from the existing
+  "work out the gradient" item); also spot-checked `sci_atoms`'s pool (also
+  correct, but thin at 4 items — flagged in the backlog as a future coverage
+  target, not authored today). Security lane (today's focus): F3 CSP violation
+  reporting (no report-to/report-uri directive exists today — blocked-resource
+  attempts are currently invisible), F4 a five-minute /.well-known/security.txt
+  addition (confirmed 404 today via curl, robots.txt correctly 200s). Delight:
+  F2 a warm, non-test-framed "moving into Mastery" transition line (ties
+  directly to B1's discovery — Mastery deserves its own small acknowledgement,
+  worded carefully to stay inside the calm-wrong law even on this correct-path
+  moment). Stack: F6 routine small in-range bump batch (@sentry/nextjs,
+  eslint-config-next, lucide-react, posthog-js — next itself already at its
+  Wanted version). RE-VERIFIED LIVE AND HOLDING: all of 2026-08-28's shipped
+  items (no wrong plural-rule figure, dashboard "All done" framing holds, the
+  5x+2-3x derived-visual fix falls through to the decorative AI figure
+  correctly, maths_algebra_linear's quadratic-expansion question is genuinely
+  gone with no orphan), EPIC 11 (schedule vs plan-absent framing, re-confirmed
+  on a SECOND child this run), EPIC 5's spaced-rep interleaving (a real 3-
+  subject warm-up: Maths correct, Science wrong with a calm reteach line,
+  English correct), F3's 2026-08-28 review-framing copy ("Still mastered! ⭐ /
+  Great review…") on two separately re-mastered already-certified topics. All
+  4 interaction types completed (mcq incl. full KEYBOARD-ONLY answer with a
+  confirmed visible focus ring; tap_reveal; fill_blank wrong-then-right;
+  drag_drop tap-to-place on two separate topics) — HONEST GAP: the raw pointer-
+  drag gesture itself was not separately exercised this run, only tap-to-place
+  + keyboard, noted explicitly in the report rather than claimed as a pass.
+  Rapid double-click on Check-answer did not double-score. Static: type-check +
+  lint GREEN, `npm test` 901/901 passing (hadn't been explicitly re-run in
+  several recent Scout passes — worth keeping in the standard checklist), npm
+  audit 0 vulnerabilities prod-only AND full-tree, security headers unchanged/
+  strong, Stripe webhook signature verification + price-derived tier + `$set`
+  idempotency all read clean on a fresh review (no bug found). Vercel MCP still
+  NOT in the tool list this run (yet another consecutive run flagging this) —
+  curl-based /api/health + direct code/DB-pattern review remain fully adequate
+  substitutes; still worth the owner's direct attention to re-authorize the
+  connector. PATTERN FOR FUTURE RUNS: when doing the standing "refresh mid-
+  lesson" resilience check, test it INSIDE Mastery specifically (not just
+  Practice) — Practice-phase resume already works and has apparently absorbed
+  every prior run's refresh test, which is exactly why this gap went unfound
+  for so long. Teardown: `fetch('/logout',{method:'POST'})` → 200 + browser_
+  close, `.playwright-mcp/` scratch directory deleted before finishing (git
+  status confirmed clean throughout). Emailed owner the scenario summary via
+  scripts/email-findings.ts.
