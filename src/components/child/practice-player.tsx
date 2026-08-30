@@ -287,6 +287,20 @@ export function PracticePlayer({
   const [scoredThis, setScoredThis] = useState(false);
   const [lastMasteryScore, setLastMasteryScore] = useState(0);
   const missedThisAttemptRef = useRef<Question[]>([]);
+  // B1 fix: the moment the step reveals its worked solution or the child
+  // answers correctly, "Check answer" unmounts and a DIFFERENT "Keep going"/
+  // "Start mastery"/"Finish" button mounts in its place. React unmounting the
+  // focused node resets browser focus to <body>, so without this the child's
+  // very next Tab press restarts the whole page's tab order from the top.
+  // Move focus onto the newly-mounted primary CTA ourselves instead of
+  // relying on default browser behaviour. This is a focus move, not an
+  // animation, so it applies the same way regardless of prefers-reduced-motion.
+  const nextButtonRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (revealed || outcome === "correct") {
+      nextButtonRef.current?.focus();
+    }
+  }, [revealed, outcome]);
   const reteachCacheRef = useRef<Map<string, string>>(new Map());
   const [reteachText, setReteachText] = useState<string | null>(null);
   const [reteachLoading, setReteachLoading] = useState(false);
@@ -2152,7 +2166,7 @@ export function PracticePlayer({
 
           <div className="ml-auto">
             {revealed || isCorrect ? (
-              <Button onClick={next} variant="child" size="child">
+              <Button ref={nextButtonRef} onClick={next} variant="child" size="child">
                 {step === activeQuestions.length - 1
                   ? lessonPhase === "practice"
                     ? "Start mastery"
