@@ -126,6 +126,15 @@ export function deriveEnglishVisual(
   // examples of:") is asking about a shared PROPERTY of multiple words, not
   // featuring one word to spell out, so firing on just the first match would
   // show a figure with no relationship to the actual question.
+  //
+  // B4 (2026-08-30): a question can quote exactly one word yet not be about
+  // the word's spelling/identity at all, e.g. an AO2 effect/connotation
+  // question ("a harsh word like 'stabbed' affects the: tone"). Spelling the
+  // word into tiles conveys nothing there and can distract from the actual
+  // skill, so explicitly exclude prompts that use effect/analysis language;
+  // when in doubt, return null and fall back to the decorative AI image.
+  const effectLanguagePattern = /\b(affects?|effect|suggests?|creates?|tone|connotation|mood)\b/i;
+  if (effectLanguagePattern.test(prompt)) return null;
   const quotedWordPattern = new RegExp(`${Q}([a-z][a-z]{2,})${Q}`, "gi");
   const allQuoted = prompt.match(quotedWordPattern);
   if (allQuoted && allQuoted.length === 1) {

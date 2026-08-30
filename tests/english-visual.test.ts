@@ -85,6 +85,27 @@ describe("deriveEnglishVisual", () => {
     if (spec?.kind !== "letter_tiles") throw new Error("expected letter_tiles");
     expect(spec.word).toBe("buzz");
   });
+
+  it("does NOT fire letter_tiles on the live-reproduced 'stabbed' effect/connotation question (B4)", () => {
+    expect(
+      deriveEnglishVisual(
+        "eng_analysis",
+        "A writer's choice of a harsh word like 'stabbed' affects the:",
+      ),
+    ).toBeNull();
+  });
+
+  it("does NOT fire letter_tiles on other effect/analysis-language prompts with a single quoted word (B4)", () => {
+    expect(
+      deriveEnglishVisual("eng_analysis", "What effect does the word 'sagged' create?"),
+    ).toBeNull();
+    expect(
+      deriveEnglishVisual("eng_analysis", "What mood does the word 'gloomy' suggest?"),
+    ).toBeNull();
+    expect(
+      deriveEnglishVisual("eng_analysis", "The connotation of 'prison' in this context is:"),
+    ).toBeNull();
+  });
 });
 
 describe("pluralRuleFor", () => {
