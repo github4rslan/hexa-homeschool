@@ -300,6 +300,36 @@ on a fresh `eng_analysis` certification attempt and landed back on the correct
 mastery step with score intact, NOT the Explainer. No further action; re-open
 only on a concrete regression.
 
+## EPIC 18 (new) — framer-motion to motion package migration (v11 to v13)
+Status: RESEARCHED, not yet built. Opened 2026-08-30 (F6, a Sunday latest-stack
+spike), researched 2026-08-31 (Mechanic) by reading the vendor's own official
+upgrade guide (motion.dev/docs/react-upgrade-guide) rather than guessing from
+changelog headlines.
+- Findings: the actual migration from our pinned `framer-motion@^11.15.0` to
+  the current `motion@13.1.1` is smaller and safer than the original finding's
+  risk estimate suggested. There is exactly ONE mechanical step for a project
+  with our usage pattern: `npm uninstall framer-motion && npm install motion`,
+  then swap every `from "framer-motion"` import to `from "motion/react"`
+  (the API itself, `motion.div`, `AnimatePresence`, `whileTap`, `useReducedMotion`,
+  `LazyMotion`, is unchanged across v11 to v13). Version 12 has NO breaking
+  React API changes at all (confirmed on the vendor's own guide: "There are no
+  breaking changes in Motion for React in version 12"). Version 13's one
+  breaking change removes `@emotion/is-prop-valid` as an optional dependency,
+  which only affects styled-components/Emotion CSS-in-JS users; this repo has
+  neither dependency (confirmed via `package.json`, Tailwind only), so it does
+  not apply to us at all.
+- Next step for a future dedicated run (still not a routine bump, per the
+  original finding's own reasoning): do the import-path swap across every
+  file using `framer-motion` (grep confirms roughly a dozen+ child-facing
+  components), run the full gate, then a live Playwright smoke across several
+  lesson states (celebration, mascot moods, hint entrance, phase-bar) on BOTH
+  the motion and `prefers-reduced-motion` paths, since this touches nearly
+  every child-facing animation in the app even though the migration itself is
+  now known to be low-risk.
+- Done so far: research only (this note); no code changed, no package
+  installed. `npm audit` unaffected either way (0 vulnerabilities on both the
+  current pin and the target version per `npm view`).
+
 ## EPIC 17 (new) — Focus management after a dynamic UI transition
 Status: NEW, opened 2026-08-30. A pattern distinct from EPIC 16 (which was
 about DATA persistence across a hard refresh) — this is about WHERE KEYBOARD
