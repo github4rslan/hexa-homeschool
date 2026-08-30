@@ -56,7 +56,10 @@ export function ExplainAnotherWay({
           prompt: context.prompt,
           correctAnswer: context.correctAnswer,
           topic,
-          wasCorrect: true,
+          // B3 fix: no answer exists yet on the Explainer, so `wasCorrect` is
+          // omitted entirely rather than hardcoded true. The Teaching Agent
+          // treats an undefined wasCorrect as "fresh explanation, no answer
+          // yet" and never opens with correctness-praise language.
           keyStage,
         }),
       });

@@ -144,9 +144,17 @@ export function explanationSystemPrompt(): string {
 
 /** Step 1 — generate the explanation, grounded in the canonical answer. */
 async function generateExplanation(req: TutorRequest): Promise<ChatResult> {
-  const framing = req.wasCorrect
-    ? "The student answered correctly. Affirm briefly, then reinforce WHY it is correct."
-    : "The student answered incorrectly or is stuck. Gently explain the correct method without shaming.";
+  // B3 fix: `wasCorrect` is optional, and omitting it (rather than defaulting
+  // to true or false) is the correct signal for a fresh re-explanation where
+  // the child hasn't answered anything yet (e.g. "Show me another way" on the
+  // Explainer). Never open with correctness-praise or wrong-answer language
+  // on content nobody has attempted.
+  const framing =
+    req.wasCorrect === undefined
+      ? "This is the child's first time seeing this concept; introduce it fresh and clearly, with no reference to a right or wrong answer."
+      : req.wasCorrect
+        ? "The student answered correctly. Affirm briefly, then reinforce WHY it is correct."
+        : "The student answered incorrectly or is stuck. Gently explain the correct method without shaming.";
 
   const system = explanationSystemPrompt();
 
@@ -246,11 +254,18 @@ async function runChecker(
   };
 }
 
-/** Human-authored fallback — served when the AI explanation is rejected. */
-function fallbackExplanation(req: TutorRequest): string {
-  const lead = req.wasCorrect
-    ? "Correct. "
-    : "Not quite — here's the worked answer. ";
+/**
+ * Human-authored fallback — served when the AI explanation is rejected.
+ * Exported (B3) so its three `wasCorrect` framings are unit-testable as pure
+ * logic without mocking the OpenAI fetch.
+ */
+export function fallbackExplanation(req: TutorRequest): string {
+  const lead =
+    req.wasCorrect === undefined
+      ? "Here's another way to look at it. "
+      : req.wasCorrect
+        ? "Correct. "
+        : "Not quite — here's the worked answer. ";
   return `${lead}The correct answer is ${req.correctAnswer}. Review the method step by step and try a similar question to lock it in. If it still doesn't click, a human tutor can help.`;
 }
 
