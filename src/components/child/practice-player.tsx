@@ -1821,7 +1821,15 @@ export function PracticePlayer({
         </div>
       </div>
 
-      <div className="child-panel p-6 sm:p-8">
+      <div
+        // B2 fix: pt-20/24 on FocusFrame's centred wrapper only reserves
+        // clearance for the INITIAL layout; it does nothing once the page
+        // scrolls (e.g. after answering a tall question). scroll-margin-top
+        // makes any browser-driven scroll-into-view of this card (native
+        // focus scrolling) also respect the fixed "Exit lesson" pill's
+        // footprint, so the heading below never settles under the pill.
+        className="child-panel scroll-mt-20 p-6 sm:p-8 sm:scroll-mt-24"
+      >
         <div
           className={cn(
             "mb-8 grid gap-5",
