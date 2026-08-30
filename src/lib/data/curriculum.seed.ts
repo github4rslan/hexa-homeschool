@@ -1739,6 +1739,22 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     hints: ["Think about what a zoo is usually like: what images and feelings does it bring to mind?", "The 'effect' is what the comparison makes the reader FEEL or IMAGINE, not a literal, word-for-word description."],
     misconceptions: ["", "A metaphor is not literal. No real animals are involved. This misreads the figurative language as fact.", "This describes what a SIMILE does (using 'like' or 'as'). A metaphor states something IS something else, with no 'like' or 'as'.", "This goes beyond what the metaphor itself supports. The sentence tells us nothing about the teacher's opinion."],
   },
+  // F1 (2026-08-30): maths_mensuration entry-level (tier 1) perimeter item,
+  // Edexcel 1MA1 G16, closing the topic's missing entry tier flagged in the
+  // 2026-08-30 pool audit (see automation/backlog.md).
+  {
+    topic_tag: "maths_mensuration",
+    subject: "mathematics",
+    tier: 1,
+    key_stage: 4,
+    kind: "practice",
+    prompt: "Work out the perimeter of a rectangle 6 cm long and 4 cm wide.",
+    options: ["10 cm", "20 cm", "24 cm", "48 cm"],
+    correct_index: 1,
+    explanation: "Perimeter is the total distance around the shape: add all four sides. 6 + 4 + 6 + 4 = 20 cm, or use 2 × (length + width) = 2 × 10 = 20 cm.",
+    hints: ["Perimeter means the distance all the way around the outside of the shape, add up all four sides.", "A rectangle has two lengths and two widths: 6 + 6 + 4 + 4, or 2 × (6 + 4)."],
+    misconceptions: ["This adds the length and width once (6 + 4) but forgets a rectangle has FOUR sides, not two.", "", "This multiplies length times width (6 × 4), which finds the AREA, not the perimeter, a classic mix-up.", "This doubles the answer twice (2 × 6 × 4) instead of doubling the SUM of length and width."],
+  },
 ];
 
 /** Flattened question list ready to seed. */

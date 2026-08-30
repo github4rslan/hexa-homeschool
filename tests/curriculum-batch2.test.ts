@@ -178,9 +178,9 @@ describe("F8 — GCSE Maths mensuration strand", () => {
     expect(topic.prerequisite_tags).toContain("maths_geometry");
   });
 
-  it("ships the three authored starters, well-formed and computing correctly", () => {
+  it("ships the three original starters, well-formed and computing correctly", () => {
     const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_mensuration");
-    expect(qs.length).toBe(3);
+    expect(qs.length).toBe(4);
     for (const q of qs) {
       expect(q.subject).toBe("mathematics");
       expect(q.key_stage).toBe(4);
@@ -207,6 +207,31 @@ describe("F8 — GCSE Maths mensuration strand", () => {
     const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_mensuration");
     expect(qs.filter((q) => q.kind === "practice").length).toBeGreaterThanOrEqual(1);
     expect(qs.filter((q) => q.kind === "mastery").length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe("F1 (2026-08-30): maths_mensuration entry-level (tier 1) perimeter item", () => {
+  const prompt = "Work out the perimeter of a rectangle 6 cm long and 4 cm wide.";
+
+  it("adds exactly one well-formed tier-1 item keyed to 20 cm", () => {
+    expectWellFormedItem("maths_mensuration", "mathematics", prompt, "20 cm");
+    const q = ALL.find((item) => item.prompt === prompt)!;
+    expect(q.tier).toBe(1);
+    expect(q.kind).toBe("practice");
+  });
+
+  it("computes: perimeter = 2 × (6 + 4) = 20 cm, distinct from the area/circumference/volume traps", () => {
+    expect(2 * (6 + 4)).toBe(20);
+    // The area trap (6 × 4 = 24) is a different value, not accidentally correct.
+    expect(6 * 4).not.toBe(20);
+  });
+
+  it("now spans an entry tier (1) alongside the existing tiers 2-3, closing the tier-range gap", () => {
+    const tiers = SEED_QUESTIONS.filter(
+      (q) => q.topic_tag === "maths_mensuration",
+    ).map((q) => q.tier);
+    expect(tiers).toContain(1);
+    expect(Math.min(...tiers)).toBe(1);
   });
 });
 
