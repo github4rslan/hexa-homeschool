@@ -160,7 +160,7 @@ function BreathBreak({
         >
           <Wind className={cn("h-9 w-9", accent.text)} aria-hidden />
         </motion.div>
-        {/* F2 (2026-08-30) — the breathing/calm-break was the one reactive
+        {/* F2 (2026-08-30): the breathing/calm-break was the one reactive
             lesson moment with no Eddie at all. "neutral" is Eddie's own idle
             "gentle breathing bob", a natural thematic match for a breathing
             break, calmer than "encouraging" (which reads as a response to a

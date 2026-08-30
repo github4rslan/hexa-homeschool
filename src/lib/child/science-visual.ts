@@ -260,7 +260,7 @@ export function deriveScienceVisual(
   //    never names the candidate materials, so it can't give the answer away.
   //    F7 (2026-08-30, EPIC 1's seventh instance): gated to the actual
   //    "Materials & Their Properties" topics, mirroring the states_of_matter
-  //    gate above — otherwise "magnetic"/"magnet" collides with a genuine
+  //    gate above, otherwise "magnetic"/"magnet" collides with a genuine
   //    electromagnetism question on sci_electricity/sci_forces (a wire's
   //    current creating a magnetic field is physics, not "does a magnet stick
   //    to this material?"), which would render a wrong, irrelevant figure. ──

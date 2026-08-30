@@ -300,7 +300,7 @@ on a fresh `eng_analysis` certification attempt and landed back on the correct
 mastery step with score intact, NOT the Explainer. No further action; re-open
 only on a concrete regression.
 
-## EPIC 18 (new) — framer-motion to motion package migration (v11 to v13)
+## EPIC 18 (new): framer-motion to motion package migration (v11 to v13)
 Status: RESEARCHED, not yet built. Opened 2026-08-30 (F6, a Sunday latest-stack
 spike), researched 2026-08-31 (Mechanic) by reading the vendor's own official
 upgrade guide (motion.dev/docs/react-upgrade-guide) rather than guessing from

@@ -255,7 +255,7 @@ async function runChecker(
 }
 
 /**
- * Human-authored fallback — served when the AI explanation is rejected.
+ * Human-authored fallback: served when the AI explanation is rejected.
  * Exported (B3) so its three `wasCorrect` framings are unit-testable as pure
  * logic without mocking the OpenAI fetch.
  */

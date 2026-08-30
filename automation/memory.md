@@ -2713,3 +2713,76 @@ just fail lint or produce a silently-broken flat config.
   CLS 0, TTFB 250ms, no finding. Vercel MCP still NOT in the tool list this run (yet
   another consecutive run flagging this) — curl-based /api/health (200) substituted
   throughout, as always. Emailed owner the scenario summary via scripts/email-findings.ts.
+- 2026-08-31: Mechanic build pass against the 2026-08-30 findings (DECISION: all).
+  This run needed two mid-task resumes due to harness restarts, not agent mistakes;
+  resumed cleanly each time from the first unchecked item per the checkbox-plus-commit
+  checkpoint discipline, nothing redone, nothing lost. SHIPPED: B3 (fresh-explanation
+  framing on "Show me another way", the diff was already complete and coherent from
+  an earlier interrupted attempt, sanity-checked then gated and committed as-is), B4
+  (english-visual.ts letter_tiles no longer fires on effect/connotation-language
+  prompts), F1 (new tier-1 maths_mensuration perimeter question, transcribed verbatim,
+  seeded), F2 (Eddie's "neutral" mood now appears in the breathing/calm break, its own
+  idle "gentle breathing bob" is a genuinely apt thematic match, not just the nearest
+  existing mood), F4 (reading ruler now follows the karaoke caption's word position
+  when narration plays, via a new small pub-sub store mirroring the existing
+  NarrationController module-singleton pattern, scoped honestly to the ONE surface
+  where word-timing data actually exists today, the "See it" panel, not the main
+  question prompt, which has no word-by-word breakdown yet), F7 (curated negative-case
+  tests added to math-visual.test.ts/science-visual.test.ts), F8 (tsx patch bump).
+  DEFERRED WITH REASONING (not built, all left unchecked with an inline note): F3
+  (react-aria FocusScope adoption: B1's own instance is already fixed directly, so
+  the urgent part is closed; the remaining ask is a genuine architecture upgrade, new
+  dependency plus a refactor of the practice-player's other region swaps, with no
+  live regression to anchor it against, better done as its own dedicated pass than
+  rushed in alongside 7 other items in one run), F5 (its own text says "scoping, not
+  authoring, this run", nothing to build), F6 (framer-motion to motion migration
+  research: read the vendor's OWN official upgrade guide via Playwright rather than
+  guessing from changelog headlines, found the actual risk is much lower than the
+  original finding assumed: v12 has zero breaking React API changes, v13's one
+  breaking change, removing @emotion/is-prop-valid, doesn't apply since this repo has
+  no styled-components/Emotion dependency; recorded as EPIC 18 with the exact
+  mechanical steps for a future dedicated pass, still not folded into a routine bump
+  per the finding's own risk framing). KEY LESSON: while authoring F7's negative-case
+  tests for science-visual.ts, a probe script (never committed) importing the full
+  seed bank and running deriveScienceVisual/deriveMathVisual over every non-matching
+  subject's prompts found a GENUINE SEVENTH instance of the EPIC 1 bug class:
+  material_property's "magnetic" needle had no topic gate at all, so a real
+  electromagnetism question on sci_electricity/sci_forces would have wrongly
+  rendered a "does a magnet stick to this material?" test. Fixed in the same F7
+  commit (gated to sci_ks2_materials/sci_states, mirroring the existing
+  states_of_matter gate) since it was found via the exact process F7 exists to
+  establish, not a separate bug. PATTERN WORTH REPEATING: writing a throwaway
+  Vitest probe file that imports the REAL seed bank and runs a deriver over every
+  question of a DIFFERENT subject is a fast, authoritative way to find real
+  cross-topic collisions in keyword-based heuristics, much faster than guessing at
+  plausible-sounding prompts; delete the probe file before committing (never leave
+  ad hoc zz-probe.test.ts files in the tree). LIVE VERIFICATION (Playwright,
+  www.edway.uk): B3 confirmed, tapped "Show me another way" on a genuinely
+  unanswered eng_analysis Explainer, the AI response opened with plain concept
+  introduction, no "That's absolutely correct!" framing. F2 confirmed, triggered a
+  real breathing break (two wrong answers on a fresh eng_analysis practice question),
+  screenshot shows Eddie's small face beside the breathing circle. F4 confirmed,
+  enabled the Reading ruler in My stuff, opened the "See it" panel with narration
+  playing, and read the ruler overlay's own mask-image style directly via
+  browser_evaluate: it showed a real Y-band with NO pointer movement ever dispatched
+  in the session, proving the position came from the narrated word, not the pointer.
+  F1 confirmed, admin Curriculum CMS now shows maths_mensuration at "4 questions"
+  including the new tier-1 perimeter item, keyed answer "20 cm" matching the seed.
+  B4 NOT independently re-triggered live (the exact "stabbed" prompt exists in the
+  pool but wasn't served by the random question-pool draw in this session); relied
+  on the dedicated Vitest test using the exact live-reproduced prompt text instead,
+  consistent with "no live surface reachable this pass" handling for a pure-logic
+  fix. F7/F8 have no user-facing surface (test-only / dev dependency), gate-verified
+  only. CREDENTIAL HANDLING: reused the blind DOM-value-set + form.requestSubmit()
+  technique from the 2026-08-30 report for BOTH the SMOKE parent and admin logins
+  (never browser_type, never a snapshot while a password field held a value), zero
+  incidents, zero near-misses. GOTCHA: navigating directly to /logout (GET) throws a
+  405/ERR_INVALID_RESPONSE; use the in-app "Sign out" button instead, which works
+  correctly for both parent and admin. Static gate green throughout: type-check,
+  lint, and build all passed on every single item's own isolated commit (ran build
+  in the background each time since it exceeds the tool's default 120s timeout on
+  this machine; polled the background output file until non-empty rather than a
+  raw sleep). Vercel MCP remains unavailable/unauthorized for what is now TEN-PLUS
+  consecutive runs (OAuth re-auth still outstanding), flagging again per the
+  standing note; curl-based /api/health (200, db:"up") substituted for both the
+  per-item deploy wait and the final health check, as directed for this run.

@@ -66,7 +66,7 @@ export function ReadingRuler() {
   const effectiveY = narratedY != null && pointerIdle ? narratedY : y;
 
   // Before the first move (and no narration to follow) there's nothing to
-  // focus — render nothing.
+  // focus on, so render nothing.
   if (effectiveY == null) return null;
 
   const top = Math.max(0, effectiveY - BAND_HEIGHT / 2);

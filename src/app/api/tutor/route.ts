@@ -124,7 +124,7 @@ export async function POST(request: Request) {
   // B3 fix: keep `wasCorrect` genuinely optional end-to-end. Coercing a
   // missing value to `false` (as this used to do) told the Teaching Agent the
   // child had answered WRONG even on a fresh re-explanation with no answer
-  // attempt at all (e.g. "Show me another way" on the Explainer) — pass
+  // attempt at all (e.g. "Show me another way" on the Explainer): pass
   // `undefined` through unchanged so that case gets its own framing.
   const req: TutorRequest = {
     prompt,

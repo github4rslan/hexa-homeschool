@@ -26,7 +26,7 @@ describe("explanationSystemPrompt (B2 — no raw LaTeX to a child)", () => {
   });
 });
 
-describe("fallbackExplanation (B3 — no correctness-praise on a fresh explanation)", () => {
+describe("fallbackExplanation (B3, no correctness-praise on a fresh explanation)", () => {
   const base: TutorRequest = {
     prompt: "Solve 3x + 7 = 22",
     correctAnswer: "x = 5",
