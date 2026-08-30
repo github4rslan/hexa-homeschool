@@ -42,6 +42,7 @@ import {
   type TeachingAnimationStep,
 } from "@/lib/child/teaching-animations";
 import { currentWordIndex } from "@/lib/child/caption-timing";
+import { reportNarratedWordY } from "@/lib/child/narration-word-position";
 import { personalizeYourTurnPrompt } from "@/lib/child/eddie-copy";
 import { landCue, successCue, tapCue } from "@/lib/child/sensory-cues";
 import type { NarrationCaption } from "@/lib/child/use-narration";
@@ -210,6 +211,12 @@ function EddieCoach({
  * lights up exactly as it's said — a calm accent tint moving with the voice,
  * never flashing. Without word timings (uncached clip, speech fallback, TTS
  * off) it degrades to a plain per-step caption; never a stuck highlight.
+ *
+ * F4 (2026-08-30): also reports the lit word's viewport Y position to the
+ * shared `narration-word-position` store, so an enabled Reading Ruler follows
+ * the narrated word instead of requiring the child to manually drag their
+ * finger. Position-only, no analytics; degrades to `null` (pure pointer-follow)
+ * whenever nothing is timed, exactly like the caption itself degrades.
  */
 function KaraokeCaption({
   narration,
@@ -230,18 +237,27 @@ function KaraokeCaption({
       ? caption.words
       : null;
   const [litIndex, setLitIndex] = useState(-1);
+  const wordRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
   useEffect(() => {
     setLitIndex(-1);
-    if (!timed || !getTime) return;
+    if (!timed || !getTime) {
+      reportNarratedWordY(null);
+      return;
+    }
     let raf = 0;
     const tick = () => {
       const index = currentWordIndex(timed, getTime());
       setLitIndex((prev) => (prev === index ? prev : index));
+      const el = index >= 0 ? wordRefs.current[index] : null;
+      reportNarratedWordY(el ? el.getBoundingClientRect().top : null);
       raf = window.requestAnimationFrame(tick);
     };
     raf = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(raf);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      reportNarratedWordY(null);
+    };
   }, [timed, getTime, narration]);
 
   return (
@@ -250,6 +266,9 @@ function KaraokeCaption({
         timed.map((w, i) => (
           <span
             key={`${w.word}-${i}`}
+            ref={(el) => {
+              wordRefs.current[i] = el;
+            }}
             className={cn(
               "rounded px-0.5",
               // Reduced motion keeps a static current-word tint, no transition.
