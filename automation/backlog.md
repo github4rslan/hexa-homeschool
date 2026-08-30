@@ -304,4 +304,13 @@ keyboard-only or switch-access child, not a one-off).
   very next Tab lands on the primary CTA, not the page logo.
 - Done so far: nothing shipped yet — fresh epic from today's live
   keyboard-only Playwright drive (Tab/ArrowDown/Enter through a real mcq
-  answer, not just a code-only audit find).
+  answer, not just a code-only audit find). 2026-08-31 (Mechanic): B1's
+  narrow fix shipped and live (`5e0978d`), closing the urgent instance.
+  F3's react-aria `FocusScope` adoption was judged best deferred rather
+  than rushed in alongside the rest of that night's items: it is a new
+  dependency plus a refactor of the practice-player's other region swaps
+  (chip trays, tap_reveal cards), not a bug fix, with no second live
+  failing instance to anchor it against that night. Next step for a
+  future dedicated run: adopt `FocusScope` across all transition points
+  and live-verify the keyboard repro at each one, its own commit, not
+  folded into a routine nightly item.
