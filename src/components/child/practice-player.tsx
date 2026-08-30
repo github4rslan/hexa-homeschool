@@ -126,10 +126,13 @@ const MAX_RECORDING_MS = 15_000;
 function BreathBreak({
   accent,
   name,
+  reduced,
   onDone,
 }: {
   accent: AccentPreset;
   name: string | null;
+  /** `useReducedMotion()` return value, threaded to Eddie's own guard. */
+  reduced: boolean | null;
   onDone: () => void;
 }) {
   return (
@@ -145,17 +148,26 @@ function BreathBreak({
       )}
       role="status"
     >
-      <motion.div
-        animate={{ scale: [1, 1.25, 1] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-        className={cn(
-          "flex h-20 w-20 items-center justify-center rounded-full border-2 motion-reduce:animate-none",
-          accent.bg,
-          accent.border,
-        )}
-      >
-        <Wind className={cn("h-9 w-9", accent.text)} aria-hidden />
-      </motion.div>
+      <div className="flex items-center justify-center gap-3">
+        <motion.div
+          animate={{ scale: [1, 1.25, 1] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+          className={cn(
+            "flex h-20 w-20 items-center justify-center rounded-full border-2 motion-reduce:animate-none",
+            accent.bg,
+            accent.border,
+          )}
+        >
+          <Wind className={cn("h-9 w-9", accent.text)} aria-hidden />
+        </motion.div>
+        {/* F2 (2026-08-30) — the breathing/calm-break was the one reactive
+            lesson moment with no Eddie at all. "neutral" is Eddie's own idle
+            "gentle breathing bob", a natural thematic match for a breathing
+            break, calmer than "encouraging" (which reads as a response to a
+            miss). Purely presentational: same reduced-motion guard as every
+            other EddieAvatar call site, no timing or event ever recorded. */}
+        <EddieAvatar mood="neutral" accent={accent} reduced={reduced} />
+      </div>
       <p className="max-w-md text-lg leading-relaxed text-fog-100">
         {name ? `${name}, your` : "Your"} brain is working hard. Stand up,
         stretch, and take three slow breaths with the circle.
@@ -2100,6 +2112,7 @@ export function PracticePlayer({
               key="breath-break"
               accent={accent}
               name={childName}
+              reduced={reduced}
               onDone={() => {
                 tapCue();
                 setBreakOpen(false);
