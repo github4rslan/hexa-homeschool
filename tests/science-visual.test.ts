@@ -144,4 +144,45 @@ describe("deriveScienceVisual", () => {
     expect(deriveScienceVisual("sci_reactions", "What gas is produced when an acid reacts with a metal?")).toBeNull();
     expect(deriveScienceVisual("sci_ecology", "Which gas do plants remove from the air during photosynthesis?")).toBeNull();
   });
+
+  // F7 (2026-08-30): a curated negative-case pass over every branch, closing
+  // the recurring EPIC 1 risk class systematically rather than one instance
+  // at a time. Found and fixed a genuine SEVENTH instance while authoring
+  // these (see "does NOT derive material_property..." below).
+  describe("does NOT derive a visual for a surface-similar prompt on the wrong topic", () => {
+    it("does not draw material_property for a genuine electromagnetism question (7th EPIC 1 instance, fixed here)", () => {
+      // "magnetic" is a material_property needle, but a wire's current
+      // creating a magnetic field is physics (electromagnetism), not "does a
+      // magnet stick to this material?". Before this fix, the property-test
+      // branch had no topic gate and fired here anyway.
+      expect(
+        deriveScienceVisual(
+          "sci_electricity",
+          "A wire carrying a current creates a magnetic field around it. This effect is called:",
+        ),
+      ).toBeNull();
+      expect(
+        deriveScienceVisual("sci_forces", "Which force keeps a magnet attracted to a magnetic field?"),
+      ).toBeNull();
+    });
+
+    it("still draws material_property for the genuine KS2 materials topic (regression guard)", () => {
+      expect(
+        deriveScienceVisual("sci_ks2_materials", "Which material is magnetic?")?.kind,
+      ).toBe("material_property");
+    });
+
+    it("does not draw life_cycle for an unrelated 'cell cycle' question (surface-similar phrase, different concept)", () => {
+      expect(
+        deriveScienceVisual("sci_genetics", "Which stage of the cell cycle involves DNA replication?"),
+      ).toBeNull();
+    });
+
+    it("does not draw plant_parts for a non-living-topic prompt that merely mentions a plant", () => {
+      // topicTag.includes("living") is the real gate; a non-living topic
+      // mentioning "plant" (e.g. a power plant, in a different subject) must
+      // never draw the labelled-plant diagram.
+      expect(deriveScienceVisual("sci_energy", "A power plant converts fuel into electricity.")).toBeNull();
+    });
+  });
 });

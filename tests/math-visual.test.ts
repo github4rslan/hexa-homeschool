@@ -276,4 +276,24 @@ describe("deriveMathVisual", () => {
     expect(spec.a).toBe("1");
     expect(spec.exponent).toBe(3);
   });
+
+  // F7 (2026-08-30): a curated negative-case pass confirming natural English/
+  // Science phrasing that merely contains a number doesn't accidentally read
+  // as an arithmetic shape. deriveMathVisual carries no topic gate (it is
+  // tried first, before science/English), so this is the residual risk the
+  // whole EPIC 1 bug class is watching for.
+  describe("does NOT derive a visual for a surface-similar non-arithmetic prompt", () => {
+    it("does not draw a number line for a plain count in a sentence", () => {
+      expect(deriveMathVisual("Identify the two commas that are missing from this sentence.")).toBeNull();
+    });
+    it("does not draw a percent grid for a non-numeric quotation mark", () => {
+      expect(deriveMathVisual("Which word is spelled correctly?")).toBeNull();
+    });
+    it("does not draw a place-value figure for a non-place-value 'value of' phrase", () => {
+      expect(deriveMathVisual("Explain the value of teamwork in this story.")).toBeNull();
+    });
+    it("does not draw a rounding figure for a non-rounding 'round' word", () => {
+      expect(deriveMathVisual("The debate went another round before a decision was reached.")).toBeNull();
+    });
+  });
 });

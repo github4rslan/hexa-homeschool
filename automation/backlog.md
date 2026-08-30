@@ -77,7 +77,26 @@ EXAM_STYLE_QUESTIONS on 2026-08-14).
   regardless of relevance — confirmed live showing "stabbed" spelled into
   letter tiles for a tone/connotation-EFFECT question (`eng_analysis`), where
   spelling the word out is pedagogically irrelevant noise, not wrong-but-
-  irrelevant rather than factually wrong. Not yet fixed.
+  irrelevant rather than factually wrong. SHIPPED 2026-08-31 (B4): excludes
+  prompts using effect/analysis language (affects, effect, suggests, creates,
+  tone, connotation, mood); falls back to the decorative AI image when in
+  doubt, same pattern as the irregular-plurals guard.
+- 2026-08-31 (Mechanic, F7): added curated negative-case test blocks to
+  `math-visual.test.ts` and `science-visual.test.ts` (english-visual.ts's own
+  negative cases landed with B4 above). While authoring science-visual.ts's
+  negative cases, found and fixed a SEVENTH real instance of the same class:
+  `material_property`'s "magnetic" needle had no topic gate at all, so a
+  genuine electromagnetism prompt on `sci_electricity`/`sci_forces` ("a wire
+  carrying a current creates a magnetic field") would have wrongly rendered a
+  "does a magnet stick to this material?" test. Gated to
+  `sci_ks2_materials`/`sci_states` only, mirroring the existing
+  `states_of_matter` gate. No live seed question triggered this yet (checked
+  via a temporary, never-committed script importing the seed arrays), so this
+  was caught before shipping, exactly the point of the F7 negative-test pass.
+  `deriveMathVisual` (math-visual.ts) still carries no topic gate at all
+  (tried first, before science/English) but a full seed-bank scan found zero
+  live collisions; flagging as the one remaining residual-risk surface for a
+  future run's negative-test pass rather than a defensive rewrite tonight.
 
 ## EPIC 2 — Exam-style, command-word practice (make questions feel like the paper)
 Status: ACTIVE (headline), zero-coverage closed, now purely a depth/variety lane.
