@@ -19,12 +19,16 @@ EXAM_STYLE_QUESTIONS on 2026-08-14).
   that a "retire" of a seed question must delete the orphaned old doc (seed never
   deletes), not just reword the prompt. The DERIVED VISUALS built from a question's
   prompt string remain a separate correctness surface from the seed text itself —
-  now FIVE distinct real bugs of this shallow-regex/keyword-match-on-raw-prompt-text
-  class across math-visual.ts, teaching-animations.ts, english-visual.ts (twice),
-  and science-visual.ts. Keep spot-checking a derived figure against its own
-  question every run, and specifically watch for heuristics with an unguarded
-  "else"/default branch — that is its own named risk pattern (see the 2026-08-28
-  note below).
+  now SIX distinct real bugs of this shallow-regex/keyword-match-on-raw-prompt-text
+  class across math-visual.ts, teaching-animations.ts, english-visual.ts (three
+  times now), and science-visual.ts. Keep spot-checking a derived figure against
+  its own question every run, and specifically watch for heuristics with an
+  unguarded "else"/default branch — that is its own named risk pattern (see the
+  2026-08-28 note below). A NEW standing next-step (2026-08-30, F7 in that day's
+  report): add curated NEGATIVE test cases to every deriveXVisual heuristic (not
+  just positive-match cases) so this class stops shipping reactively one instance
+  at a time — seed the negative-case list from every prompt that has broken so
+  far (see the per-date notes below for the exact text of each).
 - Done so far: full re-derivation of all quantitative + factual answers
   (2026-08-08); B3 sci_body water-absorption item retired + reworded + orphan
   deleted (2026-08-09); curriculum.seed.extra.ts + the F7 exam-style items + F8
@@ -53,6 +57,27 @@ EXAM_STYLE_QUESTIONS on 2026-08-14).
   configuration AND periodic table trends) — flagged here as a coverage gap for a
   future run to size up with 1-2 targeted new items (not authored today; today's
   authoring effort went to `maths_graphs`'s command-word gap instead, see EPIC 2).
+- 2026-08-30 (Scout): ran a fresh authoritative pool-size audit (a temporary,
+  never-committed script that imports the seed arrays directly — no live DB
+  touch — correcting for the tuple-format under-count class). **CORRECTION: the
+  2026-08-29 `sci_atoms` "thin (4 items)" note above was ITSELF a stale premise
+  of the exact class it warns about** — the real pool is 10 questions (4
+  mastery), not 4; drop `sci_atoms` from the thin-topics watchlist. The REAL
+  thinnest topics today are `maths_mensuration` (3 total, tiers 2-3 only, no
+  entry tier-1 or stretch tier-5), `maths_inequalities` (3 total, tiers 3-4
+  only), `maths_transformations` (3 total, tiers 2-3 only) and
+  `maths_simultaneous` (3 total, tiers 3-5) — all text-correct on re-derivation,
+  purely a coverage/tier-range gap. Authored + filed one new tier-1
+  `maths_mensuration` question (F1, 2026-08-30, perimeter of a rectangle,
+  Edexcel 1MA1 G16) in full `SeedQuestion` shape, pending owner seed approval;
+  the other three topics are scoped with exact tier gaps for a future run
+  rather than all authored in one sitting. Also found a SIXTH derived-visual
+  instance of the recurring class (B4, 2026-08-30): `english-visual.ts`'s
+  `letter_tiles` fallback fires on ANY prompt with one quoted single word
+  regardless of relevance — confirmed live showing "stabbed" spelled into
+  letter tiles for a tone/connotation-EFFECT question (`eng_analysis`), where
+  spelling the word out is pedagogically irrelevant noise, not wrong-but-
+  irrelevant rather than factually wrong. Not yet fixed.
 
 ## EPIC 2 — Exam-style, command-word practice (make questions feel like the paper)
 Status: ACTIVE (headline), zero-coverage closed, now purely a depth/variety lane.
@@ -60,13 +85,14 @@ Every KS4 topic across all three subjects has at least one command-word item
 (confirmed shipped 2026-08-20).
 - Next step: keep picking single-coverage topics each run and add a second
   command-word item (>= 2 per topic is the target) rather than re-sweeping the
-  whole bank. Remaining single-coverage topics as of 2026-08-29 (after today's 1
-  authored item lands): eng_comprehension, eng_persuasive, sci_genetics,
+  whole bank. Remaining single-coverage topics as of 2026-08-29 (after that
+  day's 1 authored item lands): eng_comprehension, eng_persuasive, sci_genetics,
   sci_ecology, eng_punctuation, eng_spelling, eng_poetry, eng_shakespeare,
-  eng_creative — still a tail, pick 1-2 per run. `maths_graphs` (via today's F1),
+  eng_creative — still a tail, pick 1-2 per run. `maths_graphs`,
   `maths_fractions`, `maths_number`, `maths_geometry`, `maths_pythagoras`,
   `sci_electricity`, `maths_statistics`, `maths_sequences`, `sci_cells`,
-  `sci_atoms` and `eng_devices` are now past this bar.
+  `sci_atoms` and `eng_devices` are now past this bar. Not touched 2026-08-30
+  (today's curriculum authoring effort went to EPIC 1's tier-range gap instead).
 - Done so far: 6 spec-mapped exam-style questions (F7, 2026-08-09) across
   maths_fractions/ratio/number, sci_forces/reactions, eng_devices; steady
   additions through 2026-08-09 → 2026-08-28 across every subject (see prior
@@ -80,7 +106,7 @@ Every KS4 topic across all three subjects has at least one command-word item
 - VARIETY axis: command-word COVERAGE and question-bank VARIETY are different
   axes — watch topics under active spaced review for a thin-pool symptom (near-
   duplicate phrasings of the same fact across mastery attempts). None newly
-  found 2026-08-27, 08-28, or 08-29.
+  found 2026-08-27, 08-28, 08-29 or 08-30.
 
 ## EPIC 3 — Full spec coverage: close missing GCSE topics
 Status: ACTIVE. `maths_transformations` and `maths_simultaneous` (both Edexcel
@@ -89,8 +115,17 @@ practice pool changes re-verified 2026-08-29 incidentally confirm the
 simultaneous-equations topic's prerequisite wiring is intact — `maths_graphs`
 still lists correctly as a prerequisite).
 - Next step: Science required-practical recall (e.g. magnification, titration,
-  rate-of-reaction methodology) and English extract-based language analysis
-  remain unscoped thin areas for a future run's headline curriculum item.
+  rate-of-reaction methodology) remains an unscoped thin area — 2026-08-30
+  (Scout, F5) deliberately did NOT author against it (the exact current AQA 8464
+  required-practical list/numbering needs a human check against the live spec
+  sheet first, per the hard authoring rule against citing a spec reference
+  Scout isn't confident is current) but named the gap precisely: a future run
+  should confirm the spec list then author 2-3 methodology-recall
+  ("describe how you would...", "evaluate this method...") questions, likely as
+  a new `sci_practicals` topic. English extract-based language analysis is
+  comparatively less thin now that `eng_analysis` exists and was driven
+  end-to-end 2026-08-30 (tone/effect/metaphor/simile analysis, all correct) —
+  consider this one narrowed, not fully closed.
 - Done so far: `maths_mensuration` + `maths_inequalities` (2026-08-09/08-20);
   mock unlock made count-driven so new topics can't break it (2026-08-09);
   `maths_transformations` (authored 08-27, shipped 08-28); `maths_simultaneous`
@@ -103,12 +138,13 @@ exam-boundary-grade reveal card, and full question content for `fill_blank`
 items pulled into a mock are ALL confirmed shipped and working live. Do not
 re-propose a mock timer, the boundary-grade card, or the fill_blank mock-content
 fix.
-- Next step: nothing new identified this run — the mock wasn't re-driven this
-  run (the smoke child's Maths mock was unlocked at the top of the hub, but no
-  new mock-specific gap surfaced from code review, and consuming this week's
-  attempt wasn't necessary to verify anything new). Keep re-verifying rather
-  than re-proposing; EPIC 12 is the epic to extend if a future run finds another
-  interaction type with the same generic-wrapper-prompt trap.
+- Next step: nothing new identified 2026-08-29 or 2026-08-30 — `scoreMock()`
+  (lib/engine/mock-exam.ts) was re-read 2026-08-30 as part of the standing
+  engine check and looks sound (mark-weighted blend of demonstrated-ceiling tier
+  and paper-difficulty tier, clamped 1-5); the mock itself wasn't re-driven live
+  either day. Keep re-verifying rather than re-proposing; EPIC 12 is the epic to
+  extend if a future run finds another interaction type with the same
+  generic-wrapper-prompt trap.
 - Done so far: calculator vs non-calculator framing + readiness-tiered paper
   (F9, 2026-08-09); mark-weighted scoring + a warm, non-pass/fail boundary-grade
   reveal (F7, shipped 2026-08-14/18); calm countdown timer confirmed live
@@ -132,12 +168,15 @@ readiness trajectory schedule deterministically from certification dates/scores
 Status: ONGOING background lane, not gated to a night. Every interaction type
 (mcq, fill_blank, tap_reveal, drag_drop) now has BOTH a correct settle and a
 wrong settle. The mock-exam answer-pick pulse, the reflection-confirmation
-entrance, and the certificate-page entrance animation are all SHIPPED — do not
-re-propose.
-- Next step: F2 (2026-08-29) — a small warm, non-test-framed transition line the
-  moment Practice hands off into Mastery (today the phase-bar segment pulse is
-  the only signal, easy to miss); copy must stay inside the calm-wrong law even
-  though this is a correct-path moment (no "good luck"/exam-pressure framing).
+entrance, the certificate-page entrance animation, and the warm "arrival into
+Mastery" transition line are all SHIPPED — do not re-propose any of those.
+- Next step: F2 (2026-08-30) — Eddie (`EddieAvatar`) has NO presence during the
+  breathing/calm-break moment (`BreathBreak` in practice-player.tsx, triggered
+  either by 2+ consecutive struggled questions OR an immediate "attention"-
+  category miss via `shouldOfferBreak()` in `lib/child/eddie-copy.ts`) — today
+  it's just a generic pulsing Wind icon, the one reactive moment in the whole
+  lesson with no mascot at all, despite every OTHER reaction moment (correct,
+  reteach, celebration) having one. Small, well-scoped fix.
 - Done so far: every interaction type has its own correct-answer settle
   (2026-08-09); warm hint-card entrance + calm See-it beckon on a miss
   (2026-08-09); calm guiding glow + supportive fill_blank wrong-settle
@@ -149,8 +188,10 @@ re-propose.
   `eng_devices`'s simile card question); Eddie on the mastery reteach screen
   (shipped 2026-08-24); the mock-exam pick pulse (2026-08-26); the reflection-
   confirmation entrance (shipped 2026-08-28); the certificate-page entrance
-  (F7, shipped 2026-08-28, re-verified live 2026-08-29 — computed style settled
-  cleanly after a real `maths_geometry` re-mastery).
+  (F7, shipped 2026-08-28, re-verified live 2026-08-29); the warm "arrival into
+  Mastery" transition line (F2, shipped 2026-08-29, live-verified via a
+  MutationObserver since the transient element is too fast for a manual
+  snapshot round-trip).
 
 ## EPIC 7 (background) — Stay on the current stack + performance budget
 Status: ACTIVE. React 19 and Tailwind 4 are already current; most deps
@@ -158,30 +199,49 @@ Status: ACTIVE. React 19 and Tailwind 4 are already current; most deps
 vitest/next/@next/bundle-analyzer/@types/node/lucide-react/posthog-js) have been
 kept on their in-range "Wanted" versions via a steady drip of small bumps.
 - Next step: eslint 10 stays BLOCKED on the Next.js 15→16 migration (peer-dep
-  cap). Pair the eventual nonce-based CSP hardening with that move. Another
-  small in-range batch is available as of 2026-08-29: `@sentry/nextjs`
-  10.71.0→10.72.0, `eslint-config-next` 15.5.23→15.5.24, `lucide-react`
-  1.35.0→1.37.0, `posthog-js` 1.422.3→1.422.5 — filed as F6, 2026-08-29,
-  routine and independent of the Next 16 staged migration.
+  cap). Pair the eventual nonce-based CSP hardening with that move. Routine
+  in-range batch shipped 2026-08-29 (`@sentry/nextjs`/`eslint-config-next`/
+  `lucide-react`/`posthog-js`); as of 2026-08-30 the only remaining safe patch
+  is `tsx` 4.23.12→4.23.13 (filed F8, 2026-08-30) — everything else outdated
+  (`next`, `eslint`, `eslint-config-next`, `@next/bundle-analyzer`, `@types/node`,
+  `typescript`) is a deliberate major-version hold. **NEW (2026-08-30, F6):**
+  `framer-motion` is pinned at `^11.15.0` (already at its own range ceiling)
+  while the package's real latest is `13.1.1` — a 2-major gap, and the
+  maintainers have rebranded the primary package to `motion` (framer-motion is
+  now a compat re-export). Given animation is a headline delight lane and this
+  dependency touches nearly every child-facing surface, treat this as a
+  RESEARCH SPIKE first (read the v12→v13 changelog against this codebase's
+  actual usage), not a routine bump — too much blast radius to blind-bump.
 - Done so far: hero LCP fix + LazyMotion split + ReducedMotionProvider; bundle
-  analyzer added; audit stays at 0 vulnerabilities (re-confirmed 2026-08-29,
-  both prod-only and full tree — `npm test` also re-confirmed green, 901/901).
+  analyzer added; audit stays at 0 vulnerabilities (re-confirmed 2026-08-30,
+  both prod-only and full tree — `npm test` also re-confirmed green, 915/915).
   `@axe-core/playwright` wired into a real CI a11y job. Steady dependency
-  freshness bumps through 2026-08-28.
+  freshness bumps through 2026-08-29.
 
-## EPIC 8 — Mobile layout regressions: sweep the bare `grid` pattern
-Status: RETIRED as an active risk 2026-08-19, re-confirmed clean repeatedly
-since. **NOTE (2026-08-29): a genuinely NEW mobile layout bug was found this
-run, but it is a different shape** — not the bare-grid overflow this epic
-tracked, but a fixed-position element (`FocusFrame`'s "Exit lesson" pill)
-overlapping scrolled content. Filed as its own item (B2, 2026-08-29) rather than
-reopening this epic, since the root cause and fix are unrelated to the grid
-pattern. Keep both classes in mind on future mobile sweeps.
+## EPIC 8 — Mobile layout regressions
+Status: ACTIVE again — RETIRED 2026-08-19 as the original bare-`grid` pattern,
+but the DIFFERENT "fixed element overlaps scrolled content" shape (opened
+2026-08-29 as its own B2, `FocusFrame`'s "Exit lesson" pill) has now recurred
+TWICE. **2026-08-30 (Scout): the 2026-08-29 `pt-20`/`pt-24` padding fix does
+NOT fully hold** — the exact same `sci_states` drag_drop repro (place all 3
+chips at 390×844) still measurably overlaps the pill with the question heading
+for this TALLER question (a figure + 3 slots + button), because a fixed top
+padding on a `justify-center` wrapper only shifts where centring starts, it
+doesn't prevent overflow once content is taller than the fix was verified
+against. Filed as a fresh B2, 2026-08-30, with a more durable fix proposal
+(`scroll-margin-top` on the content itself, or drop `justify-center` for
+oversized content) rather than another padding-number tweak.
+- Next step: ship the 2026-08-30 B2 fix, then re-verify BOTH the short-question
+  repro from 2026-08-29 AND the taller `sci_states`/`maths_geometry`/
+  `eng_devices` repros from 2026-08-30 before calling this closed again — a
+  single-repro "it's fixed" claim has now been wrong twice in a row for this
+  exact bug class, so verify broadly this time.
 
 ## EPIC 9 — A visual mascot for Eddie
-Status: ACTIVE, v1 SHIPPED 2026-08-19, present at every scoped call site.
-Consider this epic's build-out essentially complete; keep the standing
-re-verify-don't-re-propose posture. No new gap found 2026-08-29.
+Status: ACTIVE, v1 SHIPPED 2026-08-19, present at almost every scoped call
+site — EXCEPT the breathing/calm-break moment, a fresh gap found 2026-08-30
+(see EPIC 6's F2). Once that ships, consider this epic's build-out complete
+again.
 
 ## EPIC 10 — SEO/metadata hygiene sitewide
 Status: SHIPPED 2026-08-20, no known open gap. Standing every-run spot-check
@@ -214,31 +274,34 @@ none produce an x² term). Next step: an occasional (not every-run) broader
 sweep for the same shape elsewhere in the bank — not urgent, only one instance
 found so far.
 
-## EPIC 16 (new) — Lesson resume must cover EVERY phase, not just Practice
-Status: NEW, opened 2026-08-29. `lesson_progress` persistence
-(`practice-player.tsx`'s `persist()`/`resolveResumeStep` mechanism) only ever
-writes a checkpoint during the Practice phase. The moment a child reaches
-Mastery (or Reteach, or the five-attempt Handoff pause), there is ZERO further
-persistence for the rest of the session — `lessonPhase` always initialises to
-`"practice"` on a fresh mount with no signal that the child had progressed
-further, so a refresh, crash, or back-navigation anywhere past Practice sends
-the child all the way back to the Explainer, discarding a finished Practice
-pass and any Mastery answers already given. Live-reproduced exactly on
-`eng_devices` this run (refreshed mid "Mastery check 1: 2 of 3" → landed back
-on the Explainer). This is NOT `isReview`-specific — it applies identically to
-a first-time certification attempt. Filed as B1, 2026-08-29 (Critical/High —
-this is arguably the most valuable resilience bug found in many runs, directly
-contradicting the documented "interrupted child resumes at the exact step"
-architecture promise).
-- Next step: ship B1's fix — extend the persisted checkpoint with an optional
-  `phase`/`masteryAttempt` (default `"practice"` for legacy rows), call the
-  mastery-phase equivalent of `persist()` after each answered mastery question,
-  and make the mount-time resume logic route into `"mastery"` at the saved
-  step/attempt instead of falling through to a full Explainer replay. Live-
-  verify by reproducing the exact repro (refresh mid Mastery-question-2) post-
-  fix and confirming the child lands back on the correct mastery step, not the
-  Explainer. Reteach/Handoff can reasonably stay non-resumable as a first cut,
-  as long as the fallback (restart Mastery attempt 1, calmly) is materially
-  better than today's silent full-lesson reset.
-- Done so far: nothing shipped yet — fresh epic from today's live Playwright
-  resilience drive (a deliberate mid-refresh test, not a code-only audit find).
+## EPIC 16 — Lesson resume must cover EVERY phase, not just Practice
+Status: SHIPPED 2026-08-29 (Mechanic), re-verified live 2026-08-30 (Scout) via
+the exact repro that opened this epic: refreshed mid "Mastery check 1: 2 of 3"
+on a fresh `eng_analysis` certification attempt and landed back on the correct
+mastery step with score intact, NOT the Explainer. No further action; re-open
+only on a concrete regression.
+
+## EPIC 17 (new) — Focus management after a dynamic UI transition
+Status: NEW, opened 2026-08-30. A pattern distinct from EPIC 16 (which was
+about DATA persistence across a hard refresh) — this is about WHERE KEYBOARD
+FOCUS LANDS after a same-session UI swap. Confirmed live: `practice-player.tsx`
+swaps the "Check answer" button for a different "Keep going"/"Start mastery"/
+"Finish" button via conditional rendering (not a relabel of one stable node),
+which destroys the focused DOM element; the browser resets focus to `<body>`,
+and the child's next Tab press restarts the ENTIRE page's tab sequence from
+the logo at the very top, costing ~8 extra Tab presses to reach the next
+primary action — repeated on every single question, in every lesson. Filed as
+B1, 2026-08-30 (Medium/High — a systemic, compounding a11y burden for any
+keyboard-only or switch-access child, not a one-off).
+- Next step: ship B1's narrow fix (a `ref` + `useEffect` calling `.focus()` on
+  the new CTA when it mounts). Separately, F3 (2026-08-30) proposes the more
+  systemic version: adopt `react-aria`'s `FocusScope` (owner-pre-approved
+  library for "accessible interaction primitives for SEND-grade custom
+  controls") across the practice-player's transition points generally, so this
+  whole CLASS of "region swaps, focus gets lost" bug can't recur at some other
+  transition point Scout hasn't found yet. Live-verify by repeating the exact
+  keyboard repro (Tab/Arrow/Enter through a full mcq answer) and confirming the
+  very next Tab lands on the primary CTA, not the page logo.
+- Done so far: nothing shipped yet — fresh epic from today's live
+  keyboard-only Playwright drive (Tab/ArrowDown/Enter through a real mcq
+  answer, not just a code-only audit find).

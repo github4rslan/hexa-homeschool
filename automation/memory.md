@@ -2618,3 +2618,98 @@ just fail lint or produce a silently-broken flat config.
   Vercel MCP still not in the tool list this run (yet another consecutive
   run flagging this); curl-based `/api/health` (200, `db:"up"`) was the only
   deploy-readiness signal available, same as every recent run.
+- 2026-08-30 — Discovery pass (clean retry of an earlier same-day attempt that died
+  mid-task before committing anything — confirmed via git log/status, tree was clean
+  at start). Sunday → latest-stack deep-dive, plus the standing max-depth child pass
+  and every-day lanes. CREDENTIAL HANDLING: zero incidents this run — used a blind
+  DOM-value-set + form.requestSubmit() technique for admin/tutor login exclusively
+  (Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value").set to write
+  email/password via browser_evaluate, then form.requestSubmit()), never
+  browser_type (no live keystroke of a secret) and never a snapshot/navigate call
+  while a password field held a value (only read .length from it, never .value).
+  This is a genuinely reusable, fully-safe pattern that needs NO new tooling and no
+  MCP capability — it may fully resolve the standing "F5 admin/tutor credential
+  dilemma" flagged across the last several runs; worth the owner/future-Scout treating
+  this as the standard login technique for admin/tutor going forward instead of
+  browser_type. The parent (SMOKE) session was already live when reached (inherited
+  from the earlier dropped attempt — Ivy's activity feed showed "2 topics mastered
+  today" from that prior session; harmless, confirms test-family writes are safe to
+  inherit across a crashed run). HEADLINE FINDINGS: B1 (Medium/High, new EPIC 17)
+  — keyboard focus is never managed after answering a question; practice-player.tsx
+  swaps the "Check answer" button for a DIFFERENT "Keep going"/"Start mastery"/"Finish"
+  button via conditional rendering (not a relabelled stable node), so the browser resets
+  focus to <body> when the focused element unmounts, and the child's next Tab press
+  restarts the WHOLE page's tab sequence from the logo at the top — confirmed via
+  document.activeElement reads after a real keyboard-only mcq answer (Tab/ArrowDown/
+  Enter, including confirming native roving-radiogroup arrow-key behaviour and a visible
+  4px focus ring). Repeats on every question, every lesson — a systemic, compounding
+  a11y burden, not a one-off. B2 (Medium) — the 2026-08-29 exit-pill fix
+  (pt-20/pt-24 on FocusFrame) does NOT fully hold: the exact same sci_states
+  drag_drop repro (place all 3 chips at 390x844) still measurably overlaps for a
+  TALLER question (figure + 3 slots + button) than the fix was verified against —
+  getBoundingClientRect confirmed overlap after the scroll position settled (not
+  mid-animation). KEY LESSON: a fixed-pixel top-padding fix on a justify-center
+  wrapper only shifts where centring starts, it doesn't prevent overflow for content
+  taller than what was tested — a single-repro "verified live" claim isn't enough for
+  this bug CLASS; needs a broader re-check across multiple question shapes before
+  calling it closed. B3 (Medium) — "Show me another way" on the Explainer hardcodes
+  wasCorrect: true when calling /api/tutor (explain-another-way.tsx:59), so the
+  checker-PASSED AI response opens "That's absolutely correct!" even on content the
+  child has never answered anything about — confusing first-exposure framing traced to
+  teaching-agent.ts's binary (correct/incorrect) framing ternary having no third
+  "fresh explanation, no answer yet" branch. B4 (Low/Medium, EPIC 1, SIXTH instance
+  of the recurring derived-visual class) — english-visual.ts's letter_tiles
+  fallback fires on ANY prompt with one quoted single word regardless of relevance;
+  confirmed live spelling "stabbed" into letter tiles for a tone/connotation-EFFECT
+  question (eng_analysis), conveying nothing about the actual skill (a GCSE AO2
+  language-effect question, not a spelling one). ALSO CORRECTED A STALE BACKLOG
+  PREMISE of the SAME class: 2026-08-29's note that sci_atoms was "thin (4 items)"
+  was itself wrong (a fresh, never-committed script importing the seed arrays directly
+  — correcting for the tuple-format under-count the 2026-08-23/28/29 precedent already
+  flagged — shows 10 questions, 4 mastery); the REAL thinnest topics are
+  maths_mensuration/maths_inequalities/maths_transformations/maths_simultaneous
+  (3 questions each, narrow 2-tier ranges, no entry or stretch tier) — authored one new
+  tier-1 maths_mensuration perimeter question in full (F1), scoped the other three
+  for a future run rather than over-authoring in one sitting. Curriculum/delight/
+  a11y features: F2 Eddie has NO presence during the breathing/calm-break (confirmed
+  by reading BreathBreak's source — just a generic Wind icon, the one reactive moment
+  with no mascot in the whole lesson); F3 adopt react-aria's FocusScope for the
+  practice-player's transition points (systemic fix for B1's whole bug CLASS, not just
+  B1's instance); F4 sync the reading ruler to narration word-position when read-aloud
+  is playing (the karaoke word-timing/position data already exists in use-narration.ts,
+  just isn't wired to ReadingRuler, which today is pointer-follow only); F5 scoped (not
+  authored) a Science required-practicals recall gap — deliberately did NOT invent AQA
+  8464 practical names/numbers without a live spec check, per the hard authoring rule;
+  F6 framer-motion research spike (today's Sunday lane) — pinned at its own range
+  ceiling (11.18.2) while the real latest is 13.1.1, and the maintainers have rebranded
+  the primary package to motion — flagged as research-first given the huge blast
+  radius across every child-facing animation, NOT a routine bump; F7 add negative-case
+  unit tests to every deriveXVisual heuristic (closes the whole EPIC 1 recurring-class
+  risk, not just today's B4 instance); F8 routine tsx 4.23.12 to 4.23.13 patch (the only
+  safe bump this run — everything else outdated is a deliberate major-version hold per
+  EPIC 7). RE-VERIFIED LIVE AND HOLDING: EPIC 16 (2026-08-29's Mastery-resume B1 fix —
+  reproduced the EXACT repro, refreshed mid "Mastery check 1: 2 of 3" on a genuine
+  first-time eng_analysis certification, landed back on the correct step with score
+  intact, not the Explainer), the raw pointer-DRAG gesture for drag_drop (synthetic
+  DragEvent+DataTransfer dispatch — closes the honest coverage gap flagged
+  2026-08-29; GOTCHA: firing TWO drags back-to-back in the SAME browser_evaluate call
+  without yielding to React between them caused a wrong-slot mix-up in MY test harness,
+  not a product bug — one drag per browser_evaluate call is reliable), all four
+  interaction types with both a correct and wrong path, F2/F3/F4/F6 from 2026-08-29
+  (mastery-arrival beat, CSP report-uri, security.txt, dep bumps) via curl + live
+  drive, EPIC 11 (schedule vs plan-absent framing). Also confirmed the calm-break's
+  "attention"-category IMMEDIATE trigger path (shouldOfferBreak in
+  lib/child/eddie-copy.ts — fires on the FIRST wrong answer, not just the 2nd, when
+  the wrong pick looks like a not-reading-carefully slip) is a deliberate, already-built
+  feature, not a bug — investigated before reporting rather than assuming inconsistency.
+  Parent oversight ran a REAL portfolio generation for Ivy (29/30 certified, SHA-256
+  verified) through to the public /verify-portfolio?hash= page (hash match confirmed).
+  Admin (overview/finance/escalations) + tutor (empty queue) both READ-ONLY clean, silo
+  holds. Zero console errors, zero failed requests, both viewports, entire session.
+  Static: type-check + lint GREEN, npm test 915/915, npm audit 0 vulnerabilities
+  (prod-only + full-tree), security headers + CSP report-uri + security.txt all
+  confirmed live via curl -IL against www.edway.uk (bare apex still 308s — same
+  gotcha as before). Quick Web-Vitals spot-check on / (not today's lane): LCP 600ms,
+  CLS 0, TTFB 250ms, no finding. Vercel MCP still NOT in the tool list this run (yet
+  another consecutive run flagging this) — curl-based /api/health (200) substituted
+  throughout, as always. Emailed owner the scenario summary via scripts/email-findings.ts.
