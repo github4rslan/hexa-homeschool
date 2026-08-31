@@ -97,6 +97,16 @@ EXAM_STYLE_QUESTIONS on 2026-08-14).
   (tried first, before science/English) but a full seed-bank scan found zero
   live collisions; flagging as the one remaining residual-risk surface for a
   future run's negative-test pass rather than a defensive rewrite tonight.
+- 2026-09-01 (Scout): found and filed an EIGHTH instance (B3 that day's report),
+  this time a genuine mathematical-correctness issue rather than a relevance one:
+  `math-visual.ts`'s `deriveArray` multiplication branch (line 267) has no
+  negative-sign handling at all (unlike its sibling `deriveNumberLine` just
+  above it, which already does), so the live `maths_ks3_negatives` mastery
+  question "What is −2 × 3?" (correct answer −6) renders a figure asserting
+  "2 × 3 = 6" — a positive equation for a negative-answer question. Confirmed
+  via live Playwright repro (not just static grep) and confirmed via seed grep
+  that it's the ONLY live question triggering it today. Fix + a permanent
+  negative-case test for this exact prompt are still pending.
 
 ## EPIC 2 — Exam-style, command-word practice (make questions feel like the paper)
 Status: ACTIVE (headline), zero-coverage closed, now purely a depth/variety lane.
@@ -363,3 +373,52 @@ keyboard-only or switch-access child, not a one-off).
   future dedicated run: adopt `FocusScope` across all transition points
   and live-verify the keyboard repro at each one, its own commit, not
   folded into a routine nightly item.
+
+## EPIC 19 (new) — Server Component await-waterfalls on the highest-traffic pages
+Status: NEW, opened 2026-09-01 (Scout, Tuesday performance deep-dive). A genuinely
+new performance class, not a repeat of any prior epic: `/dashboard`, `/schedule`
+and `/learn` (the child hub) each block full page load for 4-8 SECONDS on every
+single visit, measured via the Performance API (`responseEnd - responseStart`,
+i.e. server-side think-time, not client render or network transfer — transfer
+sizes are tiny, ~2-65KB). Root-caused by reading the actual page components: each
+does 10-19 sequential `await` calls, most of them independent reads that could run
+in `Promise.all` (the pattern the SAME files already use correctly in a couple of
+places — e.g. the per-child loop and `todayCards` in `dashboard/page.tsx` — just
+not extended to the rest of the function body). Confirmed NOT a general DB/network
+problem: `/settings` (620ms), `/admin` (37ms, aggregate stats from a tiny dataset),
+`/pricing` (3ms, static) and `/api/health` (0.7-0.9s round-trip via curl) are all
+fast. This is a targeted, well-evidenced, low-risk-to-fix bug (B1, 2026-09-01) —
+purely reordering already-correct independent reads into parallel batches, no
+query logic changes.
+- Next step: ship 2026-09-01's B1 (batch the independent awaits in
+  `dashboard/page.tsx`, `schedule/page.tsx`, `learn/page.tsx`, and `repo.ts`'s
+  `buildScheduleItems`), then re-measure all three pages with the same
+  `performance.getEntriesByType('navigation')` technique and confirm the gap
+  drops to roughly `/settings`'s ~600ms baseline. If any OTHER page turns out to
+  have a similar unbroken await chain on a future audit, this epic is the place
+  to log it — the fix pattern (batch independent siblings into `Promise.all`) is
+  now established and should be applied proactively to new Server Components too.
+- Done so far: nothing shipped yet — this is the discovery entry.
+
+## EPIC 20 (new) — Homepage hydration mismatch (React error #418)
+Status: NEW, opened 2026-09-01 (Scout). The public marketing homepage (`/`)
+throws a React hydration-mismatch console error on EVERY load, confirmed at both
+390 and 1280 viewports across three separate fresh navigations, and confirmed
+NOWHERE else on the site (every other marketing/auth page checked this run was
+clean). No prior Scout report across 40+ days ever flagged this, so it reads as
+a recent regression rather than a long-standing miss. Exact component not yet
+pinpointed — static grep for the usual suspects (non-deterministic
+Date/Math.random, client-only branches, useEffect/useState) came up empty across
+every homepage-only component (`Hero`, `TrustBar`, `StatsStrip`, `Problem`, and
+the eight `next/dynamic` sections), so the cause is more likely invalid HTML tag
+nesting (the OTHER common #418 trigger) than a state mismatch.
+- Next step: a future run (or a dedicated debugging pass) should reproduce
+  against a non-minified dev build (the one legitimate exception to this
+  project's "never run the dev server" rule, since the FULL React error message
+  for #418 names the exact component and mismatched tag/attribute — that's the
+  fast path here, guessing from minified prod errors is not) and fix the actual
+  markup/logic defect. Live-verify by repeating the exact repro (fresh
+  `browser_navigate('https://edway.uk/')`, check `browser_console_messages`) at
+  both viewports and confirming zero errors.
+- Done so far: nothing shipped yet — this is the discovery entry, filed as B2
+  (2026-09-01) with full repro evidence.

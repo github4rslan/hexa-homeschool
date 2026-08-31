@@ -2786,3 +2786,65 @@ just fail lint or produce a silently-broken flat config.
   consecutive runs (OAuth re-auth still outstanding), flagging again per the
   standing note; curl-based /api/health (200, db:"up") substituted for both the
   per-item deploy wait and the final health check, as directed for this run.
+- 2026-09-01 — Discovery pass (clean retry of an earlier same-day attempt that died
+  before any exploration began — confirmed clean tree at start). Tuesday →
+  performance (B-perf) deep-dive, plus the standing max-depth child pass and
+  every-day lanes. CREDENTIAL HANDLING: zero incidents — blind DOM-value-set +
+  form.requestSubmit() for every login (parent/admin/tutor), never browser_type for
+  a secret; the one near-miss was browser_navigate's own auto-attached snapshot on
+  the first /login visit briefly representing a page with a pre-filled password
+  field (inherited profile autofill) — did not read that snapshot file, switched to
+  the blind-set technique immediately, no value ever read/printed. HEADLINE FINDING
+  (new EPIC 19): /dashboard, /schedule and /learn each block full page load for
+  4-8 SECONDS on every visit, measured via performance.getEntriesByType('navigation')
+  (responseEnd - responseStart = server think-time, not network/render) across six
+  separate fresh loads (dashboard 6.9s then 7.8s; schedule 7.4s; learn 4.1s twice) —
+  root-caused by actually reading the page components: each Server Component
+  (dashboard/page.tsx, schedule/page.tsx, learn/page.tsx) makes 10-19 SEQUENTIAL
+  await calls, most independent reads that could batch into Promise.all (the exact
+  pattern the SAME files already use correctly in a couple of spots — just not
+  extended further). Confirmed NOT general DB/network slowness via clean baselines:
+  /settings 620ms, /admin 37ms (tiny dataset), /pricing 3ms (static), /api/health
+  0.7-0.9s via curl. Filed as B1, Critical, with exact line numbers and the
+  in-file correct pattern to extend. SECOND major finding (new EPIC 20): the public
+  homepage (/) throws React hydration error #418 to console on EVERY load, confirmed
+  at BOTH viewports across 3 separate fresh navigations, confirmed nowhere else on
+  the site (every other marketing/auth page checked was clean) — no prior report in
+  40+ days ever flagged this, reads as a recent regression. Component not pinpointed
+  (grepped every homepage-only component for the usual non-deterministic-state
+  culprits, all clean — likely invalid HTML nesting instead, the other common #418
+  cause); filed as B2 with a note that this specific bug class needs a non-minified
+  dev-build repro to name the exact tag, the one legitimate exception to "never run
+  dev" for THIS bug shape specifically. THIRD finding: the EIGHTH live instance of
+  the recurring EPIC-1 derived-visual bug class, this time a real correctness bug
+  not just a relevance one — math-visual.ts's deriveArray multiplication branch has
+  no negative-sign handling (unlike its own sibling deriveNumberLine just above it
+  in the same file), so "What is −2 × 3?" (answer −6) renders a figure asserting
+  "2 × 3 = 6". Curriculum: F1 authored a tier-2 maths_inequalities entry question
+  (backlog's own named gap), F2 authored a second command-word sci_ecology question
+  (backlog's own named EPIC-2 gap) — both hand-derived, single defensible answer.
+  F3 flagged ~93KB of unsolicited Next.js Link RSC-prefetch traffic on marketing
+  pages (today's perf lane). F4 two routine in-range dep bumps (@sentry/nextjs,
+  lucide-react). Child pass used SAM SMOKE (fresh KS3, 0/30→3/30 certified this run)
+  instead of Ivy, since Ivy is now fully certified 30/30 with nothing left to
+  first-certify — drove maths_ks3_negatives end-to-end including a genuine
+  mastery-FAIL (exhausted all 3 tries deliberately) confirming the reteach loop is
+  warm and never punitive, plus eng_ks3_grammar, sci_ks3_cells, sci_states
+  (drag_drop tap-to-place, re-verified EPIC 8's mobile fix on a SECOND geometry
+  question too), maths_algebra_linear (fill_blank), eng_devices (tap_reveal) — all
+  4 interaction types driven with genuine wrong AND right answers, rapid
+  triple-click did not double-score, mid-mastery hard-refresh resumed correctly
+  (EPIC 16 holds). Parent journeys full pass: plan/schedule (generate+approve),
+  parent oversight (generate portfolio + verify-hash page), admin (overview/
+  finance/escalations, notably FAST — 37ms stream gap, the clean baseline that
+  helped confirm B1 isn't a platform-wide DB problem), tutor (empty queue, silo
+  holds). Static: type-check + lint GREEN, npm audit 0 vulnerabilities. Security
+  headers unchanged/confirmed via curl. Vercel MCP still not in the tool list
+  (11+ consecutive runs now) — curl-based /api/health substituted throughout.
+  PATTERN WORTH REPEATING: measuring performance.getEntriesByType('navigation')'s
+  responseStart vs responseEnd gap (not just total load time) cleanly separates
+  server-side think-time from network/render time, and comparing several pages'
+  gaps side-by-side (fast static page vs. slow authenticated page vs. an even
+  slower authenticated page) is what turned a vague "feels slow" into a precise,
+  root-caused, line-numbered bug — worth doing this measurement explicitly on
+  every future performance-lane run rather than eyeballing load times.
