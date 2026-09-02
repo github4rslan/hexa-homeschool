@@ -2878,3 +2878,74 @@ just fail lint or produce a silently-broken flat config.
   just the synchronous accept — worth a quick grep for other `fetch(...).ok` checks
   against third-party send APIs (Brevo/Twilio) during a future security/audit pass, to
   see if the same detection gap exists elsewhere (e.g. SMS in `lib/notify`).
+- 2026-09-02 (Mechanic build pass against the 2026-09-02 findings, DECISION: all).
+  RUN CONSTRAINT: no Playwright MCP (server failed to connect) and no Vercel MCP
+  (OAuth still expired, 12+ consecutive runs), so every item was gated on the four
+  static checks only and live checks were plain HTTP plus read-only data queries.
+  ALL 8 ITEMS SHIPPED, one green-gated commit each, pushed to main.
+  **B1** (Critical, carried 3 days) await-waterfall on /dashboard, /schedule and
+  /learn: each Server Component now issues its independent reads as one Promise.all.
+  Dashboard went from ~12 serial awaits to 3 stages (parent+children+cookie, then
+  activeChild, then a 13-way batch); the per-child card builder was extracted to
+  `buildChildViews()` so its own two reads run concurrently too; /schedule batches
+  parent+siblings+schedule+swap options; /learn batches all 11 hub reads. No query,
+  ownership check or rendered value changed, only issue order.
+  **B2** /dashboard was the one page reading `currentParentId()` with no null guard,
+  so a deleted account or a "sign out everywhere" token_version bump silently
+  rendered the zero-children onboarding state. Added the same one-line redirect
+  `/schedule` and `/settings` already use, which also let 8 `parentId!` assertions
+  drop out.
+  **B3** `deriveArray` multiplication regex now parses signs and returns null when
+  either operand is negative (a dot grid cannot picture "-2 x 3 = -6"), plus the
+  same guard for a negative squared base; 5 negative-case tests including the exact
+  live prompt.
+  **F1/F2/F3** three curriculum questions transcribed VERBATIM from the
+  owner-approved findings (maths_inequalities tier-2 entry item, second sci_ecology
+  command-word item, eng_punctuation identify-the-error item), each with
+  well-formedness plus answer-computes tests, then `npm run seed` run ONCE
+  (idempotent, curriculum only: "402 processed, 9 written") and verified live by a
+  read-only Mongo query: exactly one row each with the right keyed answer.
+  **F4** the signup-email delivery monitor (see the lesson below).
+  **F5** routine dep bumps (@sentry/nextjs 10.73.0, lucide-react 1.39.0,
+  @next/bundle-analyzer + eslint-config-next 15.5.25, posthog-js 1.425.0, stripe
+  22.6.1); npm audit still 0. Deliberately did NOT bump `next` itself (15.5.24 to
+  15.5.25 was in range but outside the finding, and a framework bump is exactly the
+  thing this browserless run could not verify).
+  KEY LESSON (F4, worth repeating): before writing a monitor against a third-party
+  API, probe the REAL account with a throwaway script and design against what comes
+  back, not the docs. Two assumptions would have shipped a broken or noisy check:
+  (1) `/v3/senders` does NOT list info@edway.uk at all, because edway.uk is
+  authorised as an authenticated DOMAIN (`/v3/senders/domains`, `domain_name`,
+  `authenticated`, `verified`), so a senders-only check would have paged every
+  single day; (2) Brevo's event names are mixed plural ("softBounces", "requests",
+  "clicks"), and the account is SHARED with another brand (info@thekingdomedit.com),
+  so events must be filtered by `from` or one brand's health masks the other's
+  outage. The account also carries permanent failure noise (blocked sends to
+  @edway.uk test addresses, soft bounces to a fake @edwaytest.dev domain), so
+  "any failure event" would cry wolf. The rule that actually detects the real
+  outage without noise: alert only when the sender cannot send at all, or when
+  sends were accepted in the window and NOT ONE is recorded as delivered. Probed
+  the real prod data through the shipped code (throwaway vitest file, deleted
+  after): status ok, sender authorised via domain, 7 delivered / 10 failed / 14
+  requested in 24h, and the no-API-key path degrades to "unconfigured". FOR THE
+  OWNER: those 10 failures are real, 14 "error" events to gmail/hotmail on real
+  verification codes on 09-01 and early 09-02 (all timestamped BEFORE the edway.uk
+  domain was authenticated at 02:17 UTC on 09-02, so consistent with the outage
+  being over) plus 6 "blocked" events sending weekly plans to an @edway.uk address
+  that looks blocklisted in Brevo. Worth an eyeball.
+  LIVE VERIFICATION (what was possible): production /api/health 200 db up;
+  /api/monitor/email-delivery went 404 to 401 after the deploy, which both proves
+  the deploy landed and proves the new cron gate works (CRON_SECRET is set on prod);
+  /, /pricing, /login, /signup all 200; /dashboard, /schedule, /learn all 307 to
+  /login with no 500, so the refactor did not break the routes. NOT verifiable this
+  run: the B1 re-measurement of authenticated server think-time, the B2 stale-session
+  redirect, and the B3 figure on a real lesson screen, all of which need a browser
+  session. Next run with Playwright should re-measure
+  `performance.getEntriesByType('navigation')` on /dashboard, /schedule and /learn as
+  the SMOKE parent and confirm the target (under ~1.5s, was 7.0s).
+  PROCESS NOTE: `npx tsx` cannot run a top-level-await script here (esbuild emits
+  CJS), and a script importing anything with `import "server-only"` throws outside
+  RSC, so the way to execute real server modules against prod data locally is a
+  throwaway file under `tests/` run with vitest (which aliases the server-only stub),
+  writing output to a temp file, then deleting both. Also: bare edway.uk 308s, use
+  www.edway.uk for curl.
