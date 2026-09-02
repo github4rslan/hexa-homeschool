@@ -2848,3 +2848,33 @@ just fail lint or produce a silently-broken flat config.
   slower authenticated page) is what turned a vague "feels slow" into a precise,
   root-caused, line-numbered bug — worth doing this measurement explicitly on
   every future performance-lane run rather than eyeballing load times.
+- 2026-09-02 (owner feedback, coverage gap): a real Brevo email outage (EMAIL_FROM's
+  domain was never authenticated in the connected Brevo account) ran SILENT for 5+
+  days — new-signup verification codes and Scout's own findings-summary emails both
+  went out via `sendEmail()` and got a synchronous 2xx from Brevo's `/smtp/email`
+  (queued), but were rejected ASYNCHRONOUSLY afterward (sender-not-valid) — a
+  rejection that only ever shows up in Brevo's `/v3/smtp/statistics/events` log, never
+  in the original HTTP response `res.ok`. Three real people got stuck on
+  `/signup/verify` with a code that would never arrive (unverified `parents` rows
+  blocking their own re-signup — cleaned up via `deleteFamilyData`-equivalent erasure
+  once found). Nobody caught it until the owner reported it manually. OWNER'S POINT:
+  Scout should have caught this itself, days earlier, by actually driving `/signup`
+  end-to-end with a disposable test address during discovery (not just eyeballing the
+  form renders) — the same "walk it as a real user" discipline already applied to the
+  child lesson flow every run. ACTION FOR FUTURE SCOUT RUNS: periodically (e.g. when
+  auth/signup/email code changed recently, or it's been a while since last checked)
+  drive a real `/signup` submission with a fresh disposable email, confirm it lands on
+  `/signup/verify`, and treat "no code ever arrives" as a reportable Critical bug even
+  though the UI itself shows no error (the whole danger of this bug class is that the
+  UI looks fine — `sendEmail()`'s `res.ok` lied). Cannot read the test inbox directly
+  in-session, so the check is necessarily approximate: confirm the request path
+  completes without error AND, if `BREVO_API_KEY`/`FINDINGS_EMAIL_TO` diagnostics are
+  reachable, spot-check that recent `/v3/smtp/statistics/events` entries for the
+  `EMAIL_FROM` sender show `delivered`/`opened`/`request` and not `rejected`/`bounced`
+  — do this via a small one-off script the same way the diagnosis in this session did
+  (`scripts/.tmp-*.mjs`, deleted after use), never by printing `.env.local` values.
+  Broader lesson: any "fire and forget" external API call whose provider validates
+  ASYNCHRONOUSLY (email, SMS, webhooks) needs its actual delivery outcome checked, not
+  just the synchronous accept — worth a quick grep for other `fetch(...).ok` checks
+  against third-party send APIs (Brevo/Twilio) during a future security/audit pass, to
+  see if the same detection gap exists elsewhere (e.g. SMS in `lib/notify`).
