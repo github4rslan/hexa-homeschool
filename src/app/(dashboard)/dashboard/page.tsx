@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import {
   Activity,
   ArrowRight,
@@ -156,6 +157,11 @@ async function buildChildViews(kids: ChildDoc[]): Promise<ChildView[]> {
 
 export default async function DashboardPage() {
   const parentId = await currentParentId();
+  // B2: `currentParentId()` returns null for a deleted account or a session
+  // invalidated by "sign out everywhere" (token_version bump), not just for a
+  // missing cookie. Bounce to /login the same way /schedule and /settings do,
+  // instead of silently rendering the zero-children onboarding empty state.
+  if (!parentId) redirect("/login?redirect=/dashboard");
   // B1 (perf): every read below is independent of the others, so they are
   // issued concurrently instead of as a serial await-waterfall. This page was
   // spending several seconds of server think-time on round-trips that have no
@@ -164,13 +170,11 @@ export default async function DashboardPage() {
     ParentDoc | null,
     ChildDoc[],
     string | undefined,
-  ] = parentId
-    ? await Promise.all([
-        findParentById(parentId),
-        listChildren(parentId),
-        readActiveChildId(),
-      ])
-    : [null, [], undefined];
+  ] = await Promise.all([
+    findParentById(parentId),
+    listChildren(parentId),
+    readActiveChildId(),
+  ]);
   const greeting = parent?.full_name
     ? `Good to see you, ${parent.full_name.split(" ")[0]}`
     : "Welcome to Edway";
@@ -203,7 +207,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const activeChild = await getActiveChild(parentId!, activeChildId);
+  const activeChild = await getActiveChild(parentId, activeChildId);
   const activeId = activeChild?._id?.toHexString();
 
   const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
@@ -235,7 +239,7 @@ export default async function DashboardPage() {
     openEscalations(childIds),
     // Unified activity feed (Wave 7, Phase 5): milestone events (mastery /
     // handoff / inactivity) merged with recent lesson activity, newest first.
-    listActivityFeed(parentId!, 8),
+    listActivityFeed(parentId, 8),
     // Compliance: real check for a dossier this quarter (active child).
     activeChild?._id
       ? hasDossierForPeriod(activeChild._id, quarter)
@@ -243,20 +247,20 @@ export default async function DashboardPage() {
     isOnboardingDismissed(),
     // Getting-started checklist — per the ACTIVE child, derived from real data.
     activeChild?._id
-      ? onboardingChecklist(parentId!, activeChild._id)
+      ? onboardingChecklist(parentId, activeChild._id)
       : Promise.resolve(null),
     // One-time diagnostic completion for the active child (drives empty-state CTA).
     activeChild?._id
-      ? getDiagnosticCompletion(parentId!, activeChild._id)
+      ? getDiagnosticCompletion(parentId, activeChild._id)
       : Promise.resolve(null),
     // Today command center: one card per child, derived from real data.
-    Promise.all(kids.map((kid) => todayCard(parentId!, kid))),
+    Promise.all(kids.map((kid) => todayCard(parentId, kid))),
     // Week in Review ("Edway Wrapped") for the active child.
-    activeChild ? weekInReview(parentId!, activeChild) : Promise.resolve(null),
+    activeChild ? weekInReview(parentId, activeChild) : Promise.resolve(null),
     // Voluntary sentiment prompt context (decision itself is pure + unit-tested).
-    getFeedbackPromptContext(parentId!),
+    getFeedbackPromptContext(parentId),
     // Same-day mastery highlight (F3): topics certified TODAY.
-    todaysMasteries(parentId!),
+    todaysMasteries(parentId),
   ]);
 
   const completed = logs.filter((l) => l.status === "completed");
