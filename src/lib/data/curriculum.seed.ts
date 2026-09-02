@@ -1810,6 +1810,36 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "Energy isn't destroyed (conservation of energy) — it's transformed into heat and other forms, and much of it simply isn't passed on to the next level.",
     ],
   },
+  // F3 (2026-09-02): eng_punctuation command-word item (AQA 8700 technical
+  // accuracy). The topic's existing four items are all "which sentence is
+  // correct" recognition questions; this one asks the child to actively spot
+  // the error. Transcribed verbatim from the owner-approved findings report.
+  {
+    topic_tag: "eng_punctuation",
+    subject: "english",
+    tier: 3,
+    key_stage: 4,
+    kind: "practice",
+    prompt: "Identify the punctuation error in this sentence: 'I bought apples oranges and bananas.'",
+    options: [
+      "Missing apostrophe",
+      "Missing commas in the list",
+      "Missing question mark",
+      "Missing capital letter",
+    ],
+    correct_index: 1,
+    explanation: "When listing three or more items, each item is separated by a comma: 'I bought apples, oranges and bananas.'",
+    hints: [
+      "Read the sentence aloud — where would you naturally pause between items in a list?",
+      "Commas separate items in a list of three or more things.",
+    ],
+    misconceptions: [
+      "There's no possession or contraction in this sentence, so an apostrophe isn't the issue.",
+      "",
+      "This sentence is a statement, not a question, so it doesn't need a question mark.",
+      "The sentence already starts with a capital 'I', so capitalisation isn't the issue.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */

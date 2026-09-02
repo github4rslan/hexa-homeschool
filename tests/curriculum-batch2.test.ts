@@ -1100,6 +1100,42 @@ describe("F2 (2026-09-02) — second sci_ecology command-word item (explain trop
   });
 });
 
+describe("F3 (2026-09-02) — eng_punctuation 'identify the error' command-word item", () => {
+  const prompt =
+    "Identify the punctuation error in this sentence: 'I bought apples oranges and bananas.'";
+
+  it("adds exactly one well-formed item keyed to the missing list commas", () => {
+    expectWellFormedItem(
+      "eng_punctuation",
+      "english",
+      prompt,
+      "Missing commas in the list",
+    );
+  });
+
+  it("is genuinely unambiguous: no other option describes a real error in that sentence", () => {
+    const sentence = "I bought apples oranges and bananas.";
+    // No possessive or contraction, so no apostrophe is owed.
+    expect(sentence).not.toMatch(/'/);
+    // A statement, not a question, so no question mark is owed.
+    expect(sentence.endsWith(".")).toBe(true);
+    // Already opens with a capital letter, so capitalisation is not the issue.
+    expect(sentence[0]).toBe(sentence[0].toUpperCase());
+    // Three listed items with no separating comma: the one real error.
+    expect(sentence).not.toMatch(/,/);
+  });
+
+  it("tests active error-spotting, distinct from the topic's existing recognition items", () => {
+    const punctuationPrompts = ALL.filter(
+      (q) => q.topic_tag === "eng_punctuation",
+    ).map((q) => q.prompt);
+    expect(punctuationPrompts).toContain(
+      "Identify the sentence that uses the apostrophe correctly.",
+    );
+    expect(new Set(punctuationPrompts).size).toBe(punctuationPrompts.length);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 14 GCSE topics (simultaneous equations lifted it past 13)", () => {
     expect(gcseTopicCount("mathematics")).toBe(14);
