@@ -1755,6 +1755,31 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     hints: ["Perimeter means the distance all the way around the outside of the shape, add up all four sides.", "A rectangle has two lengths and two widths: 6 + 6 + 4 + 4, or 2 × (6 + 4)."],
     misconceptions: ["This adds the length and width once (6 + 4) but forgets a rectangle has FOUR sides, not two.", "", "This multiplies length times width (6 × 4), which finds the AREA, not the perimeter, a classic mix-up.", "This doubles the answer twice (2 × 6 × 4) instead of doubling the SUM of length and width."],
   },
+  // F1 (2026-09-01, carried to 2026-09-02): maths_inequalities entry-level
+  // (tier 2) item, Edexcel 1MA1 A22, closing the topic's missing on-ramp tier
+  // (its other three items are tiers 3 and 4). Transcribed verbatim from the
+  // owner-approved findings report.
+  {
+    topic_tag: "maths_inequalities",
+    subject: "mathematics",
+    tier: 2,
+    key_stage: 4,
+    kind: "practice",
+    prompt: "Solve the inequality x + 4 < 9.",
+    options: ["x < 5", "x < 13", "x > 5", "x < 4"],
+    correct_index: 0,
+    explanation: "Subtract 4 from both sides: x < 9 − 4, so x < 5.",
+    hints: [
+      "Solve an inequality the same way you'd solve an equation — do the same thing to both sides.",
+      "Subtract 4 from both sides to get x on its own.",
+    ],
+    misconceptions: [
+      "",
+      "This added 4 instead of subtracting it (9 + 4 = 13), the opposite operation to what's needed to isolate x.",
+      "This flipped the inequality sign, but you only flip the sign when multiplying or dividing by a NEGATIVE number, not when adding or subtracting.",
+      "This subtracted the wrong number from 9 — check the arithmetic: 9 − 4 = 5, not 4.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */

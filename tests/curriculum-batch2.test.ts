@@ -256,9 +256,9 @@ describe("F2 (2026-08-09) — GCSE Maths inequalities strand", () => {
     ]);
   });
 
-  it("ships the three authored starters, well-formed and correctly keyed", () => {
+  it("ships the authored starters, well-formed and correctly keyed", () => {
     const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_inequalities");
-    expect(qs.length).toBe(3);
+    expect(qs.length).toBe(4); // 3 original starters + the 2026-09-02 tier-2 entry item
     for (const q of qs) {
       expect(q.subject).toBe("mathematics");
       expect(q.key_stage).toBe(4);
@@ -1027,6 +1027,43 @@ describe("F6 (2026-08-28): second eng_devices command-word item (explain the eff
     // command-word skill even though it illustrates with the same metaphor.
     expect(devicesPrompts).toContain("'The classroom was a zoo' is a:");
     expect(new Set(devicesPrompts).size).toBe(devicesPrompts.length);
+  });
+});
+
+describe("F1 (2026-09-02) — maths_inequalities entry-level (tier 2) item", () => {
+  const prompt = "Solve the inequality x + 4 < 9.";
+
+  it("adds exactly one well-formed tier-2 practice item keyed to x < 5", () => {
+    expectWellFormedItem("maths_inequalities", "mathematics", prompt, "x < 5");
+    const q = ALL.find((item) => item.prompt === prompt)!;
+    expect(q.tier).toBe(2);
+    expect(q.kind).toBe("practice");
+  });
+
+  it("computes: x + 4 < 9 means x < 9 − 4, so x < 5", () => {
+    expect(9 - 4).toBe(5);
+    // The "added instead of subtracted" distractor is a different value.
+    expect(9 + 4).toBe(13);
+    // Every boundary check: 4 satisfies x < 5, 5 and 6 do not.
+    const satisfies = (x: number) => x + 4 < 9;
+    expect(satisfies(4)).toBe(true);
+    expect(satisfies(5)).toBe(false);
+    expect(satisfies(6)).toBe(false);
+  });
+
+  it("gives the topic an entry tier below its existing tier 3-4 items", () => {
+    const tiers = SEED_QUESTIONS.filter(
+      (q) => q.topic_tag === "maths_inequalities",
+    ).map((q) => q.tier);
+    expect(Math.min(...tiers)).toBe(2);
+  });
+
+  it("is distinct from the existing 'x + 3 < 7' item, not a near-duplicate key", () => {
+    const prompts = SEED_QUESTIONS.filter(
+      (q) => q.topic_tag === "maths_inequalities",
+    ).map((q) => q.prompt);
+    expect(prompts).toContain("Solve the inequality x + 3 < 7.");
+    expect(new Set(prompts).size).toBe(prompts.length);
   });
 });
 
