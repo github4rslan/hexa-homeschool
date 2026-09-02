@@ -36,11 +36,11 @@ export default async function SchedulePage({
   // targets that specific child rather than whichever child the active-child
   // cookie points at. Ownership is enforced by getChildById inside getActiveChild
   // — an unowned/invalid id simply falls back to the parent's latest child.
-  const { child: childParam } = await searchParams;
-  const child = await getActiveChild(
-    parentId,
-    childParam ?? (await readActiveChildId()) ?? undefined,
-  );
+  const [{ child: childParam }, cookieChildId] = await Promise.all([
+    searchParams,
+    readActiveChildId(),
+  ]);
+  const child = await getActiveChild(parentId, childParam ?? cookieChildId);
 
   if (!child?._id) {
     return (
@@ -64,16 +64,31 @@ export default async function SchedulePage({
     );
   }
 
-  const parent = await findParentById(parentId);
+  // Valid swap targets per subject (uncertified topics, in order) for the editor.
+  const subjects: Subject[] = ["mathematics", "english", "science"];
+
+  // B1 (perf): the parent record, the sibling list, the week's schedule and the
+  // per-subject swap options are all independent reads, so they run as one
+  // concurrent batch instead of a serial await-waterfall.
+  const [parent, siblings, result, swapEntries] = await Promise.all([
+    findParentById(parentId),
+    listChildren(parentId),
+    getOrCreateWeeklySchedule(parentId, child._id),
+    Promise.all(
+      subjects.map(
+        async (s) =>
+          [s, await swappableTopicsForSubject(child._id!, s)] as [Subject, SwapOption[]],
+      ),
+    ),
+  ]);
+
   const hasPin = Boolean(parent?.parent_pin_hash);
   // All the parent's children, for the inline active-child switcher.
-  const siblings = await listChildren(parentId);
   const childItems = siblings.map((c) => ({
     id: c._id!.toHexString(),
     name: c.full_name,
   }));
 
-  const result = await getOrCreateWeeklySchedule(parentId, child._id);
   const schedule = result?.schedule ?? null;
   // First visit of the week just generated the plan — send the parent a copy
   // (best-effort; opt-out and missing Brevo key are silent no-ops).
@@ -82,14 +97,6 @@ export default async function SchedulePage({
   }
   const firstName = child.full_name.split(" ")[0];
 
-  // Valid swap targets per subject (uncertified topics, in order) for the editor.
-  const subjects: Subject[] = ["mathematics", "english", "science"];
-  const swapEntries = await Promise.all(
-    subjects.map(
-      async (s) =>
-        [s, await swappableTopicsForSubject(child._id!, s)] as [Subject, SwapOption[]],
-    ),
-  );
   const swapOptionsBySubject = Object.fromEntries(swapEntries) as Record<
     Subject,
     SwapOption[]

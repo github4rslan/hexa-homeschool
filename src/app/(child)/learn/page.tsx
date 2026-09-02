@@ -54,22 +54,45 @@ export default async function LearnHubPage() {
   const child = await getActiveChild(parentId, await readActiveChildId());
   if (!child?._id) redirect("/dashboard");
 
-  const certified = await certifiedBySubject(child._id);
-  const checkin = await todaysCheckin(child._id);
+  // B1 (perf): every read for the hub is independent of the others, so they are
+  // issued as one concurrent batch rather than a serial await-waterfall. The
+  // child waits on the slowest read, not on the sum of them all.
+  const [
+    certified,
+    checkin,
+    streak,
+    weekDays,
+    doneTags,
+    warmups,
+    review,
+    pausedTags,
+    allTopics,
+    inProgress,
+    schedule,
+  ] = await Promise.all([
+    certifiedBySubject(child._id),
+    todaysCheckin(child._id),
+    childStreak(child._id),
+    childWeekStrip(child._id),
+    todaysCompletedTopicTags(child._id),
+    dueReviewWarmup(child._id, 3),
+    weekInReview(parentId, child),
+    tutorPausedTags(child._id),
+    listTopics(),
+    // F1: "Continue where you left off" surfaces any genuinely in-progress
+    // lesson (a lesson_progress row exists only while unfinished).
+    getInProgressLessons(parentId, child._id),
+    getWeeklySchedule(parentId, child._id),
+  ]);
+
   const checkedIn = !!checkin;
   // F4: a low mood (≤2) already nudges difficulty silently — also acknowledge it
   // warmly so the calm ethos is visible. Encouraging framing, never diagnostic.
   const lowMood = !!checkin && checkin.mood <= 2;
-  const streak = await childStreak(child._id);
-  const weekDays = await childWeekStrip(child._id);
-  const doneTags = await todaysCompletedTopicTags(child._id);
-  const warmupCount = (await dueReviewWarmup(child._id, 3)).length;
-  const review = await weekInReview(parentId, child);
-  const pausedTags = await tutorPausedTags(child._id);
+  const warmupCount = warmups.length;
 
   // Map each completed-today tag to its subject so a subject's quest reads as
   // "done today" once any lesson in it is completed.
-  const allTopics = await listTopics();
   const subjectOfTag = new Map(allTopics.map((t) => [t.topic_tag, t.subject]));
   const doneSubjects = new Set<Subject>();
   for (const tag of doneTags) {
@@ -77,9 +100,6 @@ export default async function LearnHubPage() {
     if (subj) doneSubjects.add(subj);
   }
 
-  // F1: "Continue where you left off" — surface any genuinely in-progress lesson
-  // (a lesson_progress row exists only while unfinished) as a warm resume card.
-  const inProgress = await getInProgressLessons(parentId, child._id);
   const topicMeta = new Map(
     allTopics.map((t) => [t.topic_tag, { title: t.title, subject: t.subject }]),
   );
@@ -91,7 +111,6 @@ export default async function LearnHubPage() {
   // each subject, prefer the topic the plan assigned to today (same topic,
   // same day as the parent's /schedule). Fall back to the next uncertified
   // topic when there's no plan item for that subject today.
-  const schedule = await getWeeklySchedule(parentId, child._id);
   const todayIndex = (new Date().getDay() + 6) % 7; // 0 = Monday
   const plannedTagBySubject = new Map<Subject, string>();
   for (const item of schedule?.items ?? []) {

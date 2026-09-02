@@ -42,6 +42,7 @@ import { avgLessonTimeHint } from "@/lib/engine/dashboard-stats";
 import { buildWeeklyRecapNarration } from "@/lib/engine/weekly-summary";
 import { FeedbackPrompt, FeedbackButton } from "@/components/dashboard/feedback-widget";
 import { readActiveChildId } from "@/lib/active-child";
+import type { ChildDoc, ParentDoc } from "@/lib/db/types";
 import { isOnboardingDismissed } from "@/lib/onboarding-dismiss";
 import { birthdayAge } from "@/lib/child/birthday";
 import { Cake, PartyPopper } from "lucide-react";
@@ -119,14 +120,60 @@ function buildTodaySummary(card: TodayCardData): string {
   return `${first}: ${parts.join(" · ")}.`;
 }
 
+/**
+ * Per-child cards with real certified counts + predicted grade. The two reads
+ * per child are independent, so they run concurrently (B1).
+ */
+async function buildChildViews(kids: ChildDoc[]): Promise<ChildView[]> {
+  return Promise.all(
+    kids.map(async (kid): Promise<ChildView> => {
+      const childId = kid._id!;
+      const [certifiedCount, standings] = await Promise.all([
+        countCertified(childId),
+        latestEvaluationsBySubject(childId),
+      ]);
+      const grades = standings
+        .map((s) => gradeNumber(s.grade))
+        .filter((grade): grade is number => grade !== null);
+      const predictedGrade = grades.length
+        ? `${Math.round(grades.reduce((sum, grade) => sum + grade, 0) / grades.length)}`
+        : undefined;
+      const pct = certifiedCount / (TOTAL_TOPICS || 1);
+      const status: ChildView["status"] =
+        pct >= 0.6 ? "ahead" : pct >= 0.3 ? "on_track" : "needs_review";
+      return {
+        id: childId.toHexString(),
+        name: kid.full_name,
+        age: ageFromDob(kid.date_of_birth),
+        predictedGrade,
+        competenceCertified: certifiedCount,
+        competenceTotal: TOTAL_TOPICS,
+        status,
+      };
+    }),
+  );
+}
+
 export default async function DashboardPage() {
   const parentId = await currentParentId();
-  const parent = parentId ? await findParentById(parentId) : null;
+  // B1 (perf): every read below is independent of the others, so they are
+  // issued concurrently instead of as a serial await-waterfall. This page was
+  // spending several seconds of server think-time on round-trips that have no
+  // ordering relationship at all.
+  const [parent, kids, activeChildId]: [
+    ParentDoc | null,
+    ChildDoc[],
+    string | undefined,
+  ] = parentId
+    ? await Promise.all([
+        findParentById(parentId),
+        listChildren(parentId),
+        readActiveChildId(),
+      ])
+    : [null, [], undefined];
   const greeting = parent?.full_name
     ? `Good to see you, ${parent.full_name.split(" ")[0]}`
     : "Welcome to Edway";
-
-  const kids = parentId ? await listChildren(parentId) : [];
 
   // ── Empty state: a real onboarding nudge, never fake rows ──
   if (kids.length === 0) {
@@ -156,40 +203,62 @@ export default async function DashboardPage() {
     );
   }
 
-  const activeChild = await getActiveChild(parentId!, await readActiveChildId());
+  const activeChild = await getActiveChild(parentId!, activeChildId);
   const activeId = activeChild?._id?.toHexString();
 
-  // Build per-child views with real certified counts + predicted grade.
-  const children: ChildView[] = await Promise.all(
-    kids.map(async (kid): Promise<ChildView> => {
-      const childId = kid._id!;
-      const certifiedCount = await countCertified(childId);
-      const standings = await latestEvaluationsBySubject(childId);
-      const grades = standings
-        .map((s) => gradeNumber(s.grade))
-        .filter((grade): grade is number => grade !== null);
-      const predictedGrade = grades.length
-        ? `${Math.round(grades.reduce((sum, grade) => sum + grade, 0) / grades.length)}`
-        : undefined;
-      const pct = certifiedCount / (TOTAL_TOPICS || 1);
-      const status: ChildView["status"] =
-        pct >= 0.6 ? "ahead" : pct >= 0.3 ? "on_track" : "needs_review";
-      return {
-        id: childId.toHexString(),
-        name: kid.full_name,
-        age: ageFromDob(kid.date_of_birth),
-        predictedGrade,
-        competenceCertified: certifiedCount,
-        competenceTotal: TOTAL_TOPICS,
-        status,
-      };
-    }),
-  );
-
-  // Week stats across all children.
   const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const childIds = kids.map((k) => k._id!);
-  const logs = await recentLogs(childIds, weekAgoMs, 50);
+  const quarter = currentQuarter();
+
+  // B1 (perf): one concurrent batch for every remaining independent read.
+  // They share the pooled Mongo client and none of them depends on another's
+  // result, so awaiting them in sequence only added latency.
+  const [
+    children,
+    logs,
+    certifiedThisWeek,
+    escalations,
+    feedItems,
+    complianceReady,
+    dismissed,
+    checklist,
+    diagnostic,
+    todayCards,
+    review,
+    fbContext,
+    masteredToday,
+  ] = await Promise.all([
+    buildChildViews(kids),
+    recentLogs(childIds, weekAgoMs, 50),
+    countCertifiedSince(childIds, weekAgoMs),
+    // Safety: open escalations across the family (Brief: parent alerts).
+    openEscalations(childIds),
+    // Unified activity feed (Wave 7, Phase 5): milestone events (mastery /
+    // handoff / inactivity) merged with recent lesson activity, newest first.
+    listActivityFeed(parentId!, 8),
+    // Compliance: real check for a dossier this quarter (active child).
+    activeChild?._id
+      ? hasDossierForPeriod(activeChild._id, quarter)
+      : Promise.resolve(false),
+    isOnboardingDismissed(),
+    // Getting-started checklist — per the ACTIVE child, derived from real data.
+    activeChild?._id
+      ? onboardingChecklist(parentId!, activeChild._id)
+      : Promise.resolve(null),
+    // One-time diagnostic completion for the active child (drives empty-state CTA).
+    activeChild?._id
+      ? getDiagnosticCompletion(parentId!, activeChild._id)
+      : Promise.resolve(null),
+    // Today command center: one card per child, derived from real data.
+    Promise.all(kids.map((kid) => todayCard(parentId!, kid))),
+    // Week in Review ("Edway Wrapped") for the active child.
+    activeChild ? weekInReview(parentId!, activeChild) : Promise.resolve(null),
+    // Voluntary sentiment prompt context (decision itself is pure + unit-tested).
+    getFeedbackPromptContext(parentId!),
+    // Same-day mastery highlight (F3): topics certified TODAY.
+    todaysMasteries(parentId!),
+  ]);
+
   const completed = logs.filter((l) => l.status === "completed");
   const durations = completed
     .filter((l) => l.timestamp_end)
@@ -202,16 +271,9 @@ export default async function DashboardPage() {
   const avgSec = durations.length
     ? durations.reduce((a, b) => a + b, 0) / durations.length
     : 0;
-  const certifiedThisWeek = await countCertifiedSince(childIds, weekAgoMs);
-
-  // Safety: open escalations across the family (Brief: parent alerts).
-  const escalations = await openEscalations(childIds);
 
   const nameById = new Map(kids.map((k) => [k._id!.toHexString(), k.full_name]));
 
-  // Unified activity feed (Wave 7, Phase 5): milestone events (mastery /
-  // handoff / inactivity) merged with recent lesson activity, newest first.
-  const feedItems = await listActivityFeed(parentId!, 8);
   const feedRows: ActivityFeedRow[] = feedItems.map((f) => ({
     kind: f.kind,
     childName: f.childName,
@@ -220,22 +282,7 @@ export default async function DashboardPage() {
     time: relativeTime(f.at),
   }));
 
-  // Compliance: real check for a dossier this quarter (active child).
-  const quarter = currentQuarter();
-  const complianceReady = activeChild?._id
-    ? await hasDossierForPeriod(activeChild._id, quarter)
-    : false;
-
-  // Getting-started checklist — per the ACTIVE child, derived from real data.
-  // Shown until every step is done or the parent dismisses it.
-  const dismissed = await isOnboardingDismissed();
-  const checklist = activeChild?._id
-    ? await onboardingChecklist(parentId!, activeChild._id)
-    : null;
-  // One-time diagnostic completion for the active child (drives empty-state CTA).
-  const diagnosticDone = activeChild?._id
-    ? (await getDiagnosticCompletion(parentId!, activeChild._id)).completed
-    : false;
+  const diagnosticDone = diagnostic?.completed ?? false;
   const steps: ChecklistStep[] = checklist
     ? [
         { key: "child", label: "Add your child", href: "/dashboard/children/new", done: true },
@@ -244,20 +291,15 @@ export default async function DashboardPage() {
         { key: "lesson", label: "Start the first lesson", href: "/learn", done: checklist.hasLesson },
       ]
     : [];
+  // Shown until every step is done or the parent dismisses it.
   const showChecklist = !dismissed && steps.length > 0 && steps.some((s) => !s.done);
   const activeChildFirstName = activeChild?.full_name.split(" ")[0];
 
-  // Today command center: one card per child, derived from real data. The
-  // summary line speaks to the active child (or the only child).
-  const todayCards: TodayCardData[] = await Promise.all(
-    kids.map((kid) => todayCard(parentId!, kid)),
-  );
+  // The summary line speaks to the active child (or the only child).
   const activeCard =
     todayCards.find((c) => c.childId === activeId) ?? todayCards[0];
   const todaySummary = activeCard ? buildTodaySummary(activeCard) : "";
 
-  // Week in Review ("Edway Wrapped") for the active child.
-  const review = activeChild ? await weekInReview(parentId!, activeChild) : null;
   // Spoken ~60s recap script (F6) — deterministic, from the same real data.
   // Synthesized on demand + cached by the existing TTS path; degrades silently
   // when ElevenLabs is unconfigured.
@@ -274,16 +316,12 @@ export default async function DashboardPage() {
       })
     : null;
 
-  // Voluntary sentiment prompt — shown ONLY after a real milestone, at most once
-  // per cooldown, always dismissible (pure decision, unit-tested). Parent-side
-  // only; the widget is never mounted in any (child) route.
-  const fbContext = await getFeedbackPromptContext(parentId!);
+  // Shown ONLY after a real milestone, at most once per cooldown, always
+  // dismissible. Parent-side only; never mounted in any (child) route.
   const feedbackDecision = shouldShowFeedbackPrompt(fbContext.state, fbContext.signal);
 
-  // Same-day mastery highlight (F3): topics certified TODAY, surfaced the day it
-  // happens (not just in the Monday digest). Reads the live mastery events, so
-  // it never double-counts with the weekly digest.
-  const masteredToday = await todaysMasteries(parentId!);
+  // Surfaced the day it happens (not just in the Monday digest). Reads the live
+  // mastery events, so it never double-counts with the weekly digest.
   const masteryLine = masteryHighlightLine(
     masteredToday.map((m) => ({
       childFirstName: m.childName.split(" ")[0],
