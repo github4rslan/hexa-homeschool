@@ -246,13 +246,22 @@ function deriveNumberLine(prompt: string): MathVisualSpec | null {
   };
 }
 
-/** Parse `a × b` or `a²` (positive) → a dot-array spec, or null. */
+/**
+ * Parse `a × b` or `a²` (positive) → a dot-array spec, or null.
+ *
+ * B3: a grid of dots can only picture a product of POSITIVE whole numbers, so a
+ * negative operand (the KS3 negatives band asks "What is -2 × 3?", answer -6)
+ * returns null and falls back to the decorative figure. Drawing "2 × 3 = 6"
+ * beside a question whose answer is -6 would teach the wrong thing, and this
+ * matches the "when in doubt, return null" guard the other derivers already use.
+ */
 function deriveArray(prompt: string): MathVisualSpec | null {
   const text = prompt.replace(/−/g, "-");
 
-  const square = text.match(/(\d+)\s*(?:²|\^\s*2)(?!\d)/);
+  const square = text.match(/(-?)(\d+)\s*(?:²|\^\s*2)(?!\d)/);
   if (square) {
-    const n = Number(square[1]);
+    if (square[1]) return null; // -3² / (-3)²: sign makes the dot picture dishonest
+    const n = Number(square[2]);
     if (n >= 1 && n <= 12 && n * n <= MAX_DOTS) {
       return {
         kind: "array",
@@ -264,10 +273,11 @@ function deriveArray(prompt: string): MathVisualSpec | null {
     return null;
   }
 
-  const mult = text.match(/(\d+)\s*[×x*]\s*(\d+)/);
+  const mult = text.match(/(-?\d+)\s*[×x*]\s*(-?\d+)/);
   if (mult) {
     const rows = Number(mult[1]);
     const cols = Number(mult[2]);
+    if (rows < 0 || cols < 0) return null; // negative product: no honest dot picture
     if (rows >= 1 && cols >= 1 && rows <= 12 && cols <= 12 && rows * cols <= MAX_DOTS) {
       return {
         kind: "array",

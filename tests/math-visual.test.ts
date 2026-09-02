@@ -110,6 +110,32 @@ describe("deriveMathVisual", () => {
     expect(deriveMathVisual("13 × 13")).toBeNull();
   });
 
+  // B3: the live KS3 negatives question. A dot array cannot picture a negative
+  // product, so the deriver must bail rather than assert "2 × 3 = 6" next to a
+  // question whose answer is -6.
+  it("never draws a dot array for a negative product (−2 × 3)", () => {
+    expect(deriveMathVisual("What is −2 × 3?")).toBeNull();
+  });
+
+  it("never draws a dot array for a negative product with a hyphen minus (-5 x 4)", () => {
+    expect(deriveMathVisual("What is -5 x 4?")).toBeNull();
+  });
+
+  it("never draws a dot array when the second operand is negative (6 × −3)", () => {
+    expect(deriveMathVisual("Work out 6 × −3")).toBeNull();
+  });
+
+  it("never draws a square array for a negative base (−3²)", () => {
+    expect(deriveMathVisual("Work out −3²")).toBeNull();
+  });
+
+  it("still draws the positive product after the negative guard (7 × 2)", () => {
+    const spec = deriveMathVisual("What is 7 × 2?");
+    if (spec?.kind !== "array") throw new Error("expected array");
+    expect(spec.rows).toBe(7);
+    expect(spec.cols).toBe(2);
+  });
+
   it("draws grouped dots for a fraction of an amount (½ of 16)", () => {
     const spec = deriveMathVisual("What is ½ of 16?");
     if (spec?.kind !== "groups") throw new Error("expected groups");
