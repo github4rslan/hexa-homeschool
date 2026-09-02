@@ -1780,6 +1780,36 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "This subtracted the wrong number from 9 — check the arithmetic: 9 − 4 = 5, not 4.",
     ],
   },
+  // F2 (2026-09-01, carried to 2026-09-02): second sci_ecology command-word
+  // item, AQA 8464 spec 4.7.3. The topic's only command-word question was a
+  // percentage calculation; this one examines the "explain" skill. Transcribed
+  // verbatim from the owner-approved findings report.
+  {
+    topic_tag: "sci_ecology",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "practice",
+    prompt: "Explain why energy transfer from one trophic level to the next is never 100% efficient.",
+    options: [
+      "Energy is lost as heat through respiration and movement, and not all of an organism is eaten or digested",
+      "Producers absorb all the Sun's energy before consumers can use any of it",
+      "Consumers only feed once a day, so most energy is never transferred",
+      "Energy is destroyed permanently every time an organism respires",
+    ],
+    correct_index: 0,
+    explanation: "Energy is lost at each trophic level mainly as heat from respiration and movement, and some biomass (like bones, fur or roots) is never eaten or digested, so it isn't passed on. This is why food chains rarely have more than 4 or 5 levels.",
+    hints: [
+      "Think about what happens to the energy an animal uses just to move, grow and keep warm.",
+      "Not every part of an organism (bones, fur, roots) gets eaten by the next consumer, either.",
+    ],
+    misconceptions: [
+      "",
+      "Producers do capture the Sun's energy first via photosynthesis, but that's not why the TRANSFER between consumers is inefficient — the inefficiency happens at every level, not just the first.",
+      "Feeding frequency isn't the reason — even with constant feeding, energy would still be lost as heat and in undigested material.",
+      "Energy isn't destroyed (conservation of energy) — it's transformed into heat and other forms, and much of it simply isn't passed on to the next level.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */

@@ -1067,6 +1067,39 @@ describe("F1 (2026-09-02) — maths_inequalities entry-level (tier 2) item", () 
   });
 });
 
+describe("F2 (2026-09-02) — second sci_ecology command-word item (explain trophic efficiency)", () => {
+  const prompt =
+    "Explain why energy transfer from one trophic level to the next is never 100% efficient.";
+
+  it("adds exactly one well-formed item keyed to the heat/respiration and uneaten-biomass answer", () => {
+    expectWellFormedItem(
+      "sci_ecology",
+      "science",
+      prompt,
+      "Energy is lost as heat through respiration and movement, and not all of an organism is eaten or digested",
+    );
+  });
+
+  it("tests EXPLAINING the inefficiency, distinct from the existing percentage calculation item", () => {
+    const ecologyPrompts = ALL.filter((q) => q.topic_tag === "sci_ecology").map(
+      (q) => q.prompt,
+    );
+    expect(ecologyPrompts).toContain(
+      "In a food chain, producers store 2000 kJ of energy. The primary consumers that eat them store 200 kJ. Calculate the percentage of energy transferred from producers to primary consumers.",
+    );
+    expect(new Set(ecologyPrompts).size).toBe(ecologyPrompts.length);
+  });
+
+  it("gives the topic two command-word items, the coverage target in the backlog", () => {
+    const commandWordItems = ALL.filter(
+      (q) =>
+        q.topic_tag === "sci_ecology" &&
+        /\b(Explain|Calculate|Work out|Name|Identify)\b/.test(q.prompt),
+    );
+    expect(commandWordItems.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 14 GCSE topics (simultaneous equations lifted it past 13)", () => {
     expect(gcseTopicCount("mathematics")).toBe(14);
