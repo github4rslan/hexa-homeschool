@@ -19,16 +19,15 @@ EXAM_STYLE_QUESTIONS on 2026-08-14).
   that a "retire" of a seed question must delete the orphaned old doc (seed never
   deletes), not just reword the prompt. The DERIVED VISUALS built from a question's
   prompt string remain a separate correctness surface from the seed text itself —
-  now SIX distinct real bugs of this shallow-regex/keyword-match-on-raw-prompt-text
+  now EIGHT distinct real bugs of this shallow-regex/keyword-match-on-raw-prompt-text
   class across math-visual.ts, teaching-animations.ts, english-visual.ts (three
-  times now), and science-visual.ts. Keep spot-checking a derived figure against
-  its own question every run, and specifically watch for heuristics with an
+  times now), and science-visual.ts (twice). Keep spot-checking a derived figure
+  against its own question every run, and specifically watch for heuristics with an
   unguarded "else"/default branch — that is its own named risk pattern (see the
-  2026-08-28 note below). A NEW standing next-step (2026-08-30, F7 in that day's
-  report): add curated NEGATIVE test cases to every deriveXVisual heuristic (not
-  just positive-match cases) so this class stops shipping reactively one instance
-  at a time — seed the negative-case list from every prompt that has broken so
-  far (see the per-date notes below for the exact text of each).
+  2026-08-28 note below). The 2026-08-30/08-31 negative-case-test standing
+  next-step is now partly done (see the 2026-08-31 entry) — `math-visual.ts`'s
+  `deriveArray` still needs its own negative-case test once the eighth instance
+  (below) is fixed.
 - Done so far: full re-derivation of all quantitative + factual answers
   (2026-08-08); B3 sci_body water-absorption item retired + reworded + orphan
   deleted (2026-08-09); curriculum.seed.extra.ts + the F7 exam-style items + F8
@@ -107,6 +106,13 @@ EXAM_STYLE_QUESTIONS on 2026-08-14).
   via live Playwright repro (not just static grep) and confirmed via seed grep
   that it's the ONLY live question triggering it today. Fix + a permanent
   negative-case test for this exact prompt are still pending.
+- 2026-09-02 (Scout): re-confirmed the EIGHTH instance (above) is STILL
+  unfixed via a fresh code read (line 267 byte-for-byte unchanged) — carried
+  forward as this run's own B3 (see the process note under EPIC 19 below on
+  why re-carrying matters). Additionally confirmed via a live mock-exam run
+  (Ivy, Maths mock Q5, the same "−2 × 3" question) that the MOCK rendering path
+  does not use `<figure>` at all, so this bug is scoped to practice/mastery
+  only, not the mock — a useful scoping note for whoever fixes it.
 
 ## EPIC 2 — Exam-style, command-word practice (make questions feel like the paper)
 Status: ACTIVE (headline), zero-coverage closed, now purely a depth/variety lane.
@@ -114,14 +120,13 @@ Every KS4 topic across all three subjects has at least one command-word item
 (confirmed shipped 2026-08-20).
 - Next step: keep picking single-coverage topics each run and add a second
   command-word item (>= 2 per topic is the target) rather than re-sweeping the
-  whole bank. Remaining single-coverage topics as of 2026-08-29 (after that
-  day's 1 authored item lands): eng_comprehension, eng_persuasive, sci_genetics,
-  sci_ecology, eng_punctuation, eng_spelling, eng_poetry, eng_shakespeare,
-  eng_creative — still a tail, pick 1-2 per run. `maths_graphs`,
-  `maths_fractions`, `maths_number`, `maths_geometry`, `maths_pythagoras`,
-  `sci_electricity`, `maths_statistics`, `maths_sequences`, `sci_cells`,
-  `sci_atoms` and `eng_devices` are now past this bar. Not touched 2026-08-30
-  (today's curriculum authoring effort went to EPIC 1's tier-range gap instead).
+  whole bank. Remaining single-coverage topics as of 2026-09-02 (after that
+  day's authored item lands): eng_comprehension, eng_persuasive, sci_genetics,
+  eng_spelling, eng_poetry, eng_shakespeare, eng_creative — still a tail, pick
+  1-2 per run. `maths_graphs`, `maths_fractions`, `maths_number`,
+  `maths_geometry`, `maths_pythagoras`, `sci_electricity`, `maths_statistics`,
+  `maths_sequences`, `sci_cells`, `sci_atoms`, `eng_devices`, `sci_ecology`
+  (pending seed) and `eng_punctuation` (pending seed) are now past this bar.
 - Done so far: 6 spec-mapped exam-style questions (F7, 2026-08-09) across
   maths_fractions/ratio/number, sci_forces/reactions, eng_devices; steady
   additions through 2026-08-09 → 2026-08-28 across every subject (see prior
@@ -132,10 +137,18 @@ Every KS4 topic across all three subjects has at least one command-word item
   (gradient + y-intercept → y = mx + c) — a genuinely distinct construction
   skill vs. the topic's existing "work out the gradient from two points" item,
   hand re-derived clean — pending seed.
+  2026-09-01 (Scout F1/F2): `maths_inequalities` tier-2 entry item + `sci_ecology`
+  second command-word item ("explain why energy transfer is never 100%
+  efficient") — both hand re-derived clean, pending seed (STILL unseeded as of
+  2026-09-02, re-confirmed by grep — carried forward in today's report as F1/F2).
+  2026-09-02 (Scout F3): `eng_punctuation` command-word item ("identify the
+  punctuation error...", commas-in-a-list) — hand re-derived clean, pending
+  seed, deliberately phrased to avoid overlap with the topic's existing
+  apostrophe item.
 - VARIETY axis: command-word COVERAGE and question-bank VARIETY are different
   axes — watch topics under active spaced review for a thin-pool symptom (near-
   duplicate phrasings of the same fact across mastery attempts). None newly
-  found 2026-08-27, 08-28, 08-29 or 08-30.
+  found 2026-08-27 through 2026-09-02.
 
 ## EPIC 3 — Full spec coverage: close missing GCSE topics
 Status: ACTIVE. `maths_transformations` and `maths_simultaneous` (both Edexcel
@@ -154,7 +167,7 @@ still lists correctly as a prerequisite).
   a new `sci_practicals` topic. English extract-based language analysis is
   comparatively less thin now that `eng_analysis` exists and was driven
   end-to-end 2026-08-30 (tone/effect/metaphor/simile analysis, all correct) —
-  consider this one narrowed, not fully closed.
+  consider this one narrowed, not fully closed. Not touched 2026-09-01/09-02.
 - Done so far: `maths_mensuration` + `maths_inequalities` (2026-08-09/08-20);
   mock unlock made count-driven so new topics can't break it (2026-08-09);
   `maths_transformations` (authored 08-27, shipped 08-28); `maths_simultaneous`
@@ -167,17 +180,18 @@ exam-boundary-grade reveal card, and full question content for `fill_blank`
 items pulled into a mock are ALL confirmed shipped and working live. Do not
 re-propose a mock timer, the boundary-grade card, or the fill_blank mock-content
 fix.
-- Next step: nothing new identified 2026-08-29 or 2026-08-30 — `scoreMock()`
-  (lib/engine/mock-exam.ts) was re-read 2026-08-30 as part of the standing
-  engine check and looks sound (mark-weighted blend of demonstrated-ceiling tier
-  and paper-difficulty tier, clamped 1-5); the mock itself wasn't re-driven live
-  either day. Keep re-verifying rather than re-proposing; EPIC 12 is the epic to
-  extend if a future run finds another interaction type with the same
-  generic-wrapper-prompt trap.
+- Next step: nothing new identified 2026-08-29 through 2026-09-02. Keep
+  re-verifying rather than re-proposing; EPIC 12 is the epic to extend if a
+  future run finds another interaction type with the same generic-wrapper-
+  prompt trap.
 - Done so far: calculator vs non-calculator framing + readiness-tiered paper
   (F9, 2026-08-09); mark-weighted scoring + a warm, non-pass/fail boundary-grade
   reveal (F7, shipped 2026-08-14/18); calm countdown timer confirmed live
-  (2026-08-18); full Maths mock end-to-end re-verified 2026-08-26.
+  (2026-08-18); full Maths mock end-to-end re-verified 2026-08-26 and again
+  2026-09-02 (Ivy, 10/10, non-calc/Higher-tier framing, real 10-question paper
+  incl. hexagon interior angle / standard form / ratio-sharing exam-style
+  items, warm boundary-grade reveal with a `Celebration` burst confirmed
+  present in source).
 
 ## EPIC 5 — Retention that reaches exam day (spaced repetition + interleaving)
 Status: ACTIVE (largely complete on both sides now). Spaced-rep warm-up +
@@ -197,15 +211,16 @@ readiness trajectory schedule deterministically from certification dates/scores
 Status: ONGOING background lane, not gated to a night. Every interaction type
 (mcq, fill_blank, tap_reveal, drag_drop) now has BOTH a correct settle and a
 wrong settle. The mock-exam answer-pick pulse, the reflection-confirmation
-entrance, the certificate-page entrance animation, and the warm "arrival into
-Mastery" transition line are all SHIPPED — do not re-propose any of those.
-- Next step: F2 (2026-08-30) — Eddie (`EddieAvatar`) has NO presence during the
-  breathing/calm-break moment (`BreathBreak` in practice-player.tsx, triggered
-  either by 2+ consecutive struggled questions OR an immediate "attention"-
-  category miss via `shouldOfferBreak()` in `lib/child/eddie-copy.ts`) — today
-  it's just a generic pulsing Wind icon, the one reactive moment in the whole
-  lesson with no mascot at all, despite every OTHER reaction moment (correct,
-  reteach, celebration) having one. Small, well-scoped fix.
+entrance, the certificate-page entrance animation, the warm "arrival into
+Mastery" transition line, AND Eddie's presence during the breath-break are all
+SHIPPED — do not re-propose any of those.
+- Next step: nothing new identified 2026-09-02 (a full Wednesday delight
+  deep-dive re-verified the lane rather than finding a gap — see that day's
+  report for the specific live-verified list). This lane is now genuinely
+  mature; a future run should look for gaps in less-common paths (e.g. the
+  diagnostic runner, the warm-up/review flow's own celebration, or the
+  handoff-pause screen) rather than re-sweeping the main practice/mastery loop
+  again.
 - Done so far: every interaction type has its own correct-answer settle
   (2026-08-09); warm hint-card entrance + calm See-it beckon on a miss
   (2026-08-09); calm guiding glow + supportive fill_blank wrong-settle
@@ -218,9 +233,10 @@ Mastery" transition line are all SHIPPED — do not re-propose any of those.
   (shipped 2026-08-24); the mock-exam pick pulse (2026-08-26); the reflection-
   confirmation entrance (shipped 2026-08-28); the certificate-page entrance
   (F7, shipped 2026-08-28, re-verified live 2026-08-29); the warm "arrival into
-  Mastery" transition line (F2, shipped 2026-08-29, live-verified via a
-  MutationObserver since the transient element is too fast for a manual
-  snapshot round-trip).
+  Mastery" transition line (F2, shipped 2026-08-29); Eddie's presence during
+  the breath-break (shipped 2026-08-31, re-verified live 2026-09-02 on a fresh
+  `sci_ks3_cells` two-wrong-in-a-row repro — the small smiley-face circle sits
+  next to the wind icon, exactly as designed).
 
 ## EPIC 7 (background) — Stay on the current stack + performance budget
 Status: ACTIVE. React 19 and Tailwind 4 are already current; most deps
@@ -228,49 +244,40 @@ Status: ACTIVE. React 19 and Tailwind 4 are already current; most deps
 vitest/next/@next/bundle-analyzer/@types/node/lucide-react/posthog-js) have been
 kept on their in-range "Wanted" versions via a steady drip of small bumps.
 - Next step: eslint 10 stays BLOCKED on the Next.js 15→16 migration (peer-dep
-  cap). Pair the eventual nonce-based CSP hardening with that move. Routine
-  in-range batch shipped 2026-08-29 (`@sentry/nextjs`/`eslint-config-next`/
-  `lucide-react`/`posthog-js`); as of 2026-08-30 the only remaining safe patch
-  is `tsx` 4.23.12→4.23.13 (filed F8, 2026-08-30) — everything else outdated
-  (`next`, `eslint`, `eslint-config-next`, `@next/bundle-analyzer`, `@types/node`,
-  `typescript`) is a deliberate major-version hold. **NEW (2026-08-30, F6):**
-  `framer-motion` is pinned at `^11.15.0` (already at its own range ceiling)
-  while the package's real latest is `13.1.1` — a 2-major gap, and the
-  maintainers have rebranded the primary package to `motion` (framer-motion is
-  now a compat re-export). Given animation is a headline delight lane and this
-  dependency touches nearly every child-facing surface, treat this as a
-  RESEARCH SPIKE first (read the v12→v13 changelog against this codebase's
-  actual usage), not a routine bump — too much blast radius to blind-bump.
+  cap). Pair the eventual nonce-based CSP hardening with that move. As of
+  2026-09-02 the in-range batch is: `@sentry/nextjs`, `lucide-react`,
+  `@next/bundle-analyzer`, `eslint-config-next`, `posthog-js`, `stripe` — filed
+  as F5 that day. `next`/`eslint`/`@types/node`/`typescript`/`framer-motion`
+  remain deliberate major-version holds.
 - Done so far: hero LCP fix + LazyMotion split + ReducedMotionProvider; bundle
-  analyzer added; audit stays at 0 vulnerabilities (re-confirmed 2026-08-30,
-  both prod-only and full tree — `npm test` also re-confirmed green, 915/915).
-  `@axe-core/playwright` wired into a real CI a11y job. Steady dependency
-  freshness bumps through 2026-08-29.
+  analyzer added; audit stays at 0 vulnerabilities (re-confirmed 2026-09-02,
+  both prod-only and full tree, type-check + lint also GREEN). `@axe-core/
+  playwright` wired into a real CI a11y job. Steady dependency freshness bumps
+  through 2026-08-29.
 
 ## EPIC 8 — Mobile layout regressions
-Status: ACTIVE again — RETIRED 2026-08-19 as the original bare-`grid` pattern,
-but the DIFFERENT "fixed element overlaps scrolled content" shape (opened
-2026-08-29 as its own B2, `FocusFrame`'s "Exit lesson" pill) has now recurred
-TWICE. **2026-08-30 (Scout): the 2026-08-29 `pt-20`/`pt-24` padding fix does
-NOT fully hold** — the exact same `sci_states` drag_drop repro (place all 3
-chips at 390×844) still measurably overlaps the pill with the question heading
-for this TALLER question (a figure + 3 slots + button), because a fixed top
-padding on a `justify-center` wrapper only shifts where centring starts, it
-doesn't prevent overflow once content is taller than the fix was verified
-against. Filed as a fresh B2, 2026-08-30, with a more durable fix proposal
-(`scroll-margin-top` on the content itself, or drop `justify-center` for
-oversized content) rather than another padding-number tweak.
-- Next step: ship the 2026-08-30 B2 fix, then re-verify BOTH the short-question
-  repro from 2026-08-29 AND the taller `sci_states`/`maths_geometry`/
-  `eng_devices` repros from 2026-08-30 before calling this closed again — a
-  single-repro "it's fixed" claim has now been wrong twice in a row for this
-  exact bug class, so verify broadly this time.
+Status: ACTIVE, watching — the `sci_states` drag_drop repro (place all 3 chips
+at 390×844, `FocusFrame`'s "Exit lesson" pill vs. scrolled content) did NOT
+show a persistent overlap on a clean 2026-09-02 re-check (a momentary
+mid-resize screenshot briefly looked like a regression, but `window.scrollY`
+confirmed it was a transient scroll-restore artifact from the viewport resize,
+not a settled, reproducible state — investigated via the actual scroll
+position before concluding, not just the screenshot). Not fully retiring this
+epic on one clean check given the "wrong twice in a row" history below, but no
+open bug to file today.
+- Next step: one more clean re-check on a future run (ideally a genuinely
+  fresh page load at 390×844 rather than a resize-from-desktop, to rule out
+  any resize-specific artifact) before considering this closed.
+- Done so far (history): RETIRED once 2026-08-19 (the original bare-`grid`
+  pattern), reopened 2026-08-29 (a NEW "fixed element overlaps scrolled
+  content" shape), the 2026-08-29 `pt-20`/`pt-24` fix did NOT fully hold against
+  a taller question (2026-08-30 B2), a more durable `scroll-margin-top` fix
+  shipped 2026-08-31 (B2) — 2026-09-02's re-check found no reproducible overlap.
 
 ## EPIC 9 — A visual mascot for Eddie
-Status: ACTIVE, v1 SHIPPED 2026-08-19, present at almost every scoped call
-site — EXCEPT the breathing/calm-break moment, a fresh gap found 2026-08-30
-(see EPIC 6's F2). Once that ships, consider this epic's build-out complete
-again.
+Status: SHIPPED and complete across every scoped call site, including the
+breathing/calm-break moment (2026-08-31, re-verified live 2026-09-02). No
+further action; re-open only on a concrete new gap.
 
 ## EPIC 10 — SEO/metadata hygiene sitewide
 Status: SHIPPED 2026-08-20, no known open gap. Standing every-run spot-check
@@ -283,9 +290,10 @@ scheduled … this week's plan is already set" rather than "doesn't have a plan
 yet"). No further action; re-open only on a concrete regression.
 
 ## EPIC 12 — Mock-exam questions must carry their FULL content, not just `prompt`/`options`
-Status: SHIPPED 2026-08-26, re-verified. No further action; re-open only if a
-future run finds another interaction type with the same generic-wrapper-prompt
-trap in a live mock.
+Status: SHIPPED 2026-08-26, re-verified 2026-09-02 (a fresh full Maths mock run
+showed real exam-style content on every one of 10 questions, not a generic
+wrapper). No further action; re-open only if a future run finds another
+interaction type with the same trap in a live mock.
 
 ## EPIC 13 — `certified_at` must not move on a re-mastery of an already-certified topic
 Status: SHIPPED 2026-08-28, re-verified live via a genuine re-take. No further
@@ -304,17 +312,27 @@ sweep for the same shape elsewhere in the bank — not urgent, only one instance
 found so far.
 
 ## EPIC 16 — Lesson resume must cover EVERY phase, not just Practice
-Status: SHIPPED 2026-08-29 (Mechanic), re-verified live 2026-08-30 (Scout) via
-the exact repro that opened this epic: refreshed mid "Mastery check 1: 2 of 3"
-on a fresh `eng_analysis` certification attempt and landed back on the correct
-mastery step with score intact, NOT the Explainer. No further action; re-open
-only on a concrete regression.
+Status: SHIPPED 2026-08-29 (Mechanic), re-verified live repeatedly since,
+including 2026-09-02 (a mid-`fill_blank`-step hard-refresh on
+`maths_algebra_linear` resumed at the exact same step with no progress lost).
+No further action; re-open only on a concrete regression.
 
-## EPIC 18 (new): framer-motion to motion package migration (v11 to v13)
+## EPIC 17 — Focus management after a dynamic UI transition
+Status: SHIPPED (B1's narrow fix, 2026-08-31), re-verified live 2026-09-02 via
+a fresh keyboard-only drive (Tab → radio group → Space to select → Tab → Enter
+on "Check answer" all worked correctly; focus stayed on "Check answer" itself
+after a wrong answer, which is correct since that exact button remains the
+right next action — the fix specifically targets when the CTA node changes,
+e.g. to "Keep going", which was also re-confirmed working). F3's broader
+`react-aria` `FocusScope` adoption remains a deferred, not-yet-scheduled
+enhancement — no second live failing instance has appeared since, so it stays
+low-priority.
+
+## EPIC 18 — framer-motion to motion package migration (v11 to v13)
 Status: RESEARCHED, not yet built. Opened 2026-08-30 (F6, a Sunday latest-stack
 spike), researched 2026-08-31 (Mechanic) by reading the vendor's own official
 upgrade guide (motion.dev/docs/react-upgrade-guide) rather than guessing from
-changelog headlines.
+changelog headlines. Not touched 2026-09-01/09-02.
 - Findings: the actual migration from our pinned `framer-motion@^11.15.0` to
   the current `motion@13.1.1` is smaller and safer than the original finding's
   risk estimate suggested. There is exactly ONE mechanical step for a project
@@ -322,103 +340,89 @@ changelog headlines.
   then swap every `from "framer-motion"` import to `from "motion/react"`
   (the API itself, `motion.div`, `AnimatePresence`, `whileTap`, `useReducedMotion`,
   `LazyMotion`, is unchanged across v11 to v13). Version 12 has NO breaking
-  React API changes at all (confirmed on the vendor's own guide: "There are no
-  breaking changes in Motion for React in version 12"). Version 13's one
-  breaking change removes `@emotion/is-prop-valid` as an optional dependency,
-  which only affects styled-components/Emotion CSS-in-JS users; this repo has
-  neither dependency (confirmed via `package.json`, Tailwind only), so it does
-  not apply to us at all.
-- Next step for a future dedicated run (still not a routine bump, per the
-  original finding's own reasoning): do the import-path swap across every
-  file using `framer-motion` (grep confirms roughly a dozen+ child-facing
-  components), run the full gate, then a live Playwright smoke across several
-  lesson states (celebration, mascot moods, hint entrance, phase-bar) on BOTH
-  the motion and `prefers-reduced-motion` paths, since this touches nearly
-  every child-facing animation in the app even though the migration itself is
-  now known to be low-risk.
-- Done so far: research only (this note); no code changed, no package
-  installed. `npm audit` unaffected either way (0 vulnerabilities on both the
-  current pin and the target version per `npm view`).
+  React API changes at all. Version 13's one breaking change (removing
+  `@emotion/is-prop-valid`) doesn't apply to this repo (Tailwind only, no
+  styled-components/Emotion).
+- Next step for a future dedicated run: do the import-path swap across every
+  file using `framer-motion` (roughly a dozen+ child-facing components), run
+  the full gate, then a live Playwright smoke across several lesson states on
+  BOTH the motion and `prefers-reduced-motion` paths.
+- Done so far: research only; no code changed, no package installed.
 
-## EPIC 17 (new) — Focus management after a dynamic UI transition
-Status: NEW, opened 2026-08-30. A pattern distinct from EPIC 16 (which was
-about DATA persistence across a hard refresh) — this is about WHERE KEYBOARD
-FOCUS LANDS after a same-session UI swap. Confirmed live: `practice-player.tsx`
-swaps the "Check answer" button for a different "Keep going"/"Start mastery"/
-"Finish" button via conditional rendering (not a relabel of one stable node),
-which destroys the focused DOM element; the browser resets focus to `<body>`,
-and the child's next Tab press restarts the ENTIRE page's tab sequence from
-the logo at the very top, costing ~8 extra Tab presses to reach the next
-primary action — repeated on every single question, in every lesson. Filed as
-B1, 2026-08-30 (Medium/High — a systemic, compounding a11y burden for any
-keyboard-only or switch-access child, not a one-off).
-- Next step: ship B1's narrow fix (a `ref` + `useEffect` calling `.focus()` on
-  the new CTA when it mounts). Separately, F3 (2026-08-30) proposes the more
-  systemic version: adopt `react-aria`'s `FocusScope` (owner-pre-approved
-  library for "accessible interaction primitives for SEND-grade custom
-  controls") across the practice-player's transition points generally, so this
-  whole CLASS of "region swaps, focus gets lost" bug can't recur at some other
-  transition point Scout hasn't found yet. Live-verify by repeating the exact
-  keyboard repro (Tab/Arrow/Enter through a full mcq answer) and confirming the
-  very next Tab lands on the primary CTA, not the page logo.
-- Done so far: nothing shipped yet — fresh epic from today's live
-  keyboard-only Playwright drive (Tab/ArrowDown/Enter through a real mcq
-  answer, not just a code-only audit find). 2026-08-31 (Mechanic): B1's
-  narrow fix shipped and live (`5e0978d`), closing the urgent instance.
-  F3's react-aria `FocusScope` adoption was judged best deferred rather
-  than rushed in alongside the rest of that night's items: it is a new
-  dependency plus a refactor of the practice-player's other region swaps
-  (chip trays, tap_reveal cards), not a bug fix, with no second live
-  failing instance to anchor it against that night. Next step for a
-  future dedicated run: adopt `FocusScope` across all transition points
-  and live-verify the keyboard repro at each one, its own commit, not
-  folded into a routine nightly item.
+## EPIC 19 — Server Component await-waterfalls on the highest-traffic pages
+Status: ACTIVE, still unshipped as of 2026-09-02. Opened 2026-09-01 (Scout,
+Tuesday performance deep-dive). `/dashboard`, `/schedule` and `/learn` (the
+child hub) each block full page load for multiple seconds on every visit,
+measured via the Performance API (`responseEnd - responseStart`, i.e.
+server-side think-time). Root-caused by reading the actual page components:
+each does 10-19 sequential `await` calls, most of them independent reads that
+could run in `Promise.all` (the pattern the SAME files already use correctly
+in a couple of places — e.g. the per-child loop and `todayCards` in
+`dashboard/page.tsx` — just not extended to the rest of the function body).
+Confirmed NOT a general DB/network problem: `/settings`, `/admin`, `/pricing`
+and `/api/health` all stay fast.
+- Next step: ship the batching fix (`dashboard/page.tsx`, `schedule/page.tsx`,
+  `learn/page.tsx`, and `repo.ts`'s `buildScheduleItems`), then re-measure all
+  three pages and confirm the gap drops to roughly `/settings`'s ~600ms
+  baseline. If any OTHER page turns out to have a similar unbroken await
+  chain on a future audit, this epic is the place to log it.
+- Done so far: nothing shipped yet across TWO consecutive discovery runs
+  (2026-09-01 opened it, 2026-09-02 re-measured fresh — `/dashboard` still
+  ~7s, `/schedule` still ~1.7s — and re-confirmed via grep the code is
+  byte-for-byte unchanged). **PROCESS NOTE (2026-09-02):** Mechanic reads only
+  *today's* findings file, with no fallback once today's file exists — so an
+  unbuilt prior-day report is silently dropped unless the next Scout run
+  explicitly re-verifies and re-carries it forward. That happened for the
+  first time today; watch whether this recurs (a skipped or died-early
+  Mechanic run) and keep re-carrying any still-open Critical/High bug into
+  each day's own file until it ships.
 
-## EPIC 19 (new) — Server Component await-waterfalls on the highest-traffic pages
-Status: NEW, opened 2026-09-01 (Scout, Tuesday performance deep-dive). A genuinely
-new performance class, not a repeat of any prior epic: `/dashboard`, `/schedule`
-and `/learn` (the child hub) each block full page load for 4-8 SECONDS on every
-single visit, measured via the Performance API (`responseEnd - responseStart`,
-i.e. server-side think-time, not client render or network transfer — transfer
-sizes are tiny, ~2-65KB). Root-caused by reading the actual page components: each
-does 10-19 sequential `await` calls, most of them independent reads that could run
-in `Promise.all` (the pattern the SAME files already use correctly in a couple of
-places — e.g. the per-child loop and `todayCards` in `dashboard/page.tsx` — just
-not extended to the rest of the function body). Confirmed NOT a general DB/network
-problem: `/settings` (620ms), `/admin` (37ms, aggregate stats from a tiny dataset),
-`/pricing` (3ms, static) and `/api/health` (0.7-0.9s round-trip via curl) are all
-fast. This is a targeted, well-evidenced, low-risk-to-fix bug (B1, 2026-09-01) —
-purely reordering already-correct independent reads into parallel batches, no
-query logic changes.
-- Next step: ship 2026-09-01's B1 (batch the independent awaits in
-  `dashboard/page.tsx`, `schedule/page.tsx`, `learn/page.tsx`, and `repo.ts`'s
-  `buildScheduleItems`), then re-measure all three pages with the same
-  `performance.getEntriesByType('navigation')` technique and confirm the gap
-  drops to roughly `/settings`'s ~600ms baseline. If any OTHER page turns out to
-  have a similar unbroken await chain on a future audit, this epic is the place
-  to log it — the fix pattern (batch independent siblings into `Promise.all`) is
-  now established and should be applied proactively to new Server Components too.
+## EPIC 20 — Homepage hydration mismatch (React error #418)
+Status: NOT REPRODUCING as of 2026-09-02 — likely resolved (transient or fixed
+by an unrelated deploy), but only ONE clean re-check so far, so not fully
+retired yet. Opened 2026-09-01 (Scout). The public marketing homepage (`/`)
+threw a React hydration-mismatch console error on EVERY load that day, at both
+390 and 1280 viewports across three separate fresh navigations, confirmed
+NOWHERE else on the site. No prior Scout report across 40+ days ever flagged
+this before 2026-09-01. Exact component was never pinpointed — static grep for
+the usual suspects (non-deterministic Date/Math.random, client-only branches,
+useEffect/useState) came up empty, so the cause was more likely invalid HTML
+tag nesting than a state mismatch.
+- Next step: 2026-09-02 re-checked with the SAME repro protocol (3 fresh
+  `browser_navigate('https://edway.uk/')` loads, both viewports) and got ZERO
+  console errors every time. No code change was made between the two runs (git
+  log shows no homepage-touching commit), so this reads as either a genuinely
+  transient/environmental issue or something that self-resolved. Do NOT fully
+  retire this epic on one clean run alone — a future run should do one more
+  spot-check before removing it from the backlog entirely. If it recurs, the
+  next debugging step is still the same: reproduce against a non-minified dev
+  build for the full unminified error message naming the exact component/tag.
+- Done so far: nothing shipped — filed as B2 (2026-09-01) with full repro
+  evidence; not reproducing as of 2026-09-02's re-check.
+
+## EPIC 21 (new) — Auth session hygiene: not every page redirects on an invalidated session
+Status: NEW, opened 2026-09-02 (Scout). Found while cleaning up a disposable
+signup-test account: `dashboard/page.tsx` is the ONE page in the app that does
+NOT redirect to `/login` when `currentParentId()` returns `null` (a session
+whose JWT is still validly signed but whose parent row no longer exists, or
+whose `token_version` no longer matches — i.e. a deleted account, or a "sign
+out everywhere" / password-change invalidation of another device's session).
+Instead it silently falls through to the same "Let's set up your first child"
+empty state a genuine brand-new zero-children account sees. `schedule/page.tsx`
+and `settings/page.tsx` both correctly guard with
+`if (!parentId) redirect("/login?redirect=/...")` right after the same
+`currentParentId()` call, so this is an isolated one-line miss on the single
+highest-traffic page, not a systemic pattern — but it directly undermines the
+clarity of the "sign out everywhere" security feature (the kicked-out device
+looks like it's still working instead of clearly being signed out). No child
+data is exposed either way (the data-silo holds; this is a confusing-state bug,
+not a leak).
+- Next step: ship the one-line guard (filed as B2, 2026-09-02), then live-verify
+  by invalidating a session's `token_version` (or reproducing via a deleted
+  test account, as this run did) and confirming `/dashboard` now redirects
+  instead of rendering the empty state. Once shipped, a light residual-risk
+  check worth a future run: grep every `(dashboard)`/`(child)` page.tsx for
+  `currentParentId()`-style calls and confirm EVERY one has the matching
+  null-guard, in case another page has the same isolated miss Scout hasn't
+  hit yet.
 - Done so far: nothing shipped yet — this is the discovery entry.
-
-## EPIC 20 (new) — Homepage hydration mismatch (React error #418)
-Status: NEW, opened 2026-09-01 (Scout). The public marketing homepage (`/`)
-throws a React hydration-mismatch console error on EVERY load, confirmed at both
-390 and 1280 viewports across three separate fresh navigations, and confirmed
-NOWHERE else on the site (every other marketing/auth page checked this run was
-clean). No prior Scout report across 40+ days ever flagged this, so it reads as
-a recent regression rather than a long-standing miss. Exact component not yet
-pinpointed — static grep for the usual suspects (non-deterministic
-Date/Math.random, client-only branches, useEffect/useState) came up empty across
-every homepage-only component (`Hero`, `TrustBar`, `StatsStrip`, `Problem`, and
-the eight `next/dynamic` sections), so the cause is more likely invalid HTML tag
-nesting (the OTHER common #418 trigger) than a state mismatch.
-- Next step: a future run (or a dedicated debugging pass) should reproduce
-  against a non-minified dev build (the one legitimate exception to this
-  project's "never run the dev server" rule, since the FULL React error message
-  for #418 names the exact component and mismatched tag/attribute — that's the
-  fast path here, guessing from minified prod errors is not) and fix the actual
-  markup/logic defect. Live-verify by repeating the exact repro (fresh
-  `browser_navigate('https://edway.uk/')`, check `browser_console_messages`) at
-  both viewports and confirming zero errors.
-- Done so far: nothing shipped yet — this is the discovery entry, filed as B2
-  (2026-09-01) with full repro evidence.
