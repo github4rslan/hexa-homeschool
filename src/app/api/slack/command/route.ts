@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { getDailyBusinessStats, getPlatformTotals } from "@/lib/db/repo";
 import { getDailyTraffic } from "@/lib/monitoring/posthog-traffic";
 import { formatDailyStatsMessage } from "@/lib/monitoring/daily-stats-message";
@@ -20,10 +20,12 @@ export const maxDuration = 30;
  * SLACK_SIGNING_SECRET = 503 rather than an open endpoint; a request that
  * fails verification gets 401 and does no work.
  *
- * Slack expects a reply within 3s. The reply is `ephemeral` (visible only to
- * whoever typed the command) and carries the stats directly, so unlike the
- * cron this does NOT post through the webhook — otherwise every manual check
- * would also spam the channel.
+ * Slack hangs up at 3 seconds ("operation_timeout"), and the full roll-up is
+ * too slow for that, so this acks instantly and posts the real answer to the
+ * request's `response_url` from `after()`. Both messages are `ephemeral`
+ * (visible only to whoever typed the command), so unlike the cron this never
+ * posts through the channel webhook — otherwise every manual check would spam
+ * the channel.
  *
  * The response names adult account holders, same owner-approved decision as the
  * daily digest (`daily-stats-message.ts`); child-derived figures stay aggregate.
@@ -50,21 +52,57 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const now = Date.now();
-  const since = new Date(now - 24 * 60 * 60 * 1000);
-  const prevSince = new Date(now - 48 * 60 * 60 * 1000);
-  const [mongoStats, previous, traffic, totals] = await Promise.all([
-    getDailyBusinessStats(since),
-    getDailyBusinessStats(prevSince, since),
-    getDailyTraffic(),
-    getPlatformTotals(),
-  ]);
+  // Slack hangs up at 3s with "operation_timeout". The full roll-up is four
+  // PostHog round trips plus two Mongo passes, which does not reliably fit, so
+  // acknowledge immediately and deliver the real answer to `response_url`
+  // (Slack keeps it open for 30 minutes). `after()` runs the work once the
+  // response is already on the wire, so the function is not killed first.
+  const responseUrl = new URLSearchParams(rawBody).get("response_url");
+  if (!responseUrl) {
+    return NextResponse.json({ error: "Missing response_url." }, { status: 400 });
+  }
+
+  after(async () => {
+    try {
+      const now = Date.now();
+      const since = new Date(now - 24 * 60 * 60 * 1000);
+      const prevSince = new Date(now - 48 * 60 * 60 * 1000);
+      const [mongoStats, previous, traffic, totals] = await Promise.all([
+        getDailyBusinessStats(since),
+        getDailyBusinessStats(prevSince, since),
+        getDailyTraffic(),
+        getPlatformTotals(),
+      ]);
+      await postToResponseUrl(
+        responseUrl,
+        formatDailyStatsMessage(mongoStats, traffic, previous, totals),
+      );
+    } catch (err) {
+      console.error("[slack-command] stats lookup failed:", err);
+      // Tell the user something went wrong rather than leaving "Fetching…"
+      // as the last word.
+      await postToResponseUrl(
+        responseUrl,
+        "Couldn't fetch the stats just now. Check Vercel logs for /api/slack/command.",
+      ).catch(() => {});
+    }
+  });
 
   return NextResponse.json(
-    {
-      response_type: "ephemeral",
-      text: formatDailyStatsMessage(mongoStats, traffic, previous, totals),
-    },
+    { response_type: "ephemeral", text: "Fetching your stats…" },
     { headers: { "Cache-Control": "no-store" } },
   );
+}
+
+/** Deliver the real answer to the caller, privately, after the 3s ack. */
+async function postToResponseUrl(responseUrl: string, text: string): Promise<void> {
+  const res = await fetch(responseUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ response_type: "ephemeral", text }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!res.ok) {
+    console.error("[slack-command] response_url post failed:", res.status);
+  }
 }
