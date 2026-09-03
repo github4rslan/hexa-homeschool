@@ -1170,6 +1170,37 @@ describe("F1 (2026-09-03) — second eng_creative command-word item ('show, don'
   });
 });
 
+describe("F2 (2026-09-03) — second sci_genetics command-word item (explain variation)", () => {
+  const prompt =
+    "Explain why sexual reproduction produces more genetically varied offspring than asexual reproduction.";
+
+  it("adds exactly one well-formed item keyed to the mixing-genetic-information answer", () => {
+    expectWellFormedItem(
+      "sci_genetics",
+      "science",
+      prompt,
+      "Sexual reproduction mixes genetic information from two parents, creating new combinations of alleles.",
+    );
+  });
+
+  it("tests EXPLAINING the conceptual mechanism, distinct from the existing Punnett-square calculation item", () => {
+    const geneticsPrompts = ALL.filter((q) => q.topic_tag === "sci_genetics").map(
+      (q) => q.prompt,
+    );
+    expect(geneticsPrompts).toContain(
+      "In pea plants, tall (T) is dominant over short (t). Two heterozygous tall plants (Tt) are crossed. Calculate the probability that an offspring will be short.",
+    );
+    expect(new Set(geneticsPrompts).size).toBe(geneticsPrompts.length);
+  });
+
+  it("gives the topic an entry tier (3) below its existing tier-4 item", () => {
+    const tiers = SEED_QUESTIONS.filter((q) => q.topic_tag === "sci_genetics").map(
+      (q) => q.tier,
+    );
+    expect(Math.min(...tiers)).toBe(3);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 14 GCSE topics (simultaneous equations lifted it past 13)", () => {
     expect(gcseTopicCount("mathematics")).toBe(14);

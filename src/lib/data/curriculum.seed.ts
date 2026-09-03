@@ -1873,6 +1873,38 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "This names the emotion ('anxious') directly rather than showing it through action.",
     ],
   },
+  // F2 (2026-09-03): second sci_genetics command-word item, AQA 8464 spec
+  // 4.6.1.1. The topic's one existing item is a numerical Punnett-square
+  // calculation; this one examines the conceptual "Explain why..." skill.
+  // Transcribed verbatim from the owner-approved findings report.
+  {
+    topic_tag: "sci_genetics",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "practice",
+    prompt:
+      "Explain why sexual reproduction produces more genetically varied offspring than asexual reproduction.",
+    options: [
+      "Sexual reproduction mixes genetic information from two parents, creating new combinations of alleles.",
+      "Sexual reproduction happens much faster, so more mutations build up.",
+      "Asexual reproduction always introduces new mutations into the offspring.",
+      "Sexual reproduction produces a much larger number of offspring at once.",
+    ],
+    correct_index: 0,
+    explanation:
+      "In sexual reproduction, gametes from two parents fuse at fertilisation, mixing genetic information and creating new combinations of alleles in the offspring. Asexual reproduction involves only one parent with no mixing of genetic information, so it produces genetically identical clones.",
+    hints: [
+      "Think about how many parents are involved in sexual reproduction, and what happens to their genetic information.",
+      "Asexual reproduction uses only one parent, so the offspring are genetically identical — what's different about sexual reproduction?",
+    ],
+    misconceptions: [
+      "",
+      "Speed of reproduction isn't what causes variation — it's the mixing of genetic information from two parents during fertilisation.",
+      "Asexual reproduction produces genetically IDENTICAL offspring (clones) because there's no mixing of genetic information — mutations can occur in either type of reproduction, but they aren't the source of variation this question is asking about.",
+      "The number of offspring produced doesn't affect how genetically varied they are — variation comes from mixing genetic information from two parents.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
