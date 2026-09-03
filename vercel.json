@@ -15,6 +15,10 @@
     {
       "path": "/api/monitor/email-delivery",
       "schedule": "30 8 * * *"
+    },
+    {
+      "path": "/api/monitor/integrations",
+      "schedule": "45 8 * * *"
     }
   ]
 }
