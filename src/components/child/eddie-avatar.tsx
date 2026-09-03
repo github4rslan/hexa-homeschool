@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, type Transition, type TargetAndTransition } from "framer-motion";
+import { motion, type Transition, type TargetAndTransition } from "motion/react";
 import { cn } from "@/lib/utils";
 import type { AccentPreset } from "@/lib/child/accents";
 

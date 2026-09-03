@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentType } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 import {
   Award,
   CheckCircle2,

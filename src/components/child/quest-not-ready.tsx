@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 import { Sparkles, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { accentPreset } from "@/lib/child/accents";

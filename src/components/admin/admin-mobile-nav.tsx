@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { Menu, X, LogOut } from "lucide-react";
 import { HexaLogo } from "@/components/ui/hexa-logo";
 import { Badge } from "@/components/ui/badge";

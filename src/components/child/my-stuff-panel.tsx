@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { ArrowLeft, Check, Volume2, Loader2, Palette, BookOpenText, Type, Ruler } from "lucide-react";
 import { accentPreset, type AccentPreset } from "@/lib/child/accents";

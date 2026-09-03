@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 import { Check, Lock, Sparkles, RefreshCw } from "lucide-react";
 import type { TopicMapNode } from "@/lib/db/repo";
 

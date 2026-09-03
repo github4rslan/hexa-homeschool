@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { m } from "framer-motion";
+import { m } from "motion/react";
 import { AGENTS } from "@/lib/data/agents";
 import { cn } from "@/lib/utils";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { REFLECTIONS } from "@/lib/child/reflection";
 import { submitReflection } from "@/app/(child)/learn/actions";
 

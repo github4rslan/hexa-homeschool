@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { Check, Sparkles, ArrowRight } from "lucide-react";
 import { Celebration } from "@/components/fx/celebration";
 import { submitReviewResult } from "@/app/(child)/learn/warmup/actions";

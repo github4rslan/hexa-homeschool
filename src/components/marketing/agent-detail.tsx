@@ -1,6 +1,6 @@
 "use client";
 
-import { m } from "framer-motion";
+import { m } from "motion/react";
 import { useState } from "react";
 import { ChevronRight, ShieldCheck, Cpu, Inbox, Workflow, Package } from "lucide-react";
 import { Card } from "@/components/ui/card";

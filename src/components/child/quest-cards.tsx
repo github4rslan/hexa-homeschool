@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 
 // Active quest cards are tapped on touch, where :hover never fires. A
 // motion-wrapped Link lets the card press down under the finger so a tap feels

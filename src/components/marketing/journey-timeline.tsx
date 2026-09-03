@@ -1,6 +1,6 @@
 "use client";
 
-import { m } from "framer-motion";
+import { m } from "motion/react";
 import { Container } from "@/components/ui/container";
 import { Badge } from "@/components/ui/badge";
 import { JOURNEY } from "@/lib/data/journey";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Cookie, X } from "lucide-react";
 import Link from "next/link";
 import { CONSENT_EVENT } from "@/components/analytics/analytics-provider";

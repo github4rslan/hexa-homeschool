@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { MessageSquareHeart, Star, X } from "lucide-react";
 import { useFocusTrap } from "@/lib/use-focus-trap";
 import { FEEDBACK_COMMENT_MAX, type FeedbackTrigger } from "@/lib/engine/feedback-eligibility";

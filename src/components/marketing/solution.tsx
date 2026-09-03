@@ -1,6 +1,6 @@
 "use client";
 
-import { m } from "framer-motion";
+import { m } from "motion/react";
 import { Building2, Users } from "lucide-react";
 import { Section, SectionHeader } from "@/components/ui/section";
 

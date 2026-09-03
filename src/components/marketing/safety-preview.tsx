@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { m } from "framer-motion";
+import { m } from "motion/react";
 import { ArrowRight, MessageSquareWarning, RefreshCw, Scale } from "lucide-react";
 import { Section, SectionHeader } from "@/components/ui/section";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { ArrowLeft, Printer } from "lucide-react";
 import type { TopicCertificate } from "@/lib/db/repo";
 import { ConfettiBurst } from "@/components/fx/confetti-burst";

@@ -7,7 +7,7 @@ import {
   AnimatePresence,
   useAnimationControls,
   useReducedMotion,
-} from "framer-motion";
+} from "motion/react";
 import { Timer, ArrowRight, ArrowLeft, Check, Sparkles } from "lucide-react";
 import { MockGradeReveal } from "@/components/child/mock-result-view";
 import { submitMock, type MockSubmitResult } from "@/app/(child)/learn/mock/actions";

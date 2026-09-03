@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "motion/react";
 import { HeartHandshake, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EddieAvatar } from "@/components/child/eddie-avatar";

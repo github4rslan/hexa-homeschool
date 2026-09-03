@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { submitCheckin } from "@/app/(child)/learn/actions";
 
 const MOODS = [

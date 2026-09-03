@@ -7,7 +7,7 @@ import {
   useScroll,
   useTransform,
   type Variants,
-} from "framer-motion";
+} from "motion/react";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { Loader2, Sparkles, Volume2, Pause } from "lucide-react";
 import { accentPreset } from "@/lib/child/accents";
 import { useNarration } from "@/lib/child/use-narration";

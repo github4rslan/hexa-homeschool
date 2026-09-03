@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { Explainer } from "./explainer";
 import { PracticePlayer } from "./practice-player";
 import { accentPreset } from "@/lib/child/accents";
