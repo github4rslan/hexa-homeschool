@@ -3084,3 +3084,30 @@ just fail lint or produce a silently-broken flat config.
   it immediately after. Health check: deploy READY (`dpl_43XiBiNrcXHXtKxqnAnBAT1NYuSo`),
   `/api/health` 200 `db:"up"`, `get_runtime_errors` clean before and after the
   full item set. Teardown: `fetch('/logout',{method:'POST'})` + `browser_close`.
+- 2026-09-03, owner direct build (not a scout finding): shipped a consolidated,
+  read-only integration health monitor, GET `/api/monitor/integrations`
+  (`CRON_SECRET` gated, daily cron at 08:45 UTC, mirrors the shape of F4's
+  `/api/monitor/email-delivery`, deliberately does not duplicate that one).
+  Checks OpenAI (`/v1/models`), Cloudinary (admin `/usage`), Stripe
+  (`balance.retrieve()`), ElevenLabs (`/v1/voices`) and Twilio (GET Account) with
+  one cheap read-only call each, never a real charge, SMS, email or generation.
+  Each service is its own small pure `evaluateXHealth` verdict function
+  (`src/lib/monitoring/integration-health.ts`), unit tested for ok, non-2xx and
+  a 200-with-unreadable-body case; a missing key degrades to "unconfigured" and
+  never causes the route's 503. Also added `src/lib/monitoring/alert.ts`, a
+  shared helper any monitor can call for two independent channels: Sentry
+  (goes through the existing `scrubAndTag` beforeSend automatically, no new
+  scrubbing code needed) and, if the new optional `SLACK_ALERTS_WEBHOOK_URL` is
+  set, a best-effort Slack webhook POST that never throws. Live verify: the new
+  route returned 401 `{"error":"Unauthorized."}` with no bearer header,
+  byte-for-byte identical to the existing email-delivery route's unauthenticated
+  response, proving `CRON_SECRET` is genuinely gating it in production. Did NOT
+  fabricate or read a working `CRON_SECRET` to hit the 200/503 path live (it is
+  a Vercel dashboard only secret, not necessarily mirrored in `.env.local`) per
+  the owner's explicit instruction not to guess one; that path is covered
+  instead by the unit tests on the pure verdict functions plus the
+  "unconfigured, no fetch call" tests on each async `checkXHealth`. Pattern
+  worth repeating: when a route's auth secret cannot be safely obtained for a
+  live authenticated check, a byte-identical comparison against an already
+  proven-working sibling route (same gate, same header check) is solid
+  evidence the gate itself works, without needing the secret.
