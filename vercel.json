@@ -13,6 +13,10 @@
       "schedule": "0 17 * * *"
     },
     {
+      "path": "/api/digest/daily-stats",
+      "schedule": "0 8 * * *"
+    },
+    {
       "path": "/api/monitor/email-delivery",
       "schedule": "30 8 * * *"
     },

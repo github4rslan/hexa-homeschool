@@ -306,10 +306,11 @@ export interface BillingUpdate {
   stripeSubscriptionId?: string | null;
 }
 
-function billingSet(update: BillingUpdate): Partial<ParentDoc> {
+export function billingSet(update: BillingUpdate): Partial<ParentDoc> {
   const set: Partial<ParentDoc> = { updated_at: new Date() };
   if (update.tier) set.subscription_tier = update.tier;
   if (update.status) set.billing_status = update.status;
+  if (update.status === "active") set.billing_activated_at = new Date();
   if (update.stripeCustomerId) set.stripe_customer_id = update.stripeCustomerId;
   if (update.stripeSubscriptionId !== undefined) {
     set.stripe_subscription_id = update.stripeSubscriptionId;
@@ -2720,6 +2721,51 @@ export async function getAdminStats(): Promise<AdminStats> {
     openEscalations: openEscalationsCount,
     newsletterSubscribers,
     dossiers,
+  };
+}
+
+export interface DailyBusinessStats {
+  signupsToday: number;
+  subscriptionsActivatedToday: number;
+  lessonsCompletedToday: number;
+  activeFamiliesToday: number;
+}
+
+/** Real business/product counts since `since` (daily Slack digest, no fabricated metrics). */
+export async function getDailyBusinessStats(since: Date): Promise<DailyBusinessStats> {
+  const [
+    signupsToday,
+    subscriptionsActivatedToday,
+    lessonsCompletedToday,
+    activeChildIds,
+  ] = await Promise.all([
+    (await getCollection(Collections.parents)).countDocuments({
+      created_at: { $gte: since },
+    }),
+    (await getCollection(Collections.parents)).countDocuments({
+      billing_activated_at: { $gte: since },
+    }),
+    (await getCollection(Collections.lessonLogs)).countDocuments({
+      status: "completed",
+      timestamp_start: { $gte: since },
+    }),
+    // lessonLogs has no parent_id, so the distinct-family count is resolved
+    // via children.parent_id below, not a direct distinct() on this collection.
+    (await getCollection(Collections.lessonLogs)).distinct("child_id", {
+      timestamp_start: { $gte: since },
+    }),
+  ]);
+  const activeFamilies =
+    activeChildIds.length > 0
+      ? await (await getCollection(Collections.children)).distinct("parent_id", {
+          _id: { $in: activeChildIds },
+        })
+      : [];
+  return {
+    signupsToday,
+    subscriptionsActivatedToday,
+    lessonsCompletedToday,
+    activeFamiliesToday: activeFamilies.length,
   };
 }
 

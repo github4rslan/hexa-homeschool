@@ -166,6 +166,13 @@ export interface ParentDoc {
   /** Stripe linkage — absent until the parent first goes through Checkout. */
   stripe_customer_id?: string | null;
   stripe_subscription_id?: string | null;
+  /**
+   * Timestamp of the most recent transition to `billing_status: "active"`
+   * (set by `billingSet`). Distinct from `updated_at`, which bumps on any
+   * billing change, not just activation, so this is the reliable field for
+   * "subscriptions activated today" reporting.
+   */
+  billing_activated_at?: Date | null;
   created_at: Date;
   updated_at: Date;
 }
