@@ -14,8 +14,13 @@ import withBundleAnalyzer from "@next/bundle-analyzer";
  * Stripe needs nothing: checkout/portal are full-page server redirects, not
  * embedded JS. TTS audio is proxied through /api/tts and played from blob:
  * URLs. `'unsafe-inline'` script-src is required by Next.js hydration inline
- * scripts (a nonce-based policy would force every page dynamic); there are
- * still no foreign script origins.
+ * scripts (a nonce-based policy would force every page dynamic).
+ *
+ * F5 (2026-09-03): posthog-js loads its own remote config as a real <script>
+ * tag (`*-assets.i.posthog.com/array/.../config.js`), not just fetch/XHR, so
+ * it needs script-src too — connect-src alone (below) silently blocked it
+ * with no visible error beyond the browser console, PostHog never actually
+ * initialised in production despite the key being set correctly.
  *
  * F3 (2026-08-29): `report-uri` sends blocked-resource reports to our own
  * same-origin, rate-limited endpoint (src/app/api/csp-report), which reduces
@@ -27,7 +32,7 @@ import withBundleAnalyzer from "@next/bundle-analyzer";
  */
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' https://meet.jit.si${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://meet.jit.si https://*.posthog.com https://*.i.posthog.com${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://res.cloudinary.com",
   "media-src 'self' blob: https://res.cloudinary.com",
