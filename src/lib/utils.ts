@@ -35,6 +35,17 @@ export function formatUkDate(iso: string): string {
 }
 
 /**
+ * Format a Date as "2026-09-03 14:22 UTC" (minute precision, always UTC) for
+ * operator-facing text such as the Slack growth pings, the daily digest and
+ * outage alerts. Returns "unknown" for a missing or unparseable date so a
+ * message never renders "Invalid Date".
+ */
+export function formatUtcMinute(date: Date | null | undefined): string {
+  if (!date || Number.isNaN(date.getTime())) return "unknown";
+  return `${date.toISOString().slice(0, 16).replace("T", " ")} UTC`;
+}
+
+/**
  * Format a duration in minutes into a human-readable string.
  */
 export function formatDuration(minutes: number): string {

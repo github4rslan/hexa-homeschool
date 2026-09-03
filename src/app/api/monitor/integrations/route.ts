@@ -21,8 +21,10 @@ export const maxDuration = 30;
  * unhealthy service raises an alert on two independent channels (Sentry +,
  * if SLACK_ALERTS_WEBHOOK_URL is set, Slack) and the route returns 503.
  *
- * Privacy: the payload holds service name, status and a plain non-PII reason
- * only, mirroring the email delivery monitor.
+ * Privacy: the payload and the alerts hold service name, status and a plain
+ * failure reason only, mirroring the email delivery monitor. No credentials
+ * and no user data: unlike the growth channel, an outage alert never names a
+ * customer.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -39,12 +41,24 @@ export async function GET(request: Request) {
   const services = await checkAllIntegrationsHealth();
   const unhealthy = services.filter((s) => s.status === "problem");
 
+  // Every alert carries the whole run's picture, so "one integration broke"
+  // is instantly distinguishable from "everything is down".
+  const healthy = services.filter((s) => s.status === "ok").map((s) => s.service);
+  const unconfigured = services
+    .filter((s) => s.status === "unconfigured")
+    .map((s) => s.service);
+
   await Promise.all(
     unhealthy.map((s) =>
       sendAlert({
         service: s.service,
         message: s.detail,
         severity: "error",
+        context: {
+          alsoFailing: unhealthy.filter((o) => o.service !== s.service).map((o) => o.service),
+          healthy,
+          unconfigured,
+        },
       }),
     ),
   );
