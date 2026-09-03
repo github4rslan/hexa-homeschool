@@ -21,6 +21,15 @@ describe("mastery remediation", () => {
     );
   });
 
+  it("clamps an over-scored attempt (client race, Bug B1) to certified, never a false fail", () => {
+    // score > total should never happen, but a rapid multi-click race could
+    // over-count before its fix — the decision layer must degrade to "pass"
+    // regardless, never route an honestly-perfect attempt into reteach.
+    expect(decideRemediation({ score: 5, total: 3, attempt: 1 })).toBe(
+      "certified",
+    );
+  });
+
   it("hands off after the capped fifth attempt", () => {
     expect(
       decideRemediation({

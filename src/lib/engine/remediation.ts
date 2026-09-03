@@ -17,7 +17,11 @@ export function decideRemediation(input: {
   total: number;
   attempt: number;
 }): RemediationDecision {
-  if (input.total > 0 && input.score === input.total) return "certified";
+  // Defensive clamp (Bug B1, 2026-09-03): a client-side scoring anomaly
+  // (e.g. a rapid multi-click race) should never be able to demote an
+  // otherwise-perfect attempt into a demoralising "let's try again" screen.
+  // Anything at or above a perfect score degrades to "pass", never "fail".
+  if (input.total > 0 && input.score >= input.total) return "certified";
   return input.attempt >= MAX_REMEDIATION_ATTEMPTS ? "handoff" : "remediate";
 }
 

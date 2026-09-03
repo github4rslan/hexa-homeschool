@@ -913,6 +913,21 @@ export function PracticePlayer({
 
   /** Re-entry guard so a double-tap during the async distress gate can't score twice. */
   const checkingRef = useRef(false);
+  /**
+   * Settle guard against a SYNCHRONOUS rapid multi-click (Bug B1, 2026-09-03):
+   * for any interaction type that doesn't `await` inside `check` (mcq,
+   * tap_reveal, drag_drop), several `.click()` calls fired in the same JS turn
+   * all run to completion before React commits a re-render, so the
+   * `revealed`/`outcome` state guard inside `runCheckCore` reads stale values
+   * on every call and never blocks the 2nd/3rd. This ref is checked and set at
+   * the very top of `runCheckCore`, before any state setter, so only the
+   * first call in a synchronous burst can ever score. It is released on the
+   * next microtask (after the whole synchronous burst has finished, but
+   * before any later, genuinely separate click) so a real retry on a wrong
+   * answer is never blocked — only same-tick duplicates are. `resetStepState`
+   * also clears it defensively when a fresh question mounts.
+   */
+  const settledRef = useRef(false);
 
   async function check() {
     if (!ready || !question || revealed || outcome === "correct") return;
@@ -944,6 +959,17 @@ export function PracticePlayer({
 
   function runCheckCore() {
     if (!ready || !question || revealed || outcome === "correct") return;
+    // Must be the very first check, before any state setter runs, so a burst
+    // of synchronous rapid-clicks in one JS turn (which never yields for
+    // React to re-render `revealed`/`outcome` between calls) still only lets
+    // the first call through. See the settledRef doc comment above. Released
+    // on the next microtask, which only runs after this whole synchronous
+    // burst finishes, so a later, real retry click is never blocked.
+    if (settledRef.current) return;
+    settledRef.current = true;
+    queueMicrotask(() => {
+      settledRef.current = false;
+    });
 
     const correct = interactionRef.current?.isCorrect() ?? false;
     const nextAttempts = attempts + 1;
@@ -1093,6 +1119,7 @@ export function PracticePlayer({
   );
 
   function resetStepState() {
+    settledRef.current = false;
     setAttempts(0);
     setReady(false);
     setRevealed(false);
