@@ -244,6 +244,9 @@ the Tue perf-focus day): `navigate_page` straight to that one URL,
 `lighthouse_audit` for the score, then `close_page`. Do not log in through
 it or repeat the Part A walkthrough here; if a page needs auth, stick to the
 Web-Vitals readings above instead of trying to sign in via this browser.
+When you do run `lighthouse_audit` on a marketing page, read its SEO and
+Best Practices categories too, not just Performance — that feeds the growth
+lane in Part D at no extra cost.
 
 ### B-polish — the "generation-behind" rubric
 
@@ -373,20 +376,54 @@ files, the exact change, and why it's worth it:
   `@axe-core/playwright` (dev-only, for the B-a11y pass above).
 - **Latest-stack** — Next.js / React / Tailwind / library upgrades and the newer
   APIs they unlock; dead deps to drop.
+- **Growth & discoverability (making the project findable and credible to real
+  visitors).** This is a genuine lane every run, deep-dive on Sundays: Edway
+  only matters if real families find and trust it. Check the marketing surfaces
+  (`/`, `/pricing`, `/how-it-works`, `/safety`, `/for-parents`, `/about`,
+  `/roadmap`, `/resources`, `/compliance`) for:
+  - **Technical SEO.** Per-page `<title>`/meta description (unique, not
+    boilerplate), Open Graph + Twitter card tags (so a shared link looks
+    professional), canonical URLs, `sitemap.xml` and `robots.txt` present and
+    correct, structured data (schema.org `Organization`/`Course`/`FAQPage`
+    where it fits), one clean `h1` per page. You're already running
+    `lighthouse_audit` for B-perf on a suspect page — read its **SEO** and
+    **Best Practices** categories too (not just Performance) while you're in
+    there; that's a free second signal from a tool you already ran.
+  - **Credibility & conversion.** Does the homepage state the value prop in one
+    glance, is there real social proof (testimonials, a trust/compliance badge,
+    a "why we're different" section), is the CTA obvious above the fold, is
+    pricing legible without a login. A visitor who can't tell what Edway is or
+    trust it in 5 seconds won't convert regardless of traffic volume.
+  - **Sharability.** A referral/invite mechanic, a "share your child's
+    portfolio" moment that reflects well on Edway publicly, a newsletter/waitlist
+    capture — anything that turns an existing happy user into new traffic.
+  - You may use `mcp__exa__web_search_exa` a handful of times in this lane
+    (more headroom than the curriculum 1-2-per-question cap, since this is a
+    once-a-week deep-dive, not a per-item habit): check whether `edway.uk` is
+    indexed at all for a couple of its target queries, and optionally glance at
+    1-2 comparable UK homeschool/edtech sites for a concrete pattern worth
+    borrowing (name the pattern and the exact page/component to apply it to,
+    don't just say "make it more professional"). Never include a child's name or
+    family data in a query.
+  File each gap as an `F#` (or a `B#` if something is actually broken, e.g. a
+  404 sitemap or a missing OG tag causing a broken link preview) naming the
+  exact page and tag/element.
 - **Great features** — genuinely new capability that fits Edway's mission. Ambitious is good.
 
 For each idea: rough size (S/M/L), the win, and the risk.
 
-### Daily focus rotation — go deep without ballooning the run
+### Daily focus rotation — go deep on one lane, broad on the rest
 
-To keep runs ~15 focused items while still going deep, pick ONE lane to
-**deep-dive** based on the UTC weekday, and cover the rest at surface level:
+Depth quality matters more than run length now, but pick ONE lane to
+**deep-dive** based on the UTC weekday so that lane gets real depth rather than
+being one of eight things skimmed, and cover the rest at surface level:
 Mon → accessibility (B-a11y) · Tue → performance (B-perf) · Wed →
 delight/animation · Thu → end-to-end journeys (B-journeys, extra depth and edge
 cases) · Fri → polish rubric (B-polish) · Sat → security hardening · Sun →
-latest-stack. **Always** still run the child lesson pass/fail, **always**
-re-verify shipped features, and **always** file any critical/high bug regardless
-of the day's focus. Note the day's focus at the top of the report.
+latest-stack + growth/discoverability (see Part D). **Always** still run the
+child lesson pass/fail, **always** re-verify shipped features, and **always**
+file any critical/high bug regardless of the day's focus. Note the day's focus
+at the top of the report.
 
 **Standing owner priorities (every run, any weekday, not gated to a lane):**
 (1) keep the child Playwright pass at MAXIMUM depth per Part A: walk every
@@ -424,13 +461,22 @@ Write to **`automation/findings/<YYYY-MM-DD>.md`** (UTC date), the ONLY product
 file you create, using `automation/findings/TEMPLATE.md` as the exact format.
 Every item gets a stable ID: `B#` for bugs, `F#` for features/upgrades. Rank
 within each section (Critical→Low for bugs; High→Low value for features).
-**Aim for ~15 items total per run** (bugs + features combined) — a focused menu,
-not an exhaustive catalogue. Rank them so the strongest, most build-ready items
-are first: **Mechanic builds EVERY selected item (no per-run cap), but a long
-list may be split across nights by its budget**, so rank order decides what ships
-first if a run is cut off. Always include any
-**critical/high-severity bug** even if it pushes past 15 — never hide a real
-high-impact bug just to hit the number.
+**Target 15 items per run** (bugs + features combined) — treat this as a floor
+to reach, not a ceiling to cap at. The owner has confirmed the run may take
+longer and use more budget than before to get there, so do not cut the pass
+short to stay fast. If you've covered every lane once and you're still under
+15, that's a signal to go back and look harder, not to stop: re-walk B-polish
+and delight page-by-page for the smaller misses, re-read another slice of the
+curriculum seed files for gaps, check a few more marketing/secondary pages you
+skimmed rather than drove. A real, actively-developed product almost always has
+15+ genuine, specific findings when you look closely — pad the count with real
+findings dug up by looking harder, never with vague or filler items just to hit
+the number (a filler item is worse than a short list). Rank them so the
+strongest, most build-ready items are first: **Mechanic builds EVERY selected
+item (no per-run cap), but a long list may be split across nights by its
+budget**, so rank order decides what ships first if a run is cut off. Always
+include any **critical/high-severity bug** even if it pushes past 15 — never
+hide a real high-impact bug just to hit the number.
 
 **Checkpoint as you go** — a run can be cut off at any moment (session / usage
 limit; you can't see how much budget is left, so you can't stop early). So don't
