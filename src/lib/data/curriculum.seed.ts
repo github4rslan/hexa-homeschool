@@ -1840,6 +1840,39 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "The sentence already starts with a capital 'I', so capitalisation isn't the issue.",
     ],
   },
+  // F1 (2026-09-03): second eng_creative command-word item, AQA 8700 Paper 1
+  // Section B (AO5). The topic's one existing item tests narrative viewpoint;
+  // this one examines "show, don't tell", a distinct and commonly assessed
+  // descriptive-writing craft skill. Transcribed verbatim from the
+  // owner-approved findings report.
+  {
+    topic_tag: "eng_creative",
+    subject: "english",
+    tier: 3,
+    key_stage: 4,
+    kind: "practice",
+    prompt:
+      "A writer wants to show that a character is nervous, without simply stating it. Which sentence best 'shows' this through action or detail, rather than 'telling' the reader directly?",
+    options: [
+      "Her hands trembled as she reached for the door handle.",
+      "She was feeling very nervous.",
+      "Nervousness had taken hold of her completely.",
+      "She felt anxious but tried to hide it.",
+    ],
+    correct_index: 0,
+    explanation:
+      "'Show, don't tell' means revealing a character's feelings through action, physical detail or the senses rather than naming the emotion outright. 'Her hands trembled as she reached for the door handle' shows nervousness through a physical action; the other three options simply state the feeling directly ('nervous', 'nervousness', 'anxious').",
+    hints: [
+      "Look for the option that describes an action or physical detail, not a feeling-word.",
+      "'Show, don't tell' means describing what the reader could see or notice, not naming the emotion.",
+    ],
+    misconceptions: [
+      "",
+      "This directly names the feeling ('nervous') rather than showing it through action or detail.",
+      "This also states the emotion outright ('nervousness') instead of showing it through what the character does.",
+      "This names the emotion ('anxious') directly rather than showing it through action.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */

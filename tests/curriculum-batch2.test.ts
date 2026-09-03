@@ -1136,6 +1136,40 @@ describe("F3 (2026-09-02) — eng_punctuation 'identify the error' command-word 
   });
 });
 
+describe("F1 (2026-09-03) — second eng_creative command-word item ('show, don't tell')", () => {
+  const prompt =
+    "A writer wants to show that a character is nervous, without simply stating it. Which sentence best 'shows' this through action or detail, rather than 'telling' the reader directly?";
+
+  it("adds exactly one well-formed item keyed to the physical-action option", () => {
+    expectWellFormedItem(
+      "eng_creative",
+      "english",
+      prompt,
+      "Her hands trembled as she reached for the door handle.",
+    );
+  });
+
+  it("is genuinely unambiguous: every other option names the emotion directly", () => {
+    const q = ALL.find((item) => item.prompt === prompt)!;
+    const distractors = q.options.filter((_, i) => i !== q.correct_index);
+    for (const d of distractors) {
+      expect(/nervous|anxious/i.test(d)).toBe(true);
+    }
+    // The correct option never names the feeling word outright.
+    expect(/nervous|anxious/i.test(q.options[q.correct_index])).toBe(false);
+  });
+
+  it("tests 'show, don't tell', distinct from the existing narrative-viewpoint item", () => {
+    const creativePrompts = ALL.filter((q) => q.topic_tag === "eng_creative").map(
+      (q) => q.prompt,
+    );
+    expect(creativePrompts).toContain(
+      "A story opens: 'I walked into the empty house and felt my chest tighten.' Identify the narrative viewpoint being used.",
+    );
+    expect(new Set(creativePrompts).size).toBe(creativePrompts.length);
+  });
+});
+
 describe("F8 coupling — mock unlock stays reachable after adding a topic", () => {
   it("maths now has 14 GCSE topics (simultaneous equations lifted it past 13)", () => {
     expect(gcseTopicCount("mathematics")).toBe(14);
