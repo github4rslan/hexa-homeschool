@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { HeartHandshake, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EddieAvatar } from "@/components/child/eddie-avatar";
 import { accentPreset } from "@/lib/child/accents";
 import { cn } from "@/lib/utils";
 
@@ -61,18 +62,25 @@ export function HandoffPause({
         transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
         className="child-panel p-8 text-center sm:p-12"
       >
-        <motion.div
-          initial={reduce ? false : { scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className={cn(
-            "mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border-2",
-            accent.bg,
-            accent.border,
-          )}
-        >
-          <HeartHandshake className={cn("h-11 w-11", accent.text)} aria-hidden />
-        </motion.div>
+        <div className="mb-6 flex items-center justify-center gap-3">
+          <motion.div
+            initial={reduce ? false : { scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className={cn(
+              "flex h-24 w-24 items-center justify-center rounded-full border-2",
+              accent.bg,
+              accent.border,
+            )}
+          >
+            <HeartHandshake className={cn("h-11 w-11", accent.text)} aria-hidden />
+          </motion.div>
+          {/* F3 (2026-09-03) — the human-tutor handoff pause was the one
+              reteach-adjacent screen without Eddie; a struggling child needs
+              his warmth here most. Same "encouraging" mood + call pattern
+              already used on the reteach screen (practice-player.tsx:1583). */}
+          <EddieAvatar mood="encouraging" accent={accent} reduced={reduce} />
+        </div>
 
         <h1 className="mb-4 text-4xl font-semibold text-fog-50">{heading}</h1>
 
