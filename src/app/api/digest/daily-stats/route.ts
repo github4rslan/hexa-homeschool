@@ -20,8 +20,11 @@ export const maxDuration = 30;
  * vercel.json), which sends `Authorization: Bearer ${CRON_SECRET}`
  * automatically; can also be invoked by hand with the same header.
  *
- * Counts only, no PII: no parent/child name, email, or id ever appears in
- * the message.
+ * The Slack message deliberately names the ADULT account holders who signed up
+ * or subscribed (owner-approved, UK GDPR tradeoff accepted, see
+ * `daily-stats-message.ts`). Child-derived figures stay aggregate counts and
+ * are never broken down per child. This route's own JSON response stays counts
+ * only: the named detail goes to the private Slack channel and nowhere else.
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -53,8 +56,17 @@ export async function GET(request: Request) {
   const message = formatDailyStatsMessage(mongoStats, traffic);
   await postGrowthPing(message);
 
+  // Counts only in the HTTP response: the named signup/subscription rows exist
+  // for the private Slack channel and are not echoed back here.
   return NextResponse.json(
-    { ok: true, ...mongoStats, traffic },
+    {
+      ok: true,
+      signupsToday: mongoStats.signupsToday,
+      subscriptionsActivatedToday: mongoStats.subscriptionsActivatedToday,
+      lessonsCompletedToday: mongoStats.lessonsCompletedToday,
+      activeFamiliesToday: mongoStats.activeFamiliesToday,
+      traffic,
+    },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

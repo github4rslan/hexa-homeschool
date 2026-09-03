@@ -1,5 +1,6 @@
 import "server-only";
 import { postGrowthPing } from "./growth-alert";
+import { formatGrowthPing, isGrowthPingEvent } from "./growth-message";
 
 /**
  * Server-side PostHog capture for funnel moments that happen in server
@@ -15,20 +16,19 @@ import { postGrowthPing } from "./growth-alert";
  * the two products' stats mix together.
  *
  * A real signup or subscription also fires a real-time Slack ping
- * (growth-alert.ts), independent of whether PostHog itself is configured.
+ * (growth-alert.ts), independent of whether PostHog itself is configured. That
+ * ping deliberately names the PARENT (name, email, tier, signup time), an
+ * owner-approved decision: only the private growth channel receives it, and it
+ * is adult/account data only, never anything about a child. PostHog properties
+ * are unaffected and stay identity-free; the parent detail is looked up
+ * separately for Slack.
  */
-const GROWTH_PING_EVENTS: Record<string, (p?: Record<string, unknown>) => string> = {
-  signup_completed: () => "New signup on Edway.",
-  subscription_active: (p) => `New subscription on Edway (tier: ${p?.tier ?? "unknown"}).`,
-};
-
 export function captureServer(
   distinctId: string,
   event: string,
   properties?: Record<string, unknown>,
 ): void {
-  const pingText = GROWTH_PING_EVENTS[event]?.(properties);
-  if (pingText) void postGrowthPing(pingText);
+  if (isGrowthPingEvent(event)) void dispatchGrowthPing(distinctId, event, properties);
 
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   if (!key) return;
@@ -49,4 +49,31 @@ export function captureServer(
   }).catch((err) => {
     console.error(`[analytics] server capture "${event}" failed:`, err);
   });
+}
+
+/**
+ * Look the parent up (best-effort) and post the detailed growth ping. The repo
+ * import is dynamic so the Mongo client is only loaded on the two events that
+ * actually need it, and every failure path (bad id, missing row, DB down)
+ * degrades to the generic message instead of throwing: this runs detached from
+ * a signup request and must never break it.
+ */
+async function dispatchGrowthPing(
+  parentId: string,
+  event: string,
+  properties?: Record<string, unknown>,
+): Promise<void> {
+  try {
+    let contact = null;
+    try {
+      const { getParentContactForAlert } = await import("@/lib/db/repo");
+      contact = await getParentContactForAlert(parentId);
+    } catch (err) {
+      console.error("[analytics] growth ping parent lookup failed:", err);
+    }
+    const text = formatGrowthPing(event, contact, properties);
+    if (text) await postGrowthPing(text);
+  } catch (err) {
+    console.error("[analytics] growth ping dispatch failed:", err);
+  }
 }

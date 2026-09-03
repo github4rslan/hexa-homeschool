@@ -12,16 +12,68 @@ import "server-only";
  * error, returns null rather than throwing so the rest of the digest still
  * sends.
  */
+export interface TrafficPage {
+  path: string;
+  views: number;
+}
+
 export interface DailyTraffic {
   pageviews: number;
   visitors: number;
+  /** Busiest paths in the window, most-viewed first. Empty if unavailable. */
+  topPages: TrafficPage[];
 }
+
+/** How many busiest paths the digest lists. */
+const TOP_PAGES_LIMIT = 5;
 
 export async function getDailyTraffic(): Promise<DailyTraffic | null> {
   const apiKey = process.env.POSTHOG_PERSONAL_API_KEY;
   const projectId = process.env.POSTHOG_PROJECT_ID;
   if (!apiKey || !projectId) return null;
 
+  // Two small queries rather than one clever join: a single CROSS JOIN would
+  // return zero rows on a day with no pageviews, losing the (legitimately 0)
+  // totals. Run in parallel and let the top-pages half fail independently, so
+  // a breakdown problem never costs us the headline numbers.
+  const [totals, topPages] = await Promise.all([
+    queryRows(apiKey, projectId, TOTALS_QUERY, "daily_digest_traffic"),
+    queryRows(apiKey, projectId, TOP_PAGES_QUERY, "daily_digest_top_pages"),
+  ]);
+
+  const row = totals?.[0];
+  if (!row || row.length < 2) return null;
+  const [pageviews, visitors] = row;
+  if (typeof pageviews !== "number" || typeof visitors !== "number") return null;
+
+  return { pageviews, visitors, topPages: parseTopPages(topPages) };
+}
+
+const TOTALS_QUERY = `
+  SELECT count() AS pageviews, uniq(person_id) AS visitors
+  FROM events
+  WHERE event = '$pageview'
+    AND properties.app = 'edway'
+    AND timestamp >= now() - INTERVAL 24 HOUR
+`;
+
+const TOP_PAGES_QUERY = `
+  SELECT properties.$pathname AS path, count() AS views
+  FROM events
+  WHERE event = '$pageview'
+    AND properties.app = 'edway'
+    AND timestamp >= now() - INTERVAL 24 HOUR
+  GROUP BY path
+  ORDER BY views DESC
+  LIMIT ${TOP_PAGES_LIMIT}
+`;
+
+async function queryRows(
+  apiKey: string,
+  projectId: string,
+  query: string,
+  name: string,
+): Promise<unknown[][] | null> {
   const host =
     process.env.NEXT_PUBLIC_POSTHOG_HOST?.replace(/\/$/, "") ||
     "https://eu.i.posthog.com";
@@ -33,32 +85,26 @@ export async function getDailyTraffic(): Promise<DailyTraffic | null> {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        query: {
-          kind: "HogQLQuery",
-          query: `
-            SELECT count() AS pageviews, uniq(person_id) AS visitors
-            FROM events
-            WHERE event = '$pageview'
-              AND properties.app = 'edway'
-              AND timestamp >= now() - INTERVAL 24 HOUR
-          `,
-        },
-        name: "daily_digest_traffic",
-      }),
+      body: JSON.stringify({ query: { kind: "HogQLQuery", query }, name }),
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return null;
-
     const data = (await res.json()) as { results?: unknown[][] };
-    const row = data.results?.[0];
-    if (!row || row.length < 2) return null;
-    const [pageviews, visitors] = row;
-    if (typeof pageviews !== "number" || typeof visitors !== "number") return null;
-
-    return { pageviews, visitors };
+    return Array.isArray(data.results) ? data.results : null;
   } catch (err) {
-    console.error("[posthog-traffic] query failed:", err);
+    console.error(`[posthog-traffic] query "${name}" failed:`, err);
     return null;
   }
+}
+
+/** `$pathname` can come back null (unset on some events), so guard every row. */
+function parseTopPages(rows: unknown[][] | null): TrafficPage[] {
+  if (!rows) return [];
+  const pages: TrafficPage[] = [];
+  for (const row of rows) {
+    const [path, views] = row;
+    if (typeof views !== "number") continue;
+    pages.push({ path: typeof path === "string" && path ? path : "(unknown)", views });
+  }
+  return pages;
 }

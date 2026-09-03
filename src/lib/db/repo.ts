@@ -119,6 +119,54 @@ export async function findParentById(id: string): Promise<ParentDoc | null> {
 }
 
 /**
+ * The minimum parent/account detail the real-time growth Slack pings need to
+ * be actionable (`lib/analytics/server.ts`). Owner-approved decision: the
+ * private growth channel intentionally carries the PARENT's own name and
+ * email. This is adult/account data only, never a child's name, age, or any
+ * per-child learning detail (Children's Code, see `.claude/rules`).
+ */
+export interface ParentAlertContact {
+  fullName: string | null;
+  email: string;
+  tier: ParentDoc["subscription_tier"] | null;
+  billingStatus: ParentDoc["billing_status"] | null;
+  createdAt: Date | null;
+}
+
+/**
+ * Best-effort contact lookup for growth alerts. Returns null for an unknown or
+ * malformed id so the caller can fall back to a generic, detail-free message
+ * instead of failing: analytics must never break the request it rides on.
+ */
+export async function getParentContactForAlert(
+  id: string,
+): Promise<ParentAlertContact | null> {
+  const oid = toObjectId(id);
+  if (!oid) return null;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const doc = await col.findOne(
+    { _id: oid },
+    {
+      projection: {
+        full_name: 1,
+        email: 1,
+        subscription_tier: 1,
+        billing_status: 1,
+        created_at: 1,
+      },
+    },
+  );
+  if (!doc) return null;
+  return {
+    fullName: doc.full_name ?? null,
+    email: doc.email,
+    tier: doc.subscription_tier ?? null,
+    billingStatus: doc.billing_status ?? null,
+    createdAt: doc.created_at ?? null,
+  };
+}
+
+/**
  * Store (or refresh) a Web Push subscription on the parent doc (F4). Keyed by
  * endpoint: an existing entry for the same endpoint is replaced, so re-subscribing
  * the same browser never duplicates. Parent-scoped by the session `parentId`.
@@ -2724,11 +2772,47 @@ export async function getAdminStats(): Promise<AdminStats> {
   };
 }
 
+/**
+ * One named account row in the daily digest. Parent/account data only: the
+ * digest names the adult who signed up or subscribed, and never breaks the
+ * lesson/family counts down per child.
+ */
+export interface DailyAccountDetail {
+  fullName: string | null;
+  email: string;
+  tier: ParentDoc["subscription_tier"] | null;
+  at: Date | null;
+}
+
+/** Max named rows returned per digest section, so a spike can't flood Slack. */
+export const DAILY_DETAIL_LIMIT = 25;
+
 export interface DailyBusinessStats {
   signupsToday: number;
   subscriptionsActivatedToday: number;
   lessonsCompletedToday: number;
   activeFamiliesToday: number;
+  /** Named signups in the window, oldest first, capped at DAILY_DETAIL_LIMIT. */
+  signups: DailyAccountDetail[];
+  /** Named subscription activations in the window, capped the same way. */
+  subscriptions: DailyAccountDetail[];
+}
+
+const DAILY_DETAIL_PROJECTION = {
+  full_name: 1,
+  email: 1,
+  subscription_tier: 1,
+  created_at: 1,
+  billing_activated_at: 1,
+} as const;
+
+function toAccountDetail(doc: ParentDoc, at: Date | null | undefined): DailyAccountDetail {
+  return {
+    fullName: doc.full_name ?? null,
+    email: doc.email,
+    tier: doc.subscription_tier ?? null,
+    at: at ?? null,
+  };
 }
 
 /** Real business/product counts since `since` (daily Slack digest, no fabricated metrics). */
@@ -2738,6 +2822,8 @@ export async function getDailyBusinessStats(since: Date): Promise<DailyBusinessS
     subscriptionsActivatedToday,
     lessonsCompletedToday,
     activeChildIds,
+    signupDocs,
+    subscriptionDocs,
   ] = await Promise.all([
     (await getCollection(Collections.parents)).countDocuments({
       created_at: { $gte: since },
@@ -2754,6 +2840,26 @@ export async function getDailyBusinessStats(since: Date): Promise<DailyBusinessS
     (await getCollection(Collections.lessonLogs)).distinct("child_id", {
       timestamp_start: { $gte: since },
     }),
+    (await getCollection<ParentDoc>(Collections.parents))
+      .find(
+        { created_at: { $gte: since } },
+        {
+          projection: DAILY_DETAIL_PROJECTION,
+          sort: { created_at: 1 },
+          limit: DAILY_DETAIL_LIMIT,
+        },
+      )
+      .toArray(),
+    (await getCollection<ParentDoc>(Collections.parents))
+      .find(
+        { billing_activated_at: { $gte: since } },
+        {
+          projection: DAILY_DETAIL_PROJECTION,
+          sort: { billing_activated_at: 1 },
+          limit: DAILY_DETAIL_LIMIT,
+        },
+      )
+      .toArray(),
   ]);
   const activeFamilies =
     activeChildIds.length > 0
@@ -2766,6 +2872,8 @@ export async function getDailyBusinessStats(since: Date): Promise<DailyBusinessS
     subscriptionsActivatedToday,
     lessonsCompletedToday,
     activeFamiliesToday: activeFamilies.length,
+    signups: signupDocs.map((d) => toAccountDetail(d, d.created_at)),
+    subscriptions: subscriptionDocs.map((d) => toAccountDetail(d, d.billing_activated_at)),
   };
 }
 

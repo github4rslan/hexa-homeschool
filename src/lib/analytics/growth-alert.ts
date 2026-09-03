@@ -8,8 +8,16 @@ import "server-only";
  *
  * Best-effort: never throws, never blocks the caller. Unset
  * SLACK_GROWTH_WEBHOOK_URL = silently skipped, same graceful-degradation
- * pattern as every other integration in this repo. Messages carry no PII —
- * no parent email/name/id, plain business-event text only.
+ * pattern as every other integration in this repo.
+ *
+ * Privacy: messages posted here intentionally include PARENT/account detail
+ * (name, email, tier, timestamps). That is a deliberate, owner-approved
+ * decision made with the UK GDPR tradeoff understood: the destination Slack
+ * workspace becomes a processor of adult customer data. It applies to adult
+ * account holders ONLY. Never put a child's name, age, lesson, topic, score,
+ * SEND status or escalation content in these messages: the Children's Code
+ * invariant in CLAUDE.md and .claude/rules/child-safety.md is unchanged, and
+ * child-derived numbers stay aggregate and non-identifying.
  */
 export async function postGrowthPing(message: string): Promise<void> {
   const url = process.env.SLACK_GROWTH_WEBHOOK_URL;
