@@ -3165,3 +3165,51 @@ just fail lint or produce a silently-broken flat config.
   ever shows "not configured yet" despite both keys being set, check
   `NEXT_PUBLIC_POSTHOG_HOST` region matches the project and that the personal
   key has query-read scope on that project.
+
+## 2026-09-03 (owner task: maximum detail on all three Slack surfaces)
+
+Direct owner request, not a findings item. The owner explicitly asked for
+maximum detail on the Slack channels including who signed up (name + email),
+having been told the UK GDPR tradeoff (the Slack workspace becomes a processor
+of adult customer data) and accepted it. So the old "counts only, no PII"
+comments were stale, not a reason to refuse.
+
+- **Growth pings** (`lib/analytics/growth-message.ts`, new pure formatter +
+  `getParentContactForAlert()` in `repo.ts`): `captureServer()` only ever had
+  the parent's Mongo id, so the ping could not name anyone. It now looks the
+  parent up (name, email, tier, billing status, created_at) and posts a
+  multi-line message including the `verification` property already passed at
+  the call sites (`link`/`auto`/`code`/`send-failed`, the last meaning their
+  verification email bounced). The repo import is DYNAMIC inside the detached
+  async dispatcher, which keeps the Mongo client off the hot import path and
+  keeps the unit test pure via `vi.mock("@/lib/db/repo")`. Every failure path
+  (bad id, missing row, DB down) degrades to the exact previous generic line;
+  analytics must never break a signup.
+- **Daily digest**: `getDailyBusinessStats()` now also returns the real
+  signups and activations (capped at 25 rows each in the QUERY, not just the
+  formatter, so a spike cannot pull thousands of docs), rendered under the
+  existing counts with an "and N more" tail. The route's own JSON response
+  deliberately stays counts only: the named rows go to the private Slack
+  channel and nowhere else.
+- **PostHog top pages**: added as a SECOND query alongside the existing totals
+  rather than one clever CROSS JOIN, because a join would return zero rows on
+  a day with no pageviews and lose the legitimately-zero totals. Verified the
+  HogQL actually works by running it against the live query API with the local
+  personal key first (`properties.$pathname` can come back null, hence the
+  "(unknown)" guard). Worth repeating: check a provider query for real before
+  shipping it, it took one curl.
+- **Outage alerts**: `sendAlert()` now builds a diagnostic Slack message via
+  the new pure `lib/monitoring/alert-message.ts` (service, exact failure
+  detail, UTC time, what else failed, what passed, what was unconfigured).
+  Sentry keeps the SHORT one-line form on purpose: that string is the grouping
+  key, so varying run context must stay out of it.
+- **Hard line held**: no child data anywhere in Slack. PostHog events stay
+  identity-free (asserted by a new test), and "Lessons completed" / "Active
+  families" stay aggregate counts, asserted by a test that fails if they are
+  ever broken down per child.
+- Recorded the decision in `CLAUDE.md` (gitignored, local only) so a future
+  session does not "helpfully" strip the PII back out.
+- Commit split: two commits, alerts separately from growth/digest, because
+  `repo.ts` carries both growth and digest changes and splitting them further
+  would have pushed a red intermediate commit to a repo where every push
+  deploys. Splitting for tidiness is never worth shipping a red tree.
