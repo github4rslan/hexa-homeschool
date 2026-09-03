@@ -420,6 +420,31 @@ export async function getActiveChild(
   return latestChild(parentId);
 }
 
+/**
+ * Pure, DB-free equivalent of `getActiveChild` for pages that already fetched
+ * the parent's full child list this request (Bug B2, perf): the preferred-id
+ * branch is `getChildById`'s exact ownership-filtered lookup ("find the doc
+ * in the already-owned list whose id matches" — ownership was already
+ * established by the `listChildren` query that produced this array, so no
+ * check is weakened), and the fallback is `latestChild`'s exact "most
+ * recently created" semantics, since `listChildren` sorts `created_at`
+ * ascending, so the last element IS the latest child. Use this instead of
+ * `await getActiveChild(...)` whenever the caller already has the sibling
+ * list in scope, to avoid a second, fully redundant Mongo round-trip.
+ */
+export function resolveActiveChild(
+  children: ChildDoc[],
+  preferredChildId?: string,
+): ChildDoc | null {
+  if (preferredChildId) {
+    const preferred = children.find(
+      (c) => c._id?.toHexString() === preferredChildId,
+    );
+    if (preferred) return preferred;
+  }
+  return children.length > 0 ? children[children.length - 1] : null;
+}
+
 export async function updateChild(
   parentId: string,
   childId: string,

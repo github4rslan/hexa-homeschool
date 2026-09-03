@@ -21,7 +21,7 @@ import {
   currentParentId,
   findParentById,
   listChildren,
-  getActiveChild,
+  resolveActiveChild,
   countCertified,
   latestEvaluationsBySubject,
   recentLogs,
@@ -207,7 +207,9 @@ export default async function DashboardPage() {
     );
   }
 
-  const activeChild = await getActiveChild(parentId, activeChildId);
+  // B2 (perf): `kids` already IS the parent's full child list, so resolve
+  // locally instead of a second, fully redundant Mongo round-trip.
+  const activeChild = resolveActiveChild(kids, activeChildId);
   const activeId = activeChild?._id?.toHexString();
 
   const weekAgoMs = Date.now() - 7 * 24 * 60 * 60 * 1000;

@@ -8,7 +8,7 @@ import { SubmitButton } from "@/components/ui/submit-button";
 import {
   currentParentId,
   findParentById,
-  getActiveChild,
+  resolveActiveChild,
   getOrCreateWeeklySchedule,
   listChildren,
   swappableTopicsForSubject,
@@ -34,13 +34,18 @@ export default async function SchedulePage({
   if (!parentId) redirect("/login?redirect=/schedule");
   // F7: a `?child=<id>` deep-link (from the dashboard "Generate the week" nudge)
   // targets that specific child rather than whichever child the active-child
-  // cookie points at. Ownership is enforced by getChildById inside getActiveChild
-  // — an unowned/invalid id simply falls back to the parent's latest child.
-  const [{ child: childParam }, cookieChildId] = await Promise.all([
+  // cookie points at. Ownership is enforced by `listChildren(parentId)` below
+  // (only this parent's own children are ever in that list) — an unowned/
+  // invalid id simply falls back to the parent's latest child.
+  // B2 (perf): `listChildren` is pulled into this first batch so the id can
+  // be resolved locally (`resolveActiveChild`) instead of a second, fully
+  // redundant Mongo round-trip via `getActiveChild`.
+  const [{ child: childParam }, cookieChildId, siblings] = await Promise.all([
     searchParams,
     readActiveChildId(),
+    listChildren(parentId),
   ]);
-  const child = await getActiveChild(parentId, childParam ?? cookieChildId);
+  const child = resolveActiveChild(siblings, childParam ?? cookieChildId);
 
   if (!child?._id) {
     return (
@@ -67,12 +72,11 @@ export default async function SchedulePage({
   // Valid swap targets per subject (uncertified topics, in order) for the editor.
   const subjects: Subject[] = ["mathematics", "english", "science"];
 
-  // B1 (perf): the parent record, the sibling list, the week's schedule and the
-  // per-subject swap options are all independent reads, so they run as one
-  // concurrent batch instead of a serial await-waterfall.
-  const [parent, siblings, result, swapEntries] = await Promise.all([
+  // B1 (perf): the parent record, the week's schedule and the per-subject swap
+  // options are all independent reads, so they run as one concurrent batch
+  // instead of a serial await-waterfall. `siblings` was already fetched above.
+  const [parent, result, swapEntries] = await Promise.all([
     findParentById(parentId),
-    listChildren(parentId),
     getOrCreateWeeklySchedule(parentId, child._id),
     Promise.all(
       subjects.map(

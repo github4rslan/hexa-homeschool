@@ -12,7 +12,8 @@ import { TodayReflection } from "@/components/child/today-reflection";
 import { buildResumeCards } from "@/lib/child/resume";
 import {
   currentParentId,
-  getActiveChild,
+  listChildren,
+  resolveActiveChild,
   getInProgressLessons,
   resolveDailyQuestTopic,
   childFloorBand,
@@ -51,7 +52,13 @@ const SUBJECTS: {
 export default async function LearnHubPage() {
   const parentId = await currentParentId();
   if (!parentId) redirect("/login?redirect=/learn");
-  const child = await getActiveChild(parentId, await readActiveChildId());
+  // B2 (perf): resolve the active child locally from the already-owned sibling
+  // list instead of a second, fully redundant Mongo round-trip.
+  const [siblings, activeChildId] = await Promise.all([
+    listChildren(parentId),
+    readActiveChildId(),
+  ]);
+  const child = resolveActiveChild(siblings, activeChildId);
   if (!child?._id) redirect("/dashboard");
 
   // B1 (perf): every read for the hub is independent of the others, so they are
