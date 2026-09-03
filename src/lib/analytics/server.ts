@@ -1,4 +1,5 @@
 import "server-only";
+import { postGrowthPing } from "./growth-alert";
 
 /**
  * Server-side PostHog capture for funnel moments that happen in server
@@ -12,12 +13,23 @@ import "server-only";
  * The PostHog project is shared with another, unrelated site, so every event
  * carries `app: "edway"` (below) — filter on it in any insight/dashboard or
  * the two products' stats mix together.
+ *
+ * A real signup or subscription also fires a real-time Slack ping
+ * (growth-alert.ts), independent of whether PostHog itself is configured.
  */
+const GROWTH_PING_EVENTS: Record<string, (p?: Record<string, unknown>) => string> = {
+  signup_completed: () => "New signup on Edway.",
+  subscription_active: (p) => `New subscription on Edway (tier: ${p?.tier ?? "unknown"}).`,
+};
+
 export function captureServer(
   distinctId: string,
   event: string,
   properties?: Record<string, unknown>,
 ): void {
+  const pingText = GROWTH_PING_EVENTS[event]?.(properties);
+  if (pingText) void postGrowthPing(pingText);
+
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   if (!key) return;
   const host =
