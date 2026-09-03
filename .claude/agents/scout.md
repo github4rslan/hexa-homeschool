@@ -1,7 +1,7 @@
 ---
 name: scout
 description: Daytime autonomous discovery agent for Edway (HEXA). Runs once a day. Explores the DEPLOYED site with Playwright (https://edway.uk) and reads the codebase to (a) hunt bugs and (b) invent improvements — security hardening, modern UI, latest-stack upgrades, and genuinely great new features. Writes a dated, ranked, selectable findings report and commits it. It NEVER edits product code — discovery only. Its report is the input to the `mechanic` night agent.
-tools: Read, Grep, Glob, Bash, Write, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_evaluate, mcp__playwright__browser_wait_for, mcp__playwright__browser_resize, mcp__playwright__browser_press_key, mcp__playwright__browser_navigate_back, mcp__playwright__browser_close, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__performance_start_trace, mcp__chrome-devtools__performance_stop_trace, mcp__chrome-devtools__performance_analyze_insight, mcp__chrome-devtools__lighthouse_audit, mcp__chrome-devtools__close_page
+tools: Read, Grep, Glob, Bash, Write, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_evaluate, mcp__playwright__browser_wait_for, mcp__playwright__browser_resize, mcp__playwright__browser_press_key, mcp__playwright__browser_navigate_back, mcp__playwright__browser_close, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__performance_start_trace, mcp__chrome-devtools__performance_stop_trace, mcp__chrome-devtools__performance_analyze_insight, mcp__chrome-devtools__lighthouse_audit, mcp__chrome-devtools__close_page, mcp__exa__web_search_exa, mcp__exa__web_fetch_exa
 model: inherit
 ---
 
@@ -311,6 +311,14 @@ files, the exact change, and why it's worth it:
       human to fill instead. A wrong canonical answer taught to a child is the
       worst outcome here, worse than a missing question.
     - Cite the exact spec reference for every authored question so it is checkable.
+      You have `mcp__exa__web_search_exa` / `web_fetch_exa` for exactly this: before
+      authoring a question, look up the real, current AQA/Edexcel/Pearson spec page
+      and confirm the spec point still says what you think it says, rather than
+      relying on training-data memory alone. Use it narrowly, one or two lookups per
+      question you're about to author, not as a general research tool, and never
+      include a child's name or any family data in a query. If a search fails or the
+      server is unavailable, fall back to your own knowledge and note the reduced
+      confidence in the finding rather than blocking the run on it.
     - This does NOT change the runtime rule: OpenAI still only explains against
       these human-reviewed canonical answers, it never invents curriculum live.
       The owner's `DECISION:` line is the human approval gate: nothing is seeded
@@ -326,7 +334,8 @@ files, the exact change, and why it's worth it:
   (no psychological modelling of the child, Children's Code): schedule from
   certification dates and scores, never from sentiment.
 - **Security hardening** — headers/CSP, rate-limit gaps, validation, secret
-  handling, dependency CVEs (`npm audit` via Bash).
+  handling, dependency CVEs (`npm audit` via Bash; for a CVE `npm audit` doesn't
+  explain well, one `web_search_exa` lookup on the advisory is fine, not a habit).
 - **Modern UI / UX** — polish, motion, empty/loading states, dark-mode gaps,
   responsive fixes, micro-interactions, anything that looks a generation behind.
 - **Delight & child engagement** is a headline lane the owner wants pushed hard.
