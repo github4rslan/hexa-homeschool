@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getDailyBusinessStats } from "@/lib/db/repo";
+import { getDailyBusinessStats, getPlatformTotals } from "@/lib/db/repo";
 import { getDailyTraffic } from "@/lib/monitoring/posthog-traffic";
 import { formatDailyStatsMessage } from "@/lib/monitoring/daily-stats-message";
 import { verifySlackCommand } from "@/lib/slack/verify-command";
@@ -50,16 +50,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const [mongoStats, traffic] = await Promise.all([
+  const now = Date.now();
+  const since = new Date(now - 24 * 60 * 60 * 1000);
+  const prevSince = new Date(now - 48 * 60 * 60 * 1000);
+  const [mongoStats, previous, traffic, totals] = await Promise.all([
     getDailyBusinessStats(since),
+    getDailyBusinessStats(prevSince, since),
     getDailyTraffic(),
+    getPlatformTotals(),
   ]);
 
   return NextResponse.json(
     {
       response_type: "ephemeral",
-      text: formatDailyStatsMessage(mongoStats, traffic),
+      text: formatDailyStatsMessage(mongoStats, traffic, previous, totals),
     },
     { headers: { "Cache-Control": "no-store" } },
   );

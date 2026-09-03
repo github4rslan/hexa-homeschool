@@ -1,4 +1,8 @@
-import type { DailyAccountDetail, DailyBusinessStats } from "@/lib/db/repo";
+import type {
+  DailyAccountDetail,
+  DailyBusinessStats,
+  PlatformTotals,
+} from "@/lib/db/repo";
 import type { DailyTraffic } from "@/lib/monitoring/posthog-traffic";
 import { formatUtcMinute } from "@/lib/utils";
 
@@ -18,21 +22,53 @@ import { formatUtcMinute } from "@/lib/utils";
 /** Named rows rendered per section before the message collapses to a summary line. */
 const MAX_LISTED = 25;
 
+/**
+ * Monthly list prices (GBP) per paid tier, from lib/billing/stripe.ts's
+ * documented mapping. MRR built from these is an ESTIMATE and labelled as one:
+ * annual subscribers pay a discounted yearly amount and the billing interval
+ * isn't stored per parent, so an annual account is counted here at its monthly
+ * rate. Good enough for a daily pulse; never quote it as revenue truth.
+ */
+const MONTHLY_PRICE_GBP = { standard: 49, family: 99 } as const;
+
 export function formatDailyStatsMessage(
   mongoStats: DailyBusinessStats,
   traffic: DailyTraffic | null,
+  previous?: DailyBusinessStats | null,
+  totals?: PlatformTotals | null,
 ): string {
   const lines = [
     "Edway daily stats (last 24h)",
-    `Signups: ${mongoStats.signupsToday}`,
+    `Signups: ${mongoStats.signupsToday}${delta(mongoStats.signupsToday, previous?.signupsToday)}`,
     ...detailLines(mongoStats.signups ?? [], mongoStats.signupsToday),
-    `Subscriptions activated: ${mongoStats.subscriptionsActivatedToday}`,
+    `Subscriptions activated: ${mongoStats.subscriptionsActivatedToday}${delta(
+      mongoStats.subscriptionsActivatedToday,
+      previous?.subscriptionsActivatedToday,
+    )}`,
     ...detailLines(mongoStats.subscriptions ?? [], mongoStats.subscriptionsActivatedToday),
-    ...trafficLines(traffic),
-    `Lessons completed: ${mongoStats.lessonsCompletedToday}`,
-    `Active families: ${mongoStats.activeFamiliesToday}`,
+    ...trafficLines(traffic, mongoStats.signupsToday),
+    `Lessons completed: ${mongoStats.lessonsCompletedToday}${delta(
+      mongoStats.lessonsCompletedToday,
+      previous?.lessonsCompletedToday,
+    )}`,
+    `Active families: ${mongoStats.activeFamiliesToday}${delta(
+      mongoStats.activeFamiliesToday,
+      previous?.activeFamiliesToday,
+    )}`,
+    ...totalsLines(totals),
   ];
   return lines.join("\n");
+}
+
+/**
+ * " (prev 3) up" / " (prev 5) down" / " (prev 4) same", or "" when there's no
+ * baseline. Words, not arrows: Slack renders these in a plain-text block and
+ * an arrow glyph reads as noise next to the numbers.
+ */
+function delta(current: number, prev: number | undefined): string {
+  if (prev === undefined || prev === null) return "";
+  const direction = current > prev ? "up" : current < prev ? "down" : "same";
+  return ` (prev ${prev}, ${direction})`;
 }
 
 /**
@@ -53,16 +89,52 @@ function detailLines(details: DailyAccountDetail[], total: number): string[] {
   return lines;
 }
 
-function trafficLines(traffic: DailyTraffic | null): string[] {
+function trafficLines(traffic: DailyTraffic | null, signups: number): string[] {
   if (traffic === null) {
     return [
       "Traffic: not configured yet (set POSTHOG_PERSONAL_API_KEY and POSTHOG_PROJECT_ID)",
     ];
   }
-  const lines = [`Traffic: ${traffic.pageviews} pageviews, ${traffic.visitors} visitors`];
+
+  const lines = [
+    `Traffic: ${traffic.pageviews} pageviews, ${traffic.visitors} visitors${delta(
+      traffic.visitors,
+      traffic.previous?.visitors,
+    )}`,
+  ];
+
   const pages = traffic.topPages ?? [];
   if (pages.length > 0) {
     lines.push(`Top pages: ${pages.map((p) => `${p.path} (${p.views})`).join(", ")}`);
   }
+
+  const sources = traffic.topSources ?? [];
+  if (sources.length > 0) {
+    lines.push(`Top sources: ${sources.map((s) => `${s.source} (${s.views})`).join(", ")}`);
+  }
+
+  // Only meaningful with visitors to divide by; 0 visitors is not a 0% funnel.
+  if (traffic.visitors > 0) {
+    const rate = ((signups / traffic.visitors) * 100).toFixed(1);
+    lines.push(`Visitor to signup: ${rate}%`);
+  }
+
   return lines;
+}
+
+function totalsLines(totals: PlatformTotals | null | undefined): string[] {
+  if (!totals) return [];
+  const paying = totals.payingStandard + totals.payingFamily;
+  const mrr =
+    totals.payingStandard * MONTHLY_PRICE_GBP.standard +
+    totals.payingFamily * MONTHLY_PRICE_GBP.family;
+
+  return [
+    "",
+    "Running totals",
+    `Parents: ${totals.parents}, children: ${totals.children}, newsletter: ${totals.newsletterSubscribers}`,
+    `Paying: ${paying} (${totals.payingStandard} standard, ${totals.payingFamily} family), trialing: ${totals.trialing}`,
+    `Est. MRR: £${mrr} (at monthly list prices)`,
+    `Open escalations: ${totals.openEscalations}`,
+  ];
 }

@@ -1,6 +1,10 @@
 import { describe, it, expect } from "vitest";
 import { formatDailyStatsMessage } from "@/lib/monitoring/daily-stats-message";
-import type { DailyAccountDetail, DailyBusinessStats } from "@/lib/db/repo";
+import type {
+  DailyAccountDetail,
+  DailyBusinessStats,
+  PlatformTotals,
+} from "@/lib/db/repo";
 import type { DailyTraffic } from "@/lib/monitoring/posthog-traffic";
 
 const stats = (overrides: Partial<DailyBusinessStats> = {}): DailyBusinessStats => ({
@@ -17,6 +21,19 @@ const traffic = (overrides: Partial<DailyTraffic> = {}): DailyTraffic => ({
   pageviews: 0,
   visitors: 0,
   topPages: [],
+  topSources: [],
+  previous: null,
+  ...overrides,
+});
+
+const totals = (overrides: Partial<PlatformTotals> = {}): PlatformTotals => ({
+  parents: 0,
+  children: 0,
+  newsletterSubscribers: 0,
+  openEscalations: 0,
+  payingStandard: 0,
+  payingFamily: 0,
+  trialing: 0,
   ...overrides,
 });
 
@@ -151,5 +168,70 @@ describe("formatDailyStatsMessage", () => {
     expect(lessonLines).toEqual(["Lessons completed: 41"]);
     const familyLines = msg.split("\n").filter((l) => l.includes("Active families"));
     expect(familyLines).toEqual(["Active families: 17"]);
+  });
+  it("shows the previous period alongside each count so a number means something", () => {
+    const msg = formatDailyStatsMessage(
+      stats({ signupsToday: 5, lessonsCompletedToday: 2, activeFamiliesToday: 3 }),
+      traffic({ pageviews: 320, visitors: 90, previous: { pageviews: 100, visitors: 40 } }),
+      stats({ signupsToday: 2, lessonsCompletedToday: 9, activeFamiliesToday: 3 }),
+    );
+    expect(msg).toContain("Signups: 5 (prev 2, up)");
+    expect(msg).toContain("Lessons completed: 2 (prev 9, down)");
+    expect(msg).toContain("Active families: 3 (prev 3, same)");
+    expect(msg).toContain("90 visitors (prev 40, up)");
+  });
+
+  it("omits the comparison entirely when there is no baseline", () => {
+    const msg = formatDailyStatsMessage(stats({ signupsToday: 5 }), traffic());
+    expect(msg).toContain("Signups: 5");
+    expect(msg).not.toContain("prev");
+  });
+
+  it("lists traffic sources and the visitor-to-signup rate", () => {
+    const msg = formatDailyStatsMessage(
+      stats({ signupsToday: 3 }),
+      traffic({
+        pageviews: 200,
+        visitors: 60,
+        topSources: [
+          { source: "google", views: 30 },
+          { source: "direct", views: 20 },
+        ],
+      }),
+    );
+    expect(msg).toContain("Top sources: google (30), direct (20)");
+    expect(msg).toContain("Visitor to signup: 5.0%");
+  });
+
+  it("does not divide by zero visitors", () => {
+    const msg = formatDailyStatsMessage(stats({ signupsToday: 0 }), traffic({ visitors: 0 }));
+    expect(msg).not.toContain("Visitor to signup");
+  });
+
+  it("renders running totals with an estimated MRR from the paid tiers", () => {
+    const msg = formatDailyStatsMessage(
+      stats(),
+      traffic(),
+      null,
+      totals({
+        parents: 27,
+        children: 41,
+        newsletterSubscribers: 112,
+        payingStandard: 4,
+        payingFamily: 2,
+        trialing: 3,
+        openEscalations: 1,
+      }),
+    );
+    expect(msg).toContain("Parents: 27, children: 41, newsletter: 112");
+    expect(msg).toContain("Paying: 6 (4 standard, 2 family), trialing: 3");
+    // 4 x 49 + 2 x 99 = 394
+    expect(msg).toContain("Est. MRR: £394 (at monthly list prices)");
+    expect(msg).toContain("Open escalations: 1");
+  });
+
+  it("omits the totals block when totals are unavailable", () => {
+    const msg = formatDailyStatsMessage(stats(), traffic());
+    expect(msg).not.toContain("Running totals");
   });
 });

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cronAuthorized } from "@/lib/auth/cron-auth";
-import { getDailyBusinessStats } from "@/lib/db/repo";
+import { getDailyBusinessStats, getPlatformTotals } from "@/lib/db/repo";
 import { getDailyTraffic } from "@/lib/monitoring/posthog-traffic";
 import { formatDailyStatsMessage } from "@/lib/monitoring/daily-stats-message";
 import { postGrowthPing } from "@/lib/analytics/growth-alert";
@@ -47,13 +47,17 @@ export async function GET(request: Request) {
     );
   }
 
-  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  const [mongoStats, traffic] = await Promise.all([
+  const now = Date.now();
+  const since = new Date(now - 24 * 60 * 60 * 1000);
+  const prevSince = new Date(now - 48 * 60 * 60 * 1000);
+  const [mongoStats, previous, traffic, totals] = await Promise.all([
     getDailyBusinessStats(since),
+    getDailyBusinessStats(prevSince, since),
     getDailyTraffic(),
+    getPlatformTotals(),
   ]);
 
-  const message = formatDailyStatsMessage(mongoStats, traffic);
+  const message = formatDailyStatsMessage(mongoStats, traffic, previous, totals);
   await postGrowthPing(message);
 
   // Counts only in the HTTP response: the named signup/subscription rows exist

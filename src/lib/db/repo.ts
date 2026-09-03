@@ -2798,6 +2798,53 @@ export interface DailyBusinessStats {
   subscriptions: DailyAccountDetail[];
 }
 
+export interface PlatformTotals {
+  parents: number;
+  children: number;
+  newsletterSubscribers: number;
+  openEscalations: number;
+  /** Paying accounts by tier — billing_status "active" only. */
+  payingStandard: number;
+  payingFamily: number;
+  trialing: number;
+}
+
+/**
+ * All-time running totals for the daily digest, so a day's numbers have
+ * context ("Signups: 0" reads very differently against 3 parents than 300).
+ * Counts only — no identity — and deliberately cheap: countDocuments on
+ * indexed fields, mirroring getAdminStats()'s shape.
+ */
+export async function getPlatformTotals(): Promise<PlatformTotals> {
+  const parentsCol = await getCollection<ParentDoc>(Collections.parents);
+  const [
+    parents,
+    children,
+    newsletterSubscribers,
+    openEscalations,
+    payingStandard,
+    payingFamily,
+    trialing,
+  ] = await Promise.all([
+    parentsCol.countDocuments(),
+    (await getCollection(Collections.children)).countDocuments(),
+    (await getCollection(Collections.newsletter)).countDocuments(),
+    (await getCollection(Collections.escalations)).countDocuments({ status: "open" }),
+    parentsCol.countDocuments({ subscription_tier: "standard", billing_status: "active" }),
+    parentsCol.countDocuments({ subscription_tier: "family", billing_status: "active" }),
+    parentsCol.countDocuments({ billing_status: "trialing" }),
+  ]);
+  return {
+    parents,
+    children,
+    newsletterSubscribers,
+    openEscalations,
+    payingStandard,
+    payingFamily,
+    trialing,
+  };
+}
+
 const DAILY_DETAIL_PROJECTION = {
   full_name: 1,
   email: 1,
@@ -2816,7 +2863,15 @@ function toAccountDetail(doc: ParentDoc, at: Date | null | undefined): DailyAcco
 }
 
 /** Real business/product counts since `since` (daily Slack digest, no fabricated metrics). */
-export async function getDailyBusinessStats(since: Date): Promise<DailyBusinessStats> {
+export async function getDailyBusinessStats(
+  since: Date,
+  until?: Date,
+): Promise<DailyBusinessStats> {
+  // `until` bounds the window at the top so the digest can ask for the
+  // PREVIOUS 24h as a comparison baseline; omitted = open-ended (up to now).
+  const createdIn = until ? { $gte: since, $lt: until } : { $gte: since };
+  const activatedIn = until ? { $gte: since, $lt: until } : { $gte: since };
+  const startedIn = until ? { $gte: since, $lt: until } : { $gte: since };
   const [
     signupsToday,
     subscriptionsActivatedToday,
@@ -2826,23 +2881,23 @@ export async function getDailyBusinessStats(since: Date): Promise<DailyBusinessS
     subscriptionDocs,
   ] = await Promise.all([
     (await getCollection(Collections.parents)).countDocuments({
-      created_at: { $gte: since },
+      created_at: createdIn,
     }),
     (await getCollection(Collections.parents)).countDocuments({
-      billing_activated_at: { $gte: since },
+      billing_activated_at: activatedIn,
     }),
     (await getCollection(Collections.lessonLogs)).countDocuments({
       status: "completed",
-      timestamp_start: { $gte: since },
+      timestamp_start: startedIn,
     }),
     // lessonLogs has no parent_id, so the distinct-family count is resolved
     // via children.parent_id below, not a direct distinct() on this collection.
     (await getCollection(Collections.lessonLogs)).distinct("child_id", {
-      timestamp_start: { $gte: since },
+      timestamp_start: startedIn,
     }),
     (await getCollection<ParentDoc>(Collections.parents))
       .find(
-        { created_at: { $gte: since } },
+        { created_at: createdIn },
         {
           projection: DAILY_DETAIL_PROJECTION,
           sort: { created_at: 1 },
@@ -2852,7 +2907,7 @@ export async function getDailyBusinessStats(since: Date): Promise<DailyBusinessS
       .toArray(),
     (await getCollection<ParentDoc>(Collections.parents))
       .find(
-        { billing_activated_at: { $gte: since } },
+        { billing_activated_at: activatedIn },
         {
           projection: DAILY_DETAIL_PROJECTION,
           sort: { billing_activated_at: 1 },
