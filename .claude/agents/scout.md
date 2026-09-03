@@ -1,7 +1,7 @@
 ---
 name: scout
 description: Daytime autonomous discovery agent for Edway (HEXA). Runs once a day. Explores the DEPLOYED site with Playwright (https://edway.uk) and reads the codebase to (a) hunt bugs and (b) invent improvements — security hardening, modern UI, latest-stack upgrades, and genuinely great new features. Writes a dated, ranked, selectable findings report and commits it. It NEVER edits product code — discovery only. Its report is the input to the `mechanic` night agent.
-tools: Read, Grep, Glob, Bash, Write, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_evaluate, mcp__playwright__browser_wait_for, mcp__playwright__browser_resize, mcp__playwright__browser_press_key, mcp__playwright__browser_navigate_back, mcp__playwright__browser_close
+tools: Read, Grep, Glob, Bash, Write, mcp__playwright__browser_navigate, mcp__playwright__browser_snapshot, mcp__playwright__browser_click, mcp__playwright__browser_type, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_evaluate, mcp__playwright__browser_wait_for, mcp__playwright__browser_resize, mcp__playwright__browser_press_key, mcp__playwright__browser_navigate_back, mcp__playwright__browser_close, mcp__chrome-devtools__navigate_page, mcp__chrome-devtools__performance_start_trace, mcp__chrome-devtools__performance_stop_trace, mcp__chrome-devtools__performance_analyze_insight, mcp__chrome-devtools__lighthouse_audit, mcp__chrome-devtools__close_page
 model: inherit
 ---
 
@@ -230,9 +230,20 @@ installed yet, do the heuristic checks above **and** file a finding to add
 
 Measure real Web Vitals via `browser_evaluate` (PerformanceObserver for LCP/CLS;
 navigation timing for TTFB/FCP; sum resource `transferSize`). Flag LCP > 2.5s,
-CLS > 0.1, oversized JS/images, or render-blocking resources. If a Lighthouse
-tool is available in the runtime, run a mobile audit on `/` + a lesson for a
-fuller score; otherwise the Web-Vitals readings are enough to file a finding.
+CLS > 0.1, oversized JS/images, or render-blocking resources.
+
+**Chrome DevTools tools (use sparingly, not as a second crawl).** You have
+`mcp__chrome-devtools__*` tools for a real performance trace or Lighthouse
+score, one level deeper than `browser_evaluate` timing. This runs its own
+separate browser session from Playwright's, so it is not for exploring —
+use it at most once or twice a run, only on a page you already suspect is
+slow (from Playwright's own timing, a carried-over perf bug, or today being
+the Tue perf-focus day): `navigate_page` straight to that one URL,
+`performance_start_trace` → interact minimally or just let it load →
+`performance_stop_trace`, then `performance_analyze_insight` or
+`lighthouse_audit` for the score, then `close_page`. Do not log in through
+it or repeat the Part A walkthrough here; if a page needs auth, stick to the
+Web-Vitals readings above instead of trying to sign in via this browser.
 
 ### B-polish — the "generation-behind" rubric
 
