@@ -3111,3 +3111,57 @@ just fail lint or produce a silently-broken flat config.
   live authenticated check, a byte-identical comparison against an already
   proven-working sibling route (same gate, same header check) is solid
   evidence the gate itself works, without needing the secret.
+
+## 2026-09-03: daily business-stats Slack digest (owner-requested, not a findings-report item)
+- Built `/api/digest/daily-stats`, a `CRON_SECRET`-gated cron route (daily
+  `0 8 * * *` in `vercel.json`, next to the other 07/08/09/17-slot crons) that
+  posts a periodic roll-up (signups, subscriptions activated, PostHog
+  traffic, lessons completed, active families, all last 24h) to the existing
+  `SLACK_GROWTH_WEBHOOK_URL` channel, deliberately reusing it rather than
+  adding a third webhook, since the owner already watches that channel for
+  real business signal, distinct from the event-triggered growth pings and
+  the separate `SLACK_ALERTS_WEBHOOK_URL` outage-alert monitor.
+- Added `ParentDoc.billing_activated_at`, set by `billingSet()`
+  (`src/lib/db/repo.ts`) only on a transition to `billing_status: "active"`,
+  because `updated_at` bumps on any billing change and would overcount
+  "activated today". Exported `billingSet` (was module-private, zero I/O) so
+  it's directly unit-testable rather than needing a DB-backed test.
+- Added `getDailyBusinessStats()` next to `getAdminStats()`, same
+  `Promise.all`-of-`countDocuments`/`distinct` style. One wrinkle:
+  `lessonLogs` (`instructional_logs`) has no `parent_id`, only `child_id`, so
+  "distinct active families" needed a second, dependent `children.distinct
+  ("parent_id", { _id: { $in: activeChildIds } })` step after the first
+  batch, not a single flat `Promise.all` like `getAdminStats`. Worth
+  remembering for any future per-parent rollup off lesson logs.
+- Added `src/lib/monitoring/posthog-traffic.ts`, a HogQL Query API reader
+  (`POST /api/projects/:id/query/` with `Authorization: Bearer
+  POSTHOG_PERSONAL_API_KEY`, body `{ query: { kind: "HogQLQuery", query },
+  name }`, response `{ results: any[][] }`) filtered to `properties.app =
+  'edway'` (the PostHog project is shared with an unrelated site). Checked
+  the exact request/response shape via context7 (posthog.com docs) before
+  writing it, rather than guessing, since it was a genuinely unfamiliar API
+  surface, not routine code. Missing `POSTHOG_PERSONAL_API_KEY` /
+  `POSTHOG_PROJECT_ID`, or any fetch/parse error, returns `null`; the
+  formatter (`formatDailyStatsMessage`, unit tested for the normal/zero/null
+  cases) turns a `null` into an explicit "Traffic: not configured yet (set
+  POSTHOG_PERSONAL_API_KEY and POSTHOG_PROJECT_ID)" line rather than
+  omitting it silently, so the owner can tell the difference between "zero
+  traffic" and "not wired up".
+- Live verify: the new route returned 401 `{"error":"Unauthorized."}` on
+  `https://edway.uk/api/digest/daily-stats` with no bearer header, same shape
+  as every other cron route checked this way; did not guess `CRON_SECRET`.
+  `get_runtime_errors` on the deploying commit's deployment showed nothing
+  new. The Vercel build+deploy this time took noticeably longer than usual
+  (roughly 2 min build + ~2 min "Deploying outputs" before READY) — polling
+  `get_deployment` a couple more times than usual before giving up is normal,
+  not a sign of a stuck deploy; don't false-alarm on it.
+- Mid-task note: the owner set `POSTHOG_PERSONAL_API_KEY` /
+  `POSTHOG_PROJECT_ID` in Vercel while this was being built, so the traffic
+  reader is expected to actually return real numbers in production now, not
+  just degrade to null. This was NOT verified end-to-end live in this run
+  (the authenticated cron path can't be hit without the real `CRON_SECRET`,
+  by design) — the first real cron firing (or a manual admin-triggered call
+  with the actual secret) is the first real-world proof; if the Slack message
+  ever shows "not configured yet" despite both keys being set, check
+  `NEXT_PUBLIC_POSTHOG_HOST` region matches the project and that the personal
+  key has query-read scope on that project.
