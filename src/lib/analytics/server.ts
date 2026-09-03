@@ -8,6 +8,10 @@ import "server-only";
  *
  * Children's Code: distinct_id is always the PARENT's Mongo id; never pass a
  * child id, child name, or any per-child behavioural detail in properties.
+ *
+ * The PostHog project is shared with another, unrelated site, so every event
+ * carries `app: "edway"` (below) — filter on it in any insight/dashboard or
+ * the two products' stats mix together.
  */
 export function captureServer(
   distinctId: string,
@@ -26,7 +30,7 @@ export function captureServer(
       api_key: key,
       event,
       distinct_id: distinctId,
-      properties: { ...properties, $lib: "hexa-server" },
+      properties: { ...properties, app: "edway", $lib: "hexa-server" },
       timestamp: new Date().toISOString(),
     }),
     signal: AbortSignal.timeout(3000),

@@ -17,6 +17,11 @@ import posthog from "posthog-js";
  * - Init only after cookie consent ("accepted" in the existing banner).
  * - Autocapture off (no input values), session recording off.
  * - Parents identified by Mongo id only — never email or name.
+ *
+ * The PostHog project is shared with another, unrelated site, so every event
+ * carries the `app: "edway"` super property (registered right after init) —
+ * filter on it in any insight/dashboard or the two products' stats mix
+ * together.
  */
 
 const CONSENT_KEY = "hexa-cookie-consent-v1";
@@ -44,6 +49,7 @@ function initIfAllowed(): boolean {
     disable_session_recording: true,
     person_profiles: "identified_only",
   });
+  posthog.register({ app: "edway" });
   initialized = true;
   return true;
 }
