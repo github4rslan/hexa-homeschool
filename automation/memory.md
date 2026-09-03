@@ -2949,3 +2949,65 @@ just fail lint or produce a silently-broken flat config.
   throwaway file under `tests/` run with vitest (which aliases the server-only stub),
   writing output to a temp file, then deleting both. Also: bare edway.uk 308s, use
   www.edway.uk for curl.
+\n- 2026-09-03 — Discovery pass, FULL coverage (parent/child/admin/tutor; desktop 1280 +
+  mobile 390 both confirmed innerWidth; whole-page scroll). Thursday focus =
+  end-to-end journeys deep-dive. HEADLINE FINDING (B1, Critical, NEW): the
+  standing "rapid/double input" resilience test (deliberately triple-clicking
+  "Check answer" on an already-correct mastery answer) surfaced a real race —
+  `practice-player.tsx`'s re-entrancy guard (`checkingRef`) and scoring guard
+  (`scoredThis` React state) both get bypassed when 3 clicks fire
+  synchronously in one JS turn (no `await` on the mcq/tap_reveal/drag_drop
+  path, so nothing yields for React to re-render between calls), so
+  `setScore((s) => s + 1)` — a functional updater, so React doesn't dedupe it
+  — fires 3 times for one logical answer. Compounded by `decideRemediation`'s
+  STRICT `score === total` equality check (`lib/engine/remediation.ts:20`, no
+  clamp), an over-scored (5) but fully-correct (3/3) mastery attempt got
+  wrongly routed to the reteach screen with the literal text "You got 5 out of
+  3" — a child who answered everything right, told to try again. Full root
+  cause + two-part fix (a ref-based settle guard set BEFORE any state setter,
+  plus defensively clamping `decideRemediation` to `score >= total`) filed.
+  Recovered cleanly on a fresh attempt (EPIC 13's certified-date-doesn't-move
+  guarantee held; the DB-side percentage stayed honest at 100% per admin
+  activity, so the corruption never left the client). SECOND finding (B2,
+  High, EPIC 19 slice): re-measured 2026-09-02's perf fix live — real
+  improvement (`/dashboard` ~7,026ms to ~1,895-2,312ms) but still above
+  target; root-caused the residual gap to `getActiveChild()` running its OWN
+  serial DB round-trip on all three pages even though the sibling child list
+  already fetched on the same page has everything needed to resolve it
+  locally — filed a pure-resolver fix. Verified all four interaction types
+  (mcq/fill_blank/tap_reveal/drag_drop) with genuine wrong AND right answers,
+  keyboard-only fill_blank (Tab to "Check answer", Enter to submit), calm-wrong
+  colour law confirmed via computed `oklab` values (not just eyeballed).
+  Curriculum: F1/F2 authored second command-word questions for `eng_creative`
+  ("show don't tell") and `sci_genetics` (sexual vs asexual variation), both
+  spec-verified via a live `web_search_exa` lookup against the real AQA spec
+  pages before authoring (AO5 Paper 1 Section B; spec 4.6.1.1) per the hard
+  authoring rule. Delight: F3 found the ONE reteach-adjacent screen Eddie
+  doesn't appear on (the 5-attempt human-tutor handoff pause — just a generic
+  HeartHandshake icon today) by reading the component directly rather than
+  driving an expensive 5-failed-attempt live repro; confirmed the warm-up
+  flow's OWN completion celebration already exists (not a gap). Re-verified
+  and RETIRED two backlog epics on a second/third consecutive clean check:
+  EPIC 8 (mobile drag_drop overlap — a genuinely fresh, non-resize 390×844
+  load this time, per that epic's own stated next step) and EPIC 20 (homepage
+  hydration #418 — third clean check in a row). Parent journeys full pass:
+  plan/schedule (approved week, real GCSE-band "Why" reasoning), parent
+  oversight (generated a real portfolio + verified the SHA-256 hash on the
+  public verify page), new-parent onboarding (inspect-only this run, a full
+  real signup was already driven 2026-09-02). Admin (overview/finance/
+  escalations) + tutor (empty queue, silo holds) both READ-ONLY clean, zero
+  console errors anywhere. Static: type-check + lint GREEN; npm audit 1 high
+  (`fast-uri`, build-only via `@sentry/nextjs`'s webpack plugin, non-force fix
+  available — filed as F5 alongside two routine in-range patch bumps).
+  PATTERN WORTH REPEATING: the brief's own "rapid/double input" resilience
+  test is not just a formality — running it for real (via `browser_evaluate`
+  triple-clicking a button, not just single-clicking) found a genuine,
+  previously-invisible Critical bug that would never surface from a normal
+  single-click Playwright pass. Worth deliberately double/triple-clicking a
+  primary submit control at least once every run, not just noting the
+  requirement. Also: reading a component's SOURCE to check for a mascot/
+  animation gap (handoff-pause) is a legitimate, budget-friendly substitute
+  for an expensive live repro (5 failed mastery attempts) when the code
+  itself makes the answer unambiguous. Teardown:
+  `fetch('/logout',{method:'POST'})` between every role switch + `browser_close`.
+  Emailed owner the scenario summary via scripts/email-findings.ts.

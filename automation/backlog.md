@@ -113,6 +113,17 @@ EXAM_STYLE_QUESTIONS on 2026-08-14).
   (Ivy, Maths mock Q5, the same "−2 × 3" question) that the MOCK rendering path
   does not use `<figure>` at all, so this bug is scoped to practice/mastery
   only, not the mock — a useful scoping note for whoever fixes it.
+- 2026-09-02 (Mechanic): SHIPPED the EIGHTH instance's fix (B3 that day) —
+  `deriveArray` now parses signs on both operands and returns `null` (falls
+  back to the decorative AI figure) when either is negative, plus the same
+  guard for a negative squared base. 5 negative-case tests added.
+- 2026-09-03 (Scout): re-confirmed the fix is live via a fresh code read
+  (`math-visual.ts:276`, `(-?\d+)` on both capture groups, byte-for-byte
+  matches the shipped fix) — did not re-drive the exact live question this
+  run (Ivy has progressed past `maths_ks3_negatives`, so a live repro would
+  need switching to a fresh child; the code-level confirmation plus the
+  existing test coverage was judged sufficient this run). No new instance of
+  this bug class found this run.
 
 ## EPIC 2 — Exam-style, command-word practice (make questions feel like the paper)
 Status: ACTIVE (headline), zero-coverage closed, now purely a depth/variety lane.
@@ -120,13 +131,14 @@ Every KS4 topic across all three subjects has at least one command-word item
 (confirmed shipped 2026-08-20).
 - Next step: keep picking single-coverage topics each run and add a second
   command-word item (>= 2 per topic is the target) rather than re-sweeping the
-  whole bank. Remaining single-coverage topics as of 2026-09-02 (after that
-  day's authored item lands): eng_comprehension, eng_persuasive, sci_genetics,
-  eng_spelling, eng_poetry, eng_shakespeare, eng_creative — still a tail, pick
-  1-2 per run. `maths_graphs`, `maths_fractions`, `maths_number`,
-  `maths_geometry`, `maths_pythagoras`, `sci_electricity`, `maths_statistics`,
-  `maths_sequences`, `sci_cells`, `sci_atoms`, `eng_devices`, `sci_ecology`
-  (pending seed) and `eng_punctuation` (pending seed) are now past this bar.
+  whole bank. Remaining single-coverage topics as of 2026-09-03 (after that
+  day's authored items land): eng_comprehension, eng_persuasive, eng_spelling,
+  eng_poetry, eng_shakespeare — a shorter tail now, pick 1-2 per run.
+  `maths_graphs`, `maths_fractions`, `maths_number`, `maths_geometry`,
+  `maths_pythagoras`, `sci_electricity`, `maths_statistics`, `maths_sequences`,
+  `sci_cells`, `sci_atoms`, `eng_devices`, `sci_ecology` (pending seed),
+  `eng_punctuation` (pending seed), `eng_creative` (pending seed, 2026-09-03)
+  and `sci_genetics` (pending seed, 2026-09-03) are now past this bar.
 - Done so far: 6 spec-mapped exam-style questions (F7, 2026-08-09) across
   maths_fractions/ratio/number, sci_forces/reactions, eng_devices; steady
   additions through 2026-08-09 → 2026-08-28 across every subject (see prior
@@ -216,11 +228,14 @@ Mastery" transition line, AND Eddie's presence during the breath-break are all
 SHIPPED — do not re-propose any of those.
 - Next step: nothing new identified 2026-09-02 (a full Wednesday delight
   deep-dive re-verified the lane rather than finding a gap — see that day's
-  report for the specific live-verified list). This lane is now genuinely
-  mature; a future run should look for gaps in less-common paths (e.g. the
-  diagnostic runner, the warm-up/review flow's own celebration, or the
-  handoff-pause screen) rather than re-sweeping the main practice/mastery loop
-  again.
+  report for the specific live-verified list). 2026-09-03 (Scout) checked two
+  of the named less-common paths: the warm-up/review flow's own completion
+  celebration IS already present ("Warm-up done! 🌟", star burst — confirmed
+  live, not a gap), but the handoff-pause screen (the 5-attempt human-tutor
+  handoff) has NO Eddie at all, just a generic HeartHandshake icon — filed as
+  F3 that day (size S: reuse the exact `<EddieAvatar mood="encouraging" .../>`
+  pattern already used on the mastery reteach screen). Once shipped, the
+  diagnostic runner is the one remaining named path still unchecked.
 - Done so far: every interaction type has its own correct-answer settle
   (2026-08-09); warm hint-card entrance + calm See-it beckon on a miss
   (2026-08-09); calm guiding glow + supportive fill_blank wrong-settle
@@ -256,18 +271,17 @@ kept on their in-range "Wanted" versions via a steady drip of small bumps.
   through 2026-08-29.
 
 ## EPIC 8 — Mobile layout regressions
-Status: ACTIVE, watching — the `sci_states` drag_drop repro (place all 3 chips
-at 390×844, `FocusFrame`'s "Exit lesson" pill vs. scrolled content) did NOT
-show a persistent overlap on a clean 2026-09-02 re-check (a momentary
-mid-resize screenshot briefly looked like a regression, but `window.scrollY`
-confirmed it was a transient scroll-restore artifact from the viewport resize,
-not a settled, reproducible state — investigated via the actual scroll
-position before concluding, not just the screenshot). Not fully retiring this
-epic on one clean check given the "wrong twice in a row" history below, but no
-open bug to file today.
-- Next step: one more clean re-check on a future run (ideally a genuinely
-  fresh page load at 390×844 rather than a resize-from-desktop, to rule out
-  any resize-specific artifact) before considering this closed.
+Status: RETIRED 2026-09-03 (Scout) — the exact next step this epic asked for
+(a genuinely fresh, non-resize 390×844 page load of the `sci_states` drag_drop
+lesson, not a resize-from-desktop) was run this day: `browser_resize` to
+390×844 BEFORE navigating, fresh `browser_navigate`, `window.scrollY` 0 at
+load, `scrollWidth` 380 (no overflow). Two consecutive clean checks now
+(2026-09-02 resize-based, 2026-09-03 fresh-load-based) with no code change in
+between and no reproducible overlap either way. Re-open only on a concrete new
+repro, not a routine re-check.
+- Next step: none — closed. If a similar "fixed element overlaps scrolled
+  content" shape reappears anywhere else, open a fresh epic naming the new
+  location rather than reusing this one.
 - Done so far (history): RETIRED once 2026-08-19 (the original bare-`grid`
   pattern), reopened 2026-08-29 (a NEW "fixed element overlaps scrolled
   content" shape), the 2026-08-29 `pt-20`/`pt-24` fix did NOT fully hold against
@@ -329,10 +343,13 @@ enhancement — no second live failing instance has appeared since, so it stays
 low-priority.
 
 ## EPIC 18 — framer-motion to motion package migration (v11 to v13)
-Status: RESEARCHED, not yet built. Opened 2026-08-30 (F6, a Sunday latest-stack
-spike), researched 2026-08-31 (Mechanic) by reading the vendor's own official
-upgrade guide (motion.dev/docs/react-upgrade-guide) rather than guessing from
-changelog headlines. Not touched 2026-09-01/09-02.
+Status: RESEARCHED, ready to execute. Opened 2026-08-30 (F6, a Sunday
+latest-stack spike), researched 2026-08-31 (Mechanic) by reading the vendor's
+own official upgrade guide (motion.dev/docs/react-upgrade-guide) rather than
+guessing from changelog headlines. Re-surfaced 2026-09-03 (Scout, F4) as a
+ready-to-build execution task since `npm outdated` confirms nothing has
+changed (`framer-motion` still pinned 11.18.2, latest is now 13.2.0) — no
+further research needed, just scheduling the execution run.
 - Findings: the actual migration from our pinned `framer-motion@^11.15.0` to
   the current `motion@13.1.1` is smaller and safer than the original finding's
   risk estimate suggested. There is exactly ONE mechanical step for a project
@@ -350,55 +367,47 @@ changelog headlines. Not touched 2026-09-01/09-02.
 - Done so far: research only; no code changed, no package installed.
 
 ## EPIC 19 — Server Component await-waterfalls on the highest-traffic pages
-Status: ACTIVE, still unshipped as of 2026-09-02. Opened 2026-09-01 (Scout,
-Tuesday performance deep-dive). `/dashboard`, `/schedule` and `/learn` (the
-child hub) each block full page load for multiple seconds on every visit,
-measured via the Performance API (`responseEnd - responseStart`, i.e.
-server-side think-time). Root-caused by reading the actual page components:
-each does 10-19 sequential `await` calls, most of them independent reads that
-could run in `Promise.all` (the pattern the SAME files already use correctly
-in a couple of places — e.g. the per-child loop and `todayCards` in
-`dashboard/page.tsx` — just not extended to the rest of the function body).
-Confirmed NOT a general DB/network problem: `/settings`, `/admin`, `/pricing`
-and `/api/health` all stay fast.
-- Next step: ship the batching fix (`dashboard/page.tsx`, `schedule/page.tsx`,
-  `learn/page.tsx`, and `repo.ts`'s `buildScheduleItems`), then re-measure all
-  three pages and confirm the gap drops to roughly `/settings`'s ~600ms
-  baseline. If any OTHER page turns out to have a similar unbroken await
-  chain on a future audit, this epic is the place to log it.
-- Done so far: nothing shipped yet across TWO consecutive discovery runs
-  (2026-09-01 opened it, 2026-09-02 re-measured fresh — `/dashboard` still
-  ~7s, `/schedule` still ~1.7s — and re-confirmed via grep the code is
-  byte-for-byte unchanged). **PROCESS NOTE (2026-09-02):** Mechanic reads only
-  *today's* findings file, with no fallback once today's file exists — so an
-  unbuilt prior-day report is silently dropped unless the next Scout run
-  explicitly re-verifies and re-carries it forward. That happened for the
-  first time today; watch whether this recurs (a skipped or died-early
-  Mechanic run) and keep re-carrying any still-open Critical/High bug into
-  each day's own file until it ships.
+Status: ACTIVE, first slice SHIPPED, a second slice found. Opened 2026-09-01
+(Scout, Tuesday performance deep-dive): `/dashboard`, `/schedule` and
+`/learn` each blocked full page load for multiple seconds via unbatched
+sequential `await` calls.
+- 2026-09-02 (Mechanic) SHIPPED the batching fix (B1 that day) across all
+  three pages plus `repo.ts`. Live re-measured 2026-09-03 (Scout):
+  `/dashboard` think-time dropped from ~7,026ms to ~1,895-2,312ms across two
+  fresh loads — a large, real improvement — but still above the fix's own
+  ~1.5s target; `/schedule` ~2,069-4,470ms (noisier); `/learn` ~5,131ms.
+- 2026-09-03 (Scout) root-caused the residual gap and filed it as B2 that
+  day: `getActiveChild()` still issues its OWN serial DB round-trip on all
+  three pages, positioned between two `Promise.all` batches, even though the
+  sibling child list (`listChildren`/`kids`) already fetched on the same page
+  contains everything needed to resolve it locally (`getChildById` = find by
+  `_id` in the already-fetched list; `latestChild` = the last element of that
+  list, since `listChildren` sorts `created_at` ascending). A pure
+  `resolveActiveChild(children, preferredId)` helper removes a full extra
+  Mongo round-trip from all three highest-traffic pages.
+- Next step: ship B2 (2026-09-03), then re-measure all three pages again with
+  the same Performance-API technique and confirm the gap finally reaches
+  `/settings`'s ~600ms baseline. If it doesn't, the remaining stages
+  (`parentId` resolution itself, or genuinely slow individual queries within
+  the big batch) need their own profiling pass.
+- Done so far: the original await-waterfall batching is shipped and live
+  (confirmed via `grep -c Promise.all` showing the fix is in place, and via
+  live measurement showing a real ~5s improvement on `/dashboard`). The
+  `getActiveChild` redundant-round-trip slice is filed, not yet shipped.
+  **PROCESS NOTE (2026-09-02, still relevant):** Mechanic reads only *today's*
+  findings file, with no fallback once today's file exists — keep
+  re-verifying and re-carrying forward any still-open item rather than
+  assuming a report was read just because a day has passed.
 
 ## EPIC 20 — Homepage hydration mismatch (React error #418)
-Status: NOT REPRODUCING as of 2026-09-02 — likely resolved (transient or fixed
-by an unrelated deploy), but only ONE clean re-check so far, so not fully
-retired yet. Opened 2026-09-01 (Scout). The public marketing homepage (`/`)
-threw a React hydration-mismatch console error on EVERY load that day, at both
-390 and 1280 viewports across three separate fresh navigations, confirmed
-NOWHERE else on the site. No prior Scout report across 40+ days ever flagged
-this before 2026-09-01. Exact component was never pinpointed — static grep for
-the usual suspects (non-deterministic Date/Math.random, client-only branches,
-useEffect/useState) came up empty, so the cause was more likely invalid HTML
-tag nesting than a state mismatch.
-- Next step: 2026-09-02 re-checked with the SAME repro protocol (3 fresh
-  `browser_navigate('https://edway.uk/')` loads, both viewports) and got ZERO
-  console errors every time. No code change was made between the two runs (git
-  log shows no homepage-touching commit), so this reads as either a genuinely
-  transient/environmental issue or something that self-resolved. Do NOT fully
-  retire this epic on one clean run alone — a future run should do one more
-  spot-check before removing it from the backlog entirely. If it recurs, the
-  next debugging step is still the same: reproduce against a non-minified dev
-  build for the full unminified error message naming the exact component/tag.
-- Done so far: nothing shipped — filed as B2 (2026-09-01) with full repro
-  evidence; not reproducing as of 2026-09-02's re-check.
+Status: RETIRED 2026-09-03 (Scout) — a THIRD consecutive clean re-check (fresh
+`browser_navigate('https://edway.uk/')`, zero console errors) with no
+homepage-touching code change across any of the three checks. Opened
+2026-09-01 with full repro evidence (B2 that day); did not reproduce on
+2026-09-02 or 2026-09-03. Re-open a fresh entry (not this one) if it recurs —
+if it does, the debugging step is still the same: reproduce against a
+non-minified dev build for the full unminified error message naming the exact
+component/tag.
 
 ## EPIC 21 (new) — Auth session hygiene: not every page redirects on an invalidated session
 Status: NEW, opened 2026-09-02 (Scout). Found while cleaning up a disposable
@@ -417,12 +426,13 @@ clarity of the "sign out everywhere" security feature (the kicked-out device
 looks like it's still working instead of clearly being signed out). No child
 data is exposed either way (the data-silo holds; this is a confusing-state bug,
 not a leak).
-- Next step: ship the one-line guard (filed as B2, 2026-09-02), then live-verify
-  by invalidating a session's `token_version` (or reproducing via a deleted
-  test account, as this run did) and confirming `/dashboard` now redirects
-  instead of rendering the empty state. Once shipped, a light residual-risk
-  check worth a future run: grep every `(dashboard)`/`(child)` page.tsx for
-  `currentParentId()`-style calls and confirm EVERY one has the matching
-  null-guard, in case another page has the same isolated miss Scout hasn't
-  hit yet.
-- Done so far: nothing shipped yet — this is the discovery entry.
+- Next step: 2026-09-02 (Mechanic) SHIPPED the one-line guard (B2 that day).
+  2026-09-03 (Scout) did NOT independently re-verify the redirect live this
+  run (invalidating a real session's `token_version` or deleting a test
+  account is a more invasive check than this run's budget favoured given the
+  code fix was already confirmed landed); a future run should do the live
+  invalidate-and-confirm check named below before fully retiring this epic.
+  The residual-risk grep (every `(dashboard)`/`(child)` page.tsx for a
+  matching null-guard on `currentParentId()`) also still hasn't been run.
+- Done so far: SHIPPED 2026-09-02 (Mechanic), not yet independently
+  live-re-verified.
