@@ -3011,3 +3011,76 @@ just fail lint or produce a silently-broken flat config.
   itself makes the answer unambiguous. Teardown:
   `fetch('/logout',{method:'POST'})` between every role switch + `browser_close`.
   Emailed owner the scenario summary via scripts/email-findings.ts.
+- 2026-09-03 (Mechanic build pass against the 2026-09-03 findings, DECISION: all).
+  ALL 7 ITEMS SHIPPED, one green-gated commit each (type-check + tests + lint +
+  build), pushed to main, THEN live-verified on edway.uk via Playwright plus the
+  Vercel MCP (now working again after many consecutive runs without it).
+  **B1** the rapid multi-click mastery over-score: a `settledRef` set synchronously
+  at the top of `runCheckCore` before any state setter, released on the next
+  microtask so a same-tick burst is blocked but a genuinely later retry click is
+  never blocked (state-based reasoning mattered here: the existing `outcome`/
+  `revealed` guard already permits legitimate wrong-answer retries, so a naive
+  "reset only on new question" ref, as the finding's own fix sketch literally
+  proposed, would have silently broken every retry — traced the actual retry flow
+  before implementing, did not copy the suggested fix verbatim). Also clamped
+  `decideRemediation` to `score >= total`. LIVE: replayed the exact repro (select
+  correct answer on a fresh mastery Q1, fire `.click()` three times synchronously
+  via `browser_evaluate`) end to end through Finish — landed on "Topic mastered!
+  You got 3 out of 3 right.", not the "5 out of 3" reteach screen.
+  **B2** added a pure `resolveActiveChild(children, preferredId)` in `repo.ts` and
+  wired it into `/dashboard`, `/schedule`, `/learn`, pulling `listChildren` into
+  each page's first batch so the redundant `getActiveChild` round-trip is gone.
+  LIVE (`performance.getEntriesByType('navigation')`, responseEnd−responseStart):
+  `/dashboard` 170ms (was ~2000ms after 09-02's fix, ~7000ms originally),
+  `/schedule` 980ms (was ~2000-4470ms), `/learn` ~3200-3900ms (was ~5131ms) — real,
+  measured improvement on all three.
+  **F1/F2** transcribed the two owner-approved curriculum questions verbatim
+  (`eng_creative` show-don't-tell, `sci_genetics` explain-variation), each with
+  well-formedness + answer-computes tests, then ran `npm run seed` ONCE after both
+  were green (idempotent, curriculum-only: "8 written"). LIVE: a read-only Mongo
+  query (throwaway `scripts/.tmp-verify-questions.mjs`, deleted after use) found
+  both by topic_tag + prompt with the exact expected options/correct_index.
+  **F3** gave the human-tutor handoff-pause screen Eddie (`EddieAvatar
+  mood="encouraging"`), the one reteach-adjacent screen that only had a generic
+  icon. Live trigger deferred (a genuine 5-failed-attempt repro is expensive and
+  would corrupt the shared test account's struggle state); relied on the same
+  code-reading substitute the finding itself used to find the gap.
+  **F4** migrated `framer-motion@11` to `motion@13`: uninstall/install, then a
+  scripted `sed -i 's/"framer-motion"/"motion\/react"/g'` across all 64 importing
+  files (verified zero remaining `from "framer-motion"` imports afterward), plus
+  `next.config.ts`'s `optimizePackageImports` entry. Confirmed via context7 against
+  the vendor's OWN upgrade guide before touching anything: v12+ has zero breaking
+  React API changes, so no per-file API rewrite was needed, only the import path.
+  `m`, `LazyMotion`, `domAnimation`, `useReducedMotion` all resolved clean from
+  `motion/react` on the first type-check, no back-and-forth needed. LIVE: drove a
+  full lesson (practice star-burst, mastery trophy celebration) and the marketing
+  homepage hero (LazyMotion + `m` component) — all render correctly, zero console
+  errors across the whole session.
+  **F5** `npm audit fix` cleared the one `fast-uri` high (build-only, via Sentry's
+  webpack plugin) plus `next`→15.5.25 and `posthog-js`→1.425.1, both in-range
+  patches. `npm audit` now 0. No user-facing surface; also spot-checked
+  `sendDefaultPii: false` is still intact in all three Sentry configs since the
+  fix touches Sentry's own dependency chain.
+  KEY LESSONS: (1) When a finding's own suggested fix (a ref reset "only on new
+  question mount") sounds plausible but you haven't traced how retries actually
+  work, trace it anyway — the naive version here would have shipped a WORSE bug
+  (blocking every legitimate wrong-answer retry) than the one being fixed. Always
+  walk the existing state-guard logic for the surrounding cases before adopting a
+  suggested fix verbatim. (2) For a large mechanical rename across many files (F4,
+  64 files), a single scoped `sed` over `grep -rlZ` output is fine and fast when
+  the pattern is an exact quoted string (`"framer-motion"` → `"motion/react"`) —
+  verify afterward with a zero-count grep for the old pattern, then let type-check
+  catch any named-export mismatch (it did not, here). Prefer Edit for anything
+  that needs per-file judgement; sed is fine for one identical, unambiguous
+  substitution repeated verbatim everywhere. (3) `npm install` on this machine can
+  take 3+ minutes for what looks like a small bump (registry latency, not repo
+  size) — always background it and poll/wait for the notification rather than
+  assuming a stall. (4) The Vercel MCP was available and fully functional this run
+  after many consecutive prior runs where it was reported broken/unauthorized —
+  worth re-trying it every run rather than assuming it's still down. (5) A
+  throwaway `scripts/.tmp-*.mjs` reading `.env.local` directly for a read-only
+  Mongo check (never printing the URI) is a clean, low-risk way to verify seeded
+  content that's not reachable through a quick, targeted live click-path; delete
+  it immediately after. Health check: deploy READY (`dpl_43XiBiNrcXHXtKxqnAnBAT1NYuSo`),
+  `/api/health` 200 `db:"up"`, `get_runtime_errors` clean before and after the
+  full item set. Teardown: `fetch('/logout',{method:'POST'})` + `browser_close`.
