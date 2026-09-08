@@ -17,17 +17,17 @@ is arithmetically/factually clean (re-audited 2026-08-08, 08-09, and again the 1
 EXAM_STYLE_QUESTIONS on 2026-08-14).
 - Next step: continue a rolling per-subject correctness re-audit each run; note
   that a "retire" of a seed question must delete the orphaned old doc (seed never
-  deletes), not just reword the prompt. The DERIVED VISUALS built from a question's
-  prompt string remain a separate correctness surface from the seed text itself —
-  now EIGHT distinct real bugs of this shallow-regex/keyword-match-on-raw-prompt-text
-  class across math-visual.ts, teaching-animations.ts, english-visual.ts (three
-  times now), and science-visual.ts (twice). Keep spot-checking a derived figure
-  against its own question every run, and specifically watch for heuristics with an
-  unguarded "else"/default branch — that is its own named risk pattern (see the
-  2026-08-28 note below). The 2026-08-30/08-31 negative-case-test standing
-  next-step is now partly done (see the 2026-08-31 entry) — `math-visual.ts`'s
-  `deriveArray` still needs its own negative-case test once the eighth instance
-  (below) is fixed.
+  deletes), not just reword the prompt. The DERIVED VISUALS/COPY built from a
+  question's prompt string remain a separate correctness surface from the seed
+  text itself — now NINE distinct real bugs of this shallow-regex/keyword-match-
+  on-raw-prompt-text class across math-visual.ts, teaching-animations.ts,
+  english-visual.ts (three times now), science-visual.ts (twice), and now
+  animation-timeline.ts. Keep spot-checking a derived figure/copy line against
+  its own question every run, and specifically watch for heuristics with an
+  unguarded "else"/default branch or an overly-broad numeric-pattern fallback —
+  that is its own named risk pattern (see the 2026-08-28 and 2026-09-08 notes).
+  The 2026-08-30/08-31 negative-case-test standing next-step is now partly done
+  (see the 2026-08-31 entry).
 - Done so far: full re-derivation of all quantitative + factual answers
   (2026-08-08); B3 sci_body water-absorption item retired + reworded + orphan
   deleted (2026-08-09); curriculum.seed.extra.ts + the F7 exam-style items + F8
@@ -124,6 +124,22 @@ EXAM_STYLE_QUESTIONS on 2026-08-14).
   need switching to a fresh child; the code-level confirmation plus the
   existing test coverage was judged sufficient this run). No new instance of
   this bug class found this run.
+- 2026-09-08 (Scout, Tuesday perf-focus run): found a NINTH instance, this time
+  NOT in a derived SVG figure but in Eddie's own dialogue copy and the See-it
+  walkthrough/active-recall task — `src/lib/child/animation-timeline.ts`'s
+  `classifyOptions`/`signedValues` treats ANY correct answer containing exactly
+  two bare numbers as a ± two-root question (`correctRoots.length === 2`
+  fallback, no check the answer is actually root-list-shaped), so a plain
+  algebra-expansion answer like "x² − 8x + 16" gets falsely read as having a
+  "half right" distractor. Live-confirmed on `maths_quadratics` Mastery Q3
+  ("Expand (x − 4)²") wrongly telling Ivy two different wrong options were each
+  "only half the answer". Filed as B1 (Critical) this run with a full root
+  cause and fix (require a literal ± token or an explicit "x = a or x = b"
+  pattern, drop the bare two-number fallback). This is the first instance to
+  hit live dialogue/an active-recall task rather than a derived figure — worth
+  a future run double-checking `classifyOptions`'s only OTHER call site (the
+  "Your turn" `choice_strategy` task) once B1 ships, to confirm the fix closes
+  both surfaces at once (it should, since both read the same `fates` array).
 
 ## EPIC 2 — Exam-style, command-word practice (make questions feel like the paper)
 Status: ACTIVE (headline), zero-coverage closed, now purely a depth/variety lane.
@@ -160,7 +176,12 @@ Every KS4 topic across all three subjects has at least one command-word item
 - VARIETY axis: command-word COVERAGE and question-bank VARIETY are different
   axes — watch topics under active spaced review for a thin-pool symptom (near-
   duplicate phrasings of the same fact across mastery attempts). None newly
-  found 2026-08-27 through 2026-09-02.
+  found 2026-08-27 through 2026-09-02. 2026-09-08 (Scout): found ONE — driving
+  `maths_quadratics` Mastery check 1 live surfaced Q1 ("Solve x² − 5x + 6 = 0 by
+  factorising") and Q2 ("Solve x² − 5x + 6 = 0.", same equation with a figure
+  instead of the command word) testing the identical fact back to back. Filed
+  as F1 this run with a hand-derived replacement question (different
+  coefficients, same shape/kind/tier) pending seed.
 
 ## EPIC 3 — Full spec coverage: close missing GCSE topics
 Status: ACTIVE. `maths_transformations` and `maths_simultaneous` (both Edexcel
@@ -168,18 +189,27 @@ Status: ACTIVE. `maths_transformations` and `maths_simultaneous` (both Edexcel
 practice pool changes re-verified 2026-08-29 incidentally confirm the
 simultaneous-equations topic's prerequisite wiring is intact — `maths_graphs`
 still lists correctly as a prerequisite).
-- Next step: Science required-practical recall (e.g. magnification, titration,
-  rate-of-reaction methodology) remains an unscoped thin area — 2026-08-30
-  (Scout, F5) deliberately did NOT author against it (the exact current AQA 8464
-  required-practical list/numbering needs a human check against the live spec
-  sheet first, per the hard authoring rule against citing a spec reference
-  Scout isn't confident is current) but named the gap precisely: a future run
-  should confirm the spec list then author 2-3 methodology-recall
-  ("describe how you would...", "evaluate this method...") questions, likely as
-  a new `sci_practicals` topic. English extract-based language analysis is
-  comparatively less thin now that `eng_analysis` exists and was driven
-  end-to-end 2026-08-30 (tone/effect/metaphor/simile analysis, all correct) —
-  consider this one narrowed, not fully closed. Not touched 2026-09-01/09-02.
+- Next step: Science required-practical recall — 2026-09-08 (Scout) finally did
+  the human spec check this epic has been asking for since 2026-08-30: live-
+  verified the current AQA 8464 required-practical list via AQA's own spec page
+  and practicals handbook (Biology: microscopy, osmosis, enzymes, food tests,
+  photosynthesis, reaction time, field investigations; Chemistry: making salts,
+  temperature changes, rates of reaction, chromatography, electrolysis;
+  Physics: specific heat capacity, resistance, I-V characteristics, density).
+  Confirmed via grep that NO seed question anywhere currently tests practical
+  methodology/evaluation for any of these. Filed as F6 (2026-09-08) — scoped,
+  not authored, since a clean single-answer methodology question needs careful
+  hand-derivation (many practicals have more than one valid experimental
+  control) better done with fresh budget than rushed at the end of a run. A
+  future run should author 2-3 items (e.g. against `sci_reactions`'s
+  rates-of-reaction practical) as the next concrete step, either as a new
+  `sci_practicals` topic or folded into existing topics — interacts with EPIC 22
+  below (adding a topic changes the GCSE topic-count denominator EPIC 22 is
+  fixing, so land EPIC 22 first or account for the new topic in the same
+  change). English extract-based language analysis is comparatively less thin
+  now that `eng_analysis` exists and was driven end-to-end 2026-08-30
+  (tone/effect/metaphor/simile analysis, all correct) — consider this one
+  narrowed, not fully closed.
 - Done so far: `maths_mensuration` + `maths_inequalities` (2026-08-09/08-20);
   mock unlock made count-driven so new topics can't break it (2026-08-09);
   `maths_transformations` (authored 08-27, shipped 08-28); `maths_simultaneous`
@@ -192,7 +222,7 @@ exam-boundary-grade reveal card, and full question content for `fill_blank`
 items pulled into a mock are ALL confirmed shipped and working live. Do not
 re-propose a mock timer, the boundary-grade card, or the fill_blank mock-content
 fix.
-- Next step: nothing new identified 2026-08-29 through 2026-09-02. Keep
+- Next step: nothing new identified 2026-08-29 through 2026-09-08. Keep
   re-verifying rather than re-proposing; EPIC 12 is the epic to extend if a
   future run finds another interaction type with the same generic-wrapper-
   prompt trap.
@@ -217,7 +247,10 @@ readiness trajectory schedule deterministically from certification dates/scores
   2026-08-29 (Scout): a genuine 3-subject interleaved warm-up as Ivy (Maths
   rounding correct → Science genetic-material wrong, calm reteach line, no red →
   English plural-of-box correct), each subject's own celebration/reteach copy
-  distinct and warm.
+  distinct and warm. 2026-09-08: confirmed still present (20 reviews due for
+  Ivy shown correctly on both `/dashboard` and `/learn`), not re-driven to
+  completion this run (budget went to the `maths_quadratics` mastery deep-dive
+  instead).
 
 ## EPIC 6 (background) — Calm, confident child experience (delight within the calm-wrong law)
 Status: ONGOING background lane, not gated to a night. Every interaction type
@@ -226,16 +259,11 @@ wrong settle. The mock-exam answer-pick pulse, the reflection-confirmation
 entrance, the certificate-page entrance animation, the warm "arrival into
 Mastery" transition line, AND Eddie's presence during the breath-break are all
 SHIPPED — do not re-propose any of those.
-- Next step: nothing new identified 2026-09-02 (a full Wednesday delight
-  deep-dive re-verified the lane rather than finding a gap — see that day's
-  report for the specific live-verified list). 2026-09-03 (Scout) checked two
-  of the named less-common paths: the warm-up/review flow's own completion
-  celebration IS already present ("Warm-up done! 🌟", star burst — confirmed
-  live, not a gap), but the handoff-pause screen (the 5-attempt human-tutor
-  handoff) has NO Eddie at all, just a generic HeartHandshake icon — filed as
-  F3 that day (size S: reuse the exact `<EddieAvatar mood="encouraging" .../>`
-  pattern already used on the mastery reteach screen). Once shipped, the
-  diagnostic runner is the one remaining named path still unchecked.
+- Next step: 2026-09-08 (Scout) found the See-it walkthrough's own "Your turn"
+  active-recall mini-task (the `choice_strategy` beat) has no settle/highlight
+  reaction to a tap at all — filed as F4 this run (size S, reuse the existing
+  mcq settle-pulse primitives). Once shipped, re-check the diagnostic runner
+  (still the one remaining named path never explicitly checked).
 - Done so far: every interaction type has its own correct-answer settle
   (2026-08-09); warm hint-card entrance + calm See-it beckon on a miss
   (2026-08-09); calm guiding glow + supportive fill_blank wrong-settle
@@ -245,13 +273,14 @@ SHIPPED — do not re-propose any of those.
   See-it panel fully collapsing after a correct mastery answer (2026-08-23);
   tap_reveal's reveal/select gesture split (re-verified 2026-08-29 on
   `eng_devices`'s simile card question); Eddie on the mastery reteach screen
-  (shipped 2026-08-24); the mock-exam pick pulse (2026-08-26); the reflection-
-  confirmation entrance (shipped 2026-08-28); the certificate-page entrance
-  (F7, shipped 2026-08-28, re-verified live 2026-08-29); the warm "arrival into
-  Mastery" transition line (F2, shipped 2026-08-29); Eddie's presence during
-  the breath-break (shipped 2026-08-31, re-verified live 2026-09-02 on a fresh
-  `sci_ks3_cells` two-wrong-in-a-row repro — the small smiley-face circle sits
-  next to the wind icon, exactly as designed).
+  (shipped 2026-08-24, re-confirmed present live 2026-09-08 on a fresh
+  `maths_quadratics` reteach); the mock-exam pick pulse (2026-08-26); the
+  reflection-confirmation entrance (shipped 2026-08-28); the certificate-page
+  entrance (F7, shipped 2026-08-28, re-verified live 2026-08-29); the warm
+  "arrival into Mastery" transition line (F2, shipped 2026-08-29); Eddie's
+  presence during the breath-break (shipped 2026-08-31, re-verified live
+  2026-09-02 AND 2026-09-08, both on fresh two-wrong-in-a-row repros); Eddie on
+  the handoff-pause screen (shipped, not re-driven live this run).
 
 ## EPIC 7 (background) — Stay on the current stack + performance budget
 Status: ACTIVE. React 19 and Tailwind 4 are already current; most deps
@@ -259,16 +288,22 @@ Status: ACTIVE. React 19 and Tailwind 4 are already current; most deps
 vitest/next/@next/bundle-analyzer/@types/node/lucide-react/posthog-js) have been
 kept on their in-range "Wanted" versions via a steady drip of small bumps.
 - Next step: eslint 10 stays BLOCKED on the Next.js 15→16 migration (peer-dep
-  cap). Pair the eventual nonce-based CSP hardening with that move. As of
-  2026-09-02 the in-range batch is: `@sentry/nextjs`, `lucide-react`,
-  `@next/bundle-analyzer`, `eslint-config-next`, `posthog-js`, `stripe` — filed
-  as F5 that day. `next`/`eslint`/`@types/node`/`typescript`/`framer-motion`
-  remain deliberate major-version holds.
+  cap). Pair the eventual nonce-based CSP hardening with that move (CSP itself
+  spot-checked healthy 2026-09-08 — HSTS+preload, X-Frame-Options DENY,
+  Permissions-Policy, nosniff all present; `script-src 'unsafe-inline'` is the
+  one known, already-tracked gap). As of 2026-09-08 the in-range batch is:
+  `@playwright/test`, `@types/react-dom`, `@upstash/redis`, `autoprefixer`,
+  `jose`, `lucide-react`, `postcss`, `posthog-js` — filed as F3 that day, along
+  with a `fflate` moderate audit advisory (nested under posthog-js, build/
+  bundle-tooling path only). `next`/`eslint`/`@types/node`/`typescript` remain
+  deliberate major-version holds.
 - Done so far: hero LCP fix + LazyMotion split + ReducedMotionProvider; bundle
-  analyzer added; audit stays at 0 vulnerabilities (re-confirmed 2026-09-02,
-  both prod-only and full tree, type-check + lint also GREEN). `@axe-core/
-  playwright` wired into a real CI a11y job. Steady dependency freshness bumps
-  through 2026-08-29.
+  analyzer added; audit stays at 0-1 vulnerabilities (low/moderate, always
+  nested/transitive, never in Edway's own code) across every run since
+  2026-08-29; type-check + lint GREEN every run. `@axe-core/playwright` wired
+  into a real CI a11y job. EPIC 18 (framer-motion → motion) SHIPPED 2026-09-03,
+  re-verified live 2026-09-08 (several motion-heavy child surfaces re-driven on
+  the migrated package, no regression) — fully retire that sub-item.
 
 ## EPIC 8 — Mobile layout regressions
 Status: RETIRED 2026-09-03 (Scout) — the exact next step this epic asked for
@@ -278,24 +313,23 @@ lesson, not a resize-from-desktop) was run this day: `browser_resize` to
 load, `scrollWidth` 380 (no overflow). Two consecutive clean checks now
 (2026-09-02 resize-based, 2026-09-03 fresh-load-based) with no code change in
 between and no reproducible overlap either way. Re-open only on a concrete new
-repro, not a routine re-check.
+repro, not a routine re-check. 2026-09-08: another clean mobile pass on
+`/learn`, a `maths_pythagoras` lesson and `/schedule` (all `scrollWidth` 380 at
+`innerWidth` 390) — stays retired.
 - Next step: none — closed. If a similar "fixed element overlaps scrolled
   content" shape reappears anywhere else, open a fresh epic naming the new
   location rather than reusing this one.
-- Done so far (history): RETIRED once 2026-08-19 (the original bare-`grid`
-  pattern), reopened 2026-08-29 (a NEW "fixed element overlaps scrolled
-  content" shape), the 2026-08-29 `pt-20`/`pt-24` fix did NOT fully hold against
-  a taller question (2026-08-30 B2), a more durable `scroll-margin-top` fix
-  shipped 2026-08-31 (B2) — 2026-09-02's re-check found no reproducible overlap.
 
 ## EPIC 9 — A visual mascot for Eddie
 Status: SHIPPED and complete across every scoped call site, including the
-breathing/calm-break moment (2026-08-31, re-verified live 2026-09-02). No
-further action; re-open only on a concrete new gap.
+breathing/calm-break moment (2026-08-31, re-verified live 2026-09-02 and again
+2026-09-08). No further action; re-open only on a concrete new gap.
 
 ## EPIC 10 — SEO/metadata hygiene sitewide
 Status: SHIPPED 2026-08-20, no known open gap. Standing every-run spot-check
 rather than an active work item; re-open only on a concrete regression.
+2026-09-08: robots.txt, sitemap.xml and homepage OG/Twitter meta tags all
+re-spot-checked clean.
 
 ## EPIC 11 — Dashboard "today" surface conflates weekday-empty with plan-absent
 Status: SHIPPED 2026-08-24, re-verified live repeatedly since, including
@@ -343,96 +377,85 @@ enhancement — no second live failing instance has appeared since, so it stays
 low-priority.
 
 ## EPIC 18 — framer-motion to motion package migration (v11 to v13)
-Status: RESEARCHED, ready to execute. Opened 2026-08-30 (F6, a Sunday
-latest-stack spike), researched 2026-08-31 (Mechanic) by reading the vendor's
-own official upgrade guide (motion.dev/docs/react-upgrade-guide) rather than
-guessing from changelog headlines. Re-surfaced 2026-09-03 (Scout, F4) as a
-ready-to-build execution task since `npm outdated` confirms nothing has
-changed (`framer-motion` still pinned 11.18.2, latest is now 13.2.0) — no
-further research needed, just scheduling the execution run.
-- Findings: the actual migration from our pinned `framer-motion@^11.15.0` to
-  the current `motion@13.1.1` is smaller and safer than the original finding's
-  risk estimate suggested. There is exactly ONE mechanical step for a project
-  with our usage pattern: `npm uninstall framer-motion && npm install motion`,
-  then swap every `from "framer-motion"` import to `from "motion/react"`
-  (the API itself, `motion.div`, `AnimatePresence`, `whileTap`, `useReducedMotion`,
-  `LazyMotion`, is unchanged across v11 to v13). Version 12 has NO breaking
-  React API changes at all. Version 13's one breaking change (removing
-  `@emotion/is-prop-valid`) doesn't apply to this repo (Tailwind only, no
-  styled-components/Emotion).
-- Next step for a future dedicated run: do the import-path swap across every
-  file using `framer-motion` (roughly a dozen+ child-facing components), run
-  the full gate, then a live Playwright smoke across several lesson states on
-  BOTH the motion and `prefers-reduced-motion` paths.
-- Done so far: research only; no code changed, no package installed.
+Status: SHIPPED 2026-09-03 (Mechanic) — `npm uninstall framer-motion && npm
+install motion`, every import swapped from `"framer-motion"` to
+`"motion/react"`. Re-verified live 2026-09-08 (Scout): 0 references to
+`framer-motion` remain in `src/`, 64 uses of `motion/react`; several
+motion-heavy child surfaces (settle pulses, See-it walkthrough, calm-break
+breathing screen) driven live on the migrated package with no visual
+regression. Fully retired; re-open only on a concrete new regression tied to
+the migration itself.
 
 ## EPIC 19 — Server Component await-waterfalls on the highest-traffic pages
-Status: ACTIVE, first slice SHIPPED, a second slice found. Opened 2026-09-01
-(Scout, Tuesday performance deep-dive): `/dashboard`, `/schedule` and
-`/learn` each blocked full page load for multiple seconds via unbatched
+Status: ACTIVE, both slices SHIPPED, awaiting a fresh re-measure. Opened
+2026-09-01 (Scout, Tuesday performance deep-dive): `/dashboard`, `/schedule`
+and `/learn` each blocked full page load for multiple seconds via unbatched
 sequential `await` calls.
 - 2026-09-02 (Mechanic) SHIPPED the batching fix (B1 that day) across all
   three pages plus `repo.ts`. Live re-measured 2026-09-03 (Scout):
   `/dashboard` think-time dropped from ~7,026ms to ~1,895-2,312ms across two
   fresh loads — a large, real improvement — but still above the fix's own
   ~1.5s target; `/schedule` ~2,069-4,470ms (noisier); `/learn` ~5,131ms.
-- 2026-09-03 (Scout) root-caused the residual gap and filed it as B2 that
-  day: `getActiveChild()` still issues its OWN serial DB round-trip on all
-  three pages, positioned between two `Promise.all` batches, even though the
-  sibling child list (`listChildren`/`kids`) already fetched on the same page
-  contains everything needed to resolve it locally (`getChildById` = find by
-  `_id` in the already-fetched list; `latestChild` = the last element of that
-  list, since `listChildren` sorts `created_at` ascending). A pure
-  `resolveActiveChild(children, preferredId)` helper removes a full extra
-  Mongo round-trip from all three highest-traffic pages.
-- Next step: ship B2 (2026-09-03), then re-measure all three pages again with
-  the same Performance-API technique and confirm the gap finally reaches
-  `/settings`'s ~600ms baseline. If it doesn't, the remaining stages
-  (`parentId` resolution itself, or genuinely slow individual queries within
-  the big batch) need their own profiling pass.
-- Done so far: the original await-waterfall batching is shipped and live
-  (confirmed via `grep -c Promise.all` showing the fix is in place, and via
-  live measurement showing a real ~5s improvement on `/dashboard`). The
-  `getActiveChild` redundant-round-trip slice is filed, not yet shipped.
-  **PROCESS NOTE (2026-09-02, still relevant):** Mechanic reads only *today's*
-  findings file, with no fallback once today's file exists — keep
-  re-verifying and re-carrying forward any still-open item rather than
-  assuming a report was read just because a day has passed.
+- 2026-09-03 (Scout) root-caused the residual gap and filed it as B2 that day
+  (`getActiveChild()`'s redundant round-trip); 2026-09-03 (Mechanic) SHIPPED it
+  the same day (`resolveActiveChild` pure helper in `repo.ts`).
+- Next step: NOT re-measured live since the second fix shipped — a future run
+  should re-run the same Performance-API technique (`performance.getEntriesByType
+  ('navigation')[0]`, `responseEnd - responseStart`) on `/dashboard`,
+  `/schedule` and `/learn` and confirm the gap finally reaches `/settings`'s
+  ~600ms baseline. 2026-09-08 (Scout) instead found a DIFFERENT, unrelated perf
+  gap on the marketing homepage (cold-load LCP 4.58s, filed as F2 that day) —
+  the dedicated chrome-devtools trace to root-cause it wasn't completed this
+  run (session dropped mid-run), so that's also a concrete next step: a
+  `performance_start_trace` + `LCPBreakdown` insight pass on `/`.
+- Done so far: both the await-waterfall batching AND the `getActiveChild`
+  round-trip removal are shipped and live per git log, not yet re-measured
+  since the second fix.
+  **PROCESS NOTE (still relevant):** Mechanic reads only *today's* findings
+  file, with no fallback once today's file exists — keep re-verifying and
+  re-carrying forward any still-open item rather than assuming a report was
+  read just because a day has passed.
 
 ## EPIC 20 — Homepage hydration mismatch (React error #418)
 Status: RETIRED 2026-09-03 (Scout) — a THIRD consecutive clean re-check (fresh
 `browser_navigate('https://edway.uk/')`, zero console errors) with no
 homepage-touching code change across any of the three checks. Opened
 2026-09-01 with full repro evidence (B2 that day); did not reproduce on
-2026-09-02 or 2026-09-03. Re-open a fresh entry (not this one) if it recurs —
-if it does, the debugging step is still the same: reproduce against a
-non-minified dev build for the full unminified error message naming the exact
-component/tag.
+2026-09-02 or 2026-09-03. 2026-09-08: a FOURTH clean re-check (two fresh
+homepage loads this run, zero console errors both times). Re-open a fresh
+entry (not this one) if it recurs.
 
-## EPIC 21 (new) — Auth session hygiene: not every page redirects on an invalidated session
-Status: NEW, opened 2026-09-02 (Scout). Found while cleaning up a disposable
-signup-test account: `dashboard/page.tsx` is the ONE page in the app that does
-NOT redirect to `/login` when `currentParentId()` returns `null` (a session
-whose JWT is still validly signed but whose parent row no longer exists, or
-whose `token_version` no longer matches — i.e. a deleted account, or a "sign
-out everywhere" / password-change invalidation of another device's session).
-Instead it silently falls through to the same "Let's set up your first child"
-empty state a genuine brand-new zero-children account sees. `schedule/page.tsx`
-and `settings/page.tsx` both correctly guard with
-`if (!parentId) redirect("/login?redirect=/...")` right after the same
-`currentParentId()` call, so this is an isolated one-line miss on the single
-highest-traffic page, not a systemic pattern — but it directly undermines the
-clarity of the "sign out everywhere" security feature (the kicked-out device
-looks like it's still working instead of clearly being signed out). No child
-data is exposed either way (the data-silo holds; this is a confusing-state bug,
-not a leak).
-- Next step: 2026-09-02 (Mechanic) SHIPPED the one-line guard (B2 that day).
-  2026-09-03 (Scout) did NOT independently re-verify the redirect live this
-  run (invalidating a real session's `token_version` or deleting a test
-  account is a more invasive check than this run's budget favoured given the
-  code fix was already confirmed landed); a future run should do the live
-  invalidate-and-confirm check named below before fully retiring this epic.
-  The residual-risk grep (every `(dashboard)`/`(child)` page.tsx for a
-  matching null-guard on `currentParentId()`) also still hasn't been run.
-- Done so far: SHIPPED 2026-09-02 (Mechanic), not yet independently
-  live-re-verified.
+## EPIC 21 — Auth session hygiene: not every page redirects on an invalidated session
+Status: SHIPPED 2026-09-02 (Mechanic), not yet independently live-re-verified
+(invalidating a real session's `token_version` or deleting a test account is a
+more invasive check than a routine run's budget favours). Not touched
+2026-09-08. Next step unchanged: a future run should do the live
+invalidate-and-confirm check, plus the residual-risk grep (every
+`(dashboard)`/`(child)` page.tsx for a matching null-guard on
+`currentParentId()`), before fully retiring this epic.
+
+## EPIC 22 (new) — Curriculum-size constants must derive from the real topic count, not a hardcoded number
+Status: NEW, opened 2026-09-08 (Scout, B2 that day). `TOTAL_TOPICS = 30` in
+`dashboard/page.tsx` and `PORTFOLIO_TOTAL_TOPICS = 30` / `PORTFOLIO_TOPICS_PER_
+SUBJECT = 10` in `api/portfolio/route.ts` were both correct when written but
+never revisited as EPIC 2/3 grew the curriculum (maths alone is now 14 GCSE
+topics, not 10). Live-confirmed dual impact: the dashboard child card shows
+Ivy's "Curriculum mastery 31 / 30" (a >100% progress bar), and a REAL generated
+compliance portfolio for Ivy reads "Curriculum 30/30 topics certified" /
+Mathematics "10/10 certified, complete" while she is genuinely still mid-lesson
+on an uncertified GCSE maths topic — the more serious half, since this is a
+document literally titled "Local Authority portfolio" and marked "Verified".
+- Next step: ship B2's fix (reuse `lib/engine/mock-gate.ts`'s existing
+  `gcseTopicCount(subject)` helper — built for exactly this problem on the
+  mock-unlock gate already — in both call sites instead of maintaining
+  separate hardcoded totals), then live-re-verify: (1) the dashboard progress
+  bar never exceeds 100% for any child, (2) a freshly-generated portfolio's
+  per-subject "X/Y certified" reflects the REAL current GCSE topic count per
+  subject, not a stale 10. Also decide (owner call, note in the fix's PR
+  description either way): should pre-GCSE band-topic certifications count
+  toward the GCSE-readiness percentage at all, or only toward a separate
+  "foundations" line? The current bug accidentally blends the two; the fix
+  should make that choice deliberate, not silent. EPIC 3's science-practicals
+  slice (a new `sci_practicals` topic, if pursued) will change the exact GCSE
+  topic count again, so land this epic before or alongside that one.
+- Done so far: filed only (B2, 2026-09-08); not yet shipped.

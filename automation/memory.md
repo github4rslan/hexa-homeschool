@@ -3213,3 +3213,42 @@ comments were stale, not a reason to refuse.
   `repo.ts` carries both growth and digest changes and splitting them further
   would have pushed a red intermediate commit to a repo where every push
   deploys. Splitting for tidiness is never worth shipping a red tree.
+
+## 2026-09-08 (Scout, Tuesday perf-focus run)
+
+Focus: performance deep-dive (day rotation) plus the standing max-depth child
+pass. Host process restarted mid-run (session marked "stopped" without a
+completion record); resumed cleanly from the checkpointed findings file and
+persisted Playwright browser state — the checkpoint-as-you-go pattern paid off
+here, worth continuing to lean on it.
+
+Headline: drove `maths_quadratics`'s Mastery check to a genuine wrong-heavy
+reveal (per the standing resilience/depth test) and found a live, actively-
+wrong piece of pedagogy — `classifyOptions` in `lib/child/animation-timeline.ts`
+falsely tells a child a plain algebra-expansion distractor is "half right"
+whenever the correct answer happens to contain exactly two bare numbers,
+regardless of whether it's actually a ± two-root question. This is a NINTH
+instance of the shallow-regex-on-raw-prompt-text bug class `automation/
+backlog.md` EPIC 1 tracks — first one to corrupt live dialogue/an active-recall
+task rather than a derived SVG figure. Pattern worth remembering: this bug
+class isn't confined to the *-visual.ts derivers any more; any code that
+pattern-matches a question's raw text/options for meaning (not just rendering)
+is a candidate, so widen the "watch for this" net beyond the visual deriver
+files specifically.
+
+Second finding of note: two independent hardcoded "curriculum size" constants
+(`TOTAL_TOPICS = 30`, `PORTFOLIO_TOTAL_TOPICS = 30`) went stale as the
+curriculum grew via EPIC 2/3's own additions, corrupting both a dashboard
+display (cosmetic) and a real generated Local-Authority compliance portfolio's
+"complete" status (substantive) — filed as B2/EPIC 22. The codebase already had
+the right fix pattern sitting unused nearby (`mock-gate.ts`'s `gcseTopicCount`,
+built for the exact same problem on a different gate) — a reminder to grep for
+an existing live-computed equivalent before accepting a hardcoded "total" as
+just how a metric works.
+
+Also useful this run: generating a REAL portfolio for the test parent (writes
+are safe, data-silo holds) surfaced the compliance-accuracy bug directly in the
+generated document, not just in a hypothetical description of the bug — a
+concrete demonstration that driving the actual parent-oversight flow to
+completion (not just skimming the form) is worth the extra few minutes when a
+document like this is customer/LA-facing.
