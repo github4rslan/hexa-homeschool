@@ -1514,11 +1514,16 @@ function YourTurnPanel({
   const [dismissed, setDismissed] = useState(false);
   const [result, setResult] = useState<"correct" | "miss" | null>(null);
   const [tapped, setTapped] = useState<number[]>([]);
+  // F4: which tap_choice option the child actually tapped, so the settle
+  // highlight (warm sweep on a hit, calm dim on a miss, never red) lands on
+  // the option THEY chose, matching the mcq radio's existing calm-law pattern.
+  const [pickedIndex, setPickedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setDismissed(false);
     setResult(null);
     setTapped([]);
+    setPickedIndex(null);
   }, [task]);
 
   useEffect(() => {
@@ -1553,6 +1558,7 @@ function YourTurnPanel({
   function tapChoice(index: number) {
     if (result === "correct") return;
     setResult(null);
+    setPickedIndex(index);
     const correct = checkYourTurnTap(task, index);
     if (correct) successCue();
     else tapCue();
@@ -1594,6 +1600,11 @@ function YourTurnPanel({
         <div className="flex flex-wrap gap-2">
           {task.choices.map((choice, i) => {
             const isCorrectPick = result === "correct" && i === task.correct;
+            // F4: a wrong tap gets its own calm settle too, not just silence,
+            // the SAME dim/desaturate treatment the mcq radio uses for a
+            // miss (never red, never a shake), landing on the option the
+            // child actually chose.
+            const isWrongPick = result === "miss" && i === pickedIndex;
             return (
               <button
                 key={`${choice}-${i}`}
@@ -1601,15 +1612,36 @@ function YourTurnPanel({
                 onClick={() => tapChoice(i)}
                 disabled={result === "correct"}
                 className={cn(
-                  "child-touch inline-flex items-center gap-2 rounded-2xl border px-4 text-lg font-semibold transition-all focus-visible:outline-none focus-visible:ring-2",
+                  "child-touch relative inline-flex items-center gap-2 overflow-hidden rounded-2xl border px-4 text-lg font-semibold transition-all focus-visible:outline-none focus-visible:ring-2",
                   accent.ring,
-                  isCorrectPick
-                    ? cn(accent.bg, accent.border, accent.text)
-                    : "border-white/10 bg-white/[0.03] text-fog-100 hover:border-white/30 hover:bg-white/[0.06]",
+                  isCorrectPick && cn(accent.bg, accent.border, accent.text),
+                  isWrongPick &&
+                    "border-white/10 bg-white/[0.02] text-fog-300 opacity-60 saturate-50",
+                  !isCorrectPick &&
+                    !isWrongPick &&
+                    "border-white/10 bg-white/[0.03] text-fog-100 hover:border-white/30 hover:bg-white/[0.06]",
                 )}
               >
-                {choice}
-                {isCorrectPick && <Check className="h-5 w-5" aria-hidden />}
+                {/* Warm accent sweep on the option the child got right,
+                    reuses the mcq radio's own settle-flourish primitive.
+                    Reduced motion shows only the static tint above. */}
+                {isCorrectPick && !reduced && (
+                  <motion.span
+                    aria-hidden
+                    initial={{ scaleX: 0, opacity: 0.35 }}
+                    animate={{ scaleX: 1, opacity: 0.18 }}
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                    style={{ originX: 0 }}
+                    className={cn(
+                      "pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-r",
+                      accent.bar,
+                    )}
+                  />
+                )}
+                <span className="relative z-10 inline-flex items-center gap-2">
+                  {choice}
+                  {isCorrectPick && <Check className="h-5 w-5" aria-hidden />}
+                </span>
               </button>
             );
           })}
