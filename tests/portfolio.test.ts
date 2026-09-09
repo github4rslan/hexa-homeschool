@@ -84,7 +84,7 @@ describe("buildPortfolioRecord — work evidence (F2)", () => {
 describe("summarisePortfolioTopics (B2, curriculum-size-aware totals)", () => {
   it("never reports complete while any real GCSE topic remains uncertified", () => {
     // Maths has 14 real GCSE topics; the child has certified 6 GCSE + 4
-    // pre-GCSE band topics under the old bug's flat count of 10 — the fixed
+    // pre-GCSE band topics under the old bug's flat count of 10, the fixed
     // GCSE-only count must still show 6/14, not a false "10/10 complete".
     const summary = summarisePortfolioTopics(
       { mathematics: 6, english: 10, science: 10 },

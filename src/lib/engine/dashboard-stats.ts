@@ -35,7 +35,7 @@ export function avgLessonTimeHint(avgSec: number): string {
  * Curriculum-mastery progress bar width, clamped to [0, 100] (B2). The
  * certified count is the number of certified topics across every band a
  * child has worked in, while the total is the (curriculum-size-aware) GCSE
- * topic count for age-appropriate progression — a child who has also
+ * topic count for age-appropriate progression: a child who has also
  * certified pre-GCSE band topics can have `certified > total`, and the bar
  * must never render past 100% for that honest reason. Pure.
  */

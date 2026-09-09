@@ -59,7 +59,7 @@ import { ShieldAlert } from "lucide-react";
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
 
-// B2: live, curriculum-size-aware total (was a stale hardcoded 30) — see
+// B2: live, curriculum-size-aware total (was a stale hardcoded 30), see
 // lib/engine/mock-gate.ts's totalGcseTopicCount, the same helper the mock
 // unlock gate already uses so this number can never go stale again.
 const TOTAL_TOPICS = totalGcseTopicCount();

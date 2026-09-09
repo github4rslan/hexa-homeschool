@@ -1714,7 +1714,7 @@ export async function certifiedBySubject(
 /**
  * Certified-topic counts per subject, GCSE topics (`key_stage` 4, legacy rows
  * without a `key_stage` treated as GCSE per the band-progression convention)
- * ONLY — excludes pre-GCSE KS2/KS3 band topics (B2). This is the count a
+ * ONLY, excludes pre-GCSE KS2/KS3 band topics (B2). This is the count a
  * Local-Authority-facing compliance portfolio must use: a pre-GCSE band topic
  * being certified is real progress, but it is not GCSE specification coverage
  * and must never be folded into a "10/10 GCSE topics certified" claim.

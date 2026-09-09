@@ -26,7 +26,7 @@ export interface PortfolioTopicSummary {
  * headline numbers (B2). Pure and total-count-aware: a subject's certified
  * count is clamped to its own real total (never overstates, never lets one
  * subject's overshoot mask another's shortfall), and `complete` only holds
- * when every subject is genuinely fully certified — not a hardcoded floor.
+ * when every subject is genuinely fully certified, not a hardcoded floor.
  */
 export function summarisePortfolioTopics(
   certifiedBySubject: Record<Subject, number>,

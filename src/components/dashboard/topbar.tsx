@@ -14,7 +14,7 @@ export function DashboardTopbar({ greeting }: { greeting?: string }) {
           <h1 className="text-base font-semibold text-fog-50">{greeting}</h1>
         )}
       </div>
-      {/* B3: the Search and Notifications buttons were removed here — both
+      {/* B3: the Search and Notifications buttons were removed here, both
           were non-functional placeholders (Search did nothing on click,
           Notifications showed a permanently-on fake unread dot with no real
           panel behind it), which is worse than no control at all. Reinstate

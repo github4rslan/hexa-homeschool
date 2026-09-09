@@ -1221,7 +1221,7 @@ describe("F8 coupling — mock unlock stays reachable after adding a topic", () 
   });
 });
 
-describe("B2 — totalGcseTopicCount stays live, never a hardcoded curriculum size", () => {
+describe("B2 (totalGcseTopicCount stays live, never a hardcoded curriculum size)", () => {
   it("sums the real per-subject GCSE totals (34, not the stale hardcoded 30)", () => {
     expect(totalGcseTopicCount()).toBe(
       gcseTopicCount("mathematics") +
@@ -1232,7 +1232,7 @@ describe("B2 — totalGcseTopicCount stays live, never a hardcoded curriculum si
   });
 });
 
-describe("F1 (2026-09-08) — maths_quadratics near-duplicate replaced with a genuinely distinct quadratic", () => {
+describe("F1 (2026-09-08, maths_quadratics near-duplicate replaced with a genuinely distinct quadratic)", () => {
   it("no longer carries the near-duplicate 'x² − 5x + 6 = 0' item without a command word", () => {
     const stale = ALL.find(
       (q) =>

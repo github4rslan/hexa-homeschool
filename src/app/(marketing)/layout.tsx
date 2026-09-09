@@ -13,7 +13,7 @@ import { LazyMotionProvider } from "@/components/fx/lazy-motion-provider";
 
 // Editorial serif for the warm marketing theme, heritage, high-trust,
 // "clean editorial typography" per the web brief (B5: moved from the root
-// layout so only marketing routes preload it — see src/app/layout.tsx).
+// layout so only marketing routes preload it, see src/app/layout.tsx).
 const fraunces = Fraunces({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
