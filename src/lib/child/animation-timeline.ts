@@ -376,7 +376,13 @@ export function classifyOptions(
 ): OptionFate[] {
   const correct = options[correctIndex] ?? "";
   const correctRoots = signedValues(correct);
-  const isPlusMinus = /±|\+\/-/.test(correct) || correctRoots.length === 2;
+  // Only a genuine ±-two-root answer counts: an explicit ±/+/- token, or a
+  // real "x = a or x = b" root-list shape. Two bare numbers appearing
+  // anywhere in the text (e.g. a plain algebra-expansion answer) is NOT
+  // enough on its own — that was the bug that falsely tagged distractors
+  // like "x² + 16" as "half right" for a question with no ± roots at all.
+  const isPlusMinus =
+    /±|\+\/-/.test(correct) || /x\s*=.*\bor\b.*=/i.test(correct);
 
   return options.map((option, index) => {
     if (index === correctIndex) return "keep";

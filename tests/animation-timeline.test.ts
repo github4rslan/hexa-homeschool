@@ -237,6 +237,16 @@ describe("classifyOptions (eliminate vs keep vs half)", () => {
       "eliminate",
     ]);
   });
+
+  it("does not falsely tag a plain algebra-expansion distractor as half right (B1)", () => {
+    // "Expand (x - 4)^2": correct = x^2 - 8x + 16, none of the wrong options
+    // are genuine ± roots, so every wrong option must eliminate, never half.
+    const fates = classifyOptions(
+      ["x^2 - 8x + 16", "x^2 + 16", "x^2 - 16", "x^2 - 8x - 16"],
+      0,
+    );
+    expect(fates).toEqual(["keep", "eliminate", "eliminate", "eliminate"]);
+  });
 });
 
 describe("buildYourTurn (active recall, deterministic, no AI)", () => {
