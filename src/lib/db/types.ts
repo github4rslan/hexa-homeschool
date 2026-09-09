@@ -670,6 +670,21 @@ export interface FeedbackDoc {
   trigger: "first_week" | "mastery" | "manual";
   /** Optional page/path the feedback was given from (context only, no PII). */
   context?: string | null;
+  /**
+   * F5: explicit, submission-time consent to feature this quote publicly on
+   * the marketing site (first name only). Captured ONLY from the checkbox the
+   * parent ticks when they submit, never inferred or retrofitted onto older
+   * rows, so `featured` below can never be set on feedback given without this
+   * consent. Absent on legacy rows (treated as false).
+   */
+  share_consent?: boolean;
+  /**
+   * F5: admin-curated flag. Only ever set true by staff via the admin feedback
+   * screen, and only settable when `share_consent` is true (enforced in
+   * `repo.ts`, not just the UI). Drives the public testimonials query; absent
+   * on legacy rows (treated as false).
+   */
+  featured?: boolean;
   created_at: Date;
 }
 

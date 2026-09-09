@@ -4,6 +4,7 @@ import { Star, MessageSquareHeart } from "lucide-react";
 import { AdminTopbar } from "@/components/admin/sidebar";
 import { MetricCard } from "@/components/admin/metric-card";
 import { Card } from "@/components/ui/card";
+import { FeedbackFeatureToggle } from "@/components/admin/feedback-feature-toggle";
 import { recentFeedback, feedbackStats } from "@/lib/db/repo";
 
 export const metadata: Metadata = { title: "Admin · Parent feedback" };
@@ -133,7 +134,7 @@ export default async function AdminFeedbackPage({
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-white/5 bg-white/[0.02]">
-                    {["Rating", "Comment", "Trigger", "Parent", "When"].map((h) => (
+                    {["Rating", "Comment", "Trigger", "Parent", "When", "Public quote"].map((h) => (
                       <th
                         key={h}
                         className="px-4 py-3 text-left text-[10px] font-mono uppercase tracking-[0.15em] text-fog-500"
@@ -173,6 +174,18 @@ export default async function AdminFeedbackPage({
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-xs text-fog-400">
                         {relativeDate(r.createdAt)}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {r.shareConsent ? (
+                          <FeedbackFeatureToggle
+                            feedbackId={r.id}
+                            initialFeatured={r.featured}
+                          />
+                        ) : (
+                          <span className="text-[11px] text-fog-600">
+                            No sharing consent
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

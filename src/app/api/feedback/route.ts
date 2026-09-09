@@ -55,8 +55,17 @@ export async function POST(request: Request) {
   const trigger = isValidTrigger(body.trigger) ? body.trigger : "manual";
   const context =
     typeof body.context === "string" ? body.context.slice(0, 200) : null;
+  // F5: explicit, opt-in "may we share this publicly" consent, only true
+  // when the caller sent the literal boolean true, never inferred.
+  const shareConsent = body.shareConsent === true;
 
-  const id = await submitFeedback(parentId, { stars, comment, trigger, context });
+  const id = await submitFeedback(parentId, {
+    stars,
+    comment,
+    trigger,
+    context,
+    shareConsent,
+  });
   if (!id) {
     return NextResponse.json({ error: "Could not save feedback." }, { status: 500 });
   }

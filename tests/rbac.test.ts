@@ -33,6 +33,7 @@ describe("can (default-deny matrix)", () => {
     "curriculum.write",
     "finance.write",
     "settings.write",
+    "feedback.curate",
   ];
 
   it("admin has every permission", () => {
@@ -65,6 +66,7 @@ describe("can (default-deny matrix)", () => {
     expect(can("tutor", "admin.read")).toBe(false);
     expect(can("tutor", "escalation.manage")).toBe(false);
     expect(can("tutor", "finance.write")).toBe(false);
+    expect(can("tutor", "feedback.curate")).toBe(false);
   });
 
   it("a null (non-staff) role is denied everything", () => {

@@ -21,6 +21,8 @@ export type Permission =
   | "curriculum.write"
   | "finance.write"
   | "settings.write"
+  // Curate which consented feedback is featured publicly (F5).
+  | "feedback.curate"
   // Tutor-only session surface. Tutors can see assigned sessions, message the
   // family on those sessions, and complete their own sessions.
   | "tutor.session.read"
@@ -33,6 +35,7 @@ const ADMIN_PERMS: ReadonlySet<Permission> = new Set<Permission>([
   "curriculum.write",
   "finance.write",
   "settings.write",
+  "feedback.curate",
   "tutor.session.read",
   "tutor.session.complete",
 ]);

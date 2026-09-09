@@ -90,6 +90,7 @@ function FeedbackCard({
   const cardRef = useRef<HTMLDivElement>(null);
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState("");
+  const [shareConsent, setShareConsent] = useState(false);
   const [state, setState] = useState<SubmitState>("idle");
 
   useFocusTrap(cardRef, true, onClose);
@@ -107,6 +108,10 @@ function FeedbackCard({
           trigger,
           context:
             typeof window !== "undefined" ? window.location.pathname : null,
+          // F5: only ever sent true when the parent ticked the box themselves,
+          // and only meaningful with a comment (a bare star rating isn't a
+          // quotable testimonial), see the checkbox's own guard below.
+          shareConsent: comment.trim().length > 0 && shareConsent,
         }),
       });
       if (!res.ok) throw new Error("submit failed");
@@ -116,7 +121,7 @@ function FeedbackCard({
     } catch {
       setState("error");
     }
-  }, [stars, comment, trigger, state, onClose]);
+  }, [stars, comment, shareConsent, trigger, state, onClose]);
 
   return (
     <motion.div
@@ -176,9 +181,28 @@ function FeedbackCard({
             placeholder="Anything you'd like to add? (optional)"
             className="w-full resize-none rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-fog-100 placeholder:text-fog-600 focus:border-violet-400/50 focus:outline-none focus:ring-1 focus:ring-violet-400/50"
           />
-          <div className="mb-3 mt-1 text-right text-[11px] text-fog-600">
+          <div className="mb-1 mt-1 text-right text-[11px] text-fog-600">
             {comment.length}/{FEEDBACK_COMMENT_MAX}
           </div>
+
+          {/* F5: explicit, opt-in consent to feature this quote publicly,
+              only offered once there's an actual comment to quote, never
+              pre-checked, and never asked for a bare star rating alone. */}
+          {comment.trim().length > 0 && (
+            <label className="mb-3 flex items-start gap-2 text-xs text-fog-400">
+              <input
+                type="checkbox"
+                checked={shareConsent}
+                onChange={(e) => setShareConsent(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-white/[0.03] text-violet-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+              />
+              <span>
+                You may share this comment as a public quote on the Edway
+                website, credited with your first name only (never your full
+                name or email).
+              </span>
+            </label>
+          )}
 
           {state === "error" && (
             <p className="mb-3 text-sm text-crimson-300" role="alert">

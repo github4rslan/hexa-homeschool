@@ -6936,6 +6936,8 @@ export async function submitFeedback(
     comment: string | null;
     trigger: FeedbackTrigger;
     context?: string | null;
+    /** F5: explicit "may we share this publicly" consent, captured now or never. */
+    shareConsent?: boolean;
   },
 ): Promise<string | null> {
   const parentOid = toObjectId(parentId);
@@ -6957,6 +6959,8 @@ export async function submitFeedback(
     comment: input.comment,
     trigger: input.trigger,
     context: input.context ?? null,
+    share_consent: input.shareConsent === true,
+    featured: false,
     created_at: now,
   } as FeedbackDoc);
 
@@ -7000,6 +7004,10 @@ export interface FeedbackRow {
   comment: string | null;
   trigger: FeedbackTrigger;
   createdAt: Date;
+  /** F5: did the parent consent, at submission time, to a public quote? */
+  shareConsent: boolean;
+  /** F5: has staff curated this into the public testimonials rotation? */
+  featured: boolean;
 }
 
 /**
@@ -7030,6 +7038,79 @@ export async function recentFeedback(
     comment: d.comment ?? null,
     trigger: d.trigger,
     createdAt: d.created_at,
+    shareConsent: d.share_consent === true,
+    featured: d.featured === true,
+  }));
+}
+
+/**
+ * F5: staff-only toggle for the public testimonials rotation. Refuses to
+ * feature any row without the parent's own submission-time `share_consent`
+ * (defence in depth beyond the admin UI hiding the control): a retroactive
+ * staff decision can never stand in for the parent's own consent. Audited via
+ * `recordStaffAction`, best-effort (an audit-write failure never blocks the
+ * toggle itself, matching the rest of the staff-action surface).
+ */
+export async function setFeedbackFeatured(
+  feedbackId: string,
+  featured: boolean,
+  staff: { staffId: string; staffEmail: string },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const oid = toObjectId(feedbackId);
+  if (!oid) return { ok: false, error: "Invalid feedback id." };
+  const col = await getCollection<FeedbackDoc>(Collections.feedback);
+  const doc = await col.findOne({ _id: oid });
+  if (!doc) return { ok: false, error: "Feedback not found." };
+  if (featured && doc.share_consent !== true) {
+    return {
+      ok: false,
+      error: "This parent did not consent to a public quote.",
+    };
+  }
+  await col.updateOne({ _id: oid }, { $set: { featured } });
+  await recordStaffAction({
+    staffId: staff.staffId,
+    staffEmail: staff.staffEmail,
+    action: featured ? "feedback.feature" : "feedback.unfeature",
+    targetCollection: "feedback",
+    targetId: feedbackId,
+  });
+  return { ok: true };
+}
+
+export interface PublicTestimonial {
+  id: string;
+  stars: number;
+  comment: string;
+  /** First name only (or null when the parent has no name on file). */
+  firstName: string | null;
+}
+
+/**
+ * PUBLIC read for the marketing site (F5): only rows that are BOTH staff
+ * `featured` AND carry the parent's own `share_consent`, with a non-empty
+ * comment (a bare star rating isn't a quotable testimonial). Returns the
+ * absolute minimum: first name only, never the full name or email, never any
+ * other account/child data. Newest-featured first.
+ */
+export async function listFeaturedTestimonials(
+  limit = 6,
+): Promise<PublicTestimonial[]> {
+  const col = await getCollection<FeedbackDoc>(Collections.feedback);
+  const docs = await col
+    .find({
+      featured: true,
+      share_consent: true,
+      comment: { $type: "string", $ne: "" },
+    })
+    .sort({ created_at: -1 })
+    .limit(limit)
+    .toArray();
+  return docs.map((d) => ({
+    id: d._id!.toHexString(),
+    stars: d.stars,
+    comment: d.comment as string,
+    firstName: d.parent_name ? d.parent_name.trim().split(/\s+/)[0] || null : null,
   }));
 }
 
