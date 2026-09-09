@@ -26,6 +26,18 @@ export function gcseTopicCount(subject: Subject): number {
   ).length;
 }
 
+const ALL_SUBJECTS: Subject[] = ["mathematics", "english", "science"];
+
+/**
+ * Total authored GCSE (key_stage 4) topics across every subject — the live,
+ * curriculum-size-aware replacement for a hardcoded total (B2). Used wherever
+ * the dashboard/portfolio need "how many GCSE topics exist in total" so this
+ * number can never go stale as the curriculum grows.
+ */
+export function totalGcseTopicCount(): number {
+  return ALL_SUBJECTS.reduce((sum, subject) => sum + gcseTopicCount(subject), 0);
+}
+
 /**
  * Certified-topic count that unlocks the subject's mock: a floor of
  * `MOCK_UNLOCK_FLOOR`, never more than the number of GCSE topics that exist, so

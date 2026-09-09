@@ -40,6 +40,7 @@ import {
 import { masteryHighlightLine } from "@/lib/engine/parent-events";
 import { shouldShowFeedbackPrompt } from "@/lib/engine/feedback-eligibility";
 import { avgLessonTimeHint } from "@/lib/engine/dashboard-stats";
+import { totalGcseTopicCount } from "@/lib/engine/mock-gate";
 import { buildWeeklyRecapNarration } from "@/lib/engine/weekly-summary";
 import { FeedbackPrompt, FeedbackButton } from "@/components/dashboard/feedback-widget";
 import { readActiveChildId } from "@/lib/active-child";
@@ -58,7 +59,10 @@ import { ShieldAlert } from "lucide-react";
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
 
-const TOTAL_TOPICS = 30; // seeded curriculum size (10 per subject × 3)
+// B2: live, curriculum-size-aware total (was a stale hardcoded 30) — see
+// lib/engine/mock-gate.ts's totalGcseTopicCount, the same helper the mock
+// unlock gate already uses so this number can never go stale again.
+const TOTAL_TOPICS = totalGcseTopicCount();
 
 interface ChildView {
   id: string;

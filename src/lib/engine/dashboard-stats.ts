@@ -30,3 +30,17 @@ export function avgLessonTimeHint(avgSec: number): string {
   if (avgSec > LESSON_TIME_TARGET_MAX_SEC) return "above the 8–20 min target";
   return "within 8–20 min target";
 }
+
+/**
+ * Curriculum-mastery progress bar width, clamped to [0, 100] (B2). The
+ * certified count is the number of certified topics across every band a
+ * child has worked in, while the total is the (curriculum-size-aware) GCSE
+ * topic count for age-appropriate progression — a child who has also
+ * certified pre-GCSE band topics can have `certified > total`, and the bar
+ * must never render past 100% for that honest reason. Pure.
+ */
+export function masteryProgressPercent(certified: number, total: number): number {
+  if (!total || total <= 0) return 0;
+  const raw = (certified / total) * 100;
+  return Math.min(100, Math.max(0, raw));
+}

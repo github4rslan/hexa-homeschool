@@ -10,6 +10,44 @@
  * so a Local Authority can independently re-compute and verify integrity.
  */
 
+import type { Subject } from "@/lib/db/types";
+
+/** Per-subject certified/total GCSE topic counts, plus the combined total. */
+export interface PortfolioTopicSummary {
+  certifiedTopics: number;
+  totalTopics: number;
+  bySubject: Record<Subject, { certified: number; total: number }>;
+  /** True only when every subject has certified ALL of its real GCSE topics. */
+  complete: boolean;
+}
+
+/**
+ * Combine per-subject certified/total GCSE topic counts into the portfolio's
+ * headline numbers (B2). Pure and total-count-aware: a subject's certified
+ * count is clamped to its own real total (never overstates, never lets one
+ * subject's overshoot mask another's shortfall), and `complete` only holds
+ * when every subject is genuinely fully certified — not a hardcoded floor.
+ */
+export function summarisePortfolioTopics(
+  certifiedBySubject: Record<Subject, number>,
+  totalsBySubject: Record<Subject, number>,
+): PortfolioTopicSummary {
+  const subjects = Object.keys(totalsBySubject) as Subject[];
+  const bySubject = {} as Record<Subject, { certified: number; total: number }>;
+  let certifiedTopics = 0;
+  let totalTopics = 0;
+  let complete = true;
+  for (const subject of subjects) {
+    const total = Math.max(0, totalsBySubject[subject] ?? 0);
+    const certified = Math.min(Math.max(0, certifiedBySubject[subject] ?? 0), total);
+    bySubject[subject] = { certified, total };
+    certifiedTopics += certified;
+    totalTopics += total;
+    if (certified < total) complete = false;
+  }
+  return { certifiedTopics, totalTopics, bySubject, complete };
+}
+
 export interface PortfolioSection {
   key: "intent" | "implementation" | "impact" | "next_steps";
   heading: string;

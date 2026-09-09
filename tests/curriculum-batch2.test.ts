@@ -4,6 +4,7 @@ import { SEED_QUESTIONS_EXTRA } from "@/lib/data/curriculum.seed.extra";
 import {
   gcseTopicCount,
   mockUnlockCount,
+  totalGcseTopicCount,
   MOCK_UNLOCK_FLOOR,
 } from "@/lib/engine/mock-gate";
 
@@ -1217,5 +1218,16 @@ describe("F8 coupling — mock unlock stays reachable after adding a topic", () 
       expect(needed).toBeLessThanOrEqual(MOCK_UNLOCK_FLOOR);
       expect(needed).toBe(10);
     }
+  });
+});
+
+describe("B2 — totalGcseTopicCount stays live, never a hardcoded curriculum size", () => {
+  it("sums the real per-subject GCSE totals (34, not the stale hardcoded 30)", () => {
+    expect(totalGcseTopicCount()).toBe(
+      gcseTopicCount("mathematics") +
+        gcseTopicCount("english") +
+        gcseTopicCount("science"),
+    );
+    expect(totalGcseTopicCount()).toBe(34);
   });
 });

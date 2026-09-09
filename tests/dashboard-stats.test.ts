@@ -3,6 +3,7 @@ import {
   avgLessonTimeHint,
   LESSON_TIME_TARGET_MIN_SEC,
   LESSON_TIME_TARGET_MAX_SEC,
+  masteryProgressPercent,
 } from "@/lib/engine/dashboard-stats";
 
 describe("avgLessonTimeHint", () => {
@@ -29,5 +30,33 @@ describe("avgLessonTimeHint", () => {
 
   it("reports above-target when a lesson runs long", () => {
     expect(avgLessonTimeHint(35 * 60)).toBe("above the 8–20 min target");
+  });
+});
+
+describe("masteryProgressPercent (B2, progress bar can never overflow)", () => {
+  it("computes a plain percentage within range", () => {
+    expect(masteryProgressPercent(5, 10)).toBe(50);
+  });
+
+  it("clamps to 100 when certified exceeds the total (the '31/30' bug)", () => {
+    expect(masteryProgressPercent(31, 30)).toBe(100);
+  });
+
+  it("never goes negative and treats a zero/invalid total as 0%", () => {
+    expect(masteryProgressPercent(5, 0)).toBe(0);
+    expect(masteryProgressPercent(0, 10)).toBe(0);
+  });
+
+  it("competenceCertified <= competenceTotal always holds for the rendered percent", () => {
+    for (const [certified, total] of [
+      [0, 34],
+      [34, 34],
+      [46, 34],
+      [1, 1],
+    ]) {
+      const pct = masteryProgressPercent(certified, total);
+      expect(pct).toBeGreaterThanOrEqual(0);
+      expect(pct).toBeLessThanOrEqual(100);
+    }
   });
 });

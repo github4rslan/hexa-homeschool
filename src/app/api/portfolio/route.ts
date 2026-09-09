@@ -1,24 +1,26 @@
 import { NextResponse } from "next/server";
-import { generateVerifiedPortfolio } from "@/lib/compliance/portfolio";
+import {
+  generateVerifiedPortfolio,
+  summarisePortfolioTopics,
+} from "@/lib/compliance/portfolio";
 import {
   currentParentId,
   findChildByName,
   getChildById,
   insertDossier,
   getMockState,
-  certifiedBySubject,
+  certifiedGcseBySubject,
   latestEvaluationsBySubject,
   listTopicCertificates,
   topicWorkEvidence,
   recentLogs,
   listMedia,
 } from "@/lib/db/repo";
+import { gcseTopicCount } from "@/lib/engine/mock-gate";
 import type { ChildDoc } from "@/lib/db/types";
 import type { Subject } from "@/lib/db/types";
 import { rateLimit } from "@/lib/rate-limit";
 
-const PORTFOLIO_TOPICS_PER_SUBJECT = 10;
-const PORTFOLIO_TOTAL_TOPICS = 30;
 const SUBJECT_LABELS: Record<Subject, string> = {
   mathematics: "Mathematics",
   english: "English",
@@ -70,7 +72,10 @@ async function portfolioReadiness(parentId: string, child: ChildDoc) {
   if (!child._id) return null;
   const since = Date.now() - 365 * 24 * 60 * 60 * 1000;
   const [certified, mockState, standings, logs, workEvidence] = await Promise.all([
-    certifiedBySubject(child._id),
+    // GCSE-only certified counts (B2): pre-GCSE band topics are real progress
+    // but must never be folded into the LA-facing "GCSE topics certified"
+    // claim, so this document can't overstate a subject as complete.
+    certifiedGcseBySubject(child._id),
     getMockState(parentId, child._id),
     latestEvaluationsBySubject(child._id),
     recentLogs([child._id], since, 500),
@@ -80,13 +85,12 @@ async function portfolioReadiness(parentId: string, child: ChildDoc) {
       limit: 100,
     }),
   ]);
-  const certifiedTopics = Math.min(
-    PORTFOLIO_TOTAL_TOPICS,
-    Object.values(certified).reduce(
-      (sum, count) => sum + Math.min(count, PORTFOLIO_TOPICS_PER_SUBJECT),
-      0,
-    ),
-  );
+  const gcseTotals: Record<Subject, number> = {
+    mathematics: gcseTopicCount("mathematics"),
+    english: gcseTopicCount("english"),
+    science: gcseTopicCount("science"),
+  };
+  const topicSummary = summarisePortfolioTopics(certified, gcseTotals);
   const grades = standings
     .map((s) => gradeNumber(s.grade))
     .filter((grade): grade is number => grade !== null);
@@ -97,14 +101,12 @@ async function portfolioReadiness(parentId: string, child: ChildDoc) {
   const subjects = mockState.map((mock) => {
     const standing = standings.find((s) => s.subject === mock.subject);
     const latestGrade = standing?.grade ?? null;
+    const subjectSummary = topicSummary.bySubject[mock.subject];
     return {
       subject: mock.subject,
       label: SUBJECT_LABELS[mock.subject],
-      certifiedTopics: Math.min(
-        certified[mock.subject] ?? 0,
-        PORTFOLIO_TOPICS_PER_SUBJECT,
-      ),
-      totalTopics: PORTFOLIO_TOPICS_PER_SUBJECT,
+      certifiedTopics: subjectSummary.certified,
+      totalTopics: subjectSummary.total,
       mockTaken: mock.taken,
       mockGrade: mock.result?.indicativeGrade || null,
       latestGrade,
@@ -118,13 +120,11 @@ async function portfolioReadiness(parentId: string, child: ChildDoc) {
   });
   return {
     status:
-      certifiedTopics >= PORTFOLIO_TOTAL_TOPICS &&
-      totalMocks > 0 &&
-      mocksTaken >= totalMocks
+      topicSummary.complete && totalMocks > 0 && mocksTaken >= totalMocks
         ? "complete"
         : "in_progress",
-    certifiedTopics,
-    totalTopics: PORTFOLIO_TOTAL_TOPICS,
+    certifiedTopics: topicSummary.certifiedTopics,
+    totalTopics: topicSummary.totalTopics,
     mocksTaken,
     totalMocks,
     lessonsCompleted,

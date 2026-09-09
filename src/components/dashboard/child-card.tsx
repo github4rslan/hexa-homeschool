@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { masteryProgressPercent } from "@/lib/engine/dashboard-stats";
 
 interface ChildCardProps {
   id: string;
@@ -34,7 +35,7 @@ export function ChildCard({
   status,
   highlighted = false,
 }: ChildCardProps) {
-  const percent = competenceTotal > 0 ? (competenceCertified / competenceTotal) * 100 : 0;
+  const percent = masteryProgressPercent(competenceCertified, competenceTotal);
   const statusInfo = statusMap[status];
 
   return (

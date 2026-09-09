@@ -1711,6 +1711,38 @@ export async function certifiedBySubject(
   return result;
 }
 
+/**
+ * Certified-topic counts per subject, GCSE topics (`key_stage` 4, legacy rows
+ * without a `key_stage` treated as GCSE per the band-progression convention)
+ * ONLY — excludes pre-GCSE KS2/KS3 band topics (B2). This is the count a
+ * Local-Authority-facing compliance portfolio must use: a pre-GCSE band topic
+ * being certified is real progress, but it is not GCSE specification coverage
+ * and must never be folded into a "10/10 GCSE topics certified" claim.
+ */
+export async function certifiedGcseBySubject(
+  childId: ObjectId,
+): Promise<Record<Subject, number>> {
+  const compCol = await getCollection<CompetenceDoc>(Collections.competence);
+  const topicsCol = await getCollection<CurriculumTopicDoc>(Collections.topics);
+  const certified = await compCol
+    .find({ child_id: childId, state: "certified" })
+    .toArray();
+  const tags = certified.map((c) => c.topic_tag);
+  const result: Record<Subject, number> = {
+    mathematics: 0,
+    english: 0,
+    science: 0,
+  };
+  if (tags.length === 0) return result;
+  const topics = await topicsCol
+    .find({ topic_tag: { $in: tags } })
+    .toArray();
+  for (const t of topics) {
+    if ((t.key_stage ?? 4) === 4) result[t.subject] += 1;
+  }
+  return result;
+}
+
 export interface TopicMapNode {
   topicTag: string;
   title: string;
