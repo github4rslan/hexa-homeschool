@@ -3252,3 +3252,68 @@ generated document, not just in a hypothetical description of the bug — a
 concrete demonstration that driving the actual parent-oversight flow to
 completion (not just skimming the form) is worth the extra few minutes when a
 document like this is customer/LA-facing.
+
+## 2026-09-09 (Mechanic, build pass for 2026-09-08 findings, DECISION: all)
+
+Shipped, each green-gated (type-check + test + lint + build) then pushed as its
+own commit: **B1** (`classifyOptions` false half-right fix, tightened
+`isPlusMinus` to require an explicit +/-/root-list shape instead of "any two
+bare numbers"), **B2** (live `totalGcseTopicCount`/`certifiedGcseBySubject`
+replacing the two stale hardcoded 30s, plus a `masteryProgressPercent` clamp so
+the dashboard bar can never render past 100% even if a child's all-band count
+outpaces the GCSE-only total), **B3** (removed the inert Search/fake-dot
+Notifications buttons rather than half-build a real panel), **B5** (moved
+Fraunces out of the ROOT layout into `(marketing)/layout.tsx` so only marketing
+routes preload it), **F1** (new maths_quadratics mastery question, transcribed
+verbatim from the finding), **F3** (npm audit fix + in-range patch bumps),
+**F4** (settle highlight, dim-on-miss/sweep-on-hit, added to the See-it "Your
+turn" tap_choice task, reusing the mcq radio's own primitive), **F5** (built
+the full real-testimonials feature: `share_consent`+`featured` fields on
+`FeedbackDoc`, a consent checkbox shown only once the parent has typed a
+comment, an admin `feedback.curate` RBAC permission + audited feature/unfeature
+toggle that server-side REFUSES to feature anything without the parent's own
+submission-time consent, a public `/api/testimonials` route, and the marketing
+`Testimonials` component swapping from curated to real once ≥2 real ones exist).
+**B4** and **F2** were investigated but shipped NO code: B4's "bare Loading…"
+was a scout misread of `PageSkeleton`'s `role=status aria-label=Loading`
+(already correct, shipped back in August); F2 needed a `chrome-devtools`
+performance trace this run's toolset didn't have (Playwright only), so it was
+left for a future run with that MCP server rather than guess a fix blind. **F6**
+was correctly left unbuilt: the finding's own "Change" was an "e.g." illustrative
+example, not a complete authored question, nothing to transcribe.
+
+MISTAKE to not repeat: wrote several em-dashes into my OWN new code comments
+across multiple already-committed files before catching it (the owner's
+no-dash rule). Caught it only when re-grepping the whole diff at the end, and
+it cost a whole extra "fix punctuation" commit + a stream-stall the coordinator
+had to nudge me out of. LESSON: grep every newly-written file for `—`/`–`/`--`
+as punctuation IMMEDIATELY after writing it, before running the gate, not as
+an afterthought at the very end of the run: cheaper to catch one file at a
+time than to audit a 10-file diff retroactively.
+
+SEED GOTCHA reconfirmed (matches prior entries): F1 changed a tuple-format
+question's `prompt` (the natural key), which orphans the old row on `npm run
+seed` (seed only upserts, never deletes). Ran seed, then wrote a one-off
+`scripts/_retire-f1-quadratics.mts` (modeled on `seed.ts`'s own env loading) to
+`deleteMany` the orphaned "Solve x² − 5x + 6 = 0." doc, verified orphan count 0
+and the replacement's answer live, then deleted the script. Never skip this
+step when a seed-question fix renames a prompt.
+
+LIVE VERIFICATION worked well this run: drove Ivy through a real
+maths_quadratics Practice question to 3 wrong tries, reaching the See-it
+walkthrough's "Your turn" tap_choice task TWICE in one session (once on a
+genuine ± roots question confirming B1's fix doesn't regress the true-positive
+"half" case, once via a fresh Mastery attempt on the EXACT B1 repro question
+"Expand (x − 4)²" picking option B, Eddie's line came back as a plain
+generic-wrong message, not "that's one of the two answers", and the "Does it
+fit?" reveal's own Your-turn prompt fell back to the generic "which answer
+would you keep?" instead of falsely asking "which is only half right?"). Same
+drive doubled as F4's live check (dim-on-miss visible on the wrong tap,
+accent-sweep+check on the right one, screenshots confirmed both) with zero
+console errors across the whole session. Also drove F5 fully round-trip live:
+submitted real feedback with consent via the SMOKE parent, confirmed the
+"Public quote" column + Feature/Unfeature toggle as admin (refused for the two
+pre-existing legacy rows with no `share_consent`, as designed), then toggled my
+test row back to unfeatured so it doesn't leak once a second real testimonial
+exists. `git add -p` was the right tool for splitting one findings-file diff
+with two adjacent hunks (F5 done, F6 not) into two honest commits.
