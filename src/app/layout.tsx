@@ -1,21 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
-import { Fraunces } from "next/font/google";
 import "./globals.css";
 import { SITE_URL } from "@/lib/site";
 import { PWARegister } from "@/components/pwa/pwa-register";
 
-// Editorial serif for the warm marketing theme — heritage, high-trust,
-// "clean editorial typography" per the web brief. Used for marketing display
-// headings via the `.theme-warm` scope; the app/child/admin keep Geist.
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-editorial",
-  display: "swap",
-});
+// B5: the editorial Fraunces serif used to be loaded HERE, in the root
+// layout, even though it is only ever rendered inside the `.theme-warm`
+// marketing scope. Because every next/font instance declared in the root
+// layout shares one preload pass, that put 2 Fraunces font files on the
+// sitewide preload list, fetched (and warned as unused) on every single
+// dashboard/child/admin page load that never renders Fraunces at all. It now
+// lives in `(marketing)/layout.tsx`, the one place that actually uses it, so
+// only marketing routes preload it and every other route group is unaffected.
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
@@ -107,7 +104,7 @@ export default function RootLayout({
   return (
     <html
       lang="en-GB"
-      className={`${GeistSans.variable} ${GeistMono.variable} ${fraunces.variable}`}
+      className={`${GeistSans.variable} ${GeistMono.variable}`}
       suppressHydrationWarning
     >
       <body className="font-sans antialiased selection:bg-violet-600 selection:text-white">

@@ -1,3 +1,4 @@
+import { Fraunces } from "next/font/google";
 import { MarketingNav } from "@/components/marketing/nav";
 import { MarketingFooter } from "@/components/marketing/footer";
 import { ScrollProgress } from "@/components/fx/scroll-progress";
@@ -10,6 +11,17 @@ import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 import { ReducedMotionProvider } from "@/components/fx/reduced-motion-provider";
 import { LazyMotionProvider } from "@/components/fx/lazy-motion-provider";
 
+// Editorial serif for the warm marketing theme, heritage, high-trust,
+// "clean editorial typography" per the web brief (B5: moved from the root
+// layout so only marketing routes preload it — see src/app/layout.tsx).
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-editorial",
+  display: "swap",
+});
+
 export default function MarketingLayout({
   children,
 }: {
@@ -18,7 +30,7 @@ export default function MarketingLayout({
   return (
     <ReducedMotionProvider>
     <LazyMotionProvider>
-    <div className="theme-warm relative min-h-screen overflow-x-clip bg-linen-100 text-ink-800">
+    <div className={`theme-warm ${fraunces.variable} relative min-h-screen overflow-x-clip bg-linen-100 text-ink-800`}>
       {/* Organization/WebSite/Product JSON-LD on every marketing page. */}
       <StructuredData />
       {/* Warm, editorial ambient backdrop — soft linen paper, no neon. */}
