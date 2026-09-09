@@ -245,7 +245,12 @@ const QUESTIONS_BY_TOPIC: Record<string, QTuple[]> = {
   maths_quadratics: [
     [5, "diagnostic", "Factorise x² + 5x + 6.", ["(x+2)(x+3)", "(x+1)(x+6)", "(x+2)(x+4)", "(x−2)(x−3)"], 0, "2 and 3 multiply to 6 and add to 5."],
     [5, "practice", "Solve x² − 9 = 0.", ["x = ±3", "x = 9", "x = ±9", "x = 3"], 0, "x² = 9, so x = 3 or x = −3."],
-    [5, "mastery", "Solve x² − 5x + 6 = 0.", ["x = 2 or 3", "x = 1 or 6", "x = −2 or −3", "x = 0 or 5"], 0, "Factorises to (x−2)(x−3) = 0."],
+    // F1 (2026-09-08): replaced the near-duplicate of the "by factorising"
+    // command-word item above (same equation, x² − 5x + 6 = 0) with a
+    // genuinely distinct quadratic so certifying this topic actually proves
+    // independent recall of the factorising method, not pattern-matched
+    // numbers. Hand re-derived: 10 = 2×5, 2+5=7, both negative → −7x, +10.
+    [5, "mastery", "Solve x² − 7x + 10 = 0.", ["x = 2 or x = 5", "x = −2 or x = −5", "x = 2 or x = −5", "x = 7 or x = 10"], 0, "Find two numbers that multiply to 10 and add to −7: −2 and −5. So the factors are (x − 2)(x − 5), giving x = 2 or x = 5."],
     [5, "mastery", "Expand (x − 4)².", ["x² − 8x + 16", "x² + 16", "x² − 16", "x² − 8x − 16"], 0, "(x−4)(x−4) = x² − 8x + 16."],
   ],
   maths_geometry: [
@@ -459,6 +464,12 @@ const MISCONCEPTIONS_BY_PROMPT: Record<string, string[]> = {
     "",
     "Looks like the 2 was dropped from the x. Multiply each term inside by 2.",
     "Close — multiply the 3 by 2 as well: 2 × 3 = 6, not 5.",
+  ],
+  "maths_quadratics::Solve x² − 7x + 10 = 0.": [
+    "",
+    "This flips both signs, expanding (x + 2)(x + 5) gives x² + 7x + 10, not x² − 7x + 10.",
+    "This mixes a positive and negative root, which doesn't factorise back to the original equation.",
+    "This uses the coefficients (7 and 10) directly as the roots instead of factorising first.",
   ],
   // ── English ──
   "eng_spelling::Choose the correct spelling.": [

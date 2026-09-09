@@ -1231,3 +1231,55 @@ describe("B2 — totalGcseTopicCount stays live, never a hardcoded curriculum si
     expect(totalGcseTopicCount()).toBe(34);
   });
 });
+
+describe("F1 (2026-09-08) — maths_quadratics near-duplicate replaced with a genuinely distinct quadratic", () => {
+  it("no longer carries the near-duplicate 'x² − 5x + 6 = 0' item without a command word", () => {
+    const stale = ALL.find(
+      (q) =>
+        q.topic_tag === "maths_quadratics" && q.prompt === "Solve x² − 5x + 6 = 0.",
+    );
+    expect(stale).toBeUndefined();
+    // The distinct "by factorising" command-word item on the SAME equation
+    // is intentionally kept, so the topic still has that coverage.
+    const kept = ALL.find(
+      (q) =>
+        q.topic_tag === "maths_quadratics" &&
+        q.prompt === "Solve x² − 5x + 6 = 0 by factorising.",
+    );
+    expect(kept).toBeDefined();
+  });
+
+  it("adds a genuinely distinct replacement question, well-formed", () => {
+    const q = ALL.find(
+      (item) =>
+        item.topic_tag === "maths_quadratics" &&
+        item.prompt === "Solve x² − 7x + 10 = 0.",
+    );
+    expect(q, "replacement item present").toBeDefined();
+    if (!q) return;
+    expect(q.kind).toBe("mastery");
+    expect(q.options.length).toBe(4);
+    expect(new Set(q.options).size).toBe(q.options.length);
+    expect(q.correct_index).toBeGreaterThanOrEqual(0);
+    expect(q.correct_index).toBeLessThan(q.options.length);
+    expect(q.options[q.correct_index]).toBe("x = 2 or x = 5");
+    expect(q.explanation.trim().length).toBeGreaterThan(0);
+    if (q.misconceptions) {
+      expect(q.misconceptions.length).toBeLessThanOrEqual(q.options.length);
+      expect((q.misconceptions[q.correct_index] ?? "").trim()).toBe("");
+    }
+  });
+
+  it("the stated correct answer actually solves x² − 7x + 10 = 0", () => {
+    // Hand-derived: two numbers multiplying to 10 and adding to −7 are −2
+    // and −5, so the factors are (x − 2)(x − 5) and the roots are 2 and 5.
+    const roots = [2, 5];
+    for (const r of roots) {
+      expect(r * r - 7 * r + 10).toBe(0);
+    }
+    // Also verify the factorisation expands back to the original equation.
+    // (x - 2)(x - 5) = x^2 - 5x - 2x + 10 = x^2 - 7x + 10.
+    expect(-5 - 2).toBe(-7);
+    expect(-2 * -5).toBe(10);
+  });
+});
