@@ -1946,6 +1946,37 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "Hydrochloric acid is a solution, not a gas. It does not turn into gas and escape. The magnesium ribbon reacting completely is why the reaction stops.",
     ],
   },
+  // F2 (2026-09-12): the same Required Practical 11's other examinable method,
+  // sodium thiosulfate plus HCl "disappearing cross" turbidity method
+  // (transcribed verbatim from the owner-approved finding).
+  {
+    topic_tag: "sci_reactions",
+    subject: "science",
+    tier: 4,
+    key_stage: 4,
+    kind: "practice",
+    prompt:
+      "In the same required practical, a student instead reacts sodium thiosulfate solution with dilute hydrochloric acid in a flask standing on a piece of paper marked with a black cross, and records the time taken until the cross can no longer be seen through the flask from above. Why is this time a valid way to measure the rate of this reaction?",
+    options: [
+      "The reaction produces an insoluble, cloudy sulfur precipitate, and a faster reaction produces enough precipitate to block the view of the cross sooner.",
+      "The acid reacts with the ink of the cross and fades it, so a faster reaction fades the cross sooner.",
+      "The reaction releases a gas that lifts the paper away from the flask, hiding the cross sooner.",
+      "The reaction heats the glass flask until it becomes frosted and opaque, hiding the cross sooner.",
+    ],
+    correct_index: 0,
+    explanation:
+      "Sodium thiosulfate and hydrochloric acid react to form a fine, insoluble precipitate of sulfur, which makes the solution turn cloudy (increases its turbidity). The faster the reaction, the faster enough sulfur forms to block the view of the cross, so a shorter time means a faster reaction.",
+    hints: [
+      "Think about what solid substance is formed in this particular reaction.",
+      "Sodium thiosulfate plus hydrochloric acid produces a cloudy sulfur precipitate, and that is what blocks the view, not anything to do with the paper, a gas, or heat.",
+    ],
+    misconceptions: [
+      "",
+      "The acid does not react with the ink. The cross is hidden by the cloudy sulfur precipitate forming in the solution, not by a change to the paper itself.",
+      "This reaction does not produce a gas that could lift the paper. It produces a solid sulfur precipitate that clouds the liquid.",
+      "The reaction is only mildly exothermic and does not frost the glass. The cross is hidden by cloudiness in the liquid, not a change to the glass.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */

@@ -1303,3 +1303,21 @@ describe("F1 (2026-09-12): sci_reactions AQA Required Practical 11 gas-volume it
     expect(gasVolumeItems.length).toBe(1);
   });
 });
+
+describe("F2 (2026-09-12): sci_reactions AQA Required Practical 11 turbidity item", () => {
+  it("adds a well-formed item keyed to the sulfur-precipitate answer", () => {
+    expectWellFormedItem(
+      "sci_reactions",
+      "science",
+      "In the same required practical, a student instead reacts sodium thiosulfate solution with dilute hydrochloric acid in a flask standing on a piece of paper marked with a black cross, and records the time taken until the cross can no longer be seen through the flask from above. Why is this time a valid way to measure the rate of this reaction?",
+      "The reaction produces an insoluble, cloudy sulfur precipitate, and a faster reaction produces enough precipitate to block the view of the cross sooner.",
+    );
+  });
+
+  it("is a genuinely distinct method from F1's gas-volume item (different apparatus, different signal)", () => {
+    const turbidityItems = ALL.filter(
+      (q) => q.topic_tag === "sci_reactions" && /disappearing|black cross|thiosulfate/i.test(q.prompt),
+    );
+    expect(turbidityItems.length).toBe(1);
+  });
+});
