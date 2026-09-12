@@ -3351,3 +3351,94 @@ LESSON reinforced: grep the ENTIRE diff (report AND backlog.md, not just
 whichever file was open) for the dash characters immediately before every
 commit, since a heredoc/here-doc block is just as easy to slip a dash into as
 free-typed prose.
+
+## 2026-09-12 (Mechanic, build pass for 2026-09-12 findings, DECISION: all)
+
+Shipped all 5 bugs and all 8 features, each green-gated (type-check + test +
+lint + build) then pushed as its own commit: **B1** (the real fix: switched
+the mock-unlock gate's three call sites, `learn/page.tsx`, `learn/mock/
+page.tsx`, and the actual server-side access-control redirect in `learn/
+mock/[subject]/page.tsx`, from the all-band `certifiedBySubject` to the
+existing `certifiedGcseBySubject`, so a child can no longer see a GCSE mock
+unlocked on padded pre-GCSE certifications; also fixed the quest card's
+hardcoded "10/10" copy to the real progress label), **B2** (added
+`countCertifiedGcse`, summed from the same `certifiedGcseBySubject`, and
+switched the dashboard card + child-profile page onto it so both agree with
+the portfolio), **B3** (a cached, threshold-gated `newsletterHeadline` pure
+helper: non-numeric copy below 100 real subscribers, names the real count
+once it clears that bar), **B4** (see MISTAKE/LESSON below), **B5** (one-word
+copy fix distinguishing "working level" from "boundary estimate" so the two
+grade figures never read as contradictory), **F1/F2** (the two sci_reactions
+required-practical questions, transcribed verbatim), **F3** (the first real
+GCSE-tier stretch item, maths_quadratics quadratic formula), **F4** (the
+maths_transformations rotation item), **F5** (a genuinely separate
+"Foundations complete" secondary figure alongside the GCSE-spec one, built on
+a new pure `foundationsCertifiedCount` helper), **F6** (a real Notifications
+panel: `last_notifications_viewed_at` on `ParentDoc`, a pure
+`countUnreadNotifications` helper, and a client dropdown reusing the activity
+feed's own copy formatter), **F7** (FAQPage JSON-LD on `/for-parents`,
+mirroring the existing CourseJsonLd/BreadcrumbJsonLd pattern), **F8** (the
+scoped in-range dependency bump batch). Ran `npm run seed` once, deliberately,
+after F1-F4 were committed (10 questions written; the topic content for all
+four new questions is confirmed live in MongoDB).
+
+SCOUT-FILE QUIRK worth flagging: today's findings file (`a43966f`) arrived
+with every item ALREADY marked `[x]` in the checkboxes, unlike every prior
+day (which starts `[ ]` and Mechanic flips them as it ships). Since no commit
+on `main` named any of today's IDs yet, this was clearly not genuine
+prior completion, just a template/formatting slip in Scout's write-up. Acted
+on it correctly this time (built everything per the owner's own message
+listing the exact IDs, not the checkbox state), but future Mechanic runs
+should NOT treat "already `[x]`" alone as proof of completion without a
+corroborating commit on `main` naming that ID, exactly as the agent
+definition already says, this is a concrete example of why that corroboration
+clause exists, not just a hypothetical.
+
+MISTAKE / re-investigation, B4 (Fraunces preload): the finding's own repro
+(`browser_evaluate` on `link[rel=preload]`) still showed the marketing CSS
+chunk preloading on `/login` even AFTER shipping `preload: false` on the
+Fraunces call, which looked at first like a SECOND silently-failed fix (a
+fourth instance of the "shipped fix that didn't work" pattern, following
+2026-09-08's B5). Investigated properly before assuming that: a clean local
+`next build`'s own manifests (`entryCSSFiles` in each route's
+`page_client-reference-manifest.js`) proved `/login` and `/dashboard` get
+ZERO Fraunces references in a truly fresh, hard navigation, matching curl's
+`Link:` response header (2 legitimate GeistSans/GeistMono preloads only, no
+Fraunces). The `/login` CSS preload I saw was Next.js's own ORDINARY
+`<Link>` prefetching: the `(auth)` layout's header logo links to `/`
+(a real, visible link), so once hydrated, Next's router legitimately
+prefetches that destination's assets, including Fraunces, the exact same
+behaviour any visible link to another route would trigger, not the bug
+(every route preloading a font it would never use) the finding described.
+Confirmed the fix is genuinely complete with a fresh, ISOLATED tab
+(`browser_tabs` new + direct `goto`, no prior navigation in that tab) to
+`/dashboard` and `/settings`: preload list was clean both times. LESSON: when
+a live re-check of a fix looks like it failed, check whether the SAME
+browser tab visited a page moments earlier that could have triggered
+ordinary client-side route prefetching before concluding the fix regressed;
+a genuinely fresh, isolated tab is the only clean re-test for a preload/
+prefetch claim, matching a first-time-visitor's real experience.
+
+LIVE VERIFICATION this run: drove every user-facing item as the SMOKE parent
+(dashboard, child-profile, `/learn` and `/learn/mock` in child mode via the
+active-child cookie, `/for-parents`) plus the public footer unauthenticated.
+Confirmed B1 live down to the exact numbers (Maths "7/10", locked, matching
+the finding's own repro), B2/F5 live and consistent across the dashboard card
+and child-profile page ("19/34" and "12 pre-GCSE foundations complete" in
+both places), B3's honest non-numeric footer copy, B5's now-distinct grade
+labels, F6's full round-trip (opened the panel, watched the real unread badge
+"8" clear optimistically, then confirmed the clear PERSISTED after a hard
+reload, proving the server-side `last_notifications_viewed_at` write actually
+landed), and F7's `FAQPage` JSON-LD with all 5 real question names. `npm run
+seed`'s own "10 written" plus a clean `/learn/lesson?topic=maths_transformations`
+load (zero console errors) stood in for F1-F4's live check, since landing on
+the exact new question within one session isn't guaranteed. Zero runtime
+errors on the deployment throughout (`get_runtime_errors`, checked twice).
+Signed out (`fetch('/logout', {method:'POST'})`, GET is 405 on this route,
+POST is required) and closed every tab at the end.
+
+Network note: both `git push` and `npm run seed` hit a transient DNS
+resolution failure on the first attempt this run (`ENOTFOUND` for
+github.com and the Mongo Atlas shard hosts respectively), unrelated to any
+code change, resolved cleanly on a same-command retry. Worth a quick retry
+before treating either as a real failure.
