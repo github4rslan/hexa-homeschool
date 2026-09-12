@@ -5172,6 +5172,39 @@ export async function setEventNotificationsOptOut(
   return true;
 }
 
+/**
+ * F6: when the parent last opened the notifications panel, or null if never.
+ * Read-only; drives the unread badge only.
+ */
+export async function getLastNotificationsViewedAt(
+  parentId: string,
+): Promise<Date | null> {
+  const oid = toObjectId(parentId);
+  if (!oid) return null;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  const doc = await col.findOne(
+    { _id: oid },
+    { projection: { last_notifications_viewed_at: 1 } },
+  );
+  return doc?.last_notifications_viewed_at ?? null;
+}
+
+/**
+ * F6: record that the parent has just opened the notifications panel, so
+ * everything currently in the feed reads as "seen" going forward. Best-effort;
+ * a write hiccup here must never block the panel from opening.
+ */
+export async function markNotificationsViewed(parentId: string): Promise<boolean> {
+  const oid = toObjectId(parentId);
+  if (!oid) return false;
+  const col = await getCollection<ParentDoc>(Collections.parents);
+  await col.updateOne(
+    { _id: oid },
+    { $set: { last_notifications_viewed_at: new Date() } },
+  );
+  return true;
+}
+
 // ── Parent milestone events (Wave 7, Phase 5) ────────────
 
 export interface ParentEventInput {

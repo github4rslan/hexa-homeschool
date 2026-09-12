@@ -156,3 +156,17 @@ export function buildParentEventCopy(
     }
   }
 }
+
+/**
+ * F6: how many of the given feed items are "unread" for the notifications
+ * panel badge, real events strictly newer than the parent's own last-viewed
+ * timestamp. Never viewed (`null`) = every item is unread. Pure, so the badge
+ * logic is unit-tested without a database.
+ */
+export function countUnreadNotifications(
+  itemTimes: Date[],
+  lastViewedAt: Date | null,
+): number {
+  if (!lastViewedAt) return itemTimes.length;
+  return itemTimes.filter((at) => at.getTime() > lastViewedAt.getTime()).length;
+}

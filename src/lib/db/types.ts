@@ -118,6 +118,13 @@ export interface ParentDoc {
    */
   event_notifications_opt_out?: boolean;
   /**
+   * F6: when the parent last opened the dashboard notifications panel.
+   * Drives the unread badge (any `parent_events` row newer than this is
+   * "unread"); absent = every real event is unread. Set only by opening the
+   * panel, never by reading the activity feed elsewhere.
+   */
+  last_notifications_viewed_at?: Date;
+  /**
    * Parent mobile in E.164 (e.g. "+447700900123"), for immediate-severity
    * safety SMS alerts. Absent = no SMS (email + dashboard remain the baseline).
    */

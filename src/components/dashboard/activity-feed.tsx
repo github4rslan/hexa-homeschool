@@ -38,7 +38,7 @@ interface Style {
   icon: string;
 }
 
-const STYLES: Record<ActivityFeedRow["kind"], Style> = {
+export const ACTIVITY_FEED_STYLES: Record<ActivityFeedRow["kind"], Style> = {
   mastery: {
     Icon: Award,
     ring: "bg-neon-500/10 border-neon-400/25",
@@ -76,9 +76,15 @@ const STYLES: Record<ActivityFeedRow["kind"], Style> = {
   },
 };
 
-/** Warm, first-name presentation for one row. Titles are milestone-led; the
- * detail carries the child + specifics. */
-function present(row: ActivityFeedRow): { title: string; detail: string } {
+/**
+ * Warm, first-name presentation for one row. Titles are milestone-led; the
+ * detail carries the child + specifics. Exported (F6) so the notifications
+ * panel renders the exact same copy as the "Recent activity" card, one
+ * source of truth for how a milestone reads.
+ */
+export function presentActivityFeedRow(
+  row: ActivityFeedRow,
+): { title: string; detail: string } {
   const first = row.childName.split(" ")[0];
   const topic = row.topicTitle?.trim() || "a topic";
   switch (row.kind) {
@@ -131,8 +137,8 @@ export function ActivityFeed({ rows }: { rows: ActivityFeedRow[] }) {
   return (
     <ul className="flex flex-col gap-4">
       {rows.map((row, i) => {
-        const s = STYLES[row.kind];
-        const { title, detail } = present(row);
+        const s = ACTIVITY_FEED_STYLES[row.kind];
+        const { title, detail } = presentActivityFeedRow(row);
         return (
           <motion.li
             key={i}

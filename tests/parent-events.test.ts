@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   attemptsPhrase,
   buildParentEventCopy,
+  countUnreadNotifications,
   masteryHighlightLine,
   type ParentEventType,
 } from "@/lib/engine/parent-events";
@@ -156,5 +157,26 @@ describe("buildParentEventCopy — legacy safety", () => {
       expect(copy.feedTitle).toContain("a new topic");
       expect(copy.feedTitle).not.toContain("undefined");
     }
+  });
+});
+
+describe("countUnreadNotifications (F6, the real notifications panel badge)", () => {
+  const now = new Date("2026-09-12T12:00:00.000Z");
+  const hourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+  const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+  it("treats every item as unread when never viewed (null)", () => {
+    expect(countUnreadNotifications([now, hourAgo, dayAgo], null)).toBe(3);
+    expect(countUnreadNotifications([], null)).toBe(0);
+  });
+
+  it("counts only items strictly newer than the last-viewed timestamp", () => {
+    expect(countUnreadNotifications([now, hourAgo, dayAgo], hourAgo)).toBe(1);
+    expect(countUnreadNotifications([now, hourAgo, dayAgo], now)).toBe(0);
+    expect(countUnreadNotifications([now, hourAgo, dayAgo], dayAgo)).toBe(2);
+  });
+
+  it("returns 0 for an empty feed regardless of last-viewed", () => {
+    expect(countUnreadNotifications([], now)).toBe(0);
   });
 });
