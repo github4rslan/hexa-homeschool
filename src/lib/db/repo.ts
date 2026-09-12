@@ -1743,6 +1743,18 @@ export async function certifiedGcseBySubject(
   return result;
 }
 
+/**
+ * Total GCSE (key_stage 4) certified-topic count across all subjects for a
+ * child (B2): the all-band `countCertified` equivalent, but GCSE-only, so a
+ * dashboard figure computed from this and one computed from
+ * `certifiedGcseBySubject` (the compliance portfolio's own convention) always
+ * agree for the same child on the same day.
+ */
+export async function countCertifiedGcse(childId: ObjectId): Promise<number> {
+  const bySubject = await certifiedGcseBySubject(childId);
+  return Object.values(bySubject).reduce((sum, n) => sum + n, 0);
+}
+
 export interface TopicMapNode {
   topicTag: string;
   title: string;

@@ -11,8 +11,8 @@ import {
   currentParentId,
   getChildById,
   latestEvaluationsBySubject,
-  countCertified,
-  certifiedBySubject,
+  countCertifiedGcse,
+  certifiedGcseBySubject,
   listMedia,
   getWeeklySchedule,
   evaluationHistory,
@@ -60,8 +60,11 @@ export default async function ChildProfilePage({
 
   const standings = await latestEvaluationsBySubject(child._id);
   const history = await evaluationHistory(child._id);
-  const certified = await countCertified(child._id);
-  const certifiedCounts = await certifiedBySubject(child._id);
+  // B2: GCSE-only counts, matching the compliance portfolio's own convention,
+  // so this page never disagrees with a portfolio generated for the same
+  // child on the same day.
+  const certified = await countCertifiedGcse(child._id);
+  const certifiedCounts = await certifiedGcseBySubject(child._id);
   const bands = await childCurrentBands(parentId, child._id);
   // Per-subject working band, so a subject with no diagnostic/mock evaluation
   // but real lesson-based progress still shows an honest standing (B1).

@@ -22,7 +22,7 @@ import {
   findParentById,
   listChildren,
   resolveActiveChild,
-  countCertified,
+  countCertifiedGcse,
   latestEvaluationsBySubject,
   recentLogs,
   countCertifiedSince,
@@ -133,8 +133,11 @@ async function buildChildViews(kids: ChildDoc[]): Promise<ChildView[]> {
   return Promise.all(
     kids.map(async (kid): Promise<ChildView> => {
       const childId = kid._id!;
+      // B2: GCSE-only certified count, matching the compliance portfolio's own
+      // convention, so this figure never disagrees with a portfolio generated
+      // for the same child on the same day.
       const [certifiedCount, standings] = await Promise.all([
-        countCertified(childId),
+        countCertifiedGcse(childId),
         latestEvaluationsBySubject(childId),
       ]);
       const grades = standings
