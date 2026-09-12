@@ -189,12 +189,15 @@ export default async function ChildProfilePage({
                     </div>
                     <div className="text-[10px] font-mono uppercase tracking-widest text-fog-500">
                       {s.fromMock ? "Mock score" : "Readiness"}
-                      {s.grade ? ` · ${s.grade}` : ""}
+                      {/* B5: "working level" distinguishes this from the boundary
+                          estimate below, so the two grade figures never read as
+                          contradicting each other. */}
+                      {s.grade ? `, working level ${s.grade}` : ""}
                     </div>
                     {s.fromMock && s.mockBoundaryGrade && (
                       <div className="mt-1 text-xs text-amber-200/90">
-                        Exam-style grade {s.mockBoundaryGrade} (approximate
-                        boundaries)
+                        Boundary estimate: grade {s.mockBoundaryGrade}{" "}
+                        (approximate)
                       </div>
                     )}
                     {bandBySubject.has(s.subject) && (
