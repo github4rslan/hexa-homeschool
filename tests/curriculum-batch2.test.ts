@@ -1283,3 +1283,23 @@ describe("F1 (2026-09-08, maths_quadratics near-duplicate replaced with a genuin
     expect(-2 * -5).toBe(10);
   });
 });
+
+describe("F1 (2026-09-12): sci_reactions AQA Required Practical 11 gas-volume item", () => {
+  it("adds a well-formed item keyed to the reactant-used-up answer", () => {
+    expectWellFormedItem(
+      "sci_reactions",
+      "science",
+      "A student investigates the rate of reaction between magnesium ribbon and dilute hydrochloric acid using a conical flask connected to a gas syringe, recording the volume of gas produced every 10 seconds (AQA Required Practical 11). The graph of gas volume against time rises steeply at first, then curves and becomes flat (horizontal). Why does the graph become flat?",
+      "The reaction has stopped because one of the reactants (the magnesium) has been completely used up.",
+    );
+  });
+
+  it("was previously zero-coverage for the gas-volume required-practical method", () => {
+    const gasVolumeItems = ALL.filter(
+      (q) =>
+        q.topic_tag === "sci_reactions" &&
+        /gas syringe|gas produced/i.test(q.prompt),
+    );
+    expect(gasVolumeItems.length).toBe(1);
+  });
+});

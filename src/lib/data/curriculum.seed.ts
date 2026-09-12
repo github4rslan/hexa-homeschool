@@ -1916,6 +1916,36 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "The number of offspring produced doesn't affect how genetically varied they are — variation comes from mixing genetic information from two parents.",
     ],
   },
+  // F1 (2026-09-12): AQA 8464 Required Practical 11, rate of reaction,
+  // gas-volume method (transcribed verbatim from the owner-approved finding).
+  {
+    topic_tag: "sci_reactions",
+    subject: "science",
+    tier: 3,
+    key_stage: 4,
+    kind: "practice",
+    prompt:
+      "A student investigates the rate of reaction between magnesium ribbon and dilute hydrochloric acid using a conical flask connected to a gas syringe, recording the volume of gas produced every 10 seconds (AQA Required Practical 11). The graph of gas volume against time rises steeply at first, then curves and becomes flat (horizontal). Why does the graph become flat?",
+    options: [
+      "The reaction has stopped because one of the reactants (the magnesium) has been completely used up.",
+      "The gas syringe has become blocked, so no more gas can be measured.",
+      "The temperature of the flask has dropped to room temperature, which stops all chemical reactions.",
+      "The hydrochloric acid has turned into a gas and escaped from the flask.",
+    ],
+    correct_index: 0,
+    explanation:
+      "The graph flattens once no more gas is being produced, which happens when a reactant runs out. Here the magnesium ribbon is used up completely (the acid is in excess), so the reaction stops and the volume of gas stays constant.",
+    hints: [
+      "Think about what has to happen for gas to stop being produced.",
+      "One of the two reactants (magnesium or acid) must have run out completely.",
+    ],
+    misconceptions: [
+      "",
+      "A blocked syringe would be an equipment fault, not a chemistry reason. The real reason is that a reactant has been used up.",
+      "Reactions do not stop simply because the flask cools to room temperature; a used-up reactant is why the rate reaches zero here.",
+      "Hydrochloric acid is a solution, not a gas. It does not turn into gas and escape. The magnesium ribbon reacting completely is why the reaction stops.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
