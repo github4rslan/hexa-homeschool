@@ -5,6 +5,7 @@ import { CTA } from "@/components/marketing/cta";
 import { CheckCircle2, MessageCircle, FileText, Calendar, Lightbulb } from "lucide-react";
 import { buildPageMetadata } from "@/lib/site";
 import { BreadcrumbJsonLd } from "@/components/seo/breadcrumb-jsonld";
+import { FaqJsonLd } from "@/components/seo/faq-jsonld";
 
 export const metadata: Metadata = buildPageMetadata({
   path: "/for-parents",
@@ -73,6 +74,7 @@ export default function ForParentsPage() {
   return (
     <>
       <BreadcrumbJsonLd items={[{ name: "For parents", path: "/for-parents" }]} />
+      <FaqJsonLd items={FAQ} />
       <Section padded className="pt-16">
         <SectionHeader
           as="h1"
