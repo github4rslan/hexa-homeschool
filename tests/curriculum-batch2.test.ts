@@ -851,7 +851,8 @@ describe("F1 (2026-08-27) — GCSE Maths transformations strand", () => {
 
   it("ships the three authored starters, well-formed and correctly keyed", () => {
     const qs = SEED_QUESTIONS.filter((q) => q.topic_tag === "maths_transformations");
-    expect(qs.length).toBe(3);
+    // F4 (2026-09-12) added a fourth item (rotation), tested separately below.
+    expect(qs.length).toBe(4);
     for (const q of qs) {
       expect(q.subject).toBe("mathematics");
       expect(q.key_stage).toBe(4);
@@ -1363,5 +1364,36 @@ describe("F3 (2026-09-12): first GCSE-tier stretch item, maths_quadratics quadra
     for (const r of [root1, root2]) {
       expect(r * r + 2 * r - 2).toBeCloseTo(0, 9);
     }
+  });
+});
+
+describe("F4 (2026-09-12): maths_transformations first rotation item", () => {
+  it("adds a well-formed item keyed to the 90-degree-clockwise rule", () => {
+    expectWellFormedItem(
+      "maths_transformations",
+      "mathematics",
+      "A point at (2, 1) is rotated 90 degrees clockwise about the origin (0, 0). Find the new coordinates of the point.",
+      "(1, -2)",
+    );
+  });
+
+  it("was previously zero-coverage for rotations despite the topic naming them", () => {
+    const priorRotationItems = ALL.filter(
+      (q) =>
+        q.topic_tag === "maths_transformations" &&
+        /rotat/i.test(q.prompt) &&
+        q.prompt !== "A point at (2, 1) is rotated 90 degrees clockwise about the origin (0, 0). Find the new coordinates of the point.",
+    );
+    expect(priorRotationItems.length).toBe(0);
+  });
+
+  it("(1, -2) is the correct image under (x, y) -> (y, -x), distinct from the anti-clockwise and 180-degree rules", () => {
+    const point: [number, number] = [2, 1];
+    const clockwise90 = (p: [number, number]): [number, number] => [p[1], -p[0]];
+    const antiClockwise90 = (p: [number, number]): [number, number] => [-p[1], p[0]];
+    const rotate180 = (p: [number, number]): [number, number] => [-p[0], -p[1]];
+    expect(clockwise90(point)).toEqual([1, -2]);
+    expect(antiClockwise90(point)).toEqual([-1, 2]);
+    expect(rotate180(point)).toEqual([-2, -1]);
   });
 });

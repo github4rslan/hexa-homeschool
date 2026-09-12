@@ -2004,6 +2004,32 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "This is just sqrt(discriminant) on its own, without applying -b or dividing by 2a; the formula needs all three steps.",
     ],
   },
+  // F4 (2026-09-12): maths_transformations names "rotations" in its own topic
+  // summary but had zero rotation questions (Edexcel 1MA1 G7, transcribed
+  // verbatim from the owner-approved finding).
+  {
+    topic_tag: "maths_transformations",
+    subject: "mathematics",
+    tier: 4,
+    key_stage: 4,
+    kind: "stretch",
+    prompt:
+      "A point at (2, 1) is rotated 90 degrees clockwise about the origin (0, 0). Find the new coordinates of the point.",
+    options: ["(1, -2)", "(-1, 2)", "(-2, -1)", "(2, -1)"],
+    correct_index: 0,
+    explanation:
+      "A 90 degree clockwise rotation about the origin maps (x, y) to (y, -x). So (2, 1) maps to (1, -2).",
+    hints: [
+      "For a 90 degree clockwise rotation about the origin, the x and y values swap places, and one of them changes sign.",
+      "The rule is (x, y) to (y, -x): the new x is the old y, and the new y is the negative of the old x.",
+    ],
+    misconceptions: [
+      "",
+      "This is the rule for a 90 degree ANTI-clockwise rotation, (x, y) to (-y, x); the question asks for clockwise.",
+      "This is the rule for a 180 degree rotation, (x, y) to (-x, -y); the question asks for a 90 degree turn, not a half turn.",
+      "This only flips the sign of y without swapping the x and y values; a 90 degree rotation swaps them as well as changing a sign.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
