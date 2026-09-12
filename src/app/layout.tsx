@@ -5,14 +5,14 @@ import "./globals.css";
 import { SITE_URL } from "@/lib/site";
 import { PWARegister } from "@/components/pwa/pwa-register";
 
-// B5: the editorial Fraunces serif used to be loaded HERE, in the root
-// layout, even though it is only ever rendered inside the `.theme-warm`
-// marketing scope. Because every next/font instance declared in the root
-// layout shares one preload pass, that put 2 Fraunces font files on the
-// sitewide preload list, fetched (and warned as unused) on every single
-// dashboard/child/admin page load that never renders Fraunces at all. It now
-// lives in `(marketing)/layout.tsx`, the one place that actually uses it, so
-// only marketing routes preload it and every other route group is unaffected.
+// B5 (2026-09-08): the editorial Fraunces serif used to be loaded HERE, in
+// the root layout, even though it is only ever rendered inside the
+// `.theme-warm` marketing scope. It now lives in `(marketing)/layout.tsx`,
+// the one place that actually uses it. B4 (2026-09-12) found that moving the
+// declaration alone did not stop the preload hint from firing on every route
+// group in production, so `(marketing)/layout.tsx`'s `Fraunces` call also
+// sets `preload: false`, which removes the hint at the source rather than
+// relying on route-group isolation.
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),

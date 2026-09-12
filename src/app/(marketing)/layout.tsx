@@ -12,14 +12,26 @@ import { ReducedMotionProvider } from "@/components/fx/reduced-motion-provider";
 import { LazyMotionProvider } from "@/components/fx/lazy-motion-provider";
 
 // Editorial serif for the warm marketing theme, heritage, high-trust,
-// "clean editorial typography" per the web brief (B5: moved from the root
-// layout so only marketing routes preload it, see src/app/layout.tsx).
+// "clean editorial typography" per the web brief. B5 (2026-09-08) moved this
+// declaration here (out of the root layout) on the theory that route-group
+// layout nesting alone would scope the preload to marketing routes; B4
+// (2026-09-12) re-verified live (`browser_evaluate` + the response's own
+// `Link:` preload header on `/login`) that the preload STILL fires on
+// non-marketing routes despite that move, confirmed by inspecting a clean
+// `next build`'s own manifests (`entryCSSFiles`), which show this route
+// correctly getting NO Fraunces CSS, so the leak is in Next's font-preload
+// hinting, not in which routes load the stylesheet. `preload: false` is the
+// one option that removes the hint at the source regardless of that
+// mechanism, so non-marketing routes never fetch a font they never render.
+// Marketing pages still load Fraunces via the CSS `@font-face` rule (no
+// preload hint), and `display: "swap"` already avoids an invisible-text flash.
 const fraunces = Fraunces({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],
   variable: "--font-editorial",
   display: "swap",
+  preload: false,
 });
 
 export default function MarketingLayout({
