@@ -215,6 +215,19 @@ still lists correctly as a prerequisite).
   `maths_transformations` (authored 08-27, shipped 08-28); `maths_simultaneous`
   (authored 08-28, shipped 08-28 per the same-day report — topic + worked
   example + 3 starters, all live-confirmed).
+- 2026-09-12 (Scout): authored F6's next step. Two fully hand-derived
+  required-practical methodology questions for `sci_reactions` (no new
+  topic needed, so no interaction with EPIC 22's topic-count denominator):
+  one on the gas-volume method (magnesium plus dilute HCl, a gas syringe,
+  "why does the graph go flat") and one on the turbidity method (sodium
+  thiosulfate plus HCl, the disappearing-cross experiment), both re-derived
+  against AQA's own spec page and practicals handbook, filed today as F1 and
+  F2, pending owner seed approval. Separately found a precise, previously
+  untracked sub-skill gap: `maths_transformations` names "rotations" in its
+  topic summary but its 3 existing questions cover only enlargement,
+  translation, and a conceptual reflection identification; zero rotation
+  computation exists. Authored a 90-degree-clockwise-about-origin question,
+  filed today as F4.
 
 ## EPIC 4 — Exam-condition fidelity in the mock (rehearse exam day)
 Status: ACTIVE. A real gentle countdown timer, marks/boundary-grade work, the
@@ -459,3 +472,45 @@ document literally titled "Local Authority portfolio" and marked "Verified".
   slice (a new `sci_practicals` topic, if pursued) will change the exact GCSE
   topic count again, so land this epic before or alongside that one.
 - Done so far: filed only (B2, 2026-09-08); not yet shipped.
+- 2026-09-12 (Scout): re-audited live post-fix. The portfolio side is
+  genuinely correct now (a fresh Q3 2026 portfolio for Ivy reads 19/34
+  overall, 7/14 Maths, 6/10 English, 6/10 Science, all GCSE-only). But the
+  fix was incomplete: two more call sites still use the old all-band blend
+  and were never updated to match. (1) The dashboard card and child-profile
+  page still compute their "N topics certified" figures from all-band
+  `certifiedCounts`/`countCertified` against the GCSE-only `TOTAL_TOPICS`, so
+  Ivy's dashboard reads "31/34" (91%) the same day her own portfolio says
+  19/34 (56%), filed today as B2. (2) `lib/engine/mock-gate.ts`'s
+  `mockUnlockCount` gate compares the same all-band `certifiedBySubject`
+  count against its floor of 10, so a child can unlock a subject's real GCSE
+  mock exam having certified only half the subject's actual GCSE topics,
+  padded by unrelated pre-GCSE prerequisite certifications, filed today as
+  B1 (the higher-stakes one, since it changes real mock-exam access, not
+  just a displayed number). Both need the same owner decision this epic has
+  been asking for since 2026-09-08: does a pre-GCSE band certification count
+  toward "GCSE readiness" at all? F5 (filed today) proposes a concrete
+  answer: show both a GCSE-only line and a separate "foundations" line
+  everywhere, rather than picking one number silently.
+- Next step (updated): fix B1 and B2 together in one pass, since they share
+  a root cause and a single owner decision; ship F5's dual-display alongside
+  so the decision is visible to parents, not just correct under the hood.
+
+## EPIC 23 (new): GCSE-tier "stretch" (extension) content is almost entirely missing
+Status: NEW, opened 2026-09-12 (Scout, F3 that day). Counted every `kind`
+value across all five seed files: 383 total questions, of which only 5 are
+`"stretch"`. Of those 5, 4 are in the pre-GCSE `curriculum.seed.bands.ts` file
+(KS2/KS3 content) and the one hit in the main GCSE file `curriculum.seed.ts`
+is the TypeScript union-type declaration itself, not an actual question.
+There is genuinely zero real GCSE-tier (`key_stage: 4`) `"stretch"` question
+anywhere in the bank, even though the engine fully supports the kind. A child
+who has certified a GCSE topic never receives an extension item once they
+reach mastery, a gap specifically at the top end (grades 7 to 9) where
+stretch/extension practice matters most for real exam readiness.
+- Next step: author 1 to 2 stretch items per run across different subjects
+  (not a single sweep), picking topics whose Higher-tier content clearly goes
+  beyond their existing mastery items. 2026-09-12 authored the first one
+  (`maths_quadratics`, the quadratic formula, Edexcel 1MA1 A18) as F3;
+  candidates named for a future run: `maths_pythagoras` (a 3D Pythagoras/trig
+  extension), `sci_atoms` (an isotope-abundance calculation).
+- Done so far: 1 question authored and filed (F3, 2026-09-12), pending owner
+  seed approval; not yet shipped.

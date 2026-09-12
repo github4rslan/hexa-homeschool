@@ -3317,3 +3317,37 @@ pre-existing legacy rows with no `share_consent`, as designed), then toggled my
 test row back to unfeatured so it doesn't leak once a second real testimonial
 exists. `git add -p` was the right tool for splitting one findings-file diff
 with two adjacent hunks (F5 done, F6 not) into two honest commits.
+
+2026-09-12 (Scout, Saturday security-hardening focus): security itself turned
+up nothing new (auth rate limiting, PIN brute-force protection, TOTP-at-rest
+encryption, constant-time cron auth, open-redirect guard, session revocation,
+and headers all re-confirmed healthy), so budget shifted to a deep live child
+and parent pass plus curriculum authoring. Found the EPIC 22 (2026-09-08)
+band-blending fix was only half-shipped: the portfolio route was fixed
+correctly, but the dashboard/child-profile progress figures (B2) AND the
+mock-exam unlock gate itself (B1, the more serious one since it changes real
+mock-exam access) still blend pre-GCSE band certifications into a GCSE-only
+denominator. Re-verified B1 (2026-09-08, classifyOptions half-right) is fixed
+and live, both the false-positive and true-positive paths. Found a THIRD
+example of a "shipped fix that silently did not work in production": B5
+(2026-09-08, Fraunces font preload scoped to marketing-only) still fires the
+exact same preload warning on `/login` and `/dashboard`, confirmed by reading
+the actual CSS chunk content via curl, not just re-reading the code comment
+that claims it works. LESSON: a code comment asserting a fix landed is not
+evidence the fix landed; re-verify with the same live technique the original
+bug used (here, `browser_evaluate` querying `link[rel=preload]`, not just
+reading the file). Found a genuine, previously-unflagged curriculum gap: only
+5 of 383 seed questions are `"stretch"` kind, and zero of those are at GCSE
+level, opened as a new backlog epic (EPIC 23). Also found a real growth/trust
+bug outside the usual technical lanes: the footer's "Join two thousand plus UK
+homeschooling parents" claim contradicts the admin dashboard's own live count
+of 1 real subscriber, a leftover brief-placeholder number never revisited.
+
+MISTAKE almost repeated, caught this time: wrote several em-dashes into the
+findings-report draft (63 instances) before catching it via a full-file grep
+BEFORE committing, not after. Also caught one more em-dash that slipped into
+a `backlog.md` heredoc-appended section header while fixing the first batch.
+LESSON reinforced: grep the ENTIRE diff (report AND backlog.md, not just
+whichever file was open) for the dash characters immediately before every
+commit, since a heredoc/here-doc block is just as easy to slip a dash into as
+free-typed prose.
