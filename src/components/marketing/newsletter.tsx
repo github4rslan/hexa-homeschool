@@ -4,8 +4,9 @@ import { useState } from "react";
 import { Mail, Check, Loader2 } from "lucide-react";
 
 /**
- * Newsletter signup (Brief footer: "Join 2,000+ UK homeschooling parents").
- * Posts to /api/newsletter; idempotent on email.
+ * Newsletter signup form. Posts to /api/newsletter; idempotent on email. The
+ * surrounding headline copy (B3) is driven by the real, live subscriber count
+ * in `components/marketing/footer.tsx`, not a fixed brief placeholder.
  */
 export function Newsletter({ source = "footer" }: { source?: string }) {
   const [email, setEmail] = useState("");

@@ -3,8 +3,11 @@ import { HexaLogo } from "@/components/ui/hexa-logo";
 import { Container } from "@/components/ui/container";
 import { Newsletter } from "@/components/marketing/newsletter";
 import { FOOTER_NAV } from "@/lib/data/navigation";
+import { getNewsletterSubscriberCount } from "@/lib/metrics/server";
+import { newsletterHeadline } from "@/lib/engine/newsletter-copy";
 
-export function MarketingFooter() {
+export async function MarketingFooter() {
+  const subscriberCount = await getNewsletterSubscriberCount();
   return (
     <footer className="relative border-t border-forest-900/10 bg-forest-900 text-linen-100 py-20 mt-32">
       <Container>
@@ -27,8 +30,7 @@ export function MarketingFooter() {
             </p>
             <div className="max-w-xs">
               <p className="text-xs font-semibold uppercase tracking-wider text-forest-100 mb-2">
-                Join two thousand plus UK homeschooling parents for weekly tips
-                and early access.
+                {newsletterHeadline(subscriberCount)}
               </p>
               <Newsletter source="footer" />
             </div>

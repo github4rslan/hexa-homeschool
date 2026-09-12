@@ -2776,6 +2776,15 @@ export async function getDiagnosticPool(
     .toArray();
 }
 
+/**
+ * Real, live newsletter subscriber count (B3): the same countDocuments the
+ * admin overview already runs, reused here so the public marketing footer's
+ * claim can never drift from what the admin dashboard shows.
+ */
+export async function newsletterSubscriberCount(): Promise<number> {
+  return (await getCollection(Collections.newsletter)).countDocuments();
+}
+
 // ── Admin aggregates (real counts, no fabricated metrics) ─
 export interface AdminStats {
   parents: number;

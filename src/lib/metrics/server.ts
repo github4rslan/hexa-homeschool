@@ -4,6 +4,7 @@ import {
   adminBillingBreakdown,
   adminListDossiers,
   adminListParents,
+  newsletterSubscriberCount,
   type AdminDossierRow,
   type AdminParentRow,
 } from "@/lib/db/repo";
@@ -38,6 +39,16 @@ export const getAdminParents = unstable_cache(
 export const getAdminDossiers = unstable_cache(
   async (limit = 20): Promise<AdminDossierRow[]> => adminListDossiers(limit),
   ["admin-dossiers"],
+  { revalidate: REVALIDATE_SECONDS },
+);
+
+/**
+ * Real newsletter subscriber count (B3), cached so the public marketing
+ * footer (rendered on every marketing page) never re-hits Mongo per request.
+ */
+export const getNewsletterSubscriberCount = unstable_cache(
+  async (): Promise<number> => newsletterSubscriberCount(),
+  ["newsletter-subscriber-count"],
   { revalidate: REVALIDATE_SECONDS },
 );
 
