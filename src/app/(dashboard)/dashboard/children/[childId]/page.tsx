@@ -13,6 +13,8 @@ import {
   latestEvaluationsBySubject,
   countCertifiedGcse,
   certifiedGcseBySubject,
+  countCertified,
+  certifiedBySubject,
   listMedia,
   getWeeklySchedule,
   evaluationHistory,
@@ -25,6 +27,7 @@ import {
   KEY_STAGE_LABEL,
 } from "@/lib/db/repo";
 import { buildAssessmentNarrative, type SubjectLessonProgress } from "@/lib/engine/assessment-narrative";
+import { foundationsCertifiedCount } from "@/lib/engine/dashboard-stats";
 import { WorkEvidenceUploader } from "@/components/media/work-evidence-uploader";
 import { ExamDecisionCard } from "@/components/dashboard/exam-decision-card";
 import { TrajectoryChart } from "@/components/dashboard/trajectory-chart";
@@ -65,6 +68,20 @@ export default async function ChildProfilePage({
   // child on the same day.
   const certified = await countCertifiedGcse(child._id);
   const certifiedCounts = await certifiedGcseBySubject(child._id);
+  // F5: the all-band counts, used ONLY to derive a clearly separate
+  // "foundations" (pre-GCSE) figure alongside the GCSE-only ones above, never
+  // to blend back into them.
+  const allBandCertified = await countCertified(child._id);
+  const allBandCertifiedCounts = await certifiedBySubject(child._id);
+  const foundationsCertified = foundationsCertifiedCount(allBandCertified, certified);
+  const foundationsCounts = Object.fromEntries(
+    (Object.keys(allBandCertifiedCounts) as (keyof typeof allBandCertifiedCounts)[]).map(
+      (subject) => [
+        subject,
+        foundationsCertifiedCount(allBandCertifiedCounts[subject], certifiedCounts[subject] ?? 0),
+      ],
+    ),
+  ) as Record<keyof typeof allBandCertifiedCounts, number>;
   const bands = await childCurrentBands(parentId, child._id);
   // Per-subject working band, so a subject with no diagnostic/mock evaluation
   // but real lesson-based progress still shows an honest standing (B1).
@@ -206,16 +223,26 @@ export default async function ChildProfilePage({
                       </div>
                     )}
                   </>
-                ) : certifiedCounts[s.subject] > 0 ? (
+                ) : certifiedCounts[s.subject] > 0 || foundationsCounts[s.subject] > 0 ? (
                   <>
                     <div className="mt-2 text-sm text-cyan-200">
                       Working at{" "}
                       {KEY_STAGE_LABEL[bandBySubject.get(s.subject) ?? 4]}
                     </div>
-                    <div className="text-[10px] font-mono uppercase tracking-widest text-fog-500">
-                      {certifiedCounts[s.subject]} topic
-                      {certifiedCounts[s.subject] === 1 ? "" : "s"} certified
-                    </div>
+                    {certifiedCounts[s.subject] > 0 && (
+                      <div className="text-[10px] font-mono uppercase tracking-widest text-fog-500">
+                        {certifiedCounts[s.subject]} GCSE topic
+                        {certifiedCounts[s.subject] === 1 ? "" : "s"} certified
+                      </div>
+                    )}
+                    {/* F5: a clearly separate secondary figure, never blended
+                        into the GCSE-only count above. */}
+                    {foundationsCounts[s.subject] > 0 && (
+                      <div className="mt-0.5 text-[10px] font-mono uppercase tracking-widest text-fog-500">
+                        {foundationsCounts[s.subject]} pre-GCSE foundation
+                        {foundationsCounts[s.subject] === 1 ? "" : "s"} complete
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="mt-2 text-xs text-fog-500">
@@ -226,7 +253,17 @@ export default async function ChildProfilePage({
             ))}
           </div>
           <p className="mt-4 text-xs text-fog-500">
-            {certified} topic{certified === 1 ? "" : "s"} certified so far.
+            {certified} GCSE topic{certified === 1 ? "" : "s"} certified so
+            far.
+            {/* F5: a clearly separate secondary figure, never blended into
+                the GCSE-spec count above (EPIC 22's band-blending decision). */}
+            {foundationsCertified > 0 && (
+              <span className="text-cyan-300">
+                {" "}
+                Plus {foundationsCertified} pre-GCSE foundation
+                {foundationsCertified === 1 ? "" : "s"} complete.
+              </span>
+            )}
           </p>
         </Card>
 

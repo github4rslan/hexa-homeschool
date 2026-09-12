@@ -11,6 +11,11 @@ interface ChildCardProps {
   predictedGrade?: string;
   competenceCertified: number;
   competenceTotal: number;
+  /**
+   * F5: pre-GCSE (KS2/KS3) topics certified, shown as a separate, clearly
+   * labelled secondary figure so it's never mistaken for GCSE-spec coverage.
+   */
+  foundationsCertified?: number;
   nextLesson?: string;
   status: "on_track" | "behind" | "ahead" | "needs_review";
   /** Visually mark the currently active child. */
@@ -31,6 +36,7 @@ export function ChildCard({
   predictedGrade,
   competenceCertified,
   competenceTotal,
+  foundationsCertified,
   nextLesson,
   status,
   highlighted = false,
@@ -77,7 +83,7 @@ export function ChildCard({
 
         <div className="mb-4">
           <div className="flex items-center justify-between text-xs mb-2">
-            <span className="text-fog-400">Curriculum mastery</span>
+            <span className="text-fog-400">GCSE-spec progress</span>
             <span className="text-fog-200 font-medium">
               {competenceCertified} / {competenceTotal}
             </span>
@@ -88,6 +94,17 @@ export function ChildCard({
               style={{ width: `${percent}%` }}
             />
           </div>
+          {/* F5: a clearly separate secondary figure, never blended into the
+              GCSE-spec bar above (EPIC 22's band-blending decision). */}
+          {(foundationsCertified ?? 0) > 0 && (
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-cyan-300">
+              <Sparkles className="h-3 w-3" />
+              <span>
+                {foundationsCertified} pre-GCSE foundation
+                {foundationsCertified === 1 ? "" : "s"} complete
+              </span>
+            </div>
+          )}
         </div>
 
         {nextLesson && (

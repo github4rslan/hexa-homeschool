@@ -4,6 +4,7 @@ import {
   LESSON_TIME_TARGET_MIN_SEC,
   LESSON_TIME_TARGET_MAX_SEC,
   masteryProgressPercent,
+  foundationsCertifiedCount,
 } from "@/lib/engine/dashboard-stats";
 
 describe("avgLessonTimeHint", () => {
@@ -58,5 +59,21 @@ describe("masteryProgressPercent (B2, progress bar can never overflow)", () => {
       expect(pct).toBeGreaterThanOrEqual(0);
       expect(pct).toBeLessThanOrEqual(100);
     }
+  });
+});
+
+describe("foundationsCertifiedCount (F5, the pre-GCSE figure kept separate from GCSE-only)", () => {
+  it("is the all-band count minus the GCSE-only count", () => {
+    expect(foundationsCertifiedCount(11, 7)).toBe(4);
+    expect(foundationsCertifiedCount(10, 10)).toBe(0);
+  });
+
+  it("never goes negative even if the inputs are ever inconsistent", () => {
+    expect(foundationsCertifiedCount(5, 9)).toBe(0);
+  });
+
+  it("matches the B1 finding's own worked example (Maths: 11 all-band, 7 GCSE)", () => {
+    // Ivy's repro: 7 real GCSE certificates plus 4 pre-GCSE band certificates.
+    expect(foundationsCertifiedCount(11, 7)).toBe(4);
   });
 });

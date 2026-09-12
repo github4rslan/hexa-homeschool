@@ -23,6 +23,7 @@ import {
   listChildren,
   resolveActiveChild,
   countCertifiedGcse,
+  countCertified,
   latestEvaluationsBySubject,
   recentLogs,
   countCertifiedSince,
@@ -39,7 +40,7 @@ import {
 } from "@/lib/db/repo";
 import { masteryHighlightLine } from "@/lib/engine/parent-events";
 import { shouldShowFeedbackPrompt } from "@/lib/engine/feedback-eligibility";
-import { avgLessonTimeHint } from "@/lib/engine/dashboard-stats";
+import { avgLessonTimeHint, foundationsCertifiedCount } from "@/lib/engine/dashboard-stats";
 import { totalGcseTopicCount } from "@/lib/engine/mock-gate";
 import { buildWeeklyRecapNarration } from "@/lib/engine/weekly-summary";
 import { FeedbackPrompt, FeedbackButton } from "@/components/dashboard/feedback-widget";
@@ -71,6 +72,11 @@ interface ChildView {
   predictedGrade?: string;
   competenceCertified: number;
   competenceTotal: number;
+  /**
+   * F5: pre-GCSE (KS2/KS3) topics certified, shown as a clearly separate
+   * secondary figure alongside the primary GCSE-spec bar, never blended in.
+   */
+  foundationsCertified: number;
   status: "on_track" | "behind" | "ahead" | "needs_review";
 }
 
@@ -135,11 +141,15 @@ async function buildChildViews(kids: ChildDoc[]): Promise<ChildView[]> {
       const childId = kid._id!;
       // B2: GCSE-only certified count, matching the compliance portfolio's own
       // convention, so this figure never disagrees with a portfolio generated
-      // for the same child on the same day.
-      const [certifiedCount, standings] = await Promise.all([
+      // for the same child on the same day. F5: also read the all-band count
+      // so the pre-GCSE "Foundations" figure can be shown separately, never
+      // blended into the GCSE-spec number.
+      const [certifiedCount, allBandCertifiedCount, standings] = await Promise.all([
         countCertifiedGcse(childId),
+        countCertified(childId),
         latestEvaluationsBySubject(childId),
       ]);
+      const foundationsCertified = foundationsCertifiedCount(allBandCertifiedCount, certifiedCount);
       const grades = standings
         .map((s) => gradeNumber(s.grade))
         .filter((grade): grade is number => grade !== null);
@@ -156,6 +166,7 @@ async function buildChildViews(kids: ChildDoc[]): Promise<ChildView[]> {
         predictedGrade,
         competenceCertified: certifiedCount,
         competenceTotal: TOTAL_TOPICS,
+        foundationsCertified,
         status,
       };
     }),

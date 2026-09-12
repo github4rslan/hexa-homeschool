@@ -32,15 +32,29 @@ export function avgLessonTimeHint(avgSec: number): string {
 }
 
 /**
- * Curriculum-mastery progress bar width, clamped to [0, 100] (B2). The
- * certified count is the number of certified topics across every band a
- * child has worked in, while the total is the (curriculum-size-aware) GCSE
- * topic count for age-appropriate progression: a child who has also
- * certified pre-GCSE band topics can have `certified > total`, and the bar
- * must never render past 100% for that honest reason. Pure.
+ * Curriculum-mastery progress bar width, clamped to [0, 100]. `certified` is
+ * the GCSE-only certified count (B2/F5: matching the compliance portfolio's
+ * own convention) and `total` is the curriculum-size-aware GCSE topic count,
+ * so in the normal case `certified` never exceeds `total`; the clamp stays as
+ * a defensive floor/ceiling rather than a routinely-hit case. Pure.
  */
 export function masteryProgressPercent(certified: number, total: number): number {
   if (!total || total <= 0) return 0;
   const raw = (certified / total) * 100;
   return Math.min(100, Math.max(0, raw));
+}
+
+/**
+ * F5: the "Foundations" figure, pre-GCSE (KS2/KS3) topics certified, derived
+ * as all-band certified minus GCSE-only certified. Kept as its own pure
+ * helper (rather than inline subtraction at each call site) so the "never
+ * negative" floor is asserted once and unit-tested, and so this figure is
+ * always computed the same way everywhere it's shown, never re-blended into
+ * the GCSE-only count it's deliberately kept separate from.
+ */
+export function foundationsCertifiedCount(
+  allBandCertified: number,
+  gcseCertified: number,
+): number {
+  return Math.max(0, allBandCertified - gcseCertified);
 }
