@@ -17,7 +17,7 @@ import {
   getInProgressLessons,
   resolveDailyQuestTopic,
   childFloorBand,
-  certifiedBySubject,
+  certifiedGcseBySubject,
   todaysCheckin,
   childStreak,
   childWeekStrip,
@@ -77,7 +77,7 @@ export default async function LearnHubPage() {
     inProgress,
     schedule,
   ] = await Promise.all([
-    certifiedBySubject(child._id),
+    certifiedGcseBySubject(child._id),
     todaysCheckin(child._id),
     childStreak(child._id),
     childWeekStrip(child._id),

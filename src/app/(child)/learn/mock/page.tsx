@@ -6,7 +6,7 @@ import {
   currentParentId,
   getActiveChild,
   getMockState,
-  certifiedBySubject,
+  certifiedGcseBySubject,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
@@ -29,7 +29,7 @@ export default async function MockHubPage() {
 
   // Per-subject attempt state this period (one honest attempt each).
   const states = await getMockState(parentId, child._id);
-  const certified = await certifiedBySubject(child._id);
+  const certified = await certifiedGcseBySubject(child._id);
   const stateBySubject = new Map(states.map((s) => [s.subject, s]));
   const dateLabel = (d: Date) =>
     d.toLocaleDateString("en-GB", { day: "numeric", month: "long", timeZone: "UTC" });

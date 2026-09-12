@@ -7,7 +7,7 @@ import {
   currentBandForSubject,
   childFloorBand,
   hasMockThisPeriod,
-  certifiedBySubject,
+  certifiedGcseBySubject,
   latestEvaluationsBySubject,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
@@ -43,7 +43,7 @@ export default async function MockSubjectPage({
   const child = await getActiveChild(parentId, await readActiveChildId());
   if (!child?._id) redirect("/dashboard");
 
-  const certified = await certifiedBySubject(child._id);
+  const certified = await certifiedGcseBySubject(child._id);
   if ((certified[subject] ?? 0) < mockUnlockCount(subject)) {
     redirect("/learn/mock");
   }

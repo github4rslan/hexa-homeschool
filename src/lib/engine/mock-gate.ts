@@ -9,8 +9,14 @@
  *
  * The gate is a reachable FLOOR that never exceeds the number of authored GCSE
  * topics for the subject, so adding a new topic can only ever keep the unlock
- * reachable (min of the two). `certifiedBySubject` counts certified topics
- * across every band, so the floor stays comfortably reachable.
+ * reachable (min of the two).
+ *
+ * B1 (2026-09-12): the certified count compared against this floor MUST be
+ * `certifiedGcseBySubject` (GCSE-only, `key_stage: 4`), the same convention the
+ * compliance portfolio already uses. It must never be the all-band
+ * `certifiedBySubject`, which folds in pre-GCSE KS2/KS3 prerequisite
+ * certifications, letting a child unlock a real GCSE mock exam while only
+ * genuinely covering half the subject's GCSE spec.
  */
 
 import type { Subject } from "@/lib/db/types";
