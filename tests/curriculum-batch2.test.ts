@@ -1321,3 +1321,47 @@ describe("F2 (2026-09-12): sci_reactions AQA Required Practical 11 turbidity ite
     expect(turbidityItems.length).toBe(1);
   });
 });
+
+describe("F3 (2026-09-12): first GCSE-tier stretch item, maths_quadratics quadratic formula", () => {
+  it("adds a well-formed stretch item keyed to the correct root", () => {
+    const q = ALL.find(
+      (item) =>
+        item.topic_tag === "maths_quadratics" &&
+        item.prompt.startsWith("Use the quadratic formula to solve x^2 + 2x - 2 = 0"),
+    );
+    expect(q, "stretch item present").toBeDefined();
+    if (!q) return;
+    expect(q.kind).toBe("stretch");
+    expect(q.key_stage).toBe(4);
+    expect(q.options.length).toBe(4);
+    expect(new Set(q.options).size).toBe(q.options.length);
+    expect(q.correct_index).toBeGreaterThanOrEqual(0);
+    expect(q.correct_index).toBeLessThan(q.options.length);
+    expect(q.options[q.correct_index]).toBe("0.73");
+    expect(q.explanation.trim().length).toBeGreaterThan(0);
+    expect(q.misconceptions).toBeDefined();
+    expect(q.misconceptions!.length).toBeLessThanOrEqual(q.options.length);
+    expect((q.misconceptions![q.correct_index] ?? "").trim()).toBe("");
+  });
+
+  it("is the only stretch-kind item for maths_quadratics (no near-duplicate)", () => {
+    const stretchItems = ALL.filter(
+      (q) => q.topic_tag === "maths_quadratics" && q.kind === "stretch",
+    );
+    expect(stretchItems.length).toBe(1);
+  });
+
+  it("0.73 (and the other root, -2.73) actually solve x^2 + 2x - 2 = 0", () => {
+    // Hand-derived: a = 1, b = 2, c = -2. Discriminant = 4 - 4(1)(-2) = 12.
+    const discriminant = 2 * 2 - 4 * 1 * -2;
+    expect(discriminant).toBe(12);
+    const sqrtDiscriminant = Math.sqrt(discriminant);
+    const root1 = (-2 + sqrtDiscriminant) / 2;
+    const root2 = (-2 - sqrtDiscriminant) / 2;
+    expect(Number(root1.toFixed(2))).toBe(0.73);
+    expect(Number(root2.toFixed(2))).toBe(-2.73);
+    for (const r of [root1, root2]) {
+      expect(r * r + 2 * r - 2).toBeCloseTo(0, 9);
+    }
+  });
+});

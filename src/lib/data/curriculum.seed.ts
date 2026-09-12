@@ -1977,6 +1977,33 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "The reaction is only mildly exothermic and does not frost the glass. The cross is hidden by cloudiness in the liquid, not a change to the glass.",
     ],
   },
+  // F3 (2026-09-12): the bank's first genuine GCSE-tier stretch item (Edexcel
+  // 1MA1 A18, quadratic formula), naming and beginning to close the systemic
+  // gap where "stretch" content existed only at pre-GCSE bands (transcribed
+  // verbatim from the owner-approved finding). See EPIC 23 in backlog.md.
+  {
+    topic_tag: "maths_quadratics",
+    subject: "mathematics",
+    tier: 5,
+    key_stage: 4,
+    kind: "stretch",
+    prompt:
+      "Use the quadratic formula to solve x^2 + 2x - 2 = 0, where x = (-b +/- sqrt(b^2 - 4ac)) / 2a. Which value below is one of the two solutions, correct to 2 decimal places?",
+    options: ["0.73", "1.46", "-0.73", "3.46"],
+    correct_index: 0,
+    explanation:
+      "Here a = 1, b = 2, c = -2. The discriminant is b^2 - 4ac = 4 - 4(1)(-2) = 4 + 8 = 12, so sqrt(12) is about 3.46. Using the formula, x = (-2 + 3.46) / 2, which is about 0.73 (the other solution, using the minus sign, is about -2.73).",
+    hints: [
+      "Work out the discriminant b^2 - 4ac first, then take its square root.",
+      "Substitute -2, plus or minus 3.46, and 2 times 1 into (-b +/- sqrt(discriminant)) / 2a; divide the WHOLE numerator by 2a, not just part of it.",
+    ],
+    misconceptions: [
+      "",
+      "This uses (-b + sqrt(discriminant)) without dividing by 2a at the end; always divide the whole numerator by 2a.",
+      "This flips the sign of the correct answer; substituting it back into the original equation does not make it true.",
+      "This is just sqrt(discriminant) on its own, without applying -b or dividing by 2a; the formula needs all three steps.",
+    ],
+  },
 ];
 
 /** Flattened question list ready to seed. */
