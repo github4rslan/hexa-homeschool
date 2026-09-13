@@ -3482,3 +3482,104 @@ lane fell back to Playwright's own `PerformanceObserver`/navigation-timing
 readings, which are valid for warm/repeat loads but not a substitute for a
 genuine cold-load trace, noted explicitly in the report and in EPIC 19 rather
 than silently treated as equivalent.
+
+## 2026-09-13 (Mechanic)
+
+Built all 11 items from 2026-09-13's findings (DECISION: all): B1-B5, F1-F6,
+one commit per item, all pushed to `main`. Every item's local gate
+(type-check, test, lint, build) was green before its commit.
+
+**B1 (homepage hydration mismatch, React #418) — the real lesson of this run.**
+The actual root cause was NOT anything in app code a grep for
+`Math.random`/`Date.now`/`typeof window` would ever find: framer-motion's own
+`useReducedMotion()` (and `MotionConfig reducedMotion="user"`, which every
+`m`/`motion` component defers to) resolves the real `prefers-reduced-motion`
+media query SYNCHRONOUSLY during the client render that hydrates, not inside
+an effect, while the server always renders as if unset. My first fix only
+patched the 3 homepage components calling the hook directly; live
+verification immediately showed the SAME error still firing, because
+`ReducedMotionProvider`'s `reducedMotion="user"` governs every OTHER `m`/
+`motion` component in the marketing tree through the SAME internal
+mechanism, not just the ones with an explicit call. Real fix: resolve the
+preference once via a hydration-safe wrapper hook (starts `false`, matching
+SSR, updates one effect after mount) and pass an explicit `"always"`/
+`"never"` to `MotionConfig`, removing framer-motion's own render-phase
+detection from the equation entirely. LESSON: when a third-party animation
+library is wrapped in an app-wide `MotionConfig`/context provider, a
+hydration bug fix must be checked at the PROVIDER level, not just at the
+components you found calling the hook directly — the provider can be the
+actual blast radius.
+
+**B2 (`twitter:image` 404) — one bug, two independent sources, two follow-on
+regressions before it was actually fixed everywhere.** The root layout
+(`src/app/layout.tsx`) was one place carrying the dead `/og-image.png`
+override; `lib/site.ts`'s `buildPageMetadata()` (used by every OTHER
+marketing page) had its OWN separate copy of the exact same dead reference.
+Fixing only the root layout looked complete (homepage verified) but every
+other page was still broken. Then, removing the array entirely from
+`buildPageMetadata` regressed WORSE: a segment that defines its own
+`openGraph` object (even with no `images` key) does NOT inherit an ancestor
+segment's `opengraph-image.tsx` file-convention image — that auto-generated
+image only merges into the metadata of the SAME segment the file lives in.
+So every page without its own dedicated image file lost its preview image
+entirely (worse than a broken link). Then my first attempt at the real fix
+(`images: hasOwnOgImage ? undefined : [...]`) ALSO regressed the 4 pages
+that DO have their own file: an explicit key set to `undefined` still counts
+to Next's resolver as "the caller set images", which skips the file-
+convention merge exactly like a real URL would. The working fix
+conditionally SPREADS the key (`...({} or { images: [...] })`) so it is
+truly absent, not present-but-undefined, only for pages with their own file.
+LESSON: for Next.js Metadata API `openGraph`/`twitter.images`, "unset" and
+"set to undefined" are NOT the same thing to the resolver; test the ACTUAL
+rendered `<meta>` tag on multiple representative pages (one with a
+per-route override, one without) after every attempt, not just one page.
+
+**B3 (Grade Grade duplicate) — the source fix does not retroactively fix
+already-stored data, and that showed up immediately on the exact account
+scout named.** Normalizing `model_predicted_grade` at the source
+(`gradeBand()`, bare band, no "Grade" word) is correct for every FUTURE
+write, confirmed by unit tests, and confirmed live for Sam Smoke (a
+diagnostic-sourced grade recorded after nothing needed changing). But Ivy's
+mock-derived Maths grade was written BEFORE the fix shipped and still
+carried the old "Grade 4-5" shape, so her CNIS page still read "Grade Grade
+4-5" on first live re-check. Rather than writing a database backfill script
+(out of scope for a single test record, and a bigger, more deliberate action
+than this run's authority), added `formatWorkingGrade()`, an idempotent
+display-time formatter that strips any pre-existing "Grade " prefix before
+re-adding it, and applied it at all 5 display sites (CNIS, exam-decision,
+mock reveal, mock hub, portfolio table). This makes every consumer correct
+for BOTH the old and new stored shapes without touching any data. LESSON: a
+"normalize at the source" fix is necessary but not sufficient when
+historical records already exist in the shape you're fixing away from --
+check the fix against an account that has OLD data, not just fresh test
+data, and prefer an idempotent display-time guard over a data migration when
+the difference is purely cosmetic and no data cleanup was explicitly
+authorized.
+
+**F1-F3 (curriculum)** — scout's own human-authored questions transcribed
+verbatim (isotope-abundance atomic mass, 3D Pythagoras, enjambment), each
+with a Vitest test re-deriving the numeric answers (F1/F2) or checking
+well-formedness and distinctness (F3). One deliberate departure from
+"verbatim": F2's transcribed explanation used ASCII math notation
+(`d^2 = 6^2 + ...`) identical to the exact B5 bug filed the SAME day for a
+different question — normalized it to the file's existing unicode
+convention (²/√) since that is a formatting/house-style pass, not a change
+to meaning, answer, or pedagogy. Ran `npm run seed` once, deliberately,
+after all 4 curriculum items (B5, F1, F2, F3) were committed together
+(10 questions written).
+
+**F4/F5 (pricing copy, per-route OG images)** — straightforward, both
+verified live via curl + Playwright with no surprises. F5's per-route images
+depend entirely on B2 being genuinely fixed (see above); worth checking
+together next time a similar OG-image feature ships.
+
+**Live-verification discipline that paid off this run:** every "shipped"
+item was actually re-driven live after its OWN deploy went READY, not
+just after the LAST deploy of the whole batch — this is what caught both
+B1's and B2's live regressions immediately rather than at the end. Treating
+"local gate green" as sufficient without a fresh live re-check on the exact
+page/account the finding named would have shipped 3 confidently-broken
+"fixes" tonight.
+
+Final health check: newest production deployment READY, `/api/health` 200
+(`db: up`), `get_runtime_errors` clean for the whole run's window.
