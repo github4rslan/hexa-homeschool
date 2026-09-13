@@ -3442,3 +3442,43 @@ resolution failure on the first attempt this run (`ENOTFOUND` for
 github.com and the Mongo Atlas shard hosts respectively), unrelated to any
 code change, resolved cleanly on a same-command retry. Worth a quick retry
 before treating either as a real failure.
+
+## 2026-09-13 (Scout, Sunday latest-stack + growth deep-dive)
+
+Focused on growth/discoverability and a fresh curriculum stretch-content push
+(EPIC 23), plus the standing max-depth child pass. Filed 5 bugs (1 High, 2
+Medium, 2 Low) and 6 features. Headline finds: a fresh homepage hydration
+regression (EPIC 20 retired 2026-09-03, recurred today, tracked as a new EPIC
+24 per that epic's own instruction not to reopen a retired entry), a sitewide
+`twitter:image` pointing at a genuine 404 while a good dynamic OG image route
+already existed unused for that field, and a "Grade Grade 4-5" duplicated-word
+bug on the Local Authority compliance pre-fill traced to inconsistent
+`model_predicted_grade` formatting between the diagnostic and mock paths.
+
+LESSON: a live repro that "looks broken" is not always a bug, always confirm
+the element is actually in the viewport (or otherwise in its expected trigger
+state) before filing. Nearly filed the homepage `StatsStrip` counters as
+stuck-at-0 before realising `window.scrollTo` silently no-ops on this site's
+scroll container (must use `document.scrollingElement.scrollTop`) and the
+section simply had not entered the viewport yet; once genuinely scrolled into
+view the counters worked correctly.
+
+LESSON: when a prior run's "investigated and fixed" bug still shows the same
+symptom, do not assume the fix silently failed again, check whether the
+symptom is actually the SAME underlying object. This run's B4 found the
+opposite of that pattern: the previous Fraunces-preload fix was genuinely
+working, the still-visible warning on `/login`/`/signup` was a different font
+(GeistSans/GeistMono, the sitewide body font) that nobody had checked the CSS
+content of before attributing it to Fraunces. A `curl` of the actual referenced
+CSS chunk settled it in one step.
+
+LESSON: a single inconsistently-formatted shared field (`model_predicted_grade`
+here) can produce the same visible bug at multiple, unrelated call sites. Once
+one instance is found, grep every other consumer of the same field before
+filing, since the fix belongs at the source, not at each symptom.
+
+Chrome DevTools MCP tools were not present in this run's toolset; the B-perf
+lane fell back to Playwright's own `PerformanceObserver`/navigation-timing
+readings, which are valid for warm/repeat loads but not a substitute for a
+genuine cold-load trace, noted explicitly in the report and in EPIC 19 rather
+than silently treated as equivalent.

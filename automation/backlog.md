@@ -140,6 +140,12 @@ EXAM_STYLE_QUESTIONS on 2026-08-14).
   a future run double-checking `classifyOptions`'s only OTHER call site (the
   "Your turn" `choice_strategy` task) once B1 ships, to confirm the fix closes
   both surfaces at once (it should, since both read the same `fates` array).
+- 2026-09-13 (Scout): re-drove the fix live end-to-end on `maths_quadratics`
+  Mastery (a fresh mastery attempt, not a code read): the true-negative case
+  (`x² − 8x + 16`, wrong answer `x² + 16`) correctly gets the plain generic
+  wrong-answer line, and the true-positive case (`x² = 16`, wrong answer
+  `x = 4`) still correctly gets "that's one of the two answers, can you spot
+  the other one?", the fix is confirmed still holding with no regression.
 
 ## EPIC 2 — Exam-style, command-word practice (make questions feel like the paper)
 Status: ACTIVE (headline), zero-coverage closed, now purely a depth/variety lane.
@@ -149,7 +155,7 @@ Every KS4 topic across all three subjects has at least one command-word item
   command-word item (>= 2 per topic is the target) rather than re-sweeping the
   whole bank. Remaining single-coverage topics as of 2026-09-03 (after that
   day's authored items land): eng_comprehension, eng_persuasive, eng_spelling,
-  eng_poetry, eng_shakespeare — a shorter tail now, pick 1-2 per run.
+  eng_shakespeare; `eng_poetry` closed today (2026-09-13), see below.
   `maths_graphs`, `maths_fractions`, `maths_number`, `maths_geometry`,
   `maths_pythagoras`, `sci_electricity`, `maths_statistics`, `maths_sequences`,
   `sci_cells`, `sci_atoms`, `eng_devices`, `sci_ecology` (pending seed),
@@ -182,6 +188,10 @@ Every KS4 topic across all three subjects has at least one command-word item
   instead of the command word) testing the identical fact back to back. Filed
   as F1 this run with a hand-derived replacement question (different
   coefficients, same shape/kind/tier) pending seed.
+- 2026-09-13 (Scout F3): `eng_poetry` second command-word item, enjambment
+  (paired with the topic's existing caesura item, a genuinely distinct AQA
+  8700 AO2 structural-effect skill), hand re-derived clean, pending seed.
+  Closes `eng_poetry` off the remaining-topics list above.
 
 ## EPIC 3 — Full spec coverage: close missing GCSE topics
 Status: ACTIVE. `maths_transformations` and `maths_simultaneous` (both Edexcel
@@ -235,7 +245,7 @@ exam-boundary-grade reveal card, and full question content for `fill_blank`
 items pulled into a mock are ALL confirmed shipped and working live. Do not
 re-propose a mock timer, the boundary-grade card, or the fill_blank mock-content
 fix.
-- Next step: nothing new identified 2026-08-29 through 2026-09-08. Keep
+- Next step: nothing new identified 2026-08-29 through 2026-09-13. Keep
   re-verifying rather than re-proposing; EPIC 12 is the epic to extend if a
   future run finds another interaction type with the same generic-wrapper-
   prompt trap.
@@ -263,7 +273,8 @@ readiness trajectory schedule deterministically from certification dates/scores
   distinct and warm. 2026-09-08: confirmed still present (20 reviews due for
   Ivy shown correctly on both `/dashboard` and `/learn`), not re-driven to
   completion this run (budget went to the `maths_quadratics` mastery deep-dive
-  instead).
+  instead). 2026-09-13: re-drove a single warm-up question (fractions addition)
+  live, correct-answer explanation fires as expected; still healthy.
 
 ## EPIC 6 (background) — Calm, confident child experience (delight within the calm-wrong law)
 Status: ONGOING background lane, not gated to a night. Every interaction type
@@ -294,6 +305,14 @@ SHIPPED — do not re-propose any of those.
   presence during the breath-break (shipped 2026-08-31, re-verified live
   2026-09-02 AND 2026-09-08, both on fresh two-wrong-in-a-row repros); Eddie on
   the handoff-pause screen (shipped, not re-driven live this run).
+- 2026-09-13 (Scout): read `Celebration` (fx/celebration.tsx) and
+  `ConfettiBurst` (fx/confetti-burst.tsx, canvas-confetti) in full to check for
+  a gap in the brain-stretch bonus moment; both are already well-scoped
+  (`Celebration` fires on every correct answer and, at `big=true`, on mastery;
+  `ConfettiBurst` fires once on first reaching `mastered` and correctly stays
+  mounted, not refiring, through the brain-stretch bonus, which has its own
+  smaller `Celebration` burst). No gap found; do not re-propose a stretch-only
+  confetti addition, it was considered and is unnecessary.
 
 ## EPIC 7 (background) — Stay on the current stack + performance budget
 Status: ACTIVE. React 19 and Tailwind 4 are already current; most deps
@@ -302,14 +321,14 @@ vitest/next/@next/bundle-analyzer/@types/node/lucide-react/posthog-js) have been
 kept on their in-range "Wanted" versions via a steady drip of small bumps.
 - Next step: eslint 10 stays BLOCKED on the Next.js 15→16 migration (peer-dep
   cap). Pair the eventual nonce-based CSP hardening with that move (CSP itself
-  spot-checked healthy 2026-09-08 — HSTS+preload, X-Frame-Options DENY,
-  Permissions-Policy, nosniff all present; `script-src 'unsafe-inline'` is the
-  one known, already-tracked gap). As of 2026-09-08 the in-range batch is:
-  `@playwright/test`, `@types/react-dom`, `@upstash/redis`, `autoprefixer`,
-  `jose`, `lucide-react`, `postcss`, `posthog-js` — filed as F3 that day, along
-  with a `fflate` moderate audit advisory (nested under posthog-js, build/
-  bundle-tooling path only). `next`/`eslint`/`@types/node`/`typescript` remain
-  deliberate major-version holds.
+  spot-checked healthy 2026-09-08 and again 2026-09-13 via `curl -sI
+  /api/health`, HSTS+preload, X-Frame-Options DENY, Permissions-Policy,
+  nosniff all present; `script-src 'unsafe-inline'` is the one known,
+  already-tracked gap). As of 2026-09-13 the in-range batch is: `autoprefixer`,
+  `posthog-js`, `tailwind-merge` (filed as F6 that day). `next`/`eslint`/
+  `@next/bundle-analyzer`/`@types/node` remain deliberate major-version holds;
+  `typescript` (5.9 to 7.0) and `vitest` (4 to 5) are two NEW major jumps
+  spotted 2026-09-13, also deliberate holds for now, not yet attempted.
 - Done so far: hero LCP fix + LazyMotion split + ReducedMotionProvider; bundle
   analyzer added; audit stays at 0-1 vulnerabilities (low/moderate, always
   nested/transitive, never in Edway's own code) across every run since
@@ -317,6 +336,13 @@ kept on their in-range "Wanted" versions via a steady drip of small bumps.
   into a real CI a11y job. EPIC 18 (framer-motion → motion) SHIPPED 2026-09-03,
   re-verified live 2026-09-08 (several motion-heavy child surfaces re-driven on
   the migrated package, no regression) — fully retire that sub-item.
+- 2026-09-13 (Scout): the "Fraunces preload still leaking" thread (B4,
+  2026-09-12) was re-investigated and found to be a MISATTRIBUTION: the
+  persistent preload warning on `/login`/`/signup` is GeistSans/GeistMono (the
+  sitewide root-layout body font, legitimately used on every page), not
+  Fraunces. The actual Fraunces `preload: false` fix IS working correctly
+  (`/dashboard`/`/settings` are clean). Close that specific sub-thread; do not
+  re-chase "Fraunces on /login" again.
 
 ## EPIC 8 — Mobile layout regressions
 Status: RETIRED 2026-09-03 (Scout) — the exact next step this epic asked for
@@ -328,7 +354,8 @@ load, `scrollWidth` 380 (no overflow). Two consecutive clean checks now
 between and no reproducible overlap either way. Re-open only on a concrete new
 repro, not a routine re-check. 2026-09-08: another clean mobile pass on
 `/learn`, a `maths_pythagoras` lesson and `/schedule` (all `scrollWidth` 380 at
-`innerWidth` 390) — stays retired.
+`innerWidth` 390), stays retired. 2026-09-13: another clean pass on `/` and
+`/pricing` at 390 wide, `scrollWidth` 380 both times, stays retired.
 - Next step: none — closed. If a similar "fixed element overlaps scrolled
   content" shape reappears anywhere else, open a fresh epic naming the new
   location rather than reusing this one.
@@ -339,10 +366,15 @@ breathing/calm-break moment (2026-08-31, re-verified live 2026-09-02 and again
 2026-09-08). No further action; re-open only on a concrete new gap.
 
 ## EPIC 10 — SEO/metadata hygiene sitewide
-Status: SHIPPED 2026-08-20, no known open gap. Standing every-run spot-check
-rather than an active work item; re-open only on a concrete regression.
-2026-09-08: robots.txt, sitemap.xml and homepage OG/Twitter meta tags all
-re-spot-checked clean.
+Status: SHIPPED 2026-08-20, no known open gap in the CORE metadata (title,
+description, canonical, sitemap, robots). 2026-09-13 (Scout) found a genuinely
+NEW, narrower gap that this standing spot-check had not caught before: the
+sitewide `twitter:image` meta tag points at a real 404 (`/og-image.png`, never
+actually created) even though a perfectly good dynamic `opengraph-image.tsx`
+already exists and correctly serves `og:image`. Filed as B2, 2026-09-13 (see
+that day's report). Once fixed, this epic's standing spot-check should
+explicitly re-check BOTH `og:image` and `twitter:image` resolve to a real,
+non-404 URL, not just that tags are present.
 
 ## EPIC 11 — Dashboard "today" surface conflates weekday-empty with plan-absent
 Status: SHIPPED 2026-08-24, re-verified live repeatedly since, including
@@ -420,7 +452,13 @@ sequential `await` calls.
   gap on the marketing homepage (cold-load LCP 4.58s, filed as F2 that day) —
   the dedicated chrome-devtools trace to root-cause it wasn't completed this
   run (session dropped mid-run), so that's also a concrete next step: a
-  `performance_start_trace` + `LCPBreakdown` insight pass on `/`.
+  `performance_start_trace` + `LCPBreakdown` insight pass on `/`. 2026-09-13:
+  chrome-devtools tools were not available in this run's toolset, so this
+  trace still has not been done; a Playwright-only `PerformanceObserver`
+  reading on a same-session (warm) homepage load showed a very fast
+  domContentLoaded/load (230ms/364ms), but that is not a valid cold-load
+  measurement, so the original 4.58s LCP concern remains neither confirmed
+  fixed nor re-confirmed broken.
 - Done so far: both the await-waterfall batching AND the `getActiveChild`
   round-trip removal are shipped and live per git log, not yet re-measured
   since the second fix.
@@ -429,20 +467,17 @@ sequential `await` calls.
   re-carrying forward any still-open item rather than assuming a report was
   read just because a day has passed.
 
-## EPIC 20 — Homepage hydration mismatch (React error #418)
-Status: RETIRED 2026-09-03 (Scout) — a THIRD consecutive clean re-check (fresh
-`browser_navigate('https://edway.uk/')`, zero console errors) with no
-homepage-touching code change across any of the three checks. Opened
-2026-09-01 with full repro evidence (B2 that day); did not reproduce on
-2026-09-02 or 2026-09-03. 2026-09-08: a FOURTH clean re-check (two fresh
-homepage loads this run, zero console errors both times). Re-open a fresh
-entry (not this one) if it recurs.
+## EPIC 20 (Homepage hydration mismatch, React error #418): original case
+Status: RETIRED 2026-09-03 (Scout) after four consecutive clean checks through
+2026-09-08. Recurred 2026-09-13 as a genuinely NEW case; per this epic's own
+closing note, the recurrence is tracked as a fresh entry, EPIC 24 below, rather
+than reopening this one. This entry stays retired/historical.
 
 ## EPIC 21 — Auth session hygiene: not every page redirects on an invalidated session
 Status: SHIPPED 2026-09-02 (Mechanic), not yet independently live-re-verified
 (invalidating a real session's `token_version` or deleting a test account is a
 more invasive check than a routine run's budget favours). Not touched
-2026-09-08. Next step unchanged: a future run should do the live
+2026-09-08 or 2026-09-13. Next step unchanged: a future run should do the live
 invalidate-and-confirm check, plus the residual-risk grep (every
 `(dashboard)`/`(child)` page.tsx for a matching null-guard on
 `currentParentId()`), before fully retiring this epic.
@@ -458,19 +493,8 @@ compliance portfolio for Ivy reads "Curriculum 30/30 topics certified" /
 Mathematics "10/10 certified, complete" while she is genuinely still mid-lesson
 on an uncertified GCSE maths topic — the more serious half, since this is a
 document literally titled "Local Authority portfolio" and marked "Verified".
-- Next step: ship B2's fix (reuse `lib/engine/mock-gate.ts`'s existing
-  `gcseTopicCount(subject)` helper — built for exactly this problem on the
-  mock-unlock gate already — in both call sites instead of maintaining
-  separate hardcoded totals), then live-re-verify: (1) the dashboard progress
-  bar never exceeds 100% for any child, (2) a freshly-generated portfolio's
-  per-subject "X/Y certified" reflects the REAL current GCSE topic count per
-  subject, not a stale 10. Also decide (owner call, note in the fix's PR
-  description either way): should pre-GCSE band-topic certifications count
-  toward the GCSE-readiness percentage at all, or only toward a separate
-  "foundations" line? The current bug accidentally blends the two; the fix
-  should make that choice deliberate, not silent. EPIC 3's science-practicals
-  slice (a new `sci_practicals` topic, if pursued) will change the exact GCSE
-  topic count again, so land this epic before or alongside that one.
+- Next step: nothing new identified 2026-09-13. Keep re-verifying rather than
+  re-proposing; if a genuinely new blended-count surface appears, log it here.
 - Done so far: filed only (B2, 2026-09-08); not yet shipped.
 - 2026-09-12 (Scout): re-audited live post-fix. The portfolio side is
   genuinely correct now (a fresh Q3 2026 portfolio for Ivy reads 19/34
@@ -491,26 +515,63 @@ document literally titled "Local Authority portfolio" and marked "Verified".
   toward "GCSE readiness" at all? F5 (filed today) proposes a concrete
   answer: show both a GCSE-only line and a separate "foundations" line
   everywhere, rather than picking one number silently.
-- Next step (updated): fix B1 and B2 together in one pass, since they share
-  a root cause and a single owner decision; ship F5's dual-display alongside
-  so the decision is visible to parents, not just correct under the hood.
+- Next step (updated 2026-09-12): fix B1 and B2 together in one pass, since
+  they share a root cause and a single owner decision; ship F5's dual-display
+  alongside so the decision is visible to parents, not just correct under the
+  hood.
+- 2026-09-13 (Scout): SHIPPED and re-verified live. Generated a genuinely
+  fresh portfolio for Ivy this run (20/34 overall, 8/14 Maths after a new
+  certification) and confirmed it matches the dashboard card, the
+  child-profile "Current standing" card, AND `/learn/mock`'s own unlock
+  count ("8/10" Maths certified) exactly, all three now reading the same
+  GCSE-only convention. This epic can move toward fully retired; only
+  re-open on a concrete new blended-count surface.
 
 ## EPIC 23 (new): GCSE-tier "stretch" (extension) content is almost entirely missing
-Status: NEW, opened 2026-09-12 (Scout, F3 that day). Counted every `kind`
-value across all five seed files: 383 total questions, of which only 5 are
-`"stretch"`. Of those 5, 4 are in the pre-GCSE `curriculum.seed.bands.ts` file
-(KS2/KS3 content) and the one hit in the main GCSE file `curriculum.seed.ts`
-is the TypeScript union-type declaration itself, not an actual question.
-There is genuinely zero real GCSE-tier (`key_stage: 4`) `"stretch"` question
-anywhere in the bank, even though the engine fully supports the kind. A child
-who has certified a GCSE topic never receives an extension item once they
-reach mastery, a gap specifically at the top end (grades 7 to 9) where
-stretch/extension practice matters most for real exam readiness.
-- Next step: author 1 to 2 stretch items per run across different subjects
-  (not a single sweep), picking topics whose Higher-tier content clearly goes
-  beyond their existing mastery items. 2026-09-12 authored the first one
-  (`maths_quadratics`, the quadratic formula, Edexcel 1MA1 A18) as F3;
-  candidates named for a future run: `maths_pythagoras` (a 3D Pythagoras/trig
-  extension), `sci_atoms` (an isotope-abundance calculation).
-- Done so far: 1 question authored and filed (F3, 2026-09-12), pending owner
-  seed approval; not yet shipped.
+Status: ACTIVE. Opened 2026-09-12 (Scout, F3 that day). Counted every `kind`
+value across all five seed files: 383 total questions, of which only 5 were
+`"stretch"` at the time, all pre-GCSE. There was genuinely zero real GCSE-tier
+(`key_stage: 4`) `"stretch"` question anywhere in the bank, even though the
+engine fully supports the kind. A child who has certified a GCSE topic never
+received an extension item once they reached mastery, a gap specifically at
+the top end (grades 7 to 9) where stretch/extension practice matters most for
+real exam readiness.
+- Next step: 2 more subjects/topics still needed to keep chipping at the
+  systemic gap; no new candidates named yet beyond the ones closed so far
+  (`maths_quadratics`, `sci_atoms`, `maths_pythagoras`). Pick 1 to 2 more per
+  run, across different subjects, rather than one big sweep.
+- Done so far: `maths_quadratics` (the quadratic formula, Edexcel 1MA1 A18)
+  authored and filed as F3, 2026-09-12, pending owner seed approval.
+- 2026-09-13 (Scout): authored both of the previously-named candidates.
+  `sci_atoms` (relative atomic mass from isotopic abundance, AQA 8464
+  5.1.1.6, the classic chlorine-35/chlorine-37 example) as F1, and
+  `maths_pythagoras` (3D cuboid diagonal, Edexcel 1MA1 G20's explicit "two
+  and three dimensional figures" extension) as F2, both spec-cited live and
+  hand re-derived clean, pending owner seed approval. Also separately
+  re-verified the F3 stretch question live end-to-end (mastery to
+  certificate to brain-stretch flow) and found it renders literal ASCII math
+  notation ("^2", "+/-", "sqrt") instead of the bank's usual unicode, filed
+  as B5 that day, a correctness-neutral formatting miss only.
+
+## EPIC 24 (new): Homepage hydration mismatch, second occurrence (React error #418)
+Status: NEW, opened 2026-09-13 (Scout). EPIC 20 (the original case, opened
+2026-09-01) was RETIRED 2026-09-03 after four consecutive clean re-checks
+through 2026-09-08, with its own closing note explicitly asking for a FRESH
+epic entry (not a re-open of EPIC 20 itself) if the error ever recurred. It
+has now recurred: 2026-09-13 reproduced the exact same `Minified React error
+#418` four times this run (twice desktop, once after a hard reload, once
+mobile), confirmed via Sentry actually capturing it (four envelope POSTs per
+pageview), homepage-scoped only (every other marketing page checked was
+clean). Filed as B1 (High) that day with a root-cause investigation plan (a
+local non-minified `next build`/`next start` repro, and a check of whether
+the homepage's edge cache is serving HTML from an older build than the
+currently deployed JS, since the homepage is the single most heavily cached
+route and no homepage-touching code change was found in the commits since
+the last clean check). Not yet root-caused or fixed.
+- Next step: whoever picks this up should do the local non-minified repro
+  first (gives the exact component name), then decide whether the fix is a
+  code-level hydration guard or a caching/deploy-process fix, before making a
+  second guess-and-ship attempt (see the EPIC 7 Fraunces saga for why a
+  confirmed root cause matters more than a fast patch here).
+- Done so far: filed only (B1, 2026-09-13); not yet investigated further or
+  fixed.
