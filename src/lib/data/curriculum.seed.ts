@@ -1057,6 +1057,33 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "Looks like you added 19 and 9. Neutrons come from subtracting: 19 minus 9.",
     ],
   },
+  // ── F1 (2026-09-13, EPIC 23): sci_atoms relative atomic mass from isotopic
+  // abundance, the bank's first GCSE-tier stretch item for this topic. ──
+  // AQA 8464 Chemistry 5.1.1.6 — relative atomic mass as a weighted average
+  // of isotope abundance (transcribed verbatim from the owner-approved finding).
+  {
+    topic_tag: "sci_atoms",
+    subject: "science",
+    tier: 5,
+    key_stage: 4,
+    kind: "stretch",
+    prompt:
+      "Chlorine has two naturally occurring isotopes: 75% of chlorine atoms are chlorine-35 and 25% are chlorine-37. Calculate the relative atomic mass of chlorine using this abundance data.",
+    options: ["35.5", "36", "35", "72"],
+    correct_index: 0,
+    explanation:
+      "Relative atomic mass is a weighted average based on isotope abundance: (75% x 35) + (25% x 37) = 26.25 + 9.25 = 35.5. This matches chlorine's real relative atomic mass.",
+    hints: [
+      "Multiply each isotope's mass number by its percentage abundance (as a decimal), then add the results together.",
+      "0.75 x 35 = 26.25, and 0.25 x 37 = 9.25. Add these two amounts to get the relative atomic mass.",
+    ],
+    misconceptions: [
+      "",
+      "This is a simple average of 35 and 37 ((35 + 37) / 2), which ignores that chlorine-35 is three times more abundant than chlorine-37.",
+      "This uses only the mass number of the more common isotope (chlorine-35) and ignores chlorine-37 completely.",
+      "This adds the two mass numbers together (35 + 37) instead of taking a weighted average based on abundance.",
+    ],
+  },
   // ── F2 (2026-08-18): sci_energy kinetic energy calculation ("Calculate") ──
   // AQA 8464 Physics 4.1.1.2, Ek = ½mv².
   {

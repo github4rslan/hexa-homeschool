@@ -1414,3 +1414,45 @@ describe("F4 (2026-09-12): maths_transformations first rotation item", () => {
     expect(rotate180(point)).toEqual([-2, -1]);
   });
 });
+
+describe("F1 (2026-09-13, EPIC 23): sci_atoms relative atomic mass from isotopic abundance", () => {
+  function findItem() {
+    return ALL.find(
+      (item) =>
+        item.topic_tag === "sci_atoms" &&
+        item.prompt.startsWith("Chlorine has two naturally occurring isotopes"),
+    );
+  }
+
+  it("adds a well-formed stretch item keyed to the correct answer", () => {
+    const q = findItem();
+    expect(q, "stretch item present").toBeDefined();
+    if (!q) return;
+    expect(q.kind).toBe("stretch");
+    expect(q.key_stage).toBe(4);
+    expect(q.subject).toBe("science");
+    expect(q.options.length).toBe(4);
+    expect(new Set(q.options).size).toBe(q.options.length);
+    expect(q.correct_index).toBeGreaterThanOrEqual(0);
+    expect(q.correct_index).toBeLessThan(q.options.length);
+    expect(q.options[q.correct_index]).toBe("35.5");
+    expect(q.explanation.trim().length).toBeGreaterThan(0);
+    expect(q.misconceptions).toBeDefined();
+    expect(q.misconceptions!.length).toBe(q.options.length);
+    expect((q.misconceptions![q.correct_index] ?? "").trim()).toBe("");
+  });
+
+  it("is the only stretch-kind item for sci_atoms (no near-duplicate)", () => {
+    const stretchItems = ALL.filter(
+      (q) => q.topic_tag === "sci_atoms" && q.kind === "stretch",
+    );
+    expect(stretchItems.length).toBe(1);
+  });
+
+  it("35.5 is the correct weighted-average relative atomic mass for 75%/25% chlorine-35/37", () => {
+    const relativeAtomicMass = 0.75 * 35 + 0.25 * 37;
+    expect(relativeAtomicMass).toBeCloseTo(35.5, 5);
+    // The naive simple-average distractor is genuinely different (36).
+    expect((35 + 37) / 2).toBe(36);
+  });
+});
