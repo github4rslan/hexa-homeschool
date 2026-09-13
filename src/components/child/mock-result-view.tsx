@@ -23,7 +23,10 @@ export function MockGradeReveal({
   detail?: string;
   reduce: boolean;
 }) {
-  const grade = indicativeGrade.toLowerCase();
+  // indicativeGrade is the bare band stored in model_predicted_grade (no
+  // "Grade" word, B3 2026-09-13) — this is the one place that adds the word
+  // for this reveal's wording.
+  const grade = indicativeGrade ? `Grade ${indicativeGrade}` : "";
   return (
     <div className="relative py-8 text-center">
       {!reduce && (

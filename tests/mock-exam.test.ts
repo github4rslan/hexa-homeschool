@@ -8,7 +8,9 @@ describe("scoreMock", () => {
     expect(r.total).toBe(0);
     expect(r.correct).toBe(0);
     expect(r.scorePct).toBe(0);
-    expect(r.indicativeGrade).toContain("Grade");
+    // B3 (2026-09-13): stored verbatim into model_predicted_grade, so it must
+    // be the bare band, never prefixed with the word "Grade".
+    expect(r.indicativeGrade).not.toContain("Grade");
   });
 
   it("computes accuracy as a percentage", () => {
@@ -24,7 +26,7 @@ describe("scoreMock", () => {
     const answers = Array.from({ length: 10 }, () => ({ tier: 5, correct: true }));
     const r = scoreMock(answers);
     expect(r.estimatedTier).toBeGreaterThanOrEqual(4.5);
-    expect(r.indicativeGrade).toBe("Grade 8–9");
+    expect(r.indicativeGrade).toBe("8–9");
   });
 
   it("does not over-state from easy questions alone", () => {

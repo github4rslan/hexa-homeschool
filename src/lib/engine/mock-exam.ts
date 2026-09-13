@@ -1,4 +1,4 @@
-import { tierToGrade } from "@/lib/data/diagnostic";
+import { gradeBand } from "@/lib/data/diagnostic";
 
 /**
  * Mock-exam scoring — pure, deterministic. Grading uses the human-authored
@@ -6,8 +6,12 @@ import { tierToGrade } from "@/lib/data/diagnostic";
  * (it is used elsewhere, post-exam, solely to explain wrong answers).
  *
  * Score → indicative grade uses the SAME tier→grade family as the diagnostic
- * (`tierToGrade`), so a mock and a diagnostic speak the same language to
- * parents. Each question carries a difficulty tier (1–5); a child's estimated
+ * (`gradeBand`), so a mock and a diagnostic speak the same language to
+ * parents. `indicativeGrade` is stored verbatim into `model_predicted_grade`
+ * (B3, 2026-09-13), so it is deliberately the BARE band with no "Grade"
+ * word: every display site prepends its own wording, which is what stops a
+ * duplicated "Grade Grade 4–5" from ever reaching a compliance document.
+ * Each question carries a difficulty tier (1–5); a child's estimated
  * tier is the average tier of the questions they got right, nudged by their
  * overall accuracy so that getting easy questions right doesn't over-state a
  * grade and a strong pass on hard questions is rewarded.
@@ -38,7 +42,7 @@ export interface MockResult {
   marksPct: number;
   /** Estimated working tier (1–5). */
   estimatedTier: number;
-  /** Indicative GCSE working-grade band, e.g. "Grade 5". */
+  /** Indicative GCSE working-grade band, bare (no "Grade" prefix), e.g. "4–5". */
   indicativeGrade: string;
 }
 
@@ -59,7 +63,7 @@ export function scoreMock(answers: MockAnswerKey[]): MockResult {
       marksEarned: 0,
       marksPct: 0,
       estimatedTier: 1,
-      indicativeGrade: tierToGrade(1),
+      indicativeGrade: gradeBand(1),
     };
   }
 
@@ -98,6 +102,6 @@ export function scoreMock(answers: MockAnswerKey[]): MockResult {
     marksEarned,
     marksPct,
     estimatedTier,
-    indicativeGrade: tierToGrade(estimatedTier),
+    indicativeGrade: gradeBand(estimatedTier),
   };
 }

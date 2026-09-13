@@ -30,16 +30,27 @@ export const DIAGNOSTIC_SUBJECTS: { id: DiagnosticSubject; label: string }[] = [
   { id: "science", label: "Science" },
 ];
 
-/** Tier (1–5) → approximate GCSE working-grade band shown to parents. */
-export function tierToGrade(tier: number): string {
+/**
+ * Tier (1–5) → the BARE GCSE working-grade band, e.g. "4–5", never prefixed
+ * with the word "Grade". This is the shape stored in `model_predicted_grade`
+ * (both the diagnostic and mock-exam paths write this same bare shape), so
+ * every display site can prepend its own wording ("Grade", "working Grade")
+ * without ever risking a duplicated "Grade Grade 4–5".
+ */
+export function gradeBand(tier: number): string {
   const map: Record<number, string> = {
-    1: "Grade 1–2",
-    2: "Grade 3",
-    3: "Grade 4–5",
-    4: "Grade 6–7",
-    5: "Grade 8–9",
+    1: "1–2",
+    2: "3",
+    3: "4–5",
+    4: "6–7",
+    5: "8–9",
   };
-  return map[Math.max(1, Math.min(5, Math.round(tier)))] ?? "Grade 4–5";
+  return map[Math.max(1, Math.min(5, Math.round(tier)))] ?? "4–5";
+}
+
+/** Tier (1–5) → approximate GCSE working-grade band shown to parents, prefixed for direct display. */
+export function tierToGrade(tier: number): string {
+  return `Grade ${gradeBand(tier)}`;
 }
 
 export interface SubjectResult {

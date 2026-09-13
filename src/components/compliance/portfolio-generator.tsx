@@ -425,12 +425,12 @@ export function PortfolioGenerator({
                             {subject.mockTaken ? "Taken" : "Pending"}
                           </span>
                           <div className="mt-0.5 text-xs text-fog-500">
-                            {subject.mockGrade ?? "No mock grade"}
+                            {subject.mockGrade ? `Grade ${subject.mockGrade}` : "No mock grade"}
                           </div>
                         </div>
                         <div>
                           <span className="font-semibold text-fog-50">
-                            {subject.latestGrade ?? "Pending"}
+                            {subject.latestGrade ? `Grade ${subject.latestGrade}` : "Pending"}
                           </span>
                           <div className="mt-0.5 text-xs text-fog-500">
                             {subject.gradeSource ?? "Awaiting assessment"}

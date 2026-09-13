@@ -87,7 +87,10 @@ export default async function MockHubPage() {
           // Completed this period — a calm "done" panel (no retake), with the
           // result and when the next mock unlocks. Effort-framed, encouraging.
           if (state?.taken) {
-            const grade = state.result?.indicativeGrade?.toLowerCase() ?? "";
+            // indicativeGrade is the bare band stored in model_predicted_grade
+            // (no "Grade" word, B3 2026-09-13) — add the word here for display.
+            const band = state.result?.indicativeGrade ?? "";
+            const grade = band ? `Grade ${band}` : "";
             return (
               <Link
                 key={s.id}
