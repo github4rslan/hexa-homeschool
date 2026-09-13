@@ -1,8 +1,9 @@
 "use client";
 
-import { m, useReducedMotion } from "motion/react";
+import { m } from "motion/react";
 import { Container } from "@/components/ui/container";
 import { CountUp } from "@/components/fx/count-up";
+import { useHydrationSafeReducedMotion } from "@/components/fx/use-hydration-safe-reduced-motion";
 
 interface Stat {
   prefix?: string;
@@ -20,7 +21,7 @@ const STATS: Stat[] = [
 ];
 
 export function StatsStrip() {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useHydrationSafeReducedMotion();
   return (
     <section
       id="stats"

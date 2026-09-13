@@ -3,7 +3,6 @@
 import { useRef } from "react";
 import {
   m,
-  useReducedMotion,
   useScroll,
   useTransform,
   type Variants,
@@ -12,6 +11,7 @@ import { ArrowRight, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Magnetic } from "@/components/fx/magnetic";
+import { useHydrationSafeReducedMotion } from "@/components/fx/use-hydration-safe-reduced-motion";
 
 // The FIRST headline line is the page's LCP element, so it must paint on the
 // first frame: it starts fully opaque (never opacity 0 / blur, which would defer
@@ -43,7 +43,7 @@ const TRUST = [
 ];
 
 export function Hero() {
-  const reduced = useReducedMotion();
+  const reduced = useHydrationSafeReducedMotion();
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,

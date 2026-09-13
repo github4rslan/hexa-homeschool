@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useInView, useReducedMotion } from "motion/react";
+import { useInView } from "motion/react";
+import { useHydrationSafeReducedMotion } from "@/components/fx/use-hydration-safe-reduced-motion";
 
 interface CountUpProps {
   end: number;
@@ -26,7 +27,7 @@ export function CountUp({
 }: CountUpProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-50px" });
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useHydrationSafeReducedMotion();
   // Reduced-motion users start on the final value — rAF counting can't be
   // stopped by CSS `prefers-reduced-motion`, so gate it in JS (WCAG 2.3.3).
   const [value, setValue] = useState(reduceMotion ? end : 0);
