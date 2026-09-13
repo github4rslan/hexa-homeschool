@@ -26,6 +26,16 @@ export const CONTACT_EMAIL = "hello@edway.uk";
  * objects like `openGraph`/`twitter` wholesale when a segment defines its
  * own, rather than deep-merging field by field — so every page that sets
  * one must set the full object).
+ *
+ * B2 (2026-09-13): deliberately omits `images` from both `openGraph` and
+ * `twitter`. An explicit `images` array here would take precedence over a
+ * route's `opengraph-image.tsx` file-convention image (Next.js only falls
+ * back to the file convention when no explicit array is set), so setting it
+ * to the nonexistent `/og-image.png` broke the preview on every page that
+ * calls this helper even after the root layout's own copy of the same bug
+ * was fixed. Leaving `images` unset lets each page fall back to its own
+ * `opengraph-image.tsx` (the 4 pages that have one, F5) or the sitewide
+ * default (`src/app/opengraph-image.tsx`) otherwise.
  */
 export function buildPageMetadata({
   path,
@@ -49,20 +59,11 @@ export function buildPageMetadata({
       siteName: "Edway",
       title: fullTitle,
       description,
-      images: [
-        {
-          url: "/og-image.png",
-          width: 1200,
-          height: 630,
-          alt: fullTitle,
-        },
-      ],
     },
     twitter: {
       card: "summary_large_image",
       title: fullTitle,
       description,
-      images: ["/og-image.png"],
     },
   };
 }
