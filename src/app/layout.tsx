@@ -47,21 +47,12 @@ export const metadata: Metadata = {
     title: "Edway — Teach with confidence. Prove with evidence. Sit when ready.",
     description:
       "The AI assistant built for UK homeschooling families. Daily lessons, transparent progress tracking, and Local Authority-compliant portfolios. Full Local Authority compliance.",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Edway — Teach with confidence. Prove with evidence. Sit when ready.",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Edway — Teach with confidence. Prove with evidence. Sit when ready.",
     description:
       "The AI assistant built for UK homeschooling families. Daily lessons, progress tracking, and council-ready evidence.",
-    images: ["/og-image.png"],
   },
   robots: {
     index: true,
