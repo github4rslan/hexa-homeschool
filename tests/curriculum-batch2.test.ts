@@ -1507,3 +1507,38 @@ describe("F2 (2026-09-13, EPIC 23): maths_pythagoras 3D Pythagoras (cuboid diago
     expect(6 + 4 + 3).toBe(13);
   });
 });
+
+describe("F3 (2026-09-13, EPIC 2): eng_poetry's second command-word item, enjambment", () => {
+  function findItem() {
+    return ALL.find(
+      (item) =>
+        item.topic_tag === "eng_poetry" &&
+        item.prompt.startsWith("In the line 'The waves crashed on"),
+    );
+  }
+
+  it("adds a well-formed mastery item keyed to the correct answer", () => {
+    const q = findItem();
+    expect(q, "enjambment item present").toBeDefined();
+    if (!q) return;
+    expect(q.kind).toBe("mastery");
+    expect(q.key_stage).toBe(4);
+    expect(q.subject).toBe("english");
+    expect(q.options.length).toBe(4);
+    expect(new Set(q.options).size).toBe(q.options.length);
+    expect(q.correct_index).toBe(0);
+    expect(q.options[q.correct_index]).toContain("Enjambment");
+    expect(q.misconceptions).toBeDefined();
+    expect(q.misconceptions!.length).toBe(q.options.length);
+    expect((q.misconceptions![q.correct_index] ?? "").trim()).toBe("");
+  });
+
+  it("is a genuinely distinct technique from the topic's existing caesura item", () => {
+    const items = ALL.filter(
+      (q) =>
+        q.topic_tag === "eng_poetry" &&
+        (q.prompt.includes("caesura") || q.prompt.startsWith("In the line 'The waves crashed on")),
+    );
+    expect(items.length).toBe(2);
+  });
+});

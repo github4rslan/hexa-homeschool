@@ -1441,6 +1441,37 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "A caesura is punctuation used deliberately mid-line, not the absence of punctuation.",
     ],
   },
+  // F3 (2026-09-13, EPIC 2): eng_poetry's second command-word item,
+  // enjambment, the natural pairing with the existing caesura item above
+  // (continuation with no pause, versus a mid-line pause). AQA 8700 AO2.
+  {
+    topic_tag: "eng_poetry",
+    subject: "english",
+    tier: 5,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "In the line 'The waves crashed on / the empty shore', the sentence runs on from the first line to the second with no punctuation at the line break. Identify this technique and its typical effect.",
+    options: [
+      "Enjambment, it creates a flowing, continuous movement that mirrors the sense of the words running on.",
+      "Caesura, it creates a sudden pause in the middle of a line.",
+      "Alliteration, it repeats the same consonant sound at the start of nearby words.",
+      "Personification, it gives human qualities to a non-human thing.",
+    ],
+    correct_index: 0,
+    explanation:
+      "Enjambment is when a sentence or phrase continues past the end of a line with no punctuation to stop it. This creates a flowing, continuous movement, often mirroring the sense of movement or continuation in the words themselves.",
+    hints: [
+      "Look at whether there is any punctuation at the end of the first line. If there isn't, and the sentence keeps going, that has its own specific name.",
+      "This is the opposite of a caesura (a pause mid-line): here there is no pause at all where you might expect one, at the end of the line.",
+    ],
+    misconceptions: [
+      "",
+      "A caesura is a pause, usually created by punctuation in the middle of a line, not the technique of running a sentence over a line break with no punctuation.",
+      "Alliteration is about repeated consonant sounds at the start of words, not about how lines and sentences relate to each other.",
+      "Personification gives human qualities to something non-human; this example is about line structure, not description.",
+    ],
+  },
   // ── F3 (2026-08-20): eng_shakespeare soliloquy item ──
   // AQA 8700 AO2, closing a zero-coverage topic.
   {
