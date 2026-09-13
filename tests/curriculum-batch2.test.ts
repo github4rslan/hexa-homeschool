@@ -1456,3 +1456,54 @@ describe("F1 (2026-09-13, EPIC 23): sci_atoms relative atomic mass from isotopic
     expect((35 + 37) / 2).toBe(36);
   });
 });
+
+describe("F2 (2026-09-13, EPIC 23): maths_pythagoras 3D Pythagoras (cuboid diagonal)", () => {
+  function findItem() {
+    return ALL.find(
+      (item) =>
+        item.topic_tag === "maths_pythagoras" &&
+        item.prompt.startsWith("A cuboid has length 6 cm"),
+    );
+  }
+
+  it("adds a well-formed stretch item keyed to the correct answer", () => {
+    const q = findItem();
+    expect(q, "stretch item present").toBeDefined();
+    if (!q) return;
+    expect(q.kind).toBe("stretch");
+    expect(q.key_stage).toBe(4);
+    expect(q.subject).toBe("mathematics");
+    expect(q.options.length).toBe(4);
+    expect(new Set(q.options).size).toBe(q.options.length);
+    expect(q.correct_index).toBeGreaterThanOrEqual(0);
+    expect(q.correct_index).toBeLessThan(q.options.length);
+    expect(q.options[q.correct_index]).toBe("7.8 cm");
+    expect(q.misconceptions).toBeDefined();
+    expect(q.misconceptions!.length).toBe(q.options.length);
+    expect((q.misconceptions![q.correct_index] ?? "").trim()).toBe("");
+  });
+
+  it("is the topic's first stretch-kind AND first genuinely 3D item", () => {
+    const stretchItems = ALL.filter(
+      (q) => q.topic_tag === "maths_pythagoras" && q.kind === "stretch",
+    );
+    expect(stretchItems.length).toBe(1);
+    const other3D = ALL.filter(
+      (q) =>
+        q.topic_tag === "maths_pythagoras" &&
+        q.prompt !== stretchItems[0].prompt &&
+        /cuboid|three dimension|3d/i.test(q.prompt),
+    );
+    expect(other3D.length).toBe(0);
+  });
+
+  it("7.8 cm (1 d.p.) is the correct cuboid space diagonal for 6, 4, 3 cm", () => {
+    const diagonal = Math.sqrt(6 ** 2 + 4 ** 2 + 3 ** 2);
+    expect(diagonal).toBeCloseTo(7.8102, 3);
+    expect(Number(diagonal.toFixed(1))).toBe(7.8);
+    // Distractors are genuinely distinct sub-skill errors, not the real answer.
+    expect(Number(Math.sqrt(6 ** 2 + 4 ** 2).toFixed(1))).toBe(7.2);
+    expect(Math.sqrt(4 ** 2 + 3 ** 2)).toBe(5);
+    expect(6 + 4 + 3).toBe(13);
+  });
+});

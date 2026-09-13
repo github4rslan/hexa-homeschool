@@ -747,6 +747,34 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     hints: ["tan θ = opposite ÷ adjacent. Work out that ratio first.", "Use the inverse tan (tan⁻¹) button on your calculator to turn the ratio into an angle."],
     misconceptions: ["", "This finds the OTHER angle in the triangle by dividing adjacent by opposite instead of opposite by adjacent (8 ÷ 6, not 6 ÷ 8).", "This treats the ratio 0.75 as if it were the angle in degrees — tan θ = 0.75 is not the same as θ = 75°. You still need to take the inverse tan.", "This uses sin instead of tan, and treats the adjacent side (8 cm) as if it were the hypotenuse."],
   },
+  // F2 (2026-09-13, EPIC 23): 3D Pythagoras (cuboid diagonal), the topic's
+  // first stretch item AND its first genuine 3D question (every prior item
+  // is 2D only). Edexcel 1MA1 G20 is explicit that Pythagoras applies "in two
+  // and three dimensional figures" (transcribed verbatim from the
+  // owner-approved finding).
+  {
+    topic_tag: "maths_pythagoras",
+    subject: "mathematics",
+    tier: 5,
+    key_stage: 4,
+    kind: "stretch",
+    prompt:
+      "A cuboid has length 6 cm, width 4 cm and height 3 cm. Calculate the length of the diagonal running from one corner of the cuboid to the opposite corner, to 1 decimal place.",
+    options: ["7.8 cm", "7.2 cm", "5.0 cm", "13 cm"],
+    correct_index: 0,
+    explanation:
+      "The diagonal through a cuboid uses all three dimensions: d² = 6² + 4² + 3² = 36 + 16 + 9 = 61, so d = √61, approximately 7.8 cm (1 d.p.).",
+    hints: [
+      "This is a 3D shape, so the diagonal depends on all three dimensions, not just two of them.",
+      "Square all three dimensions, add them together, then take the square root of the total.",
+    ],
+    misconceptions: [
+      "",
+      "This only uses the length and width (√(6² + 4²), about 7.2), which finds the diagonal of the base rectangle, not the full 3D diagonal through the cuboid.",
+      "This only uses the width and height (√(4² + 3²), which is 5), missing the length dimension entirely.",
+      "This adds the three side lengths directly (6 + 4 + 3 = 13) instead of squaring them, adding, and taking the square root.",
+    ],
+  },
   // Edexcel 1MA1 P7 — single-event probability ("Work out").
   {
     topic_tag: "maths_statistics",
