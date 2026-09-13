@@ -11,6 +11,7 @@ import {
 import { readActiveChildId } from "@/lib/active-child";
 import type { Subject } from "@/lib/db/types";
 import { mockUnlockCount } from "@/lib/engine/mock-gate";
+import { formatWorkingGrade } from "@/lib/data/diagnostic";
 
 export const metadata: Metadata = { title: "Mock exam" };
 export const dynamic = "force-dynamic";
@@ -88,9 +89,10 @@ export default async function MockHubPage() {
           // result and when the next mock unlocks. Effort-framed, encouraging.
           if (state?.taken) {
             // indicativeGrade is the bare band stored in model_predicted_grade
-            // (no "Grade" word, B3 2026-09-13) — add the word here for display.
-            const band = state.result?.indicativeGrade ?? "";
-            const grade = band ? `Grade ${band}` : "";
+            // (no "Grade" word, B3 2026-09-13); formatWorkingGrade adds the
+            // word and defensively strips any pre-existing prefix so a
+            // record written before that fix still displays cleanly.
+            const grade = formatWorkingGrade(state.result?.indicativeGrade) ?? "";
             return (
               <Link
                 key={s.id}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gradeBand, tierToGrade } from "@/lib/data/diagnostic";
+import { formatWorkingGrade, gradeBand, tierToGrade } from "@/lib/data/diagnostic";
 import { scoreMock } from "@/lib/engine/mock-exam";
 
 // B3 (2026-09-13): a Local Authority compliance document rendered "Grade
@@ -51,6 +51,38 @@ describe("scoreMock().indicativeGrade — the field written to model_predicted_g
     ];
     for (const paper of papers) {
       expect(scoreMock(paper).indicativeGrade).not.toContain("Grade");
+    }
+  });
+});
+
+// Live regression (2026-09-13): the source-level fix above does not
+// retroactively rewrite evaluation records written BEFORE it shipped, so a
+// stored value could still legitimately carry the old "Grade X-Y" shape.
+// formatWorkingGrade() is the defensive, idempotent display-time guard that
+// makes every consumer safe regardless of which shape it is handed.
+describe("formatWorkingGrade — idempotent display formatting, never doubles the word", () => {
+  it("prefixes a bare band with the word 'Grade'", () => {
+    expect(formatWorkingGrade("4–5")).toBe("Grade 4–5");
+    expect(formatWorkingGrade("5")).toBe("Grade 5");
+  });
+
+  it("does not double the word when the stored value already has it (pre-fix legacy data)", () => {
+    expect(formatWorkingGrade("Grade 4–5")).toBe("Grade 4–5");
+    expect(formatWorkingGrade("grade 5")).toBe("Grade 5");
+  });
+
+  it("returns null for a null, undefined or empty grade", () => {
+    expect(formatWorkingGrade(null)).toBeNull();
+    expect(formatWorkingGrade(undefined)).toBeNull();
+    expect(formatWorkingGrade("")).toBeNull();
+  });
+
+  it("never produces a string containing the word 'Grade' twice, for any input", () => {
+    for (const input of ["4–5", "Grade 4–5", "grade 8–9", "5", "Grade 5", null, ""]) {
+      const out = formatWorkingGrade(input);
+      if (out) {
+        expect(out.match(/Grade/gi)?.length).toBe(1);
+      }
     }
   });
 });

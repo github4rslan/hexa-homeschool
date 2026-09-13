@@ -53,6 +53,22 @@ export function tierToGrade(tier: number): string {
   return `Grade ${gradeBand(tier)}`;
 }
 
+/**
+ * Formats a stored `model_predicted_grade` value for direct display as
+ * "Grade X", stripping any pre-existing "Grade " prefix first (defensive,
+ * idempotent). New writes always store the bare band (B3, 2026-09-13), but
+ * this keeps any evaluation record written before that fix (which may still
+ * carry the old "Grade X-Y" shape until its next mock/diagnostic write)
+ * displaying correctly rather than doubling the word. Returns `null` for a
+ * null/empty grade so callers can render their own "not yet assessed" copy.
+ */
+export function formatWorkingGrade(grade: string | null | undefined): string | null {
+  if (!grade) return null;
+  const bare = grade.replace(/^grade\s+/i, "").trim();
+  if (!bare) return null;
+  return `Grade ${bare}`;
+}
+
 export interface SubjectResult {
   subject: DiagnosticSubject;
   label: string;

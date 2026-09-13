@@ -11,6 +11,7 @@ import {
   latestEvaluationsBySubject,
 } from "@/lib/db/repo";
 import { readActiveChildId } from "@/lib/active-child";
+import { formatWorkingGrade } from "@/lib/data/diagnostic";
 
 export const metadata: Metadata = { title: "Registration pre-fill" };
 export const dynamic = "force-dynamic";
@@ -44,10 +45,10 @@ export default async function CnisPrefillPage() {
 
   const standings = await latestEvaluationsBySubject(child._id);
   const subjectsLine = standings
-    .map(
-      (s) =>
-        `${SUBJECT_LABEL[s.subject]}${s.grade ? ` (working Grade ${s.grade})` : ""}`,
-    )
+    .map((s) => {
+      const grade = formatWorkingGrade(s.grade);
+      return `${SUBJECT_LABEL[s.subject]}${grade ? ` (working ${grade})` : ""}`;
+    })
     .join(", ");
 
   return (

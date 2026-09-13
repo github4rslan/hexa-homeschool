@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { Celebration } from "@/components/fx/celebration";
+import { formatWorkingGrade } from "@/lib/data/diagnostic";
 
 /**
  * Shared, encouraging mock grade reveal (Assessment lock). Used by the in-run
@@ -24,9 +25,10 @@ export function MockGradeReveal({
   reduce: boolean;
 }) {
   // indicativeGrade is the bare band stored in model_predicted_grade (no
-  // "Grade" word, B3 2026-09-13) — this is the one place that adds the word
-  // for this reveal's wording.
-  const grade = indicativeGrade ? `Grade ${indicativeGrade}` : "";
+  // "Grade" word, B3 2026-09-13) — formatWorkingGrade adds the word for this
+  // reveal's wording, and defensively strips any pre-existing "Grade "
+  // prefix so a record written before that fix still displays cleanly.
+  const grade = formatWorkingGrade(indicativeGrade) ?? "";
   return (
     <div className="relative py-8 text-center">
       {!reduce && (

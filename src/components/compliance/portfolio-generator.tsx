@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import type { VerifiedPortfolio } from "@/lib/compliance/portfolio";
 import { emailPortfolio } from "@/app/(dashboard)/portfolio/actions";
+import { formatWorkingGrade } from "@/lib/data/diagnostic";
 
 /**
  * Cloudinary delivery thumbnail — mirrors `cloudinaryThumb` but inlined here
@@ -425,12 +426,12 @@ export function PortfolioGenerator({
                             {subject.mockTaken ? "Taken" : "Pending"}
                           </span>
                           <div className="mt-0.5 text-xs text-fog-500">
-                            {subject.mockGrade ? `Grade ${subject.mockGrade}` : "No mock grade"}
+                            {formatWorkingGrade(subject.mockGrade) ?? "No mock grade"}
                           </div>
                         </div>
                         <div>
                           <span className="font-semibold text-fog-50">
-                            {subject.latestGrade ? `Grade ${subject.latestGrade}` : "Pending"}
+                            {formatWorkingGrade(subject.latestGrade) ?? "Pending"}
                           </span>
                           <div className="mt-0.5 text-xs text-fog-500">
                             {subject.gradeSource ?? "Awaiting assessment"}

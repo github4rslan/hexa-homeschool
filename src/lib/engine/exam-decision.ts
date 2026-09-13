@@ -8,6 +8,7 @@
  */
 
 import type { Subject } from "@/lib/db/types";
+import { formatWorkingGrade } from "@/lib/data/diagnostic";
 
 export interface SubjectInput {
   subject: Subject;
@@ -117,6 +118,6 @@ export function computeExamDecision(
     readiness,
     grade: focus.grade,
     paths,
-    summary: `Working at ${focus.grade ? `Grade ${focus.grade}` : "an early level"} in ${label} · ${Math.round(readiness)}% exam readiness.`,
+    summary: `Working at ${formatWorkingGrade(focus.grade) ?? "an early level"} in ${label} · ${Math.round(readiness)}% exam readiness.`,
   };
 }
