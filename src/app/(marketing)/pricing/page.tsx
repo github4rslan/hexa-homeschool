@@ -21,6 +21,7 @@ const TIERS: PricingTier[] = [
     name: "Edway Complete",
     tier: "standard",
     price: 49,
+    note: "Less than one hour of private tutoring, for all three core subjects, every month.",
     features: [
       "Maths. English. Science.",
       "Full diagnostic and syllabus.",

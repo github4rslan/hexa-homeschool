@@ -13,6 +13,10 @@ export interface PricingTier {
   features: string[];
   highlighted?: boolean;
   badge?: string;
+  /** Optional short value-framing line shown under the price (e.g. a
+   * cost-versus-private-tutoring comparison). Directional, never a specific
+   * market rate Edway doesn't have authority over. */
+  note?: string;
 }
 
 /**
@@ -125,6 +129,10 @@ export function PricingPlans({
               <p className="mt-1.5 text-sm text-forest-700">
                 Two months free — save 17%.
               </p>
+            )}
+
+            {tier.note && (
+              <p className="mt-1.5 text-sm text-ink-600">{tier.note}</p>
             )}
 
             {/* Signed-in parents go straight to Stripe Checkout; visitors
