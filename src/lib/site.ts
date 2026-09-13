@@ -55,7 +55,13 @@ export function buildPageMetadata({
 }): Metadata {
   const url = `${SITE_URL}${path}`;
   const fullTitle = `${title} · Edway`;
-  const images = hasOwnOgImage ? undefined : ["/opengraph-image"];
+  // Deliberately spread (not `images: hasOwnOgImage ? undefined : [...]`):
+  // an explicit `images` KEY set to `undefined` still counts as "the caller
+  // set images" to Next's metadata resolver, which then skips its own
+  // file-convention fallback merge just as if a real (dead) URL had been
+  // set. Omitting the key entirely is what lets a page with its own
+  // `opengraph-image.tsx` (hasOwnOgImage) pick that up.
+  const imageOverride = hasOwnOgImage ? {} : { images: ["/opengraph-image"] };
   return {
     title,
     description,
@@ -67,13 +73,13 @@ export function buildPageMetadata({
       siteName: "Edway",
       title: fullTitle,
       description,
-      images,
+      ...imageOverride,
     },
     twitter: {
       card: "summary_large_image",
       title: fullTitle,
       description,
-      images,
+      ...imageOverride,
     },
   };
 }
