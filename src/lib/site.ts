@@ -27,27 +27,35 @@ export const CONTACT_EMAIL = "hello@edway.uk";
  * own, rather than deep-merging field by field — so every page that sets
  * one must set the full object).
  *
- * B2 (2026-09-13): deliberately omits `images` from both `openGraph` and
- * `twitter`. An explicit `images` array here would take precedence over a
- * route's `opengraph-image.tsx` file-convention image (Next.js only falls
- * back to the file convention when no explicit array is set), so setting it
- * to the nonexistent `/og-image.png` broke the preview on every page that
- * calls this helper even after the root layout's own copy of the same bug
- * was fixed. Leaving `images` unset lets each page fall back to its own
- * `opengraph-image.tsx` (the 4 pages that have one, F5) or the sitewide
- * default (`src/app/opengraph-image.tsx`) otherwise.
+ * B2 (2026-09-13, live regression): a segment that defines its OWN
+ * `openGraph` object (even without an `images` key) does not fall back to
+ * an ANCESTOR segment's `opengraph-image.tsx` (that auto-generated image is
+ * merged into the metadata of the segment the file lives in, not inherited
+ * across a segment that redefines `openGraph`). So dropping `images`
+ * entirely here removed the dead `/og-image.png` link, but also silently
+ * removed every page's preview image, since only 4 pages have their OWN
+ * co-located `opengraph-image.tsx` (F5). Pass `hasOwnOgImage: true` for
+ * those 4 (their own file already works and must not be shadowed); every
+ * other caller gets an explicit fallback to the sitewide dynamic OG image
+ * (`src/app/opengraph-image.tsx`, reachable directly at `/opengraph-image`).
  */
 export function buildPageMetadata({
   path,
   title,
   description,
+  hasOwnOgImage = false,
 }: {
   path: string;
   title: string;
   description: string;
+  /** True for the handful of pages with their own `opengraph-image.tsx`
+   * (F5) — leaves `images` unset so that co-located file convention is used
+   * instead of being shadowed by an explicit array pointing elsewhere. */
+  hasOwnOgImage?: boolean;
 }): Metadata {
   const url = `${SITE_URL}${path}`;
   const fullTitle = `${title} · Edway`;
+  const images = hasOwnOgImage ? undefined : ["/opengraph-image"];
   return {
     title,
     description,
@@ -59,11 +67,13 @@ export function buildPageMetadata({
       siteName: "Edway",
       title: fullTitle,
       description,
+      images,
     },
     twitter: {
       card: "summary_large_image",
       title: fullTitle,
       description,
+      images,
     },
   };
 }

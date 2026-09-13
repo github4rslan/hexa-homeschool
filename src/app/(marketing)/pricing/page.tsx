@@ -14,6 +14,7 @@ export const metadata: Metadata = buildPageMetadata({
   title: "Pricing",
   description:
     "Edway Complete £49/mo, Edway Partner £99/mo. Additional subjects £15/mo each. 14-day free trial. Cancel anytime.",
+  hasOwnOgImage: true,
 });
 
 const TIERS: PricingTier[] = [

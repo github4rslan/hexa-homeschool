@@ -18,6 +18,7 @@ export const metadata: Metadata = buildPageMetadata({
   title: "For Local Authorities",
   description:
     "Information for UK Local Authority EHE officers reviewing children registered on Edway. Cryptographically signed, statutorily defensible portfolios.",
+  hasOwnOgImage: true,
 });
 
 const STATUTORY = [

@@ -12,6 +12,7 @@ export const metadata: Metadata = buildPageMetadata({
   title: "For UK homeschooling parents",
   description:
     "Designed for UK homeschooling families. Compliance handled. Anxiety reduced. Outcomes proven.",
+  hasOwnOgImage: true,
 });
 
 const PAINS = [

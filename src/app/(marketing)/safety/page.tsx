@@ -12,6 +12,7 @@ export const metadata: Metadata = buildPageMetadata({
   title: "Safety & escalation",
   description:
     "Human safety net with seven SLA-bound escalation gateways. AI never overrides safeguarding.",
+  hasOwnOgImage: true,
 });
 
 const PRINCIPLES = [
