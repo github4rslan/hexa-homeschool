@@ -1988,20 +1988,20 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     key_stage: 4,
     kind: "stretch",
     prompt:
-      "Use the quadratic formula to solve x^2 + 2x - 2 = 0, where x = (-b +/- sqrt(b^2 - 4ac)) / 2a. Which value below is one of the two solutions, correct to 2 decimal places?",
+      "Use the quadratic formula to solve x² + 2x − 2 = 0, where x = (−b ± √(b² − 4ac)) / 2a. Which value below is one of the two solutions, correct to 2 decimal places?",
     options: ["0.73", "1.46", "-0.73", "3.46"],
     correct_index: 0,
     explanation:
-      "Here a = 1, b = 2, c = -2. The discriminant is b^2 - 4ac = 4 - 4(1)(-2) = 4 + 8 = 12, so sqrt(12) is about 3.46. Using the formula, x = (-2 + 3.46) / 2, which is about 0.73 (the other solution, using the minus sign, is about -2.73).",
+      "Here a = 1, b = 2, c = −2. The discriminant is b² − 4ac = 4 − 4(1)(−2) = 4 + 8 = 12, so √12 is about 3.46. Using the formula, x = (−2 + 3.46) / 2, which is about 0.73 (the other solution, using the minus sign, is about −2.73).",
     hints: [
-      "Work out the discriminant b^2 - 4ac first, then take its square root.",
-      "Substitute -2, plus or minus 3.46, and 2 times 1 into (-b +/- sqrt(discriminant)) / 2a; divide the WHOLE numerator by 2a, not just part of it.",
+      "Work out the discriminant b² − 4ac first, then take its square root.",
+      "Substitute −2, plus or minus 3.46, and 2 times 1 into (−b ± √(discriminant)) / 2a; divide the WHOLE numerator by 2a, not just part of it.",
     ],
     misconceptions: [
       "",
-      "This uses (-b + sqrt(discriminant)) without dividing by 2a at the end; always divide the whole numerator by 2a.",
+      "This uses (−b + √(discriminant)) without dividing by 2a at the end; always divide the whole numerator by 2a.",
       "This flips the sign of the correct answer; substituting it back into the original equation does not make it true.",
-      "This is just sqrt(discriminant) on its own, without applying -b or dividing by 2a; the formula needs all three steps.",
+      "This is just √(discriminant) on its own, without applying −b or dividing by 2a; the formula needs all three steps.",
     ],
   },
   // F4 (2026-09-12): maths_transformations names "rotations" in its own topic

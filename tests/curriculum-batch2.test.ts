@@ -1328,7 +1328,7 @@ describe("F3 (2026-09-12): first GCSE-tier stretch item, maths_quadratics quadra
     const q = ALL.find(
       (item) =>
         item.topic_tag === "maths_quadratics" &&
-        item.prompt.startsWith("Use the quadratic formula to solve x^2 + 2x - 2 = 0"),
+        item.prompt.startsWith("Use the quadratic formula to solve x² + 2x − 2 = 0"),
     );
     expect(q, "stretch item present").toBeDefined();
     if (!q) return;
@@ -1343,6 +1343,23 @@ describe("F3 (2026-09-12): first GCSE-tier stretch item, maths_quadratics quadra
     expect(q.misconceptions).toBeDefined();
     expect(q.misconceptions!.length).toBeLessThanOrEqual(q.options.length);
     expect((q.misconceptions![q.correct_index] ?? "").trim()).toBe("");
+  });
+
+  it("B5 (2026-09-13): uses unicode math notation, not ASCII approximations", () => {
+    const q = ALL.find(
+      (item) =>
+        item.topic_tag === "maths_quadratics" &&
+        item.prompt.startsWith("Use the quadratic formula to solve x² + 2x − 2 = 0"),
+    );
+    expect(q, "stretch item present").toBeDefined();
+    if (!q) return;
+    const text = [q.prompt, q.explanation, ...(q.hints ?? []), ...(q.misconceptions ?? [])].join(
+      "\n",
+    );
+    expect(text).not.toMatch(/\^2|\+\/-|sqrt\(/);
+    expect(q.prompt).toContain("²");
+    expect(q.prompt).toContain("±");
+    expect(q.prompt).toContain("√");
   });
 
   it("is the only stretch-kind item for maths_quadratics (no near-duplicate)", () => {
