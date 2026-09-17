@@ -3583,3 +3583,64 @@ page/account the finding named would have shipped 3 confidently-broken
 
 Final health check: newest production deployment READY, `/api/health` 200
 (`db: up`), `get_runtime_errors` clean for the whole run's window.
+
+## 2026-09-17 (Scout, Thursday journeys deep-dive)
+
+Focus: end-to-end journeys, extra depth (B-journeys), plus the standing
+max-depth child pass. Filed 3 bugs (2 High, 1 Medium) and 9 features. Headline
+finds: EPIC 24's "fix" (shipped 2026-09-13/14) does NOT actually hold, the
+homepage hydration error still reproduces live, and this run went further than
+a routine re-check by confirming `prefers-reduced-motion` is genuinely false
+in the reproducing session, disproving the shipped fix's own root-cause
+theory; a 6th, previously-missed site of the "Grade Grade" duplicated-word
+bug on the parent-facing `/schedule` "Why" reasoning card (`repo.ts`'s
+`scheduleItemReason` never got the `formatWorkingGrade()` treatment the other
+5 sites got); and a genuine, unguarded abuse vector, the LA-portfolio email
+share Server Action has zero rate limiting, unlike every sibling outbound
+route in the app.
+
+LESSON: a "fixed" bug's own re-verification should test the fix's actual
+TRIGGER CONDITION, not just whether the symptom still reproduces. EPIC 24's
+2026-09-13 fix targeted a `prefers-reduced-motion: reduce` hydration
+mismatch; simply re-reproducing the error was already known to still happen,
+but checking `window.matchMedia(...)…matches` in that same session (false)
+is what actually proved the fix's theory wrong, not just its outcome. A
+"still broken" re-check is weaker evidence than "still broken AND the
+theorized cause is provably absent here."
+
+LESSON: when tracing a bug class that has an established fix pattern (here,
+`formatWorkingGrade()` for the "Grade Grade" duplication), grep every
+consumer of the underlying raw field (`model_predicted_grade`) across the
+WHOLE codebase, not just the display components a UI walk happens to visit —
+`scheduleItemReason()` lives in `repo.ts`, a data-layer function, not a
+component, and was missed by the original fix's own file list for exactly
+that reason.
+
+LESSON: rate-limiting audits should explicitly include Server Actions, not
+just `/api/*` routes. `emailPortfolio()` sends real outbound email via
+Brevo with zero throttling while its sibling `/api/portfolio` POST (same
+feature area, generation vs. sharing) has a carefully-reasoned rate limit
+with its own explanatory comment — the omission looks like a route-based
+sweep (grep for `app/api`) that never reached `app/(dashboard)/*/actions.ts`.
+
+LESSON (data hygiene, not a code bug but worth recording): the SMOKE test
+parent account carries a THIRD child ("Sam Smoke") beyond
+`scripts/seed-test-accounts.ts`'s own 2-child fixture ("Sam Test", "Ivy
+Test"). Traced it to the seed script itself (read in full) rather than
+mis-filing it as a live bug — a good instance of "verify against the actual
+source of truth before filing," this time the seed script rather than a
+live page. Filed a small, safe follow-up (F4) so the script itself warns
+about this drift in future, rather than leaving a future run to rediscover
+it the same way.
+
+Full max-depth child pass completed on 4 topics across all 4 interaction
+types (mcq, tap_reveal, fill_blank, drag_drop, the last one via BOTH
+tap-to-place and pure-keyboard placement) plus a genuine deliberate mastery
+FAILURE (1/3, reaching the "Let's look at this another way" reteach screen
+with Eddie present) — this is the first run in several to explicitly re-drive
+the reteach loop rather than only the happy path, per the standing "deliberately
+fail mastery on a separate run" instruction.
+
+Chrome DevTools MCP tools were not used this run (Thursday's focus is
+journeys, not perf); B-perf relied on the routine Playwright timing checks
+already covered by prior runs' EPIC 19 work, not re-measured today.

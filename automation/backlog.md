@@ -193,6 +193,13 @@ Every KS4 topic across all three subjects has at least one command-word item
   8700 AO2 structural-effect skill), hand re-derived clean, pending seed.
   Closes `eng_poetry` off the remaining-topics list above.
 
+- 2026-09-17 (Scout, Thursday journeys deep-dive): eng_spelling second
+  command-word item, the "should of"/"should have" error, using "Explain"
+  as the command word (paired against the topic's existing "Identify" item),
+  hand re-derived clean, pending seed. Closes eng_spelling off the
+  remaining-topics list above; eng_comprehension, eng_persuasive and
+  eng_shakespeare are now the only ones left on that list.
+
 ## EPIC 3 — Full spec coverage: close missing GCSE topics
 Status: ACTIVE. `maths_transformations` and `maths_simultaneous` (both Edexcel
 1MA1 gaps) are SHIPPED and confirmed live (the algebra_linear/quadratics
@@ -238,6 +245,20 @@ still lists correctly as a prerequisite).
   translation, and a conceptual reflection identification; zero rotation
   computation exists. Authored a 90-degree-clockwise-about-origin question,
   filed today as F4.
+
+- 2026-09-17 (Scout, Thursday journeys deep-dive): CORRECTION to the "2 more
+  subjects/topics still needed" premise above, a fresh grep this run found a
+  4th real GCSE stretch item already exists and was not previously
+  cross-referenced into this epic: maths_transformations (the 90-degree
+  rotation question, filed as F4 on 2026-09-12 under EPIC 3's rotation-gap
+  finding, is itself kind: "stretch"). So the bank's real count entering this
+  run was 4 (Maths x3, Science x1), not 3, and English had zero. Authored 2
+  more today, deliberately in the 2 subjects with the thinnest stretch
+  coverage: sci_electricity (series-circuit resistance combined with Ohm's
+  law, AQA 8464 6.2.2, spec-cited live) and eng_punctuation (semicolon
+  joining two independent clauses, English's first-ever stretch item), both
+  hand re-derived clean, pending seed. Once seeded this reaches 6 real GCSE
+  stretch items across all 3 subjects.
 
 ## EPIC 4 — Exam-condition fidelity in the mock (rehearse exam day)
 Status: ACTIVE. A real gentle countdown timer, marks/boundary-grade work, the
@@ -554,7 +575,7 @@ real exam readiness.
   as B5 that day, a correctness-neutral formatting miss only.
 
 ## EPIC 24 (new): Homepage hydration mismatch, second occurrence (React error #418)
-Status: NEW, opened 2026-09-13 (Scout). EPIC 20 (the original case, opened
+Status: ACTIVE. Opened 2026-09-13 (Scout). EPIC 20 (the original case, opened
 2026-09-01) was RETIRED 2026-09-03 after four consecutive clean re-checks
 through 2026-09-08, with its own closing note explicitly asking for a FRESH
 epic entry (not a re-open of EPIC 20 itself) if the error ever recurred. It
@@ -574,4 +595,20 @@ the last clean check). Not yet root-caused or fixed.
   second guess-and-ship attempt (see the EPIC 7 Fraunces saga for why a
   confirmed root cause matters more than a fast patch here).
 - Done so far: filed only (B1, 2026-09-13); not yet investigated further or
-  fixed.
+  fixed as of that date.
+- 2026-09-17 (Scout): re-drove the exact live repro (fresh browser_navigate
+  to /, twice) and the error STILL fires after the 2026-09-13/14 fix
+  (bffcfee) shipped and deployed (confirmed an ancestor of origin/main;
+  confirmed /pricing etc. still clean so it stays homepage-scoped). Went
+  further than a routine re-check this time: confirmed
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches is false in
+  the exact reproducing session, which DISPROVES the shipped fix's own
+  root-cause theory (a real prefers-reduced-motion visitor hydrating
+  differently) — that trigger condition is false here and the bug still
+  fires. The fix is still worth keeping (it removes framer-motion's own
+  render-phase reduced-motion detection either way, a real hardening), but it
+  was not the actual root cause for a plain visitor. Filed as this run's own
+  B1 with a concrete next step: do the ONE local non-minified next build &&
+  next start repro (never actually done in either the 2026-09-13 run or this
+  one) to get the real component-level hydration diff before a third
+  guess-and-ship attempt.
