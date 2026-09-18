@@ -4,6 +4,7 @@ import { currentParentId, findParentById } from "@/lib/db/repo";
 import { sendEmail, emailConfigured } from "@/lib/email/send";
 import { portfolioShareTemplate } from "@/lib/email/templates";
 import { appUrl } from "@/lib/email/verification";
+import { rateLimit } from "@/lib/rate-limit";
 
 export interface ShareResult {
   ok: boolean;
@@ -22,6 +23,20 @@ export async function emailPortfolio(input: {
 }): Promise<ShareResult> {
   const parentId = await currentParentId();
   if (!parentId) return { ok: false, reason: "Not signed in." };
+
+  // B3 (2026-09-17): this Server Action had no rate limit at all, unlike every
+  // sibling outbound-effect route (tutor, tts, stt, /api/portfolio generation).
+  // Brevo sends to any recipient once a sender is verified, so an unbounded
+  // authenticated caller could script repeated sends from Edway's own verified
+  // sender to any third-party address, a spam/deliverability risk, not just a
+  // compute-cost one. Same per-parent pattern as api/portfolio/route.ts.
+  const limited = await rateLimit(`portfolio-email:${parentId}`, 5, 60_000);
+  if (!limited.ok) {
+    return {
+      ok: false,
+      reason: "Too many requests. Please wait a moment and try again.",
+    };
+  }
 
   const to = input.toEmail.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
