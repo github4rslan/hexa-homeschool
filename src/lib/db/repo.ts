@@ -21,6 +21,7 @@ import {
   reviewDueCounts,
 } from "@/lib/engine/spaced-repetition";
 import { shouldQueueHandoff } from "@/lib/engine/remediation";
+import { formatWorkingGrade } from "@/lib/data/diagnostic";
 import { resolveCertifiedAt, isFreshCertification } from "@/lib/engine/competence";
 import { selectMockPaper, marksForTier } from "@/lib/engine/mock-paper";
 import { mockDisplayPrompt, type SavedProgress } from "@/lib/child/interactions";
@@ -3864,7 +3865,7 @@ const STAGE_PHRASE: Record<KeyStage, string> = {
   4: "on the GCSE path",
 };
 
-function scheduleItemReason(input: {
+export function scheduleItemReason(input: {
   subject: Subject;
   topicTitle: string;
   topicState: CompetenceDoc["state"] | undefined;
@@ -3878,7 +3879,11 @@ function scheduleItemReason(input: {
   }
   // Only reference a GCSE predicted grade when the child is actually at GCSE.
   if (input.predictedGrade && input.keyStage === 4) {
-    return `The diagnostic predicted grade ${input.predictedGrade} in ${subject}; ${input.topicTitle} is the next topic ${stage}.`;
+    // formatWorkingGrade() already supplies the word "Grade" itself, so the
+    // sentence must not hardcode it too (that was the bug: "predicted grade
+    // Grade 4-5"). No literal "grade" word belongs before the interpolation.
+    const grade = formatWorkingGrade(input.predictedGrade) ?? input.predictedGrade;
+    return `The diagnostic predicted ${grade} in ${subject}; ${input.topicTitle} is the next topic ${stage}.`;
   }
   return `${input.topicTitle} is the next ${subject} topic ${stage} — it builds the foundations later topics rely on.`;
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { formatWorkingGrade, gradeBand, tierToGrade } from "@/lib/data/diagnostic";
 import { scoreMock } from "@/lib/engine/mock-exam";
+import { scheduleItemReason } from "@/lib/db/repo";
 
 // B3 (2026-09-13): a Local Authority compliance document rendered "Grade
 // Grade 4-5" for a child whose latest evaluation came from a mock exam,
@@ -84,5 +85,41 @@ describe("formatWorkingGrade — idempotent display formatting, never doubles th
         expect(out.match(/Grade/gi)?.length).toBe(1);
       }
     }
+  });
+});
+
+// B2 (2026-09-17): a 6th, previously-missed site of the same "Grade Grade"
+// class — the parent-facing /schedule "Why" reasoning card interpolated the
+// raw predicted-grade string into a template that already hardcodes the word
+// "grade", without ever passing it through formatWorkingGrade() first.
+describe("scheduleItemReason — never doubles the word 'grade' for a mock-sourced grade", () => {
+  const base = {
+    subject: "mathematics" as const,
+    topicTitle: "Statistics & Probability",
+    topicState: undefined,
+    keyStage: 4 as const,
+  };
+
+  it("does not double the word when the stored grade already has the 'Grade ' prefix (mock-sourced)", () => {
+    const reason = scheduleItemReason({ ...base, predictedGrade: "Grade 4–5" });
+    expect(reason).not.toContain("Grade Grade");
+    expect(reason).not.toContain("grade Grade");
+    expect(reason).toContain("The diagnostic predicted Grade 4–5");
+    expect(reason.match(/grade/gi)?.length).toBe(1);
+  });
+
+  it("still shows exactly one 'Grade' for a bare band grade (diagnostic-sourced)", () => {
+    const reason = scheduleItemReason({ ...base, predictedGrade: "4–5" });
+    expect(reason).toContain("The diagnostic predicted Grade 4–5");
+    expect(reason.match(/grade/gi)?.length).toBe(1);
+  });
+
+  it("omits the grade clause entirely below GCSE (key stage 2/3), regardless of grade shape", () => {
+    const reason = scheduleItemReason({
+      ...base,
+      keyStage: 3,
+      predictedGrade: "Grade 4–5",
+    });
+    expect(reason).not.toContain("grade");
   });
 });
