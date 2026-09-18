@@ -1643,3 +1643,27 @@ describe("F2 (2026-09-17, EPIC 23): eng_punctuation's first stretch item, semico
     expect(distractors).toContain("I love writing, it lets me explore new worlds.");
   });
 });
+
+describe("F3 (2026-09-17, EPIC 2): eng_spelling's second command-word item, 'should of' vs 'should have'", () => {
+  const prompt =
+    "'I should of studied harder for the exam.' Explain what is wrong with this sentence.";
+
+  it("adds a well-formed mastery item keyed to the 'should have' correction", () => {
+    expectWellFormedItem(
+      "eng_spelling",
+      "english",
+      prompt,
+      "'Of' should be 'have' — 'should have' is the correct form; 'of' is a preposition, not part of the verb.",
+    );
+    const q = ALL.find((item) => item.prompt === prompt)!;
+    expect(q.kind).toBe("mastery");
+  });
+
+  it("uses a different command word ('Explain') from the topic's existing 'Identify' item", () => {
+    const spellingPrompts = ALL.filter((q) => q.topic_tag === "eng_spelling").map(
+      (q) => q.prompt,
+    );
+    expect(spellingPrompts).toContain("Identify the sentence that uses the correct word.");
+    expect(spellingPrompts.filter((p) => p === prompt).length).toBe(1);
+  });
+});

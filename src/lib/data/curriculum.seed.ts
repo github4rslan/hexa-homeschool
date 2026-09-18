@@ -1438,6 +1438,39 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "This is missing the apostrophe. 'They're' (with an apostrophe) is the contraction of 'they are'.",
     ],
   },
+  // F3 (2026-09-17, EPIC 2): eng_spelling's second command-word item. "Should
+  // of" instead of "should have" is one of the most commonly cited GCSE
+  // English writing errors; uses "Explain" for command-word variety against
+  // the topic's existing "Identify" item. Transcribed verbatim from the
+  // owner-approved finding.
+  {
+    topic_tag: "eng_spelling",
+    subject: "english",
+    tier: 2,
+    key_stage: 4,
+    kind: "mastery",
+    prompt:
+      "'I should of studied harder for the exam.' Explain what is wrong with this sentence.",
+    options: [
+      "'Of' should be 'have' — 'should have' is the correct form; 'of' is a preposition, not part of the verb.",
+      "The sentence is correct as it stands.",
+      "'Of' should be 'off' to show the exam is finished.",
+      "'Studied' should be spelled 'studyed'.",
+    ],
+    correct_index: 0,
+    explanation:
+      "'Should of' is a common mistake caused by how 'should have' sounds when spoken quickly. The correct form is 'should have' (or the contraction 'should've') — 'of' is a preposition and can never follow a modal verb like 'should', 'could' or 'would'.",
+    hints: [
+      "Say the sentence aloud — 'should of' sounds like 'should have' when spoken quickly, but they are not interchangeable in writing.",
+      "'Of' is a preposition (e.g. 'a cup of tea'); it can never follow 'should', 'could' or 'would' in standard written English.",
+    ],
+    misconceptions: [
+      "",
+      "This sentence contains the classic 'should of' error and needs correcting, not leaving as is.",
+      "'Off' means to separate or complete something; it doesn't fix the grammar issue here at all.",
+      "'Studied' is already spelled correctly (past tense of 'study': change the y to i, add -ed); the actual error is 'should of'.",
+    ],
+  },
   // ── F2 (2026-08-20): eng_poetry caesura item ──
   // AQA 8700 AO2, closing a zero-coverage topic.
   {
