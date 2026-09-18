@@ -145,6 +145,24 @@ async function main() {
       console.log(`✓ Child ready: ${kid.full_name}`);
     }
 
+    // F4 (2026-09-17): this fixture only ever creates the two children above.
+    // A prior session exercising "Add child" by hand (or any other drift) can
+    // leave stray children on this account, which then silently confuses any
+    // later run that assumes exactly two. Read-only: never deletes anything,
+    // just makes the drift visible so the owner can decide what to do about it.
+    const allKids = await children
+      .find({ parent_id: parentId })
+      .project<{ _id: ObjectId; full_name: string }>({ full_name: 1 })
+      .toArray();
+    if (allKids.length > kids.length) {
+      const expectedNames = new Set(kids.map((k) => k.full_name));
+      const stray = allKids.filter((c) => !expectedNames.has(c.full_name));
+      console.warn(
+        `⚠ Expected exactly ${kids.length} children on ${parentEmail}, found ${allKids.length}. ` +
+          `Unexpected: ${stray.map((c) => `"${c.full_name}" (${c._id.toString()})`).join(", ") || "(all named as expected, but count is still off — check for name collisions)"}`,
+      );
+    }
+
     // ── 3. Approved weekly plan for the first child (so /schedule has items) ──
     const weekStart = isoMonday(now);
     await schedules.updateOne(
