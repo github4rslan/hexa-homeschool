@@ -821,6 +821,28 @@ const DragDrop = forwardRef<
                   wrong && "border-solid border-white/10 bg-white/[0.02] text-fog-300 opacity-60 saturate-50",
                 )}
               >
+                {/* F6 (2026-09-17): a brief landing glow the instant a chip is
+                    placed, completing the pick-up-lift/land pair. Fires
+                    identically for pointer-drop, tap-to-place and keyboard
+                    Enter (same code path, same `chip` state change) — the
+                    keyboard path is never a second-class citizen. Deliberately
+                    neutral (accent-coloured, not red/green): it must never hint
+                    at correct/wrong before the check, which stays gated behind
+                    `reveal` (calm-wrong law). Remounts (and re-plays) whenever
+                    this slot's chip changes via the `key`. */}
+                {chip !== null && !reveal && !reduced && (
+                  <motion.span
+                    key={`land-${i}-${chip}`}
+                    aria-hidden
+                    initial={{ scale: 0.85, opacity: 0.55 }}
+                    animate={{ scale: 1.35, opacity: 0 }}
+                    transition={{ duration: 0.4, ease: "easeOut" }}
+                    className={cn(
+                      "pointer-events-none absolute inset-0 rounded-2xl border-2",
+                      accent.border,
+                    )}
+                  />
+                )}
                 {/* Calm-law reward: the settle sweep + drawn check fire only on a
                     slot the child placed CORRECTLY. Wrong placements stay a soft
                     dim (handled above), never red. */}
