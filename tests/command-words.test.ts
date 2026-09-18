@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectCommandWord } from "@/lib/child/command-words";
+import { detectCommandWord, COMMAND_WORDS } from "@/lib/child/command-words";
 
 describe("detectCommandWord", () => {
   it("matches a prompt that opens with a known command word (case-insensitive)", () => {
@@ -17,11 +17,30 @@ describe("detectCommandWord", () => {
       "Evaluate",
       "Compare",
       "Estimate",
+      // F7 (2026-09-17)
+      "Identify",
+      "Analyse",
+      "Justify",
     ];
     for (const word of words) {
       expect(detectCommandWord(`${word} the thing.`)?.word).toBe(word);
     }
     expect(detectCommandWord("Show that the result holds.")?.word).toBe("Show that");
+  });
+
+  it("F7 (2026-09-17): every command word has a non-empty, plain-English definition", () => {
+    for (const [word, definition] of Object.entries(COMMAND_WORDS)) {
+      expect(definition.trim().length, `definition for ${word}`).toBeGreaterThan(0);
+      // Static human-authored copy only, no invented curriculum content.
+      expect(definition).not.toMatch(/\bAI\b/i);
+    }
+    expect(Object.keys(COMMAND_WORDS).length).toBeGreaterThanOrEqual(8);
+  });
+
+  it("matches real GCSE 'Identify' prompts already in the question bank", () => {
+    expect(
+      detectCommandWord("Identify the sentence that uses the correct word.")?.word,
+    ).toBe("Identify");
   });
 
   it("returns null when no command word opens the prompt", () => {

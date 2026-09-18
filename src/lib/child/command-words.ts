@@ -26,6 +26,14 @@ export const COMMAND_WORDS: Record<string, string> = {
   Compare: "say what is the same and what is different between two things",
   Estimate: "give an approximate answer using rounding",
   "Show that": "prove a given result using working, not just state it",
+  // F7 (2026-09-17): three more real GCSE command words already used across
+  // the question bank ("Identify") or common on real papers even where the
+  // bank doesn't use them yet ("Analyse", "Justify") — examiner reports
+  // consistently cite command-word confusion as a real, common cause of
+  // lost marks, distinct from subject knowledge.
+  Identify: "pick out or name the correct thing, no explanation needed",
+  Analyse: "break something down into its parts and examine how they work or relate",
+  Justify: "give reasons that support your answer or decision",
 };
 
 function escapeRegExp(s: string): string {
