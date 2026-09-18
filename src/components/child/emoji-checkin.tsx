@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { submitCheckin } from "@/app/(child)/learn/actions";
 
 const MOODS = [
@@ -21,11 +21,27 @@ export function EmojiCheckin({ done = false }: { done?: boolean }) {
   const [completed, setCompleted] = useState(done);
   const [picked, setPicked] = useState<number | null>(null);
   const [pending, startTransition] = useTransition();
+  const reduce = useReducedMotion();
+
+  // F5 (2026-09-17): the tap-bounce below is already reduced-motion-safe (the
+  // learn layout's ReducedMotionProvider disables it automatically), but a
+  // fast submitCheckin() round-trip could swap to the "completed" view before
+  // the 350ms bounce finished playing, so the very first tap of the session
+  // had effectively zero visible micro-interaction for a full-motion visitor.
+  // Racing the real network call against a matching-length timer (never
+  // delaying the call itself) guarantees the settle is actually seen; skipped
+  // entirely under reduced motion, where there is no bounce to wait for.
+  const BOUNCE_SETTLE_MS = 380;
 
   function choose(mood: number) {
     setPicked(mood);
     startTransition(async () => {
-      await submitCheckin(mood);
+      await Promise.all([
+        submitCheckin(mood),
+        reduce
+          ? Promise.resolve()
+          : new Promise((resolve) => setTimeout(resolve, BOUNCE_SETTLE_MS)),
+      ]);
       setCompleted(true);
     });
   }
