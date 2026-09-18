@@ -835,6 +835,33 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
     hints: ["Power = voltage × current (P = V × I).", "Multiply 12 V by 3 A."],
     misconceptions: ["", "This divides voltage by current (12 ÷ 3) instead of multiplying them.", "This adds voltage and current (12 + 3) instead of multiplying them.", "This divides current by voltage (3 ÷ 12) instead of multiplying voltage by current."],
   },
+  // F1 (2026-09-17, EPIC 23): sci_electricity's first stretch item, combining
+  // series-circuit resistance with Ohm's law. AQA 8464 Physics 6.2.2 — total
+  // resistance of series components is the sum of each resistance
+  // (transcribed verbatim from the owner-approved finding).
+  {
+    topic_tag: "sci_electricity",
+    subject: "science",
+    tier: 5,
+    key_stage: 4,
+    kind: "stretch",
+    prompt:
+      "Two resistors of 4 Ω and 6 Ω are connected in series to a 20 V battery. Calculate the current flowing through the circuit.",
+    options: ["2 A", "5 A", "3.3 A", "200 A"],
+    correct_index: 0,
+    explanation:
+      "For resistors in series, total resistance adds: R_total = 4 Ω + 6 Ω = 10 Ω. Then current = potential difference ÷ resistance: I = V ÷ R = 20 V ÷ 10 Ω = 2 A.",
+    hints: [
+      "First find the total resistance of the circuit: for resistors in series, add the resistances together.",
+      "Once you have the total resistance, use I = V ÷ R with the total resistance, not just one resistor.",
+    ],
+    misconceptions: [
+      "",
+      "This uses only the 4 Ω resistor (20 ÷ 4 = 5), ignoring that the second resistor is also in the circuit and adds to the total resistance.",
+      "This uses only the 6 Ω resistor (20 ÷ 6 ≈ 3.3), ignoring that the first resistor is also in the circuit and adds to the total resistance.",
+      "This multiplies the voltage by the total resistance (20 × 10 = 200) instead of dividing; current is voltage divided by resistance, not voltage times resistance.",
+    ],
+  },
   // AQA 8700 Paper 1 Q3-style — effect of a simile ("Explain").
   {
     topic_tag: "eng_analysis",

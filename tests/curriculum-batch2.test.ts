@@ -1542,3 +1542,50 @@ describe("F3 (2026-09-13, EPIC 2): eng_poetry's second command-word item, enjamb
     expect(items.length).toBe(2);
   });
 });
+
+describe("F1 (2026-09-17, EPIC 23): sci_electricity series-circuit resistance stretch item", () => {
+  function findItem() {
+    return ALL.find(
+      (item) =>
+        item.topic_tag === "sci_electricity" &&
+        item.prompt.startsWith("Two resistors of 4"),
+    );
+  }
+
+  it("adds a well-formed stretch item keyed to the correct answer", () => {
+    const q = findItem();
+    expect(q, "stretch item present").toBeDefined();
+    if (!q) return;
+    expect(q.kind).toBe("stretch");
+    expect(q.key_stage).toBe(4);
+    expect(q.subject).toBe("science");
+    expect(q.options.length).toBe(4);
+    expect(new Set(q.options).size).toBe(q.options.length);
+    expect(q.correct_index).toBeGreaterThanOrEqual(0);
+    expect(q.correct_index).toBeLessThan(q.options.length);
+    expect(q.options[q.correct_index]).toBe("2 A");
+    expect(q.explanation.trim().length).toBeGreaterThan(0);
+    expect(q.misconceptions).toBeDefined();
+    expect(q.misconceptions!.length).toBe(q.options.length);
+    expect((q.misconceptions![q.correct_index] ?? "").trim()).toBe("");
+    expect(q.hints && q.hints.length).toBeGreaterThan(0);
+  });
+
+  it("is the only stretch-kind item for sci_electricity (no near-duplicate)", () => {
+    const stretchItems = ALL.filter(
+      (q) => q.topic_tag === "sci_electricity" && q.kind === "stretch",
+    );
+    expect(stretchItems.length).toBe(1);
+  });
+
+  it("2 A is correct: series resistances add, then current = V / R_total", () => {
+    const rTotal = 4 + 6;
+    expect(rTotal).toBe(10);
+    const current = 20 / rTotal;
+    expect(current).toBe(2);
+    // Distractors are genuinely distinct single-resistor / wrong-operation errors.
+    expect(20 / 4).toBe(5);
+    expect(Number((20 / 6).toFixed(1))).toBe(3.3);
+    expect(20 * rTotal).toBe(200);
+  });
+});
