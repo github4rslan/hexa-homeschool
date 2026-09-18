@@ -1589,3 +1589,57 @@ describe("F1 (2026-09-17, EPIC 23): sci_electricity series-circuit resistance st
     expect(20 * rTotal).toBe(200);
   });
 });
+
+describe("F2 (2026-09-17, EPIC 23): eng_punctuation's first stretch item, semicolon joining independent clauses", () => {
+  function findItem() {
+    return ALL.find(
+      (item) =>
+        item.topic_tag === "eng_punctuation" &&
+        item.prompt.startsWith("Identify the sentence that correctly uses a semicolon"),
+    );
+  }
+
+  it("adds a well-formed stretch item keyed to the correct answer", () => {
+    const q = findItem();
+    expect(q, "stretch item present").toBeDefined();
+    if (!q) return;
+    expect(q.kind).toBe("stretch");
+    expect(q.key_stage).toBe(4);
+    expect(q.subject).toBe("english");
+    expect(q.options.length).toBe(4);
+    expect(new Set(q.options).size).toBe(q.options.length);
+    expect(q.correct_index).toBeGreaterThanOrEqual(0);
+    expect(q.correct_index).toBeLessThan(q.options.length);
+    expect(q.options[q.correct_index]).toBe(
+      "I love writing; it lets me explore new worlds.",
+    );
+    expect(q.explanation.trim().length).toBeGreaterThan(0);
+    expect(q.misconceptions).toBeDefined();
+    expect(q.misconceptions!.length).toBe(q.options.length);
+    expect((q.misconceptions![q.correct_index] ?? "").trim()).toBe("");
+    expect(q.hints && q.hints.length).toBeGreaterThan(0);
+  });
+
+  it("is the only stretch-kind item for eng_punctuation, and the bank's first English stretch item", () => {
+    const stretchItems = ALL.filter(
+      (q) => q.topic_tag === "eng_punctuation" && q.kind === "stretch",
+    );
+    expect(stretchItems.length).toBe(1);
+    const otherEnglishStretch = ALL.filter(
+      (q) => q.subject === "english" && q.kind === "stretch" && q !== stretchItems[0],
+    );
+    expect(otherEnglishStretch.length).toBe(0);
+  });
+
+  it("every distractor is a genuinely distinct, real semicolon error, not the correct pattern", () => {
+    const q = findItem()!;
+    const distractors = q.options.filter((_, i) => i !== q.correct_index);
+    // None of the distractors is a bare comma-free, two-independent-clause
+    // semicolon join (the one genuinely correct pattern).
+    for (const d of distractors) {
+      expect(d).not.toBe("I love writing; it lets me explore new worlds.");
+    }
+    // One distractor is a comma splice (no semicolon at all).
+    expect(distractors).toContain("I love writing, it lets me explore new worlds.");
+  });
+});

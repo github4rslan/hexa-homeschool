@@ -1964,6 +1964,38 @@ const EXAM_STYLE_QUESTIONS: SeedQuestion[] = [
       "The sentence already starts with a capital 'I', so capitalisation isn't the issue.",
     ],
   },
+  // F2 (2026-09-17, EPIC 23): eng_punctuation's first stretch item, and the
+  // bank's first English stretch item at any key stage. GCSE English Language
+  // AO6 (accurate range of punctuation): a semicolon needs an independent
+  // clause on both sides. Transcribed verbatim from the owner-approved finding.
+  {
+    topic_tag: "eng_punctuation",
+    subject: "english",
+    tier: 5,
+    key_stage: 4,
+    kind: "stretch",
+    prompt:
+      "Identify the sentence that correctly uses a semicolon to join two independent clauses.",
+    options: [
+      "I love writing; it lets me explore new worlds.",
+      "I love writing; because it lets me explore new worlds.",
+      "I love writing, it lets me explore new worlds.",
+      "I love; writing lets me explore new worlds.",
+    ],
+    correct_index: 0,
+    explanation:
+      "A semicolon can join two independent clauses (each a complete sentence on its own) without a conjunction. 'I love writing' and 'it lets me explore new worlds' are both independent clauses, so the first sentence is correct.",
+    hints: [
+      "A semicolon needs a COMPLETE sentence (an independent clause) on BOTH sides of it.",
+      "Check each side of the semicolon: can it stand alone as its own sentence? If not, the semicolon is used incorrectly.",
+    ],
+    misconceptions: [
+      "",
+      "'Because it lets me explore new worlds' cannot stand alone as a sentence (it's a dependent clause), so a semicolon is the wrong punctuation here.",
+      "This uses a comma to join two independent clauses, which is a comma splice; a semicolon (or a full stop, or a conjunction) is needed instead.",
+      "This places the semicolon between 'I love' and 'writing lets me explore new worlds', but 'I love' is not a complete sentence on its own, so the semicolon is misplaced.",
+    ],
+  },
   // F1 (2026-09-03): second eng_creative command-word item, AQA 8700 Paper 1
   // Section B (AO5). The topic's one existing item tests narrative viewpoint;
   // this one examines "show, don't tell", a distinct and commonly assessed
